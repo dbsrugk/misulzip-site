@@ -214,6 +214,10 @@ main{padding-bottom:96px}
 .pack-link span{font-size:12px;color:var(--muted)}
 @media (min-width:640px){.packs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (min-width:860px){.packs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* 미리보기 이미지 저장 방지 (길게 누르기 · 우클릭 · 드래그) */
+.d-hero,.pv,.feat .thumb{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.d-hero img,.pv img,.feat .thumb img{pointer-events:none;-webkit-user-drag:none;user-drag:none}
 /* toast */
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--on-ink);padding:11px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -552,6 +556,9 @@ function route(){
   window.scrollTo(0,0);
 }
 window.addEventListener("hashchange",route);
+// 미리보기 영역: 컨텍스트 메뉴 · 드래그 차단
+["contextmenu","dragstart"].forEach(ev=>app.addEventListener(ev,e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()}));
+
 
 app.addEventListener("click",e=>{
   const like=e.target.closest("[data-like]");
