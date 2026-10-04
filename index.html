@@ -197,6 +197,10 @@ main{padding-bottom:96px}
 .tiers p{font-size:13px;color:var(--muted);margin-top:4px}
 
 
+
+/* 미리보기 이미지 저장 방지 (길게 누르기 · 우클릭 · 드래그) */
+.d-hero,.pv div,.feat .thumb{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.d-hero img,.pv img,.feat .thumb img{pointer-events:none;-webkit-user-drag:none;-webkit-touch-callout:none;user-select:none}
 /* theme packs */
 .packs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .pack{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg)}
@@ -560,6 +564,8 @@ window.addEventListener("hashchange",route);
 ["contextmenu","dragstart"].forEach(ev=>app.addEventListener(ev,e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()}));
 
 
+app.addEventListener("contextmenu",e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()});
+app.addEventListener("dragstart",e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()});
 app.addEventListener("click",e=>{
   const like=e.target.closest("[data-like]");
   if(like){e.preventDefault();e.stopPropagation();const id=like.dataset.like;
