@@ -170,7 +170,9 @@ main{padding-bottom:96px}
 .tags{display:flex;flex-wrap:wrap;gap:6px}
 .notice{display:flex;gap:10px;font-size:13px;color:var(--muted);background:var(--soft);border-radius:8px;padding:12px 14px}
 .notice i{flex:none;font-style:normal;width:18px;height:18px;border-radius:50%;background:var(--muted);color:var(--bg);font-size:12px;font-weight:700;display:grid;place-items:center;margin-top:1px}
-.d-cta{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:10;display:grid;grid-template-columns:1fr 1.3fr;gap:10px;padding:12px 0;background:var(--bg);border-top:1px solid var(--line);margin-top:8px}
+.status{font-size:12.5px;font-weight:500;color:var(--muted);letter-spacing:.01em}
+.cta-note{font-size:12px;color:var(--muted);text-align:center}
+.d-cta{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:10;display:grid;grid-template-columns:1fr;gap:6px;padding:12px 0;background:var(--bg);border-top:1px solid var(--line);margin-top:8px}
 .back{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--muted);margin-top:16px}
 .back svg{width:16px;height:16px}
 
@@ -347,7 +349,7 @@ function imgHtml(it,big){return it.img?`<img src="${it.thumb&&!big?it.thumb:it.i
 function card(it){return `<article class="card" data-go="${it.id}" tabindex="0">
   <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}</div>
   <h3>${esc(it.title)}</h3><p class="desc">${esc(it.desc)}</p>
-  <div class="row"><span class="price">${won(it.price)}${it.price?`<span class="tier">${it.tier}</span>`:""}</span>
+  <div class="row"><span class="status">베타 미리보기</span>
   <button class="heart ${likes.has(it.id)?"on":""}" data-like="${it.id}" aria-label="찜하기" aria-pressed="${likes.has(it.id)}">${heartSvg}</button></div></article>`}
 
 function vHome(){
@@ -373,7 +375,7 @@ function vHome(){
     <section class="sec" style="padding-top:4px">
       <div class="sec-head"><h2>이달의 추천 자료</h2><a class="more" href="#library">전체보기 ›</a></div>
       <a class="feat" href="#p-${best.id}"><span class="thumb"><img src="${best.img}" alt=""></span>
-        <span><span class="badge">BEST</span><h3>${best.title}</h3><p>${best.desc}</p><p class="price">${won(best.price)}</p></span></a>
+        <span><span class="badge">BEST</span><h3>${best.title}</h3><p>${best.desc}</p><p class="status" style="margin-top:10px">베타 미리보기 · 찜 받는 중</p></span></a>
     </section>
     <section class="sec">
       <div class="sec-head"><h2>신규 자료</h2><a class="more" href="#library">전체보기 ›</a></div>
@@ -429,17 +431,16 @@ function vDetail(it){
     <div class="d-body">
       <div><p class="crumb">${it.cat} ›</p>
         <div class="d-title"><h1>${esc(it.title)}</h1>${badgeHtml(it.badge)}</div>
-        <p class="d-price">${it.preview?"무료 미리보기":won(it.price)}</p>
-        <p class="d-meta"><span>${it.cuts?`이미지 ${it.cuts}컷 · 분석보드 포함`:"분석보드 + 각도별 모음컷"}</span><span>${it.tier}</span><span>${it.preview?"베타 무료 미리보기":"정식 오픈 때 판매"}</span></p></div>
+        <p class="d-price">베타 미리보기</p>
+        <p class="d-meta"><span>${it.cuts?`이미지 ${it.cuts}컷 · 분석보드 포함`:"분석보드 + 각도별 모음컷"}</span><span>찜이 많은 소재부터 먼저 공개</span></p></div>
       <div class="block"><h2>포함 내용</h2><ul class="checks">${it.contents.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
       ${pv.length?`<div class="block"><h2>미리보기</h2><p class="sm">${it.cuts?"각도별 단독컷과 모음컷입니다.":"정면 · 측면 · 후면 · 상단 · 디테일을 한 장에 모은 컷입니다."}</p><div class="pv${pv.length<3?" wide":""}">${pv.map(p=>`<div><img src="${p}" alt="미리보기 페이지" loading="lazy"></div>`).join("")}</div></div>`:""}
       <div class="block"><h2>이런 분께 추천해요</h2><ul class="checks">${it.who.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
       <div class="block"><h2>태그</h2><div class="tags">${it.tags.map(t=>`<a class="chip tag" href="#library" data-jumptag="${t}">#${t}</a>`).join("")}</div></div>
       <div class="notice"><i>!</i><span>개인 학습용으로만 사용 가능합니다. 무단 배포 및 상업적 이용을 금지합니다.</span></div>
       <div class="d-cta">
-        <button class="btn line" data-like="${it.id}" aria-pressed="${likes.has(it.id)}">${likes.has(it.id)?"찜 해제":"찜하기"}</button>
-        ${free?`<button class="btn solid" data-dl="${it.id}" ${soon?"disabled":""}>${soon?"준비 중이에요":"미리보기 전용"}</button>`
-              :`<button class="btn solid" data-buy="${it.id}">구매하기 · 오픈 예정</button>`}
+        <button class="btn ${likes.has(it.id)?"line":"solid"}" data-like="${it.id}" aria-pressed="${likes.has(it.id)}">${likes.has(it.id)?"찜했어요 ✓ (다시 누르면 해제)":"♡ 이 소재 찜하기"}</button>
+        <p class="cta-note">찜이 많이 모인 소재부터 원본 자료로 먼저 공개할게요.</p>
       </div>
     </div>
   </div>
@@ -452,7 +453,7 @@ function vFree(){
   return `<div class="wrap"><div class="page-title"><h1>무료자료</h1><p>베타 기간에 무료로 둘러보는 미리보기 자료</p></div>
   <div class="free-hero"><p class="eyebrow">How it works</p><h2>먼저 써보고, 마음에 들면 더 깊게</h2>
     <p>무료 샘플로 소재를 확인하고, 필요한 주제는 전체 자료집으로 이어집니다.</p>
-    <div class="flow"><span>무료 샘플</span><em>→</em><span>MINI 자료집</span><em>→</em><span>묶음 컬렉션</span><em>→</em><span>PASS 구독</span></div></div>
+    <div class="flow"><span>무료 미리보기</span><em>→</em><span>테마 묶음 팩</span><em>→</em><span>PASS 구독</span></div></div>
   <section class="sec">${list.length?`<div class="grid">${list.map(card).join("")}</div>`:`<div class="empty"><b>무료 자료를 준비하고 있어요</b>첫 무료 샘플이 곧 올라와요. 지금은 자료실에서 미리보기를 둘러보세요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료실 둘러보기</a></div></div>`}</section></div>`;
 }
 
@@ -472,14 +473,11 @@ function vAbout(){
     <div><dt>어떻게</dt><dd>Instagram과 Pinterest에서 소재를 보고, 미.술집에서 검색 · 저장 · 다운로드</dd></div>
     <div><dt>이용 범위</dt><dd>개인 학습용. 무단 배포와 상업적 이용은 금지합니다.</dd></div>
   </dl>
-  <section class="sec"><div class="sec-head"><h2>자료 등급</h2></div>
+  <section class="sec"><div class="sec-head"><h2>이용 방식</h2></div>
   <div class="tiers">
-    <div><b>FREE</b><p>샘플 · 회원가입 없음</p></div>
-    <div><b>MINI</b><p>한 주제 10~25p</p></div>
-    <div><b>STANDARD</b><p>각도 · 구조 · 색 전체</p></div>
-    <div><b>COLLECTION</b><p>같은 계열 묶음</p></div>
-    <div><b>BUNDLE</b><p>카테고리 세트</p></div>
-    <div><b>PASS</b><p>전체 자료실 구독 (예정)</p></div>
+    <div><b>FREE</b><p>소재별 분석보드 · 모음컷 미리보기</p></div>
+    <div><b>PACK</b><p>재질 · 테마별 묶음 원본 (준비 중)</p></div>
+    <div><b>PASS</b><p>전체 자료실 월 구독 (준비 중)</p></div>
   </div></section></div>${brand()}`;
 }
 
