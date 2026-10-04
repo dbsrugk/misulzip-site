@@ -196,6 +196,24 @@ main{padding-bottom:96px}
 .tiers b{font-size:11px;letter-spacing:.16em}
 .tiers p{font-size:13px;color:var(--muted);margin-top:4px}
 
+
+/* theme packs */
+.packs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pack{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg)}
+.pack:hover{border-color:var(--fg)}
+.collage{display:grid;grid-template-columns:1fr 1fr;aspect-ratio:1/1;background:var(--paper);gap:1px}
+.collage img{width:100%;height:100%;object-fit:cover;aspect-ratio:1/1}
+.pack-body{display:flex;flex-direction:column;gap:2px;padding:10px 12px 12px}
+.pack-no{font-size:10px;letter-spacing:.16em;color:var(--muted)}
+.pack-body b{font-size:14.5px;line-height:1.35}
+.pack-body small{font-size:12px;color:var(--muted)}
+.pack-info{display:grid;gap:10px;margin-top:14px;padding:14px;background:var(--soft);border-radius:10px}
+.pack-info div{display:grid;grid-template-columns:92px 1fr;gap:10px;font-size:13.5px}
+.pack-info span{color:var(--muted)}
+.pack-link{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1.5px solid var(--ink);border-radius:10px}
+.pack-link span{font-size:12px;color:var(--muted)}
+@media (min-width:640px){.packs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:860px){.packs{grid-template-columns:repeat(4,minmax(0,1fr))}}
 /* toast */
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--on-ink);padding:11px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -330,6 +348,37 @@ const ITEMS=[
  {"id": "candleholder", "title": "흐름 캔들홀더 레퍼런스", "cat": "재질·표현", "tier": "MINI", "price": 4900, "badge": "new", "order": 147, "pop": 147, "img": "img/candleholder/board.jpg", "thumb": "img/candleholder/thumb.jpg", "pv": ["img/candleholder/set1.jpg"], "desc": "흘러내리는 금속의 흐름과 반사", "contents": ["분석보드: 관찰 참고 · 형태 분석과 구성 · 질감과 색상 · 기초디자인 활용 포인트", "각도별 모음컷: 정면 · 측면 · 후면 · 상단 · 디테일", "핵심 키워드: 주제부 · 확대 · 절단 · 반복 · 리듬 · 대비 · 흐름"], "who": ["금속·유리·투명 같은 재질 표현을 연습하고 싶은 입시생", "반사와 하이라이트 위치를 익히고 싶은 분"], "tags": ["재질·표현", "캔들", "크롬", "금속", "흐름", "녹아내림"]},
  {"id": "chromehand", "title": "크롬 손모형 레퍼런스", "cat": "인체", "tier": "MINI", "price": 4900, "badge": "new", "order": 148, "pop": 148, "img": "img/chromehand/board.jpg", "thumb": "img/chromehand/thumb.jpg", "pv": ["img/chromehand/set1.jpg"], "desc": "금속의 냉정한 광택, 이질적 감각의 구조", "contents": ["분석보드: 관찰 참고 · 형태 분석과 구성 · 질감과 색상 · 기초디자인 활용 포인트", "각도별 모음컷: 정면 · 측면 · 후면 · 상단 · 디테일", "핵심 키워드: 주제부 · 확대 · 절단 · 반복 · 리듬 · 대비 · 흐름"], "who": ["두상·손 같은 인체 형태를 각도별로 익히고 싶은 분"], "tags": ["인체", "손", "크롬", "금속", "반사", "손가락"]}
 ];
+
+// 테마 팩 (베타: 가격 없이 팩 단위 찜으로 반응 확인)
+const PACKS=[
+ {id:"chrome",no:"①",name:"크롬·금속 반사 팩",desc:"입시생이 가장 어려워하는 '반사' 하나에 집중한 묶음",point:"하이라이트 · 반사광 · 주변 비침",items:["balloondog","chromebear","chromehand","metallily","candleholder","iron","cherry","golddiamond"]},
+ {id:"glass",no:"②",name:"투명체·유리 팩",desc:"투명함과 굴절 표현만 모은 전용 묶음",point:"굴절 · 투과 · 물방울 · 유리 두께",items:["glasscherry","glasschess","perfume","mistsprayer","waterpistol","glasswoodball","sandtimer"]},
+ {id:"vintage",no:"③",name:"빈티지 기계·황동 팩",desc:"복잡한 구조와 황동 · 목재 질감을 담은 사물들",point:"부품 구조 · 황동 광택 · 반복 패턴",items:["dialphone","wallclock","microscope","candlestick","chandelier","vintagefan","lock","anchor","violin"]},
+ {id:"sea",no:"④",name:"바다·생물 팩",desc:"유기적인 곡선과 살아있는 동세를 담은 생물들",point:"곡선 흐름 · 비늘 · 촉수 · 동세",items:["octopus","pufferfish","bluefish","hermitcrab","pearlshell","coral","jewelbutterfly","trex","robotgoldfish"]},
+ {id:"food",no:"⑤",name:"음식·자연 질감 팩",desc:"층 구조와 단면, 반복되는 질감을 담은 소재들",point:"층 구조 · 단면 · 반복 질감",items:["hamburger","drumstick","orangecheesecake","strawberry","corn","pinecone","lily"]},
+ {id:"object",no:"⑥",name:"생활 사물 팩",desc:"가죽 · 고무 · 플라스틱 · 금속, 재질 대비가 분명한 사물들",point:"재질 대비 · 주름 · 마모",items:["spongeglove","walkerboots","sneakers","rollingchair","flashlight","extinguisher","robotarm"]},
+ {id:"pop",no:"⑦",name:"팝 캐릭터·오브제 팩",desc:"털 · 천 질감과 귀여운 볼륨감의 캐릭터와 오브제",point:"털 질감 · 볼륨 · 형광 컬러",items:["capybara","orangutan","frogchar","david"]},
+];
+const byId=id=>ITEMS.find(i=>i.id===id);
+const packOf=id=>PACKS.find(pk=>pk.items.includes(id));
+function packCard(pk){
+  const th=pk.items.slice(0,4).map(id=>byId(id)).filter(Boolean);
+  const liked=likes.has("pack:"+pk.id);
+  return `<a class="pack" href="#pk-${pk.id}">
+    <span class="collage">${th.map(i=>`<img src="${i.thumb||i.img}" alt="" loading="lazy">`).join("")}</span>
+    <span class="pack-body"><span class="pack-no">${pk.no} THEME PACK</span><b>${esc(pk.name)}</b><small>소재 ${pk.items.length}종${liked?" · 찜함 ♥":""}</small></span></a>`;
+}
+function vPack(pk){
+  const list=pk.items.map(byId).filter(Boolean); const liked=likes.has("pack:"+pk.id);
+  return `<div class="wrap"><a class="back" href="#home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>홈으로</a>
+  <div class="page-title"><p class="eyebrow">${pk.no} Theme Pack · 소재 ${list.length}종</p><h1 style="margin-top:6px">${esc(pk.name)}</h1><p>${esc(pk.desc)}</p></div>
+  <div class="pack-info"><div><b>연습 포인트</b><span>${esc(pk.point)}</span></div><div><b>정식 오픈 때 포함</b><span>소재별 고해상도 원본 · 인쇄용 PDF · 묶음 한 번에 받기</span></div></div>
+  <div class="d-cta" style="position:static;border:0">
+    <button class="btn ${liked?"line":"solid"}" data-like="pack:${pk.id}" aria-pressed="${liked}">${liked?"이 팩 찜했어요 ✓ (다시 누르면 해제)":"♡ 이 팩 먼저 열어주세요"}</button>
+    <p class="cta-note">찜이 많이 모인 팩부터 원본으로 먼저 공개해요.</p></div>
+  <section class="sec"><div class="grid">${list.map(card).join("")}</div></section>
+  <section class="sec"><div class="sec-head"><h2>다른 테마 팩</h2></div><div class="packs">${PACKS.filter(x=>x.id!==pk.id).map(packCard).join("")}</div></section></div>`;
+}
 const won=n=>n===0?"무료":"₩"+n.toLocaleString("ko-KR");
 
 // 찜 (브라우저에만 저장)
@@ -371,6 +420,10 @@ function vHome(){
     <section class="sec">
       <div class="sec-head"><h2>다양한 소재를 만나보세요</h2></div>
       <div class="cats">${CATS.filter(c=>ITEMS.some(i=>i.cat===c)).map(c=>`<a class="cat" href="#library" data-cat="${c}"><span class="ph">${CAT_IMG[c]?`<img src="${CAT_IMG[c]}" alt="" loading="lazy">`:`<b>${c[0]}</b>`}</span>${c}</a>`).join("")}<a class="cat" href="#free"><span class="ph"><b>F</b></span>무료자료</a></div>
+    </section>
+    <section class="sec" style="padding-top:4px">
+      <div class="sec-head"><h2>테마 팩</h2><span class="more">주제별로 묶어 보기</span></div>
+      <div class="packs">${PACKS.map(packCard).join("")}</div>
     </section>
     <section class="sec" style="padding-top:4px">
       <div class="sec-head"><h2>이달의 추천 자료</h2><a class="more" href="#library">전체보기 ›</a></div>
@@ -436,6 +489,7 @@ function vDetail(it){
       <div class="block"><h2>포함 내용</h2><ul class="checks">${it.contents.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
       ${pv.length?`<div class="block"><h2>미리보기</h2><p class="sm">${it.cuts?"각도별 단독컷과 모음컷입니다.":"정면 · 측면 · 후면 · 상단 · 디테일을 한 장에 모은 컷입니다."}</p><div class="pv${pv.length<3?" wide":""}">${pv.map(p=>`<div><img src="${p}" alt="미리보기 페이지" loading="lazy"></div>`).join("")}</div></div>`:""}
       <div class="block"><h2>이런 분께 추천해요</h2><ul class="checks">${it.who.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
+      ${packOf(it.id)?`<a class="pack-link" href="#pk-${packOf(it.id).id}"><span>이 소재가 들어있는 팩</span><b>${packOf(it.id).no} ${esc(packOf(it.id).name)} ›</b></a>`:""}
       <div class="block"><h2>태그</h2><div class="tags">${it.tags.map(t=>`<a class="chip tag" href="#library" data-jumptag="${t}">#${t}</a>`).join("")}</div></div>
       <div class="notice"><i>!</i><span>개인 학습용으로만 사용 가능합니다. 무단 배포 및 상업적 이용을 금지합니다.</span></div>
       <div class="d-cta">
@@ -458,8 +512,9 @@ function vFree(){
 }
 
 function vMy(){
-  const list=ITEMS.filter(i=>likes.has(i.id));
+  const list=ITEMS.filter(i=>likes.has(i.id)); const pl=PACKS.filter(pk=>likes.has("pack:"+pk.id));
   return `<div class="wrap"><div class="page-title"><h1>찜한 자료</h1><p>하트를 누른 자료가 여기에 모여요. 이 기기에서만 보관됩니다.</p></div>
+  ${pl.length?`<section class="sec" style="padding-bottom:0"><div class="sec-head"><h2>찜한 테마 팩</h2></div><div class="packs">${pl.map(packCard).join("")}</div></section>`:""}
   <section class="sec">${list.length?`<div class="grid">${list.map(card).join("")}</div>`:
   `<div class="empty"><b>아직 찜한 자료가 없어요</b>자료 카드의 하트를 눌러 저장해 보세요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료 둘러보기</a></div></div>`}</section></div>`;
 }
@@ -484,7 +539,8 @@ function vAbout(){
 function route(){
   const h=(location.hash||"#home").slice(1);
   let r=h, html;
-  if(h.startsWith("p-")){const it=ITEMS.find(i=>"p-"+i.id===h);html=it?vDetail(it):vLibrary();r="library"}
+  if(h.startsWith("pk-")){const pk=PACKS.find(x=>"pk-"+x.id===h);html=pk?vPack(pk):vHome();r="home"}
+  else if(h.startsWith("p-")){const it=ITEMS.find(i=>"p-"+i.id===h);html=it?vDetail(it):vLibrary();r="library"}
   else if(h==="library")html=vLibrary();
   else if(h==="free")html=vFree();
   else if(h==="my")html=vMy();
@@ -501,8 +557,8 @@ app.addEventListener("click",e=>{
   const like=e.target.closest("[data-like]");
   if(like){e.preventDefault();e.stopPropagation();const id=like.dataset.like;
     likes.has(id)?likes.delete(id):likes.add(id);saveLikes();
-    toast(likes.has(id)?"찜한 자료에 담았어요":"찜을 해제했어요");
-    if(location.hash==="#my"||location.hash.startsWith("#p-"))route();else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id))}
+    toast(likes.has(id)?(id.startsWith("pack:")?"이 팩을 찜했어요":"찜한 자료에 담았어요"):"찜을 해제했어요");
+    if(location.hash==="#my"||location.hash.startsWith("#p")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id))}
     return}
   const dl=e.target.closest("[data-dl]");if(dl){toast("베타 기간에는 화면 미리보기만 제공해요");return}
   const buy=e.target.closest("[data-buy]");if(buy){toast("유료 자료는 정식 오픈 때 판매를 시작해요");return}
