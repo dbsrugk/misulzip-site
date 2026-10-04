@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>미.술집 Reference Library</title>
+<meta name="description" content="그림 그리는 사람들의 소재창고. 기초디자인에 바로 쓰는 소재 레퍼런스 라이브러리 미.술집 베타.">
+<meta property="og:title" content="미.술집 Reference Library">
+<meta property="og:description" content="그림 그리는 사람들의 소재창고 · 기초디자인 소재 레퍼런스">
+<meta property="og:image" content="/img/cherry/front.jpg">
+<meta property="og:type" content="website">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@700;900&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 모바일 우선 단일 컬럼 + 하단 탭바 → 860px 이상에서 상단 내비 + 3~4열 자료 그리드. 이미지가 주인공, UI는 흑백. */
+:root{
+  --bg:#ffffff; --fg:#141414; --muted:#6f6f6b; --line:#e7e6e2; --soft:#f4f4f1;
+  --paper:#fbfaf7; --ink:#141414; --on-ink:#ffffff; --badge-new:#2f7d3a; --badge-best:#d64a2e;
+  --display:"Hahmlet","Noto Serif KR",serif; --body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
+  --hand:"Nanum Pen Script","Noto Sans KR",cursive;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121211; --fg:#f1f0ec; --muted:#a3a29c; --line:#2b2b28; --soft:#1c1c1a;
+  --paper:#f6f4ef; --ink:#f1f0ec; --on-ink:#141414; --badge-new:#4da35a; --badge-best:#e8644a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121211; --fg:#f1f0ec; --muted:#a3a29c; --line:#2b2b28; --soft:#1c1c1a;
+  --paper:#f6f4ef; --ink:#f1f0ec; --on-ink:#141414; --badge-new:#4da35a; --badge-best:#e8644a; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{word-break:keep-all;overflow-wrap:anywhere;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--fg);outline-offset:2px;border-radius:4px}
+h1,h2,h3{text-wrap:balance;margin:0}
+p{margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px}
+
+/* beta strip */
+.beta{background:var(--soft);color:var(--muted);font-size:12px;text-align:center;padding:7px 16px;letter-spacing:.01em}
+.beta b{color:var(--fg);font-weight:700}
+
+/* header */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;height:58px}
+.logo{font-family:var(--display);font-weight:900;font-size:24px;letter-spacing:-.02em;line-height:1}
+.logo span{color:var(--badge-best)}
+.topnav{display:none;gap:22px;margin-left:24px;font-size:14px;color:var(--muted)}
+.topnav a.on{color:var(--fg);font-weight:700}
+.top .icons{margin-left:auto;display:flex;gap:6px}
+.icon-btn{width:38px;height:38px;display:grid;place-items:center;border-radius:50%}
+.icon-btn:hover{background:var(--soft)}
+.icon-btn svg{width:21px;height:21px}
+
+/* bottom tabs */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bg);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 9px;font-size:11px;color:var(--muted)}
+nav.tabs a.on{color:var(--fg);font-weight:700}
+nav.tabs svg{width:22px;height:22px}
+main{padding-bottom:96px}
+
+/* common */
+.sec{padding-block:28px}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.sec-head h2{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.more{font-size:13px;color:var(--muted)}
+.eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:46px;padding-inline:20px;border-radius:8px;font-weight:700;font-size:14px;border:1.5px solid var(--ink)}
+.btn.solid{background:var(--ink);color:var(--on-ink)}
+.btn.line{background:transparent;color:var(--fg)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:34px;padding-inline:15px;border-radius:999px;background:var(--soft);font-size:13px;color:var(--fg);white-space:nowrap}
+.chip.on{background:var(--ink);color:var(--on-ink);font-weight:700}
+.chip.tag{height:28px;padding-inline:11px;font-size:12px;background:transparent;border:1px solid var(--line);color:var(--muted)}
+.chip.tag.on{border-color:var(--ink);background:var(--ink);color:var(--on-ink)}
+
+/* hero */
+.hero{background:var(--soft)}
+.hero .wrap{display:grid;grid-template-columns:1fr;gap:8px;padding-block:28px 24px;position:relative}
+.hero h1{font-family:var(--display);font-weight:900;font-size:clamp(28px,7.4vw,46px);line-height:1.18;letter-spacing:-.03em}
+.hero .sub{color:var(--muted);font-size:14px;margin-top:8px}
+.hero .quote{font-family:var(--hand);font-size:24px;line-height:1.2;color:var(--muted);margin-top:14px}
+.hero .cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.hero-img{border-radius:var(--r);overflow:hidden;background:var(--paper);max-width:100%;justify-self:center;width:min(320px,100%)}
+.hero-img img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:50% 55%}
+.hero-img{width:100%!important}
+@media (min-width:640px){.hero-img{width:min(280px,100%)!important}.hero-img img{aspect-ratio:126/233}}
+.hero .hand-en{position:absolute;right:16px;bottom:18px;font-family:var(--hand);font-size:20px;line-height:1;transform:rotate(-8deg);color:var(--muted);text-align:right;display:none}
+
+/* category tiles */
+.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.cat{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px}
+.cat .ph{width:100%;aspect-ratio:1;border-radius:var(--r);background:var(--paper);overflow:hidden;display:grid;place-items:center;border:1px solid var(--line)}
+.cat .ph img{width:100%;height:100%;object-fit:cover}
+.cat .ph b{font-family:var(--display);font-size:26px;color:#9a978e}
+
+/* featured */
+.feat{display:grid;grid-template-columns:118px 1fr;gap:16px;align-items:center;background:var(--soft);border-radius:12px;padding:14px}
+.feat .thumb{border-radius:6px;overflow:hidden;background:var(--paper);aspect-ratio:3/4}
+.feat .thumb img{width:100%;height:100%;object-fit:cover;object-position:top}
+.feat h3{font-size:16px;margin-top:6px}
+.feat p{font-size:13px;color:var(--muted);margin-top:4px}
+.feat .price{font-weight:700;font-size:17px;margin-top:10px;font-variant-numeric:tabular-nums}
+
+/* product grid */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 12px}
+.card{display:flex;flex-direction:column;gap:8px;min-width:0;cursor:pointer}
+.card .img{position:relative;aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:var(--paper);border:1px solid var(--line)}
+.card .img img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+.card:hover .img img{transform:scale(1.04)}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:4px;color:#fff;background:var(--badge-best);line-height:1.5}
+.badge.new{background:var(--badge-new)}
+.badge.free{background:var(--ink);color:var(--on-ink)}
+.badge.soon{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.card .img .badge{position:absolute;left:8px;top:8px}
+.card h3{font-size:14.5px;font-weight:700;line-height:1.4}
+.card .desc{font-size:12.5px;color:var(--muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card .price{font-weight:700;font-variant-numeric:tabular-nums}
+.card .tier{font-size:10.5px;letter-spacing:.12em;color:var(--muted);margin-left:6px;font-weight:500}
+.heart{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;color:var(--muted)}
+.heart svg{width:19px;height:19px}
+.heart.on{color:var(--badge-best)}
+.heart.on svg path{fill:currentColor}
+.placeholder{width:100%;height:100%;display:grid;place-items:center;align-content:center;gap:4px;text-align:center}
+.placeholder b{font-family:var(--display);font-weight:900;font-size:44px;color:#c9c6bd;line-height:1}
+.placeholder small{font-size:11px;letter-spacing:.2em;color:#9a978e}
+
+/* library */
+.page-title{padding-block:22px 6px}
+.page-title h1{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.page-title p{color:var(--muted);font-size:14px;margin-top:4px}
+.search{display:flex;align-items:center;gap:8px;height:46px;border:1.5px solid var(--line);border-radius:10px;padding-inline:14px;margin-top:14px;background:var(--bg)}
+.search:focus-within{border-color:var(--fg)}
+.search svg{width:19px;height:19px;color:var(--muted);flex:none}
+.search input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;color:var(--fg)}
+.filters{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.lib-meta{display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px;font-size:13px;color:var(--muted)}
+.sort{display:flex;gap:4px}
+.sort button{padding:4px 8px;border-radius:6px;font-size:13px;color:var(--muted)}
+.sort button.on{color:var(--fg);font-weight:700}
+.empty{padding:48px 0;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--fg);font-size:16px;margin-bottom:6px}
+
+/* detail */
+.d-hero{background:var(--paper);border-radius:12px;overflow:hidden;margin-top:14px}
+.d-hero img{width:100%;display:block;max-height:720px;object-fit:contain}
+.d-hero .placeholder{aspect-ratio:4/3}
+.d-body{display:grid;gap:26px;margin-top:20px}
+.crumb{font-size:13px;color:var(--muted)}
+.d-title{display:flex;align-items:flex-start;gap:10px;margin-top:4px}
+.d-title h1{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.35}
+.d-title .badge{margin-top:5px;flex:none}
+.d-price{font-size:24px;font-weight:700;margin-top:8px;font-variant-numeric:tabular-nums}
+.d-meta{font-size:13px;color:var(--muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px 12px}
+.d-meta span+span::before{content:"|";margin-right:12px;color:var(--line)}
+.checks{list-style:none;padding:0;margin:0;display:grid;gap:9px}
+.checks li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px}
+.checks li::before{content:"";flex:none;width:18px;height:18px;margin-top:2px;border-radius:50%;background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5 9.4l2.6 2.5L13 6.4' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/18px no-repeat}
+.block h2{font-size:16px;font-weight:700;margin-bottom:10px}
+.block p.sm{font-size:13px;color:var(--muted);margin-top:-6px;margin-bottom:10px}
+.pv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pv div{aspect-ratio:1/1;border-radius:6px;overflow:hidden;background:var(--paper);border:1px solid var(--line)}
+.pv img{width:100%;height:100%;object-fit:cover}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.notice{display:flex;gap:10px;font-size:13px;color:var(--muted);background:var(--soft);border-radius:8px;padding:12px 14px}
+.notice i{flex:none;font-style:normal;width:18px;height:18px;border-radius:50%;background:var(--muted);color:var(--bg);font-size:12px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+.d-cta{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:10;display:grid;grid-template-columns:1fr 1.3fr;gap:10px;padding:12px 0;background:var(--bg);border-top:1px solid var(--line);margin-top:8px}
+.back{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--muted);margin-top:16px}
+.back svg{width:16px;height:16px}
+
+/* free + about */
+.free-hero{border:1.5px solid var(--ink);border-radius:12px;padding:20px;display:grid;gap:8px;margin-top:6px}
+.free-hero h2{font-family:var(--display);font-size:22px;font-weight:900}
+.free-hero p{font-size:14px;color:var(--muted)}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}
+.flow span{padding:5px 10px;border-radius:999px;background:var(--soft)}
+.flow em{font-style:normal;color:var(--muted)}
+.brand{padding-block:40px;text-align:center;border-top:1px solid var(--line)}
+.brand .q{font-family:var(--display);font-weight:700;font-size:clamp(20px,5vw,28px);letter-spacing:-.02em}
+.brand p{color:var(--muted);font-size:14px;margin-top:8px}
+.brand .eyebrow{margin-top:18px}
+.about-list{display:grid;gap:14px;margin-top:8px}
+.about-list div{display:grid;grid-template-columns:96px 1fr;gap:12px;padding-block:14px;border-top:1px solid var(--line)}
+.about-list dt{font-weight:700;font-size:14px}
+.about-list dd{margin:0;color:var(--muted);font-size:14px}
+.tiers{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tiers div{border:1px solid var(--line);border-radius:8px;padding:12px}
+.tiers b{font-size:11px;letter-spacing:.16em}
+.tiers p{font-size:13px;color:var(--muted);margin-top:4px}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--on-ink);padding:11px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* tablet / desktop */
+@media (min-width:640px){
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cats{grid-template-columns:repeat(8,1fr)}
+  .hero .wrap{grid-template-columns:1.2fr 1fr;align-items:center}
+  .hero-img{width:min(280px,100%)}
+  .hero .hand-en{display:block}
+}
+@media (min-width:860px){
+  nav.tabs{display:none}
+  .topnav{display:flex}
+  main{padding-bottom:40px}
+  .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .d-wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:36px;align-items:start}
+  .d-hero{position:sticky;top:80px}
+  .d-cta{bottom:0}
+  .toast{bottom:28px}
+  .hero .wrap{padding-block:48px 40px}
+  .feat{grid-template-columns:160px 1fr;padding:18px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="beta"><b>BETA</b> · 결제 없이 무료 자료와 미리보기만 운영 중이에요</div>
+
+<header class="top">
+  <div class="wrap">
+    <a href="#home" class="logo" aria-label="미.술집 홈">미<span>.</span>술집</a>
+    <nav class="topnav" id="topnav">
+      <a href="#home" data-r="home">홈</a>
+      <a href="#library" data-r="library">자료실</a>
+      <a href="#free" data-r="free">무료자료</a>
+      <a href="#about" data-r="about">ABOUT</a>
+      <a href="#my" data-r="my">찜한 자료</a>
+    </nav>
+    <div class="icons">
+      <a class="icon-btn" href="#library" id="searchBtn" aria-label="자료 검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></a>
+      <a class="icon-btn" href="#about" aria-label="미.술집 소개"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></a>
+    </div>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<nav class="tabs" id="tabs">
+  <a href="#home" data-r="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20h-5v-5h-6v5H4z"/></svg>홈</a>
+  <a href="#library" data-r="library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></svg>자료실</a>
+  <a href="#free" data-r="free"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>무료자료</a>
+  <a href="#my" data-r="my"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>찜한 자료</a>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const CATS=["과일","음식","음료","동물","생활용품","재질·표현","인체","조합소재"];
+const CAT_IMG={"생활용품":"img/iron/side.jpg","조합소재":"img/corn/45.jpg"};
+
+// 자료 데이터: 드라이브 '미.술집_원본' 분류표 기준 (베타)
+const KEY="주제부 · 확대 · 절단 · 겹침 · 반복 · 리듬 · 대비 · 흐름";
+const ITEMS=[
+ {id:"cherry",title:"체리 × 주전자 조합소재",cat:"조합소재",tier:"MINI",price:4900,cuts:8,badge:"best",order:4,pop:10,
+  img:"img/cherry/board.jpg",thumb:"img/cherry/front.jpg",pv:["img/cherry/front.jpg","img/cherry/45.jpg","img/cherry/side.jpg","img/cherry/top.jpg","img/cherry/detail.jpg","img/cherry/set.jpg"],
+  desc:"금속의 반사와 과일의 생동감이 만난 구조적 오브제",
+  contents:["분석보드: 관찰 참고 · 형태 분석 · 질감과 색상 · 기초디자인 활용 포인트","정면 · 45도 · 측면 · 탑뷰 단독컷","금속 표면 디테일 클로즈업","한눈에 보는 모음컷","핵심 키워드: "+KEY],
+  who:["금속 반사와 수분 표현을 같이 연습하고 싶은 입시생","조합 구성 아이디어가 필요한 기초디자인 수업","곡선 흐름이 있는 화면 구성을 찾는 분"],
+  tags:["조합소재","체리","주전자","금속","반사","수분","빨강","곡선"]},
+ {id:"corn",title:"옥수수 × 아이스크림스쿱 조합소재",cat:"조합소재",tier:"MINI",price:4900,cuts:8,badge:"new",order:3,pop:9,
+  img:"img/corn/board.jpg",thumb:"img/corn/45.jpg",pv:["img/corn/45.jpg","img/corn/top.jpg","img/corn/side.jpg","img/corn/end.jpg","img/corn/detail.jpg","img/corn/set.jpg"],
+  desc:"유기적 형태와 금속 재질의 대비",
+  contents:["분석보드: 소재 관찰 · 형태 분석과 구성 · 재질과 색상 · 화면 구성 활용","45도 · 탑뷰 · 측면 단독컷","꼭지 단면, 스쿱 디테일 클로즈업","한눈에 보는 모음컷","핵심 키워드: 주제부 · 확대 · 단면 · 반복 · 리듬 · 대비 · 방향성 · 감싸기"],
+  who:["반복되는 알갱이 질감을 연습하고 싶은 입시생","유기물 × 금속 대비 구성을 찾는 분","단면 표현 레퍼런스가 필요한 분"],
+  tags:["조합소재","옥수수","아이스크림스쿱","금속","반복","노랑","초록","수분"]},
+ {id:"iron",title:"다리미 레퍼런스",cat:"생활용품",tier:"MINI",price:4900,cuts:7,badge:"new",order:2,pop:8,
+  img:"img/iron/board.jpg",thumb:"img/iron/side.jpg",pv:["img/iron/side.jpg","img/iron/front.jpg","img/iron/top.jpg","img/iron/bottom45.jpg","img/iron/detail.jpg","img/iron/set.jpg"],
+  desc:"유선형 실루엣, 강한 반사와 대비",
+  contents:["분석보드: 관찰 참고 · 형태 분석 · 질감과 색상 · 기초디자인 활용 포인트","측면 · 정면 · 탑뷰 · 바닥면 45도 단독컷","빨간 버튼 디테일 클로즈업","한눈에 보는 모음컷","핵심 키워드: "+KEY],
+  who:["크롬 · 금속 광택 표현이 막히는 입시생","유선형 형태를 구도로 쓰고 싶은 분"],
+  tags:["생활용품","다리미","금속","광택","반사","유선형","빨강 포인트"]},
+];
+const won=n=>n===0?"무료":"₩"+n.toLocaleString("ko-KR");
+
+// 찜 (브라우저에만 저장)
+let likes=new Set();
+try{likes=new Set(JSON.parse(localStorage.getItem("mz-likes")||"[]"))}catch(e){}
+function saveLikes(){try{localStorage.setItem("mz-likes",JSON.stringify([...likes]))}catch(e){}}
+
+const state={q:"",cat:"전체",tag:"",sort:"new"};
+const app=document.getElementById("app");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2200)}
+
+const heartSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>';
+function badgeHtml(b){return b==="best"?'<span class="badge">BEST</span>':b==="new"?'<span class="badge new">NEW</span>':b==="free"?'<span class="badge free">FREE</span>':b==="soon"?'<span class="badge soon">준비 중</span>':""}
+function imgHtml(it,big){return it.img?`<img src="${it.thumb&&!big?it.thumb:it.img}" alt="${esc(it.title)} 미리보기 이미지" loading="lazy">`:`<div class="placeholder"><b>${esc(it.ph)}</b><small>COMING SOON</small></div>`}
+function card(it){return `<article class="card" data-go="${it.id}" tabindex="0">
+  <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}</div>
+  <h3>${esc(it.title)}</h3><p class="desc">${esc(it.desc)}</p>
+  <div class="row"><span class="price">${won(it.price)}${it.price?`<span class="tier">${it.tier}</span>`:""}</span>
+  <button class="heart ${likes.has(it.id)?"on":""}" data-like="${it.id}" aria-label="찜하기" aria-pressed="${likes.has(it.id)}">${heartSvg}</button></div></article>`}
+
+function vHome(){
+  const best=ITEMS.find(i=>i.id==="cherry");
+  const fresh=ITEMS.filter(i=>i.price>0).sort((a,b)=>b.order-a.order).slice(0,4);
+  const free=ITEMS.filter(i=>i.price===0).slice(0,4);
+  return `<section class="hero"><div class="wrap">
+    <div>
+      <p class="eyebrow">Digital Art Reference for Creators</p>
+      <h1 style="margin-top:10px">그림 그리는<br>사람들의 소재창고</h1>
+      <p class="sub">기초디자인에 바로 쓰는 소재 레퍼런스</p>
+      <p class="quote">“좋은 소재가 좋은 그림을 만든다.”</p>
+      <div class="cta"><a class="btn solid" href="#p-cherry">추천 자료 보기 ›</a><a class="btn line" href="#library">자료 보러가기 ›</a></div>
+    </div>
+    <div class="hero-img"><img src="img/cherry/front.jpg" alt="체리와 은색 주전자를 조합한 소재 이미지"></div>
+    <p class="hand-en">Good Reference<br>Better Drawing</p>
+  </div></section>
+  <div class="wrap">
+    <section class="sec">
+      <div class="sec-head"><h2>다양한 소재를 만나보세요</h2></div>
+      <div class="cats">${CATS.filter(c=>ITEMS.some(i=>i.cat===c)).map(c=>`<a class="cat" href="#library" data-cat="${c}"><span class="ph">${CAT_IMG[c]?`<img src="${CAT_IMG[c]}" alt="" loading="lazy">`:`<b>${c[0]}</b>`}</span>${c}</a>`).join("")}<a class="cat" href="#free"><span class="ph"><b>F</b></span>무료자료</a></div>
+    </section>
+    <section class="sec" style="padding-top:4px">
+      <div class="sec-head"><h2>이달의 추천 자료</h2><a class="more" href="#library">전체보기 ›</a></div>
+      <a class="feat" href="#p-${best.id}"><span class="thumb"><img src="${best.img}" alt=""></span>
+        <span><span class="badge">BEST</span><h3>${best.title}</h3><p>${best.desc}</p><p class="price">${won(best.price)}</p></span></a>
+    </section>
+    <section class="sec">
+      <div class="sec-head"><h2>신규 자료</h2><a class="more" href="#library">전체보기 ›</a></div>
+      <div class="grid">${fresh.map(card).join("")}</div>
+    </section>
+    ${free.length?`<section class="sec">
+      <div class="sec-head"><h2>무료 미리보기</h2><a class="more" href="#free">전체보기 ›</a></div>
+      <div class="grid">${free.map(card).join("")}</div>
+    </section>`:""}
+  </div>
+  ${brand()}`;
+}
+function brand(){return `<section class="brand"><div class="wrap">
+  <p class="q">“ 좋은 소재가 좋은 그림을 만듭니다. ”</p>
+  <p>미.술집은 늘, 그림 그리는 당신을 응원합니다.</p>
+  <p class="eyebrow">Mi.Sulzip · Sketch · Explore · Create</p></div></section>`}
+
+function filtered(){
+  const q=state.q.trim().toLowerCase();
+  let list=ITEMS.filter(it=>(state.cat==="전체"||it.cat===state.cat)&&(!state.tag||it.tags.includes(state.tag))&&
+    (!q||(it.title+" "+it.desc+" "+it.tags.join(" ")+" "+it.cat).toLowerCase().includes(q)));
+  return list.sort((a,b)=>state.sort==="pop"?b.pop-a.pop:b.order-a.order);
+}
+function tagPool(){const s=new Set();ITEMS.filter(i=>state.cat==="전체"||i.cat===state.cat).forEach(i=>i.tags.slice(1,5).forEach(t=>s.add(t)));return [...s].slice(0,14)}
+function vLibrary(){
+  return `<div class="wrap"><div class="page-title"><h1>자료실</h1><p>원하는 소재를 찾아, 더 좋은 그림을 그려보세요.</p>
+    <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="소재 검색 (예: 금속, 반사, 체리)" value="${esc(state.q)}" autocomplete="off"></label>
+    <div class="filters">
+      <div class="chips" id="catChips">${["전체",...CATS].map(c=>`<button class="chip ${state.cat===c?"on":""}" data-setcat="${c}">${c}</button>`).join("")}</div>
+      <div class="chips" id="tagChips"></div>
+    </div></div>
+    <div class="lib-meta"><span id="count"></span><div class="sort"><button data-sort="new">최신순</button><button data-sort="pop">인기순</button></div></div>
+    <div class="grid" id="libGrid"></div></div>`;
+}
+function renderLib(){
+  const list=filtered();
+  document.getElementById("count").textContent=`자료 ${list.length}개`;
+  document.getElementById("tagChips").innerHTML=tagPool().map(t=>`<button class="chip tag ${state.tag===t?"on":""}" data-settag="${t}">#${t}</button>`).join("");
+  document.querySelectorAll("[data-sort]").forEach(b=>b.classList.toggle("on",b.dataset.sort===state.sort));
+  document.querySelectorAll("[data-setcat]").forEach(b=>b.classList.toggle("on",b.dataset.setcat===state.cat));
+  document.getElementById("libGrid").innerHTML=list.length?list.map(card).join(""):
+    `<div class="empty" style="grid-column:1/-1"><b>‘${esc(state.q||state.tag)}’에 맞는 자료가 아직 없어요</b>다른 소재로 검색하거나 필터를 지워보세요.</div>`;
+}
+
+function vDetail(it){
+  const rel=ITEMS.filter(i=>i.id!==it.id&&(i.cat===it.cat||i.tags.some(t=>it.tags.includes(t)))).slice(0,4);
+  const pv=it.pv||(it.img?[it.img]:[]);
+  const free=it.price===0, soon=it.badge==="soon";
+  return `<div class="wrap"><a class="back" href="#library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>자료실로</a>
+  <div class="d-wrap">
+    <div class="d-hero">${imgHtml(it,true)}</div>
+    <div class="d-body">
+      <div><p class="crumb">${it.cat} ›</p>
+        <div class="d-title"><h1>${esc(it.title)}</h1>${badgeHtml(it.badge)}</div>
+        <p class="d-price">${it.preview?"무료 미리보기":won(it.price)}</p>
+        <p class="d-meta"><span>이미지 ${it.cuts}컷 · 분석보드 포함</span><span>${it.tier}</span><span>${it.preview?"베타 무료 미리보기":"정식 오픈 때 판매"}</span></p></div>
+      <div class="block"><h2>포함 내용</h2><ul class="checks">${it.contents.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
+      ${pv.length?`<div class="block"><h2>미리보기</h2><p class="sm">각도별 단독컷과 모음컷입니다.</p><div class="pv">${pv.map(p=>`<div><img src="${p}" alt="미리보기 페이지" loading="lazy"></div>`).join("")}</div></div>`:""}
+      <div class="block"><h2>이런 분께 추천해요</h2><ul class="checks">${it.who.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
+      <div class="block"><h2>태그</h2><div class="tags">${it.tags.map(t=>`<a class="chip tag" href="#library" data-jumptag="${t}">#${t}</a>`).join("")}</div></div>
+      <div class="notice"><i>!</i><span>개인 학습용으로만 사용 가능합니다. 무단 배포 및 상업적 이용을 금지합니다.</span></div>
+      <div class="d-cta">
+        <button class="btn line" data-like="${it.id}" aria-pressed="${likes.has(it.id)}">${likes.has(it.id)?"찜 해제":"찜하기"}</button>
+        ${free?`<button class="btn solid" data-dl="${it.id}" ${soon?"disabled":""}>${soon?"준비 중이에요":"미리보기 전용"}</button>`
+              :`<button class="btn solid" data-buy="${it.id}">구매하기 · 오픈 예정</button>`}
+      </div>
+    </div>
+  </div>
+  ${rel.length?`<section class="sec"><div class="sec-head"><h2>관련 자료</h2></div><div class="grid">${rel.map(card).join("")}</div></section>`:""}
+  </div>`;
+}
+
+function vFree(){
+  const list=ITEMS.filter(i=>i.price===0);
+  return `<div class="wrap"><div class="page-title"><h1>무료자료</h1><p>베타 기간에 무료로 둘러보는 미리보기 자료</p></div>
+  <div class="free-hero"><p class="eyebrow">How it works</p><h2>먼저 써보고, 마음에 들면 더 깊게</h2>
+    <p>무료 샘플로 소재를 확인하고, 필요한 주제는 전체 자료집으로 이어집니다.</p>
+    <div class="flow"><span>무료 샘플</span><em>→</em><span>MINI 자료집</span><em>→</em><span>묶음 컬렉션</span><em>→</em><span>PASS 구독</span></div></div>
+  <section class="sec">${list.length?`<div class="grid">${list.map(card).join("")}</div>`:`<div class="empty"><b>무료 자료를 준비하고 있어요</b>첫 무료 샘플이 곧 올라와요. 지금은 자료실에서 미리보기를 둘러보세요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료실 둘러보기</a></div></div>`}</section></div>`;
+}
+
+function vMy(){
+  const list=ITEMS.filter(i=>likes.has(i.id));
+  return `<div class="wrap"><div class="page-title"><h1>찜한 자료</h1><p>하트를 누른 자료가 여기에 모여요. 이 기기에서만 보관됩니다.</p></div>
+  <section class="sec">${list.length?`<div class="grid">${list.map(card).join("")}</div>`:
+  `<div class="empty"><b>아직 찜한 자료가 없어요</b>자료 카드의 하트를 눌러 저장해 보세요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료 둘러보기</a></div></div>`}</section></div>`;
+}
+
+function vAbout(){
+  return `<div class="wrap"><div class="page-title"><p class="eyebrow">About</p><h1 style="font-family:var(--display);font-weight:900;font-size:30px;margin-top:6px">미.술집</h1>
+  <p>그림 그리는 사람들의 소재창고, Reference Library</p></div>
+  <dl class="about-list">
+    <div><dt>무엇을</dt><dd>과일 · 음식 · 음료 · 동물 · 생활용품 · 재질 · 인체까지, 드로잉에 바로 쓰는 소재를 각도 · 구조 · 색으로 정리한 PDF 레퍼런스</dd></div>
+    <div><dt>누구에게</dt><dd>소재가 막히는 미술 입시생, 일러스트레이터, 그림을 가르치는 선생님</dd></div>
+    <div><dt>어떻게</dt><dd>Instagram과 Pinterest에서 소재를 보고, 미.술집에서 검색 · 저장 · 다운로드</dd></div>
+    <div><dt>이용 범위</dt><dd>개인 학습용. 무단 배포와 상업적 이용은 금지합니다.</dd></div>
+  </dl>
+  <section class="sec"><div class="sec-head"><h2>자료 등급</h2></div>
+  <div class="tiers">
+    <div><b>FREE</b><p>샘플 · 회원가입 없음</p></div>
+    <div><b>MINI</b><p>한 주제 10~25p</p></div>
+    <div><b>STANDARD</b><p>각도 · 구조 · 색 전체</p></div>
+    <div><b>COLLECTION</b><p>같은 계열 묶음</p></div>
+    <div><b>BUNDLE</b><p>카테고리 세트</p></div>
+    <div><b>PASS</b><p>전체 자료실 구독 (예정)</p></div>
+  </div></section></div>${brand()}`;
+}
+
+function route(){
+  const h=(location.hash||"#home").slice(1);
+  let r=h, html;
+  if(h.startsWith("p-")){const it=ITEMS.find(i=>"p-"+i.id===h);html=it?vDetail(it):vLibrary();r="library"}
+  else if(h==="library")html=vLibrary();
+  else if(h==="free")html=vFree();
+  else if(h==="my")html=vMy();
+  else if(h==="about")html=vAbout();
+  else {html=vHome();r="home"}
+  app.innerHTML=html;
+  document.querySelectorAll("[data-r]").forEach(a=>a.classList.toggle("on",a.dataset.r===r));
+  if(h==="library")renderLib();
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange",route);
+
+app.addEventListener("click",e=>{
+  const like=e.target.closest("[data-like]");
+  if(like){e.preventDefault();e.stopPropagation();const id=like.dataset.like;
+    likes.has(id)?likes.delete(id):likes.add(id);saveLikes();
+    toast(likes.has(id)?"찜한 자료에 담았어요":"찜을 해제했어요");
+    if(location.hash==="#my"||location.hash.startsWith("#p-"))route();else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id))}
+    return}
+  const dl=e.target.closest("[data-dl]");if(dl){toast("베타 기간에는 화면 미리보기만 제공해요");return}
+  const buy=e.target.closest("[data-buy]");if(buy){toast("유료 자료는 정식 오픈 때 판매를 시작해요");return}
+  const c=e.target.closest("[data-cat]");if(c){state.cat=c.dataset.cat;state.tag="";state.q="";}
+  const jt=e.target.closest("[data-jumptag]");if(jt){state.tag=jt.dataset.jumptag;state.cat="전체";state.q="";}
+  const sc=e.target.closest("[data-setcat]");if(sc){state.cat=sc.dataset.setcat;state.tag="";renderLib();return}
+  const st=e.target.closest("[data-settag]");if(st){state.tag=state.tag===st.dataset.settag?"":st.dataset.settag;renderLib();return}
+  const so=e.target.closest("[data-sort]");if(so){state.sort=so.dataset.sort;renderLib();return}
+  const go=e.target.closest("[data-go]");if(go){location.hash="p-"+go.dataset.go}
+});
+app.addEventListener("keydown",e=>{const go=e.target.closest&&e.target.closest("[data-go]");if(go&&e.key==="Enter"&&e.target===go)location.hash="p-"+go.dataset.go});
+app.addEventListener("input",e=>{if(e.target.id==="q"){state.q=e.target.value;renderLib()}});
+document.getElementById("searchBtn").addEventListener("click",()=>{setTimeout(()=>{const q=document.getElementById("q");q&&q.focus()},50)});
+route();
+</script>
+
+</body>
+</html>
