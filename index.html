@@ -219,9 +219,15 @@ main{padding-bottom:96px}
 @media (min-width:640px){.packs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (min-width:860px){.packs{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
-/* 미리보기 이미지 저장 방지 (길게 누르기 · 우클릭 · 드래그) */
-.d-hero,.pv,.feat .thumb{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-.d-hero img,.pv img,.feat .thumb img{pointer-events:none;-webkit-user-drag:none;user-drag:none}
+
+/* freebie */
+.freebie{display:grid;gap:18px;margin-top:8px}
+.freebie-img{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.freebie-img img{display:block;width:100%;height:auto}
+.freebie-body{display:grid;gap:14px;align-content:start}
+.dl-btn{height:54px;font-size:16px;width:100%}
+.dl-top{display:grid;gap:6px;margin:4px 0 14px;max-width:520px}
+@media (min-width:860px){.freebie{grid-template-columns:1.1fr 1fr;gap:32px}}
 /* toast */
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--on-ink);padding:11px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -387,6 +393,34 @@ function vPack(pk){
   <section class="sec"><div class="grid">${list.map(card).join("")}</div></section>
   <section class="sec"><div class="sec-head"><h2>다른 테마 팩</h2></div><div class="packs">${PACKS.filter(x=>x.id!==pk.id).map(packCard).join("")}</div></section></div>`;
 }
+
+// 무료 다운로드 (인스타 DM 링크용: #free-<id>)
+const FREEBIES=[
+ {id:"balloondog",item:"balloondog",pack:"chrome",file:"free/misulzip_metal-balloon-dog.jpg",title:"메탈 풍선 강아지 · 각도별 모음컷",
+  desc:"정면 · 측면 · 3/4 · 상단 · 후면 · 디테일을 한 장에 모은 원본이에요. 워터마크 없는 고해상도 파일입니다.",
+  tips:["크롬은 '주변이 비친 그림'이에요. 하이라이트보다 반사된 어두운 띠를 먼저 잡아보세요.","풍선 이음매(마디)마다 하이라이트가 끊겨요. 덩어리를 구 여러 개로 나눠서 보세요.","바닥에 비친 파란 반사광까지 그리면 금속감이 확 살아나요."]},
+];
+function vFreebie(f){
+  const it=byId(f.item), pk=PACKS.find(x=>x.id===f.pack);
+  const others=pk?pk.items.filter(id=>id!==f.item).map(byId).filter(Boolean).slice(0,6):[];
+  const liked=pk&&likes.has("pack:"+pk.id);
+  return `<div class="wrap"><div class="page-title"><p class="eyebrow">Free Download · 미.술집</p><h1 style="margin-top:6px">${esc(f.title)}</h1><p>${esc(f.desc)}</p></div>
+  <div class="dl-top"><a class="btn solid dl-btn" href="${f.file}" download>⬇ 무료 원본 받기</a>
+  <p class="cta-note">아이폰은 아래 이미지를 길게 눌러 '사진에 저장'을 눌러주세요.</p></div>
+  <div class="freebie">
+    <div class="freebie-img"><img src="${f.file}" alt="${esc(f.title)}"></div>
+    <div class="freebie-body">
+      <div class="block"><h2>그릴 때 포인트</h2><ul class="checks">${f.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>
+      <div class="notice"><i>!</i><span>개인 학습용으로 자유롭게 쓰세요. 재배포와 상업적 이용은 안 돼요.</span></div>
+    </div>
+  </div>
+  ${pk?`<section class="sec"><div class="sec-head"><h2>${pk.no} ${esc(pk.name)}의 다른 소재</h2><a class="more" href="#pk-${pk.id}">팩 전체 보기 ›</a></div>
+    <div class="grid">${others.map(card).join("")}</div>
+    <div class="d-cta" style="position:static;border:0;margin-top:18px">
+      <button class="btn ${liked?"line":"solid"}" data-like="pack:${pk.id}" aria-pressed="${liked}">${liked?"이 팩 찜했어요 ✓":"♡ 이 팩 원본도 받고 싶어요"}</button>
+      <p class="cta-note">찜이 많이 모인 팩부터 원본 전체를 먼저 공개해요.</p></div></section>`:""}
+  </div>`;
+}
 const won=n=>n===0?"무료":"₩"+n.toLocaleString("ko-KR");
 
 // 찜 (브라우저에만 저장)
@@ -511,12 +545,11 @@ function vDetail(it){
 }
 
 function vFree(){
-  const list=ITEMS.filter(i=>i.price===0);
-  return `<div class="wrap"><div class="page-title"><h1>무료자료</h1><p>베타 기간에 무료로 둘러보는 미리보기 자료</p></div>
+  return `<div class="wrap"><div class="page-title"><h1>무료자료</h1><p>워터마크 없이 바로 받는 미.술집 무료 원본</p></div>
   <div class="free-hero"><p class="eyebrow">How it works</p><h2>먼저 써보고, 마음에 들면 더 깊게</h2>
-    <p>무료 샘플로 소재를 확인하고, 필요한 주제는 전체 자료집으로 이어집니다.</p>
-    <div class="flow"><span>무료 미리보기</span><em>→</em><span>테마 묶음 팩</span><em>→</em><span>PASS 구독</span></div></div>
-  <section class="sec">${list.length?`<div class="grid">${list.map(card).join("")}</div>`:`<div class="empty"><b>무료 자료를 준비하고 있어요</b>첫 무료 샘플이 곧 올라와요. 지금은 자료실에서 미리보기를 둘러보세요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료실 둘러보기</a></div></div>`}</section></div>`;
+    <p>무료 원본으로 소재를 써보고, 필요한 주제는 테마 팩으로 이어집니다.</p>
+    <div class="flow"><span>무료 원본</span><em>→</em><span>테마 묶음 팩</span><em>→</em><span>PASS 구독</span></div></div>
+  <section class="sec"><div class="grid">${FREEBIES.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${byId(f.item)?.thumb||f.file}" alt="" loading="lazy"><span class="badge free">FREE</span></div><h3>${esc(f.title)}</h3><p class="desc">${esc(f.desc)}</p><div class="row"><span class="status">무료 원본 받기 ›</span></div></a>`).join("")}</div></section></div>`;
 }
 
 function vMy(){
@@ -547,7 +580,8 @@ function vAbout(){
 function route(){
   const h=(location.hash||"#home").slice(1);
   let r=h, html;
-  if(h.startsWith("pk-")){const pk=PACKS.find(x=>"pk-"+x.id===h);html=pk?vPack(pk):vHome();r="home"}
+  if(h.startsWith("free-")){const f=FREEBIES.find(x=>"free-"+x.id===h);html=f?vFreebie(f):vFree();r="free"}
+  else if(h.startsWith("pk-")){const pk=PACKS.find(x=>"pk-"+x.id===h);html=pk?vPack(pk):vHome();r="home"}
   else if(h.startsWith("p-")){const it=ITEMS.find(i=>"p-"+i.id===h);html=it?vDetail(it):vLibrary();r="library"}
   else if(h==="library")html=vLibrary();
   else if(h==="free")html=vFree();
@@ -560,8 +594,6 @@ function route(){
   window.scrollTo(0,0);
 }
 window.addEventListener("hashchange",route);
-// 미리보기 영역: 컨텍스트 메뉴 · 드래그 차단
-["contextmenu","dragstart"].forEach(ev=>app.addEventListener(ev,e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()}));
 
 
 app.addEventListener("contextmenu",e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()});
@@ -571,7 +603,7 @@ app.addEventListener("click",e=>{
   if(like){e.preventDefault();e.stopPropagation();const id=like.dataset.like;
     likes.has(id)?likes.delete(id):likes.add(id);saveLikes();
     toast(likes.has(id)?(id.startsWith("pack:")?"이 팩을 찜했어요":"찜한 자료에 담았어요"):"찜을 해제했어요");
-    if(location.hash==="#my"||location.hash.startsWith("#p")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id))}
+    if(location.hash==="#my"||location.hash.startsWith("#p")||location.hash.startsWith("#free-")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id))}
     return}
   const dl=e.target.closest("[data-dl]");if(dl){toast("베타 기간에는 화면 미리보기만 제공해요");return}
   const buy=e.target.closest("[data-buy]");if(buy){toast("유료 자료는 정식 오픈 때 판매를 시작해요");return}
