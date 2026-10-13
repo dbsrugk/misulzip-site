@@ -413,7 +413,7 @@ function vFreebie(f){
   const others=pk?pk.items.filter(id=>id!==f.item).map(byId).filter(Boolean).slice(0,6):[];
   const liked=pk&&likes.has("pack:"+pk.id);
   return `<div class="wrap"><div class="page-title"><p class="eyebrow">Free Download · 미.술집</p><h1 style="margin-top:6px">${esc(f.title)}</h1><p>${esc(f.desc)}</p></div>
-  <div class="dl-top"><a class="btn solid dl-btn" href="${f.file}?dl=1" download="${f.file.split("/").pop()}" data-dl="${f.file}">⬇ 무료 원본 받기</a>
+  <div class="dl-top"><a class="btn solid dl-btn" href="${f.file}?dl=1" download="${f.file.split("/").pop()}" data-freedl="${f.file}">⬇ 무료 원본 받기</a>
   <p class="cta-note">아이폰은 아래 이미지를 길게 눌러 '사진에 저장'을 눌러주세요.</p></div>
   <div class="freebie">
     <div class="freebie-img"><img src="${f.file}" alt="${esc(f.title)}"></div>
@@ -608,8 +608,8 @@ window.addEventListener("hashchange",route);
 app.addEventListener("contextmenu",e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()});
 app.addEventListener("dragstart",e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()});
 app.addEventListener("click",e=>{
-  const dl=e.target.closest("[data-dl]");
-  if(dl){e.preventDefault();const f=dl.dataset.dl;
+  const dlBtn=e.target.closest("[data-freedl]");
+  if(dlBtn){e.preventDefault();const f=dlBtn.dataset.freedl;
     fetch(f+"?t="+Date.now()).then(r=>r.blob()).then(bl=>{const u=URL.createObjectURL(bl),x=document.createElement("a");x.href=u;x.download=f.split("/").pop();document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("원본을 저장했어요")}).catch(()=>{location.href=f+"?dl="+Date.now()});
     return}
   const like=e.target.closest("[data-like]");
