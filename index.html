@@ -522,7 +522,7 @@ function badgeHtml(b){return b==="best"?'<span class="badge">BEST</span>':b==="n
 function imgHtml(it,big){return it.img?`<img src="${it.thumb&&!big?it.thumb:it.img}" alt="${esc(it.title)} 미리보기 이미지" loading="lazy">`:`<div class="placeholder"><b>${esc(it.ph)}</b><small>COMING SOON</small></div>`}
 function card(it){const t=it.title.replace(/ 레퍼런스$/,""), liked=likes.has(it.id);return `<article class="card" data-go="${it.id}" tabindex="0">
   <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}<span class="cat-pill">${esc(it.cat)}</span></div>
-  <div class="ttl"><h3>${esc(t)}</h3><b class="pr">990원</b></div><p class="desc">${esc(it.desc)}</p>
+  <div class="ttl"><h3>${esc(t)}</h3><b class="pr">₩ 990</b></div><p class="desc">${esc(it.desc)}</p>
   <div class="btns"><button class="b-light ${liked?"on":""}" data-like="${it.id}" aria-pressed="${liked}">${liked?"♥ 찜함":"♡ 찜하기"}</button><button class="b-dark" data-redeem="${it.id}">원본 받기</button></div></article>`}
 
 function vHome(){
