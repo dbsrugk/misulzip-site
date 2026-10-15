@@ -267,6 +267,19 @@ main{padding-bottom:96px}
   .feat{grid-template-columns:160px 1fr;padding:18px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* 가운데 정렬 (헤더 로고 제외) */
+#app{text-align:center}
+#app .hero .cta,#app .cta{justify-content:center}
+#app .hero .wrap>div{display:flex;flex-direction:column;align-items:center}
+#app .sec-head{flex-direction:column;align-items:center;justify-content:center;gap:4px}
+#app .chips,#app .cats,#app .filters,#app .tags,#app .lib-meta,#app .sort,#app .d-meta,#app .d-title,#app .flow{justify-content:safe center}
+#app .lib-meta{gap:16px}
+#app .card .row{justify-content:center}
+#app .checks li,#app .notice{justify-content:center;text-align:left}
+#app .checks{justify-items:center}
+#app .search input{text-align:left}
+#app .back{display:inline-flex}
 </style>
 </head>
 <body>
