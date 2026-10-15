@@ -231,6 +231,14 @@ main{padding-bottom:96px}
 /* toast */
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--on-ink);padding:11px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.rd-back{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.rd{background:var(--bg);color:var(--fg);width:100%;max-width:440px;border-radius:16px 16px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));display:grid;gap:12px;max-height:90vh;overflow:auto}
+@media(min-width:700px){.rd-back{align-items:center}.rd{border-radius:16px}}
+.rd h3{margin:0;font-size:17px}.rd p{margin:0;font-size:13px;color:var(--muted,#777)}
+.rd input{height:46px;border:1.5px solid var(--ink);border-radius:8px;padding:0 12px;font-size:15px;background:transparent;color:var(--fg)}
+.rd .msg{font-size:13px;font-weight:700}.rd .passes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rd .pass{display:grid;gap:2px;padding:10px;border:1.5px solid var(--line,#ddd);border-radius:10px;font-size:13px}.rd .pass b{font-size:15px}
+.rd .pass.hot{border-color:var(--ink)}.rd .x{justify-self:end;background:none;border:0;font-size:22px;color:var(--fg);cursor:pointer}
 
 /* tablet / desktop */
 @media (min-width:640px){
@@ -435,8 +443,8 @@ function vFreebie(f){
   const others=pk?pk.items.filter(id=>id!==f.item).map(byId).filter(Boolean).slice(0,6):[];
   const liked=pk&&likes.has("pack:"+pk.id);
   return `<div class="wrap"><div class="page-title"><p class="eyebrow">Free Download · 미.술집</p><h1 style="margin-top:6px">${esc(f.title)}</h1><p>${esc(f.desc)}</p></div>
-  <div class="dl-top">${f.folder?`<a class="btn solid dl-btn" href="https://drive.google.com/drive/folders/${f.folder}" target="_blank" rel="noopener">⬇ 개별컷 + 분석보드 원본 받기 (구글 드라이브)</a><p class="cta-note">폴더에서 원하는 사진을 눌러 저장하거나, 오른쪽 위 '모두 다운로드'로 한 번에 받을 수 있어요.</p>`:f.drive?`<a class="btn solid dl-btn" href="https://drive.google.com/uc?export=download&id=${f.drive}" target="_blank" rel="noopener">⬇ 무료 원본 받기 (구글 드라이브)</a>`:`<a class="btn solid dl-btn" href="${f.file}?dl=1" download="${f.file.split("/").pop()}" data-freedl="${f.file}">⬇ 무료 원본 받기</a>`}
-  <p class="cta-note">아이폰은 아래 이미지를 길게 눌러 '사진에 저장'을 눌러주세요.</p></div>
+  <div class="dl-top"><button class="btn solid dl-btn" data-redeem="${f.item}">🎟 무료 체험권으로 원본 받기 (3개 무료)</button>
+  <p class="cta-note">이메일만 넣으면 받는 무료 체험권으로 원하는 소재 3개 원본을 받을 수 있어요.</p></div>
   <div class="freebie">
     <div class="freebie-img"><img src="${f.file}" alt="${esc(f.title)}"></div>
     <div class="freebie-body">
@@ -556,7 +564,7 @@ function vDetail(it){
     <div class="d-body">
       <div><p class="crumb">${it.cat} ›</p>
         <div class="d-title"><h1>${esc(it.title)}</h1>${badgeHtml(it.badge)}</div>
-        <p class="d-price">베타 미리보기</p>
+        <p class="d-price">원본 1개 990원 · 처음이면 무료 3개</p>
         <p class="d-meta"><span>${it.cuts?`이미지 ${it.cuts}컷 · 분석보드 포함`:"분석보드 + 각도별 모음컷"}</span><span>찜이 많은 소재부터 먼저 공개</span></p></div>
       <div class="block"><h2>포함 내용</h2><ul class="checks">${it.contents.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
       ${pv.length?`<div class="block"><h2>미리보기</h2><p class="sm">${it.cuts?"각도별 단독컷과 모음컷입니다.":"정면 · 측면 · 후면 · 상단 · 디테일을 한 장에 모은 컷입니다."}</p><div class="pv${pv.length<3?" wide":""}">${pv.map(p=>`<div><img src="${p}" alt="미리보기 페이지" loading="lazy"></div>`).join("")}</div></div>`:""}
@@ -565,7 +573,7 @@ function vDetail(it){
       <div class="block"><h2>태그</h2><div class="tags">${it.tags.map(t=>`<a class="chip tag" href="#library" data-jumptag="${t}">#${t}</a>`).join("")}</div></div>
       <div class="notice"><i>!</i><span>개인 학습용으로만 사용 가능합니다. 무단 배포 및 상업적 이용을 금지합니다.</span></div>
       <div class="d-cta">
-        ${FREEBIES.find(f=>f.item===it.id)?`<a class="btn solid dl-btn" href="#free-${FREEBIES.find(f=>f.item===it.id).id}" style="margin-bottom:10px">⬇ 무료 원본 받기</a>`:""}
+        <button class="btn solid dl-btn" data-redeem="${it.id}" style="margin-bottom:10px">🎟 이용권으로 원본 받기</button>
         <button class="btn ${likes.has(it.id)?"line":"solid"}" data-like="${it.id}" aria-pressed="${likes.has(it.id)}">${likes.has(it.id)?"찜했어요 ✓ (다시 누르면 해제)":"♡ 이 소재 찜하기"}</button>
         <p class="cta-note">찜이 많이 모인 소재부터 원본 자료로 먼저 공개할게요.</p>
       </div>
@@ -577,9 +585,10 @@ function vDetail(it){
 
 function vFree(){
   return `<div class="wrap"><div class="page-title"><h1>무료자료</h1><p>워터마크 없이 바로 받는 미.술집 무료 원본</p></div>
-  <div class="free-hero"><p class="eyebrow">How it works</p><h2>먼저 써보고, 마음에 들면 더 깊게</h2>
-    <p>무료 원본으로 소재를 써보고, 필요한 주제는 테마 팩으로 이어집니다.</p>
-    <div class="flow"><span>무료 원본</span><em>→</em><span>테마 묶음 팩</span><em>→</em><span>PASS 구독</span></div></div>
+  <div class="free-hero"><p class="eyebrow">How it works</p><h2>원하는 소재를 골라 원본 받기</h2>
+    <p>무료 체험권으로 3개를 먼저 받아보고, 더 필요하면 1개 990원부터 이어서 받아요. 소재 페이지의 '이용권으로 원본 받기'를 누르면 돼요.</p>
+    <div class="flow"><span>무료 체험 3개</span><em>→</em><span>1개 990원</span><em>→</em><span>5개·10개 묶음</span></div>
+    <div style="margin-top:6px">${passList()}</div></div>
   <section class="sec"><div class="grid">${FREEBIES.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${byId(f.item)?.thumb||f.file}" alt="" loading="lazy"><span class="badge free">FREE</span></div><h3>${esc(f.title)}</h3><p class="desc">${esc(f.desc)}</p><div class="row"><span class="status">무료 원본 받기 ›</span></div></a>`).join("")}</div></section></div>`;
 }
 
@@ -608,6 +617,42 @@ function vAbout(){
   </div></section></div>${brand()}`;
 }
 
+
+// ===== 이용권(Lemon Squeezy 라이선스 키) =====
+const PASS_BUY={free:"",one:"",five:"",ten:""}; // Lemon Squeezy 결제 링크 (상품 공개 후 입력)
+const PASSES=[["free","무료 체험권","0원","소재 3개"],["one","1개권","990원","소재 1개"],["five","5개권","3,900원","소재 5개 · 개당 780원"],["ten","10개권","6,900원","소재 10개 · 개당 690원"]];
+const RD_KEY="mz_pass", RD_USED="mz_used";
+const rdGet=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+const rdSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+function passList(){return `<div class="passes">${PASSES.map(([id,n,p,d])=>{const u=PASS_BUY[id];return `<a class="pass${id==="free"?" hot":""}" ${u?`href="${u}" target="_blank" rel="noopener"`:`href="#" data-soon="1"`}><span>${n}</span><b>${p}</b><span>${d}</span></a>`}).join("")}</div>`}
+function openRedeem(item){
+  const it=byId(item); const used=rdGet(RD_USED,{});
+  const back=document.createElement("div"); back.className="rd-back";
+  back.innerHTML=`<div class="rd" role="dialog" aria-modal="true"><button class="x" aria-label="닫기">×</button>
+   <h3>${esc(it?it.title:"원본")} 원본 받기</h3>
+   <p>이용권 코드를 넣으면 분석보드 · 개별컷 원본(워터마크 없음) 폴더가 열려요. 소재 하나에 1회가 차감돼요.</p>
+   <input id="rdKey" placeholder="이용권 코드 (예: XXXXXXXX-XXXX-...)" autocomplete="off" value="${esc(rdGet(RD_KEY,""))}">
+   <button class="btn solid" id="rdGo">원본 폴더 열기</button><div class="msg" id="rdMsg"></div>
+   <p style="margin-top:6px"><b>아직 코드가 없다면</b> · 처음이면 무료 체험권으로 소재 3개를 받아보세요.</p>${passList()}</div>`;
+  document.body.appendChild(back);
+  const close=()=>back.remove();
+  back.addEventListener("click",e=>{if(e.target===back||e.target.closest(".x"))close();const s=e.target.closest("[data-soon]");if(s){e.preventDefault();toast("이용권 판매를 곧 시작해요")}});
+  const msg=back.querySelector("#rdMsg"), btn=back.querySelector("#rdGo"), inp=back.querySelector("#rdKey");
+  btn.addEventListener("click",async()=>{
+    const key=inp.value.trim(); if(!key){msg.textContent="이용권 코드를 입력해 주세요";return}
+    const win=window.open("","_blank"); btn.disabled=true; msg.textContent="확인 중이에요…";
+    try{
+      const r=await fetch("/api/redeem",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key,item,instanceId:(used[key]||{})[item]||""})});
+      const d=await r.json();
+      if(r.ok&&d.url){rdSet(RD_KEY,key);used[key]={...(used[key]||{}),[item]:d.instanceId};rdSet(RD_USED,used);
+        if(win)win.location.href=d.url;else location.href=d.url;
+        msg.textContent=d.again?"이미 받은 소재라 횟수는 차감되지 않았어요.":`원본 폴더를 열었어요 · 사용 ${d.usage}/${d.limit}회`;}
+      else{if(win)win.close();msg.textContent=d.error==="used_up"?`이용권을 모두 사용했어요 (${d.usage}/${d.limit}). 아래에서 이용권을 추가해 주세요.`:d.error==="item"?"이 소재는 원본 준비 중이에요.":"코드를 확인할 수 없어요. 다시 확인해 주세요."}
+    }catch{if(win)win.close();msg.textContent="잠시 후 다시 시도해 주세요."}
+    btn.disabled=false;
+  });
+}
+
 function route(){
   const h=(location.hash||"#home").slice(1);
   let r=h, html;
@@ -634,6 +679,7 @@ app.addEventListener("click",e=>{
   if(dlBtn){e.preventDefault();const f=dlBtn.dataset.freedl;
     fetch(f+"?t="+Date.now()).then(r=>r.blob()).then(bl=>{const u=URL.createObjectURL(bl),x=document.createElement("a");x.href=u;x.download=f.split("/").pop();document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("원본을 저장했어요")}).catch(()=>{location.href=f+"?dl="+Date.now()});
     return}
+  const rdm=e.target.closest("[data-redeem]");if(rdm){e.preventDefault();openRedeem(rdm.dataset.redeem);return}
   const like=e.target.closest("[data-like]");
   if(like){e.preventDefault();e.stopPropagation();const id=like.dataset.like;
     likes.has(id)?likes.delete(id):likes.add(id);saveLikes();
