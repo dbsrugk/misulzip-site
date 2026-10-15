@@ -268,18 +268,44 @@ main{padding-bottom:96px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
-/* 가운데 정렬 (헤더 로고 제외) */
-#app{text-align:center}
-#app .hero .cta,#app .cta{justify-content:center}
-#app .hero .wrap>div{display:flex;flex-direction:column;align-items:center}
-#app .sec-head{flex-direction:column;align-items:center;justify-content:center;gap:4px}
-#app .chips,#app .cats,#app .filters,#app .tags,#app .lib-meta,#app .sort,#app .d-meta,#app .d-title,#app .flow{justify-content:safe center}
-#app .lib-meta{gap:16px}
-#app .card .row{justify-content:center}
-#app .checks li,#app .notice{justify-content:center;text-align:left}
-#app .checks{justify-items:center}
-#app .search input{text-align:left}
-#app .back{display:inline-flex}
+/* ===== Reference(Stuffsus) 스타일 ===== */
+.shop-hero{position:relative;height:clamp(190px,34vw,360px);overflow:hidden;background:#d9d8d4}
+.sh-mosaic{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(2,1fr)}
+.sh-mosaic img{width:100%;height:100%;object-fit:cover;display:block}
+.shop-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,20,20,.08),rgba(20,20,20,.32))}
+.sh-word{position:absolute;left:50%;bottom:-.2em;transform:translateX(-50%);z-index:1;font-family:var(--body);font-weight:900;font-size:clamp(84px,21vw,250px);line-height:1;letter-spacing:-.055em;color:#fff;white-space:nowrap;text-shadow:0 2px 30px rgba(0,0,0,.12)}
+.sh-bar{position:relative;z-index:2;margin-top:-20px;background:var(--bg);border-radius:16px 16px 0 0;padding:18px 2px 6px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.sh-bar h1{font-size:clamp(19px,4.6vw,24px);font-weight:800;letter-spacing:-.025em}
+.sh-bar .search{margin-top:0;flex:1 1 240px;max-width:400px;border-radius:999px;height:44px}
+.sh-bar .btn{border-radius:999px;height:44px}
+.card{gap:6px}
+.card .img{border:0;border-radius:14px;background:#f1f0ec}
+.cat-pill{position:absolute;right:8px;top:8px;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.94);color:#2b2b2b;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.card .ttl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:6px}
+.card .ttl h3{min-height:0;-webkit-line-clamp:1;flex:1;min-width:0;font-size:14.5px;font-weight:800}
+.card .pr{font-size:14.5px;font-weight:800;white-space:nowrap}
+.card .desc{-webkit-line-clamp:1;min-height:1.5em;font-size:12px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:auto;padding-top:8px}
+.b-light,.b-dark{height:36px;border-radius:999px;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;white-space:nowrap;font-family:inherit}
+.b-light{background:var(--bg);color:var(--fg);border:1px solid var(--line)}.b-light.on{color:var(--badge-best);border-color:var(--badge-best)}
+.b-dark{background:var(--ink);color:var(--on-ink);border:0}
+.b-full{grid-column:1/-1}
+.lib-wrap{display:block}.side{display:none}
+.side h4{font-size:15px;font-weight:800;margin:4px 0 10px}
+.side button{display:flex;align-items:center;width:100%;padding:9px 12px;border-radius:10px;font-size:13.5px;color:var(--muted);background:none;border:0;cursor:pointer;text-align:left;font-family:inherit}
+.side button.on{background:var(--soft);color:var(--fg);font-weight:700}
+.cta-dark{margin:36px 0 8px;background:#1d1d1c;color:#fff;border-radius:20px;padding:28px 22px;display:grid;gap:14px}
+.cta-dark h2{font-size:clamp(24px,5.2vw,36px);font-weight:800;line-height:1.18;letter-spacing:-.03em}
+.cta-dark p{color:#b9b8b3;font-size:13.5px;line-height:1.7}
+.cta-dark .btn{background:#fff;color:#111;border-color:#fff;border-radius:999px;margin-top:12px;height:44px}
+.foot{border-top:1px solid var(--line);margin-top:36px}
+.foot .cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;padding:28px 0}
+.foot h5{font-size:13px;font-weight:800;margin-bottom:6px}
+.foot a,.foot span{display:block;font-size:13px;color:var(--muted);line-height:2}
+.foot .copy{border-top:1px solid var(--line);padding:14px 0 18px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.free-hero{text-align:center;justify-items:center}
+@media(min-width:760px){.cta-dark{grid-template-columns:1.2fr 1fr;align-items:end;padding:42px}.foot .cols{grid-template-columns:1.6fr 1fr 1fr 1fr}}
+@media(min-width:900px){.lib-wrap{display:grid;grid-template-columns:190px minmax(0,1fr);gap:28px;align-items:start}.side{display:block;position:sticky;top:84px}#catChips{display:none}.lib-wrap .grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -494,28 +520,17 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
 const heartSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>';
 function badgeHtml(b){return b==="best"?'<span class="badge">BEST</span>':b==="new"?'<span class="badge new">NEW</span>':b==="free"?'<span class="badge free">FREE</span>':b==="soon"?'<span class="badge soon">준비 중</span>':""}
 function imgHtml(it,big){return it.img?`<img src="${it.thumb&&!big?it.thumb:it.img}" alt="${esc(it.title)} 미리보기 이미지" loading="lazy">`:`<div class="placeholder"><b>${esc(it.ph)}</b><small>COMING SOON</small></div>`}
-function card(it){return `<article class="card" data-go="${it.id}" tabindex="0">
-  <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}</div>
-  <h3>${esc(it.title)}</h3><p class="desc">${esc(it.desc)}</p>
-  <div class="row"><button class="pbox" data-redeem="${it.id}" aria-label="${esc(it.title)} 원본 받기"><b>990원</b><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>받기</span></button>
-  <button class="heart ${likes.has(it.id)?"on":""}" data-like="${it.id}" aria-label="찜하기" aria-pressed="${likes.has(it.id)}">${heartSvg}</button></div></article>`}
+function card(it){const t=it.title.replace(/ 레퍼런스$/,""), liked=likes.has(it.id);return `<article class="card" data-go="${it.id}" tabindex="0">
+  <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}<span class="cat-pill">${esc(it.cat)}</span></div>
+  <div class="ttl"><h3>${esc(t)}</h3><b class="pr">990원</b></div><p class="desc">${esc(it.desc)}</p>
+  <div class="btns"><button class="b-light ${liked?"on":""}" data-like="${it.id}" aria-pressed="${liked}">${liked?"♥ 찜함":"♡ 찜하기"}</button><button class="b-dark" data-redeem="${it.id}">원본 받기</button></div></article>`}
 
 function vHome(){
   const best=ITEMS.find(i=>i.id==="cherry");
   const fresh=ITEMS.filter(i=>i.price>0).sort((a,b)=>b.order-a.order).slice(0,4);
   const free=ITEMS.filter(i=>i.price===0).slice(0,4);
-  return `<section class="hero"><div class="wrap">
-    <div>
-      <p class="eyebrow">Digital Art Reference for Creators</p>
-      <h1 style="margin-top:10px">그림 그리는<br>사람들의 소재창고</h1>
-      <p class="sub">기초디자인에 바로 쓰는 소재 레퍼런스</p>
-      <p class="quote">“좋은 소재가 좋은 그림을 만든다.”</p>
-      <div class="cta"><a class="btn solid" href="#p-cherry">추천 자료 보기 ›</a><a class="btn line" href="#library">자료 보러가기 ›</a></div>
-    </div>
-    <div class="hero-img"><img src="img/cherry/thumb.jpg" alt="체리와 은색 주전자를 조합한 소재 이미지"></div>
-    <p class="hand-en">Good Reference<br>Better Drawing</p>
-  </div></section>
-  <div class="wrap">
+  return `<section class="shop-hero">${mosaic()}<b class="sh-word">Reference</b></section>
+  <div class="wrap"><div class="sh-bar"><h1>그림 그리는 사람들의 소재창고</h1><a class="btn solid" href="#library">자료 보러가기 ›</a></div>
     <section class="sec">
       <div class="sec-head"><h2>다양한 소재를 만나보세요</h2></div>
       <div class="cats">${CATS.filter(c=>ITEMS.some(i=>i.cat===c)).map(c=>`<a class="cat" href="#library" data-cat="${c}"><span class="ph">${CAT_IMG[c]?`<img src="${CAT_IMG[c]}" alt="" loading="lazy">`:`<b>${c[0]}</b>`}</span>${c}</a>`).join("")}<a class="cat" href="#free"><span class="ph"><b>F</b></span>무료자료</a></div>
@@ -540,10 +555,15 @@ function vHome(){
   </div>
   ${brand()}`;
 }
-function brand(){return `<section class="brand"><div class="wrap">
-  <p class="q">“ 좋은 소재가 좋은 그림을 만듭니다. ”</p>
-  <p>미.술집은 늘, 그림 그리는 당신을 응원합니다.</p>
-  <p class="eyebrow">Mi.Sulzip · Sketch · Explore · Create</p></div></section>`}
+const mosaic=()=>`<div class="sh-mosaic">${ITEMS.filter(i=>i.thumb).slice(-12).map(i=>`<img src="${i.thumb}" alt="" loading="lazy">`).join("")}</div>`;
+function brand(){return `<div class="wrap"><section class="cta-dark"><h2>원하는 소재 3개,<br>무료로 받아보세요</h2>
+  <div><p>이메일만 넣으면 무료 체험권이 와요. 분석보드와 각도별 개별컷 원본을 워터마크 없이 받아보세요.</p><a class="btn" href="#free">무료로 시작하기 ›</a></div></section></div>
+  <footer class="foot"><div class="wrap"><div class="cols">
+    <div><h5>미.술집</h5><span>그림 그리는 사람들의 소재창고</span><span>좋은 소재가 좋은 그림을 만듭니다</span></div>
+    <div><h5>둘러보기</h5><a href="#library">자료실</a><a href="#free">무료자료</a><a href="#my">찜한 자료</a></div>
+    <div><h5>안내</h5><a href="#about">ABOUT</a><span>개인 학습용 · 재배포 금지</span></div>
+    <div><h5>문의</h5><a href="https://www.instagram.com/mi.sulzip/" target="_blank" rel="noopener">Instagram</a><a href="mailto:misulzip@gmail.com">misulzip@gmail.com</a></div>
+  </div><div class="copy"><span>© 2026 미.술집 Mi.Sulzip</span><span>Reference Library</span></div></div></footer>`}
 
 function filtered(){
   const q=state.q.trim().toLowerCase();
@@ -553,15 +573,16 @@ function filtered(){
 }
 function tagPool(){const s=new Set();ITEMS.filter(i=>state.cat==="전체"||i.cat===state.cat).forEach(i=>i.tags.slice(1,5).forEach(t=>s.add(t)));return [...s].slice(0,14)}
 function vLibrary(){
-  return `<div class="wrap"><div class="page-title"><h1>자료실</h1><p>원하는 소재를 찾아, 더 좋은 그림을 그려보세요.</p>
+  return `<section class="shop-hero">${mosaic()}<b class="sh-word">Library</b></section>
+  <div class="wrap"><div class="sh-bar"><h1>원하는 소재를 찾아보세요</h1>
     <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-    <input id="q" type="search" placeholder="소재 검색 (예: 금속, 반사, 체리)" value="${esc(state.q)}" autocomplete="off"></label>
-    <div class="filters">
+    <input id="q" type="search" placeholder="소재 검색 (예: 금속, 반사, 체리)" value="${esc(state.q)}" autocomplete="off"></label></div>
+  <div class="lib-wrap" style="margin-top:14px"><aside class="side"><h4>카테고리</h4>${["전체",...CATS].map(c=>`<button data-setcat="${c}" class="${state.cat===c?"on":""}">${c==="전체"?"전체 소재":c}</button>`).join("")}</aside>
+  <div><div class="filters" style="margin-top:0">
       <div class="chips" id="catChips">${["전체",...CATS].map(c=>`<button class="chip ${state.cat===c?"on":""}" data-setcat="${c}">${c}</button>`).join("")}</div>
-      <div class="chips" id="tagChips"></div>
-    </div></div>
+      <div class="chips" id="tagChips"></div></div>
     <div class="lib-meta"><span id="count"></span><div class="sort"><button data-sort="new">최신순</button><button data-sort="pop">인기순</button></div></div>
-    <div class="grid" id="libGrid"></div></div>`;
+    <div class="grid" id="libGrid"></div></div></div></div>${brand()}`;
 }
 function renderLib(){
   const list=filtered();
@@ -605,7 +626,7 @@ function vDetail(it){
 function vFree(){
   return `<div class="wrap"><div class="page-title"><h1>무료자료</h1><p>워터마크 없이 바로 받는 미.술집 무료 원본</p></div>
   <div class="free-hero" style="text-align:center;justify-items:center"><h2>원하는 소재 원본 받기</h2><p>3개 무료로 받아보세요!</p></div>
-  <section class="sec"><div class="grid">${FREEBIES.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${byId(f.item)?.thumb||f.file}" alt="" loading="lazy"><span class="badge free">FREE</span></div><h3>${esc(f.title)}</h3><p class="desc">${esc(f.desc)}</p><div class="row"><span class="free-go" style="flex:1">무료 원본 받기 ›</span></div></a>`).join("")}</div></section></div>`;
+  <section class="sec"><div class="grid">${FREEBIES.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${byId(f.item)?.thumb||f.file}" alt="" loading="lazy"><span class="badge free">FREE</span></div><div class="ttl"><h3>${esc(f.title)}</h3></div><p class="desc">${esc(f.desc)}</p><div class="btns"><span class="b-dark b-full">무료 원본 받기</span></div></a>`).join("")}</div></section></div>`;
 }
 
 function vMy(){
@@ -700,7 +721,7 @@ app.addEventListener("click",e=>{
   if(like){e.preventDefault();e.stopPropagation();const id=like.dataset.like;
     likes.has(id)?likes.delete(id):likes.add(id);saveLikes();
     toast(likes.has(id)?(id.startsWith("pack:")?"이 팩을 찜했어요":"찜한 자료에 담았어요"):"찜을 해제했어요");
-    if(location.hash==="#my"||location.hash.startsWith("#p")||location.hash.startsWith("#free-")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id))}
+    if(location.hash==="#my"||location.hash.startsWith("#p")||location.hash.startsWith("#free-")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id));if(like.classList.contains("b-light"))like.textContent=likes.has(id)?"♥ 찜함":"♡ 찜하기"}
     return}
   const dl=e.target.closest("[data-dl]");if(dl){toast("베타 기간에는 화면 미리보기만 제공해요");return}
   const buy=e.target.closest("[data-buy]");if(buy){toast("유료 자료는 정식 오픈 때 판매를 시작해요");return}
