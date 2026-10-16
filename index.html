@@ -329,6 +329,31 @@ main{padding-bottom:96px}
 .cta-dark .btn{margin-inline:auto}
 .cta-note{text-align:center}
 @media(min-width:760px){.cta-dark{grid-template-columns:1fr;align-items:center}}
+
+/* 장바구니 */
+.cart-btn{position:relative}.cart-btn b{position:absolute;right:1px;top:1px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--badge-best);color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;line-height:1}
+.heart-ov{position:absolute;right:8px;bottom:8px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.92);color:#333;border:0;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.heart-ov svg{width:17px;height:17px}.heart-ov.on{color:var(--badge-best)}.heart-ov.on svg{fill:currentColor}
+.b-light.on{color:var(--fg);border-color:var(--ink);background:var(--soft)}
+.big{height:50px!important;font-size:14.5px!important}
+.d-free{font-size:13px;color:var(--badge-best);font-weight:700;margin-top:2px}
+.linkish{background:none;border:0;padding:0;font:inherit;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}.linkish.on{color:var(--badge-best)}
+.cart{display:grid;gap:18px;margin-top:10px}
+.c-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.c-list li{display:grid;grid-template-columns:64px 1fr auto 28px;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px}
+.c-list img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:#f1f0ec;display:block}
+.c-n{display:grid;gap:2px;min-width:0}.c-n b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c-n small{font-size:12px;color:var(--muted)}
+.c-p{font-weight:800;font-size:14px;text-align:right;white-space:nowrap}.c-p s{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}
+.c-x{width:28px;height:28px;border-radius:50%;border:0;background:var(--soft);color:var(--muted);font-size:17px;cursor:pointer}
+.c-sum{border:1.5px solid var(--ink);border-radius:16px;padding:18px;display:grid;gap:14px;align-self:start}
+.tier .bar{position:relative;height:8px;border-radius:999px;background:var(--soft);margin:6px 8px 18px}.tier .bar i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--badge-best)}
+.tier .bar em{position:absolute;top:12px;transform:translateX(-50%);font-style:normal;font-size:11px;color:var(--muted);font-weight:700}
+.tier p{font-size:13.5px;font-weight:800;text-align:center}
+.c-sum dl{margin:0;display:grid;gap:6px}.c-sum dl div{display:flex;justify-content:space-between;font-size:14px}.c-sum dt{color:var(--muted)}.c-sum dd{margin:0;font-weight:700}
+.c-sum .disc dd{color:var(--badge-best)}.c-sum .tot{border-top:1px solid var(--line);padding-top:10px;margin-top:4px}.c-sum .tot dt{color:var(--fg);font-weight:800}.c-sum .tot dd{font-size:20px;font-weight:900}
+.free-box{display:grid;gap:4px;justify-items:center;text-align:center;padding:12px;border-radius:12px;background:var(--soft)}.free-box b{font-size:14px}.free-box span{font-size:12.5px;color:var(--muted)}.free-box .b-light{margin-top:6px;padding:0 18px}
+.tiers-mini{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:12.5px;color:var(--muted)}.tiers-mini li{display:flex;justify-content:space-between}.tiers-mini b{color:var(--fg)}
+@media(min-width:860px){.cart{grid-template-columns:minmax(0,1fr) 340px;align-items:start}.c-sum{position:sticky;top:84px}}
 </style>
 </head>
 <body>
@@ -348,6 +373,7 @@ main{padding-bottom:96px}
     </nav>
     <div class="icons">
       <a class="icon-btn" href="#library" id="searchBtn" aria-label="자료 검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></a>
+      <a class="icon-btn cart-btn" href="#cart" aria-label="장바구니"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h14l-1.6 8.5H7.6z"/><path d="M6 7 5.2 4H3"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg><b id="cartN" hidden>0</b></a>
       <a class="icon-btn" href="#about" aria-label="미.술집 소개"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></a>
     </div>
   </div>
@@ -544,9 +570,9 @@ const heartSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 function badgeHtml(b){return b==="best"?'<span class="badge">BEST</span>':b==="new"?'<span class="badge new">NEW</span>':b==="free"?'<span class="badge free">FREE</span>':b==="soon"?'<span class="badge soon">준비 중</span>':""}
 function imgHtml(it,big){return it.img?`<img src="${it.thumb&&!big?it.thumb:it.img}" alt="${esc(it.title)} 미리보기 이미지" loading="lazy">`:`<div class="placeholder"><b>${esc(it.ph)}</b><small>COMING SOON</small></div>`}
 function card(it){const t=it.title.replace(/ 레퍼런스$/,""), liked=likes.has(it.id);return `<article class="card" data-go="${it.id}" tabindex="0">
-  <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}<span class="cat-pill">${esc(it.cat)}</span></div>
+  <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}<span class="cat-pill">${esc(it.cat)}</span><button class="heart-ov ${liked?"on":""}" data-like="${it.id}" aria-label="찜하기" aria-pressed="${liked}">${heartSvg}</button></div>
   <div class="ttl"><h3>${esc(t)}</h3><b class="pr">₩ 990</b></div><p class="desc">${esc(it.desc)}</p>
-  <div class="btns"><button class="b-light ${liked?"on":""}" data-like="${it.id}" aria-pressed="${liked}">${liked?"♥ 찜함":"♡ 찜하기"}</button><button class="b-dark" data-redeem="${it.id}">구매하기</button></div></article>`}
+  <div class="btns">${cartBtn(it.id,"b-light")}<button class="b-dark" data-cart="${it.id}" data-go="1">바로 구매</button></div></article>`}
 
 function vHome(){
   const best=ITEMS.find(i=>i.id==="cherry");
@@ -627,7 +653,7 @@ function vDetail(it){
     <div class="d-body">
       <div><p class="crumb">${it.cat} ›</p>
         <div class="d-title"><h1>${esc(it.title.replace(/ 레퍼런스$/,""))}</h1>${badgeHtml(it.badge)}</div>
-        <p class="d-price">₩ 990</p>
+        <p class="d-price">₩ 990</p><p class="d-free">처음이면 3개까지 무료</p>
         <p class="d-meta"><span>${it.cuts?`분석보드 + 개별컷 ${it.cuts}장 원본`:"분석보드 + 각도별 모음컷 원본"} · 워터마크 없음</span></p></div>
       <div class="block"><h2>포함 내용</h2><ul class="checks">${it.contents.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
       ${pv.length?`<div class="block"><h2>미리보기</h2><p class="sm">${it.cuts?"각도별 단독컷과 모음컷입니다.":"정면 · 측면 · 후면 · 상단 · 디테일을 한 장에 모은 컷입니다."}</p><div class="pv${pv.length<3?" wide":""}">${pv.map(p=>`<div><img src="${p}" alt="미리보기 페이지" loading="lazy"></div>`).join("")}</div></div>`:""}
@@ -636,9 +662,8 @@ function vDetail(it){
       <div class="block"><h2>태그</h2><div class="tags">${it.tags.map(t=>`<a class="chip tag" href="#library" data-jumptag="${t}">#${t}</a>`).join("")}</div></div>
       <div class="notice"><i>!</i><span>개인 학습용으로만 사용 가능합니다. 무단 배포 및 상업적 이용을 금지합니다.</span></div>
       <div class="d-cta"><div class="btns" style="padding-top:0">
-        <button class="b-light ${likes.has(it.id)?"on":""}" style="height:48px;font-size:14px" data-like="${it.id}" aria-pressed="${likes.has(it.id)}">${likes.has(it.id)?"♥ 찜함":"♡ 찜하기"}</button>
-        <button class="b-dark" style="height:48px;font-size:14px" data-redeem="${it.id}">구매하기</button></div>
-        <p class="cta-note">처음이면 3개까지 무료로 받을 수 있어요</p>
+        ${cartBtn(it.id,"b-light big")}<button class="b-dark big" data-cart="${it.id}" data-go="1">바로 구매</button></div>
+        <p class="cta-note"><button class="linkish ${likes.has(it.id)?"on":""}" data-like="${it.id}" aria-pressed="${likes.has(it.id)}">${likes.has(it.id)?"♥ 찜함":"♡ 찜하기"}</button> · <button class="linkish" data-redeem="${it.id}">구매한 코드로 받기</button></p>
       </div>
     </div>
   </div>
@@ -715,6 +740,31 @@ function openRedeem(item,mode){
   });
 }
 
+// ===== 장바구니 =====
+const CART_KEY="mz_cart";
+let cart=rdGet(CART_KEY,[]).filter(id=>byId(id));
+const unitOf=n=>n>=10?690:n>=5?780:990;
+const wonf=n=>"₩ "+n.toLocaleString("ko-KR");
+function saveCart(){rdSet(CART_KEY,cart);const b=document.getElementById("cartN");if(b){b.textContent=cart.length;b.hidden=!cart.length}}
+function addCart(id,go){if(!cart.includes(id)){cart.push(id);saveCart();toast("장바구니에 담았어요")}else if(!go)toast("이미 담겨 있어요");if(go)location.hash="cart";else{const y=scrollY;route();scrollTo(0,y)}}
+function cartBtn(id,cls){const inC=cart.includes(id);return `<button class="${cls} ${inC?"on":""}" data-cart="${id}">${inC?"✓ 담김":"장바구니"}</button>`}
+function vCart(){
+  const n=cart.length, unit=unitOf(n), full=n*990, total=n*unit, next=n<5?5:n<10?10:0;
+  const tip=!n?"":next?`${next-n}개 더 담으면 개당 ${wonf(unitOf(next))}`:"최대 할인 적용 중 (개당 ₩ 690)";
+  const pct=!n?0:Math.min(100,Math.round(n/10*100));
+  return `<div class="wrap"><div class="page-title"><h1>장바구니</h1><p>${n?`소재 ${n}개`:"담은 소재가 없어요"}</p></div>
+  ${n?`<div class="cart">
+   <ul class="c-list">${cart.map(id=>{const it=byId(id);return `<li><a href="#p-${id}"><img src="${it.thumb||it.img}" alt=""></a><span class="c-n"><b>${esc(it.title.replace(/ 레퍼런스$/,""))}</b><small>분석보드 + 개별컷 원본</small></span><span class="c-p">${unit<990?`<s>${wonf(990)}</s>`:""}${wonf(unit)}</span><button class="c-x" data-uncart="${id}" aria-label="빼기">×</button></li>`}).join("")}</ul>
+   <aside class="c-sum">
+    <div class="tier"><div class="bar"><i style="width:${pct}%"></i><em style="left:50%">5</em><em style="left:100%">10</em></div><p>${tip}</p></div>
+    <dl><div><dt>정가</dt><dd>${wonf(full)}</dd></div>${full>total?`<div class="disc"><dt>묶음 할인</dt><dd>− ${wonf(full-total)}</dd></div>`:""}<div class="tot"><dt>합계</dt><dd>${wonf(total)}</dd></div></dl>
+    <button class="b-dark big" data-pay>결제하기</button>
+    <div class="free-box"><b>처음이세요?</b><span>담은 소재 중 3개까지 무료로 받을 수 있어요</span><button class="b-light" data-freeclaim>무료로 3개 받기</button></div>
+    <ul class="tiers-mini"><li><span>1~4개</span><b>개당 ₩ 990</b></li><li><span>5~9개</span><b>개당 ₩ 780</b></li><li><span>10개 이상</span><b>개당 ₩ 690</b></li></ul>
+   </aside></div>`:`<div class="empty"><b>장바구니가 비어 있어요</b>마음에 드는 소재를 담아 보세요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료 둘러보기</a></div></div>`}
+  </div>${brand()}`;
+}
+
 function route(){
   const h=(location.hash||"#home").slice(1);
   let r=h, html;
@@ -724,6 +774,7 @@ function route(){
   else if(h==="library")html=vLibrary();
   else if(h==="free")html=vFree();
   else if(h==="my")html=vMy();
+  else if(h==="cart")html=vCart();
   else if(h==="about")html=vAbout();
   else {html=vHome();r="home"}
   app.innerHTML=html;
@@ -732,6 +783,7 @@ function route(){
   window.scrollTo(0,0);
 }
 window.addEventListener("hashchange",route);
+setTimeout(saveCart,0);
 
 
 app.addEventListener("contextmenu",e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()});
@@ -741,12 +793,16 @@ app.addEventListener("click",e=>{
   if(dlBtn){e.preventDefault();const f=dlBtn.dataset.freedl;
     fetch(f+"?t="+Date.now()).then(r=>r.blob()).then(bl=>{const u=URL.createObjectURL(bl),x=document.createElement("a");x.href=u;x.download=f.split("/").pop();document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("원본을 저장했어요")}).catch(()=>{location.href=f+"?dl="+Date.now()});
     return}
+  const ca=e.target.closest("[data-cart]");if(ca){e.preventDefault();e.stopPropagation();addCart(ca.dataset.cart,ca.dataset.go==="1");return}
+  const uc=e.target.closest("[data-uncart]");if(uc){e.preventDefault();cart=cart.filter(x=>x!==uc.dataset.uncart);saveCart();route();return}
+  if(e.target.closest("[data-pay]")){toast("결제 연결을 준비 중이에요");return}
+  if(e.target.closest("[data-freeclaim]")){toast("무료 받기 연결을 준비 중이에요");return}
   const rdm=e.target.closest("[data-redeem]");if(rdm){e.preventDefault();e.stopPropagation();openRedeem(rdm.dataset.redeem,rdm.dataset.mode);return}
   const like=e.target.closest("[data-like]");
   if(like){e.preventDefault();e.stopPropagation();const id=like.dataset.like;
     likes.has(id)?likes.delete(id):likes.add(id);saveLikes();
     toast(likes.has(id)?(id.startsWith("pack:")?"이 팩을 찜했어요":"찜한 자료에 담았어요"):"찜을 해제했어요");
-    if(location.hash==="#my"||location.hash.startsWith("#p")||location.hash.startsWith("#free-")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id));if(like.classList.contains("b-light"))like.textContent=likes.has(id)?"♥ 찜함":"♡ 찜하기"}
+    if(location.hash==="#my"||location.hash.startsWith("#p")||location.hash.startsWith("#free-")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id));if(like.classList.contains("linkish"))like.textContent=likes.has(id)?"♥ 찜함":"♡ 찜하기"}
     return}
   const dl=e.target.closest("[data-dl]");if(dl){toast("베타 기간에는 화면 미리보기만 제공해요");return}
   const buy=e.target.closest("[data-buy]");if(buy){toast("유료 자료는 정식 오픈 때 판매를 시작해요");return}
