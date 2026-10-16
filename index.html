@@ -357,6 +357,7 @@ main{padding-bottom:96px}
 
 /* 내 구매 */
 .mine{margin-top:10px}.mine li{grid-template-columns:64px 1fr auto}
+.mine-empty{font-size:13.5px;color:var(--muted);text-align:center;padding:14px 0 4px}
 .mine-help{margin-top:22px;padding:20px;border-radius:16px;background:var(--soft);display:grid;gap:6px;justify-items:center;text-align:center}
 .mine-help b{font-size:15px}.mine-help span{font-size:13px;color:var(--muted)}
 .mh-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}.mh-btns>*{padding:0 18px;height:42px}
@@ -375,8 +376,7 @@ main{padding-bottom:96px}
       <a href="#library" data-r="library">자료실</a>
       <a href="#free" data-r="free">무료자료</a>
       <a href="#about" data-r="about">ABOUT</a>
-      <a href="#my" data-r="my">찜한 자료</a>
-      <a href="#mine" data-r="mine">내 구매</a>
+      <a href="#mine" data-r="mine">마이</a>
     </nav>
     <div class="icons">
       <a class="icon-btn" href="#library" id="searchBtn" aria-label="자료 검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></a>
@@ -392,7 +392,7 @@ main{padding-bottom:96px}
   <a href="#home" data-r="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20h-5v-5h-6v5H4z"/></svg>홈</a>
   <a href="#library" data-r="library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></svg>자료실</a>
   <a href="#free" data-r="free"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>무료자료</a>
-  <a href="#my" data-r="my"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>찜한 자료</a>
+  <a href="#mine" data-r="mine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>마이</a>
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -616,7 +616,7 @@ function brand(){return `<div class="wrap"><section class="cta-dark"><h2>원하�
   <div><p>이메일만 넣으면 무료 체험권이 와요. 분석보드와 각도별 개별컷 원본을 워터마크 없이 받아보세요.</p><a class="btn" href="#free">무료로 시작하기 ›</a></div></section></div>
   <footer class="foot"><div class="wrap"><div class="cols">
     <div><h5>미.술집</h5><span>그림 그리는 사람들의 소재창고</span><span>좋은 소재가 좋은 그림을 만듭니다</span></div>
-    <div><h5>둘러보기</h5><a href="#library">자료실</a><a href="#free">무료자료</a><a href="#my">찜한 자료</a><a href="#mine">내 구매</a></div>
+    <div><h5>둘러보기</h5><a href="#library">자료실</a><a href="#free">무료자료</a><a href="#mine">마이 (내 구매·찜)</a></div>
     <div><h5>안내</h5><a href="#about">ABOUT</a><span>개인 학습용 · 재배포 금지</span></div>
     <div><h5>문의</h5><a href="https://www.instagram.com/mi.sulzip/" target="_blank" rel="noopener">Instagram</a><a href="mailto:misulzip@gmail.com">misulzip@gmail.com</a></div>
   </div><div class="copy"><span>© 2026 미.술집 Mi.Sulzip</span><span>Reference Library</span></div></div></footer>`}
@@ -768,7 +768,7 @@ function vCart(){
     <dl><div><dt>정가</dt><dd>${wonf(full)}</dd></div>${full>total?`<div class="disc"><dt>묶음 할인</dt><dd>− ${wonf(full-total)}</dd></div>`:""}<div class="tot"><dt>합계</dt><dd>${wonf(total)}</dd></div></dl>
     <button class="b-dark big" data-pay>결제하기</button>
     <div class="free-box"><b>처음이세요?</b><span>담은 소재 중 3개까지 무료로 받을 수 있어요</span><button class="b-light" data-freeclaim>무료로 3개 받기</button></div>
-    <a class="linkish" style="justify-self:center;font-size:12.5px" href="#mine">이미 구매했어요 → 내 구매</a>
+    <a class="linkish" style="justify-self:center;font-size:12.5px" href="#mine">이미 구매했어요 → 마이</a>
     <ul class="tiers-mini"><li><span>1~4개</span><b>개당 ₩ 990</b></li><li><span>5~9개</span><b>개당 ₩ 780</b></li><li><span>10개 이상</span><b>개당 ₩ 690</b></li></ul>
    </aside></div>`:`<div class="empty"><b>장바구니가 비어 있어요</b>마음에 드는 소재를 담아 보세요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료 둘러보기</a></div></div>`}
   </div>${brand()}`;
@@ -778,8 +778,12 @@ function vCart(){
 const OWN_KEY="mz_owned", ORDERS_URL="https://app.lemonsqueezy.com/my-orders";
 function vMine(){
   const ow=rdGet(OWN_KEY,{}); const ids=Object.keys(ow).filter(id=>byId(id)).sort((a,b)=>ow[b].at-ow[a].at);
-  return `<div class="wrap"><div class="page-title"><h1>내 구매</h1><p>${ids.length?`받은 원본 ${ids.length}개 · 이 기기에 저장돼요`:"아직 받은 원본이 없어요"}</p></div>
-  ${ids.length?`<ul class="c-list mine">${ids.map(id=>{const it=byId(id);return `<li><a href="#p-${id}"><img src="${it.thumb||it.img}" alt=""></a><span class="c-n"><b>${esc(it.title.replace(/ 레퍼런스$/,""))}</b><small>${new Date(ow[id].at).toLocaleDateString("ko-KR")} 받음</small></span><button class="b-dark" style="height:36px;padding:0 14px" data-reopen="${id}">원본 열기</button></li>`}).join("")}</ul>`:`<div class="empty"><b>받은 원본이 여기에 모여요</b>구매하거나 무료로 받은 소재가 이 목록에 남아요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료 둘러보기</a></div></div>`}
+  const liked=ITEMS.filter(i=>likes.has(i.id));
+  return `<div class="wrap"><div class="page-title"><h1>마이</h1><p>이 기기에 저장된 내 구매와 찜 목록이에요</p></div>
+  <section class="sec" style="padding-bottom:0"><div class="sec-head"><h2>내 구매</h2><span class="more">${ids.length?`원본 ${ids.length}개`:""}</span></div>
+  ${ids.length?`<ul class="c-list mine">${ids.map(id=>{const it=byId(id);return `<li><a href="#p-${id}"><img src="${it.thumb||it.img}" alt=""></a><span class="c-n"><b>${esc(it.title.replace(/ 레퍼런스$/,""))}</b><small>${new Date(ow[id].at).toLocaleDateString("ko-KR")} 받음</small></span><button class="b-dark" style="height:36px;padding:0 14px" data-reopen="${id}">원본 열기</button></li>`}).join("")}</ul>`:`<p class="mine-empty">아직 받은 원본이 없어요. 구매하거나 무료로 받은 소재가 여기에 모여요.</p>`}</section>
+  <section class="sec"><div class="sec-head"><h2>찜한 자료</h2><span class="more">${liked.length?`${liked.length}개`:""}</span></div>
+  ${liked.length?`<div class="grid">${liked.map(card).join("")}</div>`:`<p class="mine-empty">하트를 누른 소재가 여기에 모여요. <a href="#library" class="linkish">자료 둘러보기</a></p>`}</section>
   <div class="mine-help"><b>다른 기기에서 샀거나 목록이 비어 있나요?</b>
    <span>구매할 때 쓴 이메일을 넣으면 주문 내역과 원본 코드를 메일로 다시 보내드려요.</span>
    <div class="mh-btns"><a class="b-dark" href="${ORDERS_URL}" target="_blank" rel="noopener">구매 메일 다시 받기</a><button class="b-light" data-redeem="">코드로 원본 받기</button></div></div>
@@ -794,7 +798,7 @@ function route(){
   else if(h.startsWith("p-")){const it=ITEMS.find(i=>"p-"+i.id===h);html=it?vDetail(it):vLibrary();r="library"}
   else if(h==="library")html=vLibrary();
   else if(h==="free")html=vFree();
-  else if(h==="my")html=vMy();
+  else if(h==="my"){html=vMine();r="mine"}
   else if(h==="cart")html=vCart();
   else if(h==="mine")html=vMine();
   else if(h==="about")html=vAbout();
@@ -825,7 +829,7 @@ app.addEventListener("click",e=>{
   if(like){e.preventDefault();e.stopPropagation();const id=like.dataset.like;
     likes.has(id)?likes.delete(id):likes.add(id);saveLikes();
     toast(likes.has(id)?(id.startsWith("pack:")?"이 팩을 찜했어요":"찜한 자료에 담았어요"):"찜을 해제했어요");
-    if(location.hash==="#my"||location.hash.startsWith("#p")||location.hash.startsWith("#free-")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id));if(like.classList.contains("linkish"))like.textContent=likes.has(id)?"♥ 찜함":"♡ 찜하기"}
+    if(location.hash==="#my"||location.hash==="#mine"||location.hash.startsWith("#p")||location.hash.startsWith("#free-")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id));if(like.classList.contains("linkish"))like.textContent=likes.has(id)?"♥ 찜함":"♡ 찜하기"}
     return}
   const dl=e.target.closest("[data-dl]");if(dl){toast("베타 기간에는 화면 미리보기만 제공해요");return}
   const buy=e.target.closest("[data-buy]");if(buy){toast("유료 자료는 정식 오픈 때 판매를 시작해요");return}
