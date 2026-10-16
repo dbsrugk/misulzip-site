@@ -314,6 +314,21 @@ main{padding-bottom:96px}
 .free-hero{text-align:center;justify-items:center}
 @media(min-width:760px){.cta-dark{grid-template-columns:1.2fr 1fr;align-items:end;padding:42px}.foot .cols{grid-template-columns:1.6fr 1fr 1fr 1fr}}
 @media(min-width:900px){.lib-wrap{display:grid;grid-template-columns:190px minmax(0,1fr);gap:28px;align-items:start}.side{display:block;position:sticky;top:84px}#catChips{display:none}.lib-wrap .grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* 제목·안내 가운데 정렬 */
+.sh-bar{flex-direction:column;justify-content:center;text-align:center}
+.sh-bar .search{width:100%;max-width:460px;flex:0 0 auto}
+.page-title{text-align:center}
+.page-title .search{text-align:left}
+.sec-head{flex-direction:column;align-items:center;gap:4px;text-align:center}
+.lib-meta{justify-content:center;gap:18px}
+.d-body>div:first-child{text-align:center}
+.d-title,.d-meta{justify-content:center}
+.block>h2,.block>.sm{text-align:center}
+.cta-dark{text-align:center;justify-items:center}
+.cta-dark .btn{margin-inline:auto}
+.cta-note{text-align:center}
+@media(min-width:760px){.cta-dark{grid-template-columns:1fr;align-items:center}}
 </style>
 </head>
 <body>
