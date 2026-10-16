@@ -347,7 +347,7 @@ main{padding-bottom:96px}
 .c-x{width:28px;height:28px;border-radius:50%;border:0;background:var(--soft);color:var(--muted);font-size:17px;cursor:pointer}
 .c-sum{border:1.5px solid var(--ink);border-radius:16px;padding:18px;display:grid;gap:14px;align-self:start}
 .tier .bar{position:relative;height:8px;border-radius:999px;background:var(--soft);margin:6px 8px 18px}.tier .bar i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--badge-best)}
-.tier .bar em{position:absolute;top:12px;transform:translateX(-50%);font-style:normal;font-size:11px;color:var(--muted);font-weight:700}
+.tier .bar em{position:absolute;top:12px;transform:translateX(-50%);white-space:nowrap;font-style:normal;font-size:11px;color:var(--muted);font-weight:700}
 .tier p{font-size:13.5px;font-weight:800;text-align:center}
 .c-sum dl{margin:0;display:grid;gap:6px}.c-sum dl div{display:flex;justify-content:space-between;font-size:14px}.c-sum dt{color:var(--muted)}.c-sum dd{margin:0;font-weight:700}
 .c-sum .disc dd{color:var(--badge-best)}.c-sum .tot{border-top:1px solid var(--line);padding-top:10px;margin-top:4px}.c-sum .tot dt{color:var(--fg);font-weight:800}.c-sum .tot dd{font-size:20px;font-weight:900}
@@ -756,7 +756,7 @@ function vCart(){
   ${n?`<div class="cart">
    <ul class="c-list">${cart.map(id=>{const it=byId(id);return `<li><a href="#p-${id}"><img src="${it.thumb||it.img}" alt=""></a><span class="c-n"><b>${esc(it.title.replace(/ 레퍼런스$/,""))}</b><small>분석보드 + 개별컷 원본</small></span><span class="c-p">${unit<990?`<s>${wonf(990)}</s>`:""}${wonf(unit)}</span><button class="c-x" data-uncart="${id}" aria-label="빼기">×</button></li>`}).join("")}</ul>
    <aside class="c-sum">
-    <div class="tier"><div class="bar"><i style="width:${pct}%"></i><em style="left:50%">5</em><em style="left:100%">10</em></div><p>${tip}</p></div>
+    <div class="tier"><div class="bar"><i style="width:${pct}%"></i><em style="left:50%">5개</em><em style="left:100%;transform:translateX(-80%)">10개</em></div><p>${tip}</p></div>
     <dl><div><dt>정가</dt><dd>${wonf(full)}</dd></div>${full>total?`<div class="disc"><dt>묶음 할인</dt><dd>− ${wonf(full-total)}</dd></div>`:""}<div class="tot"><dt>합계</dt><dd>${wonf(total)}</dd></div></dl>
     <button class="b-dark big" data-pay>결제하기</button>
     <div class="free-box"><b>처음이세요?</b><span>담은 소재 중 3개까지 무료로 받을 수 있어요</span><button class="b-light" data-freeclaim>무료로 3개 받기</button></div>
