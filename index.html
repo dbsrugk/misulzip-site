@@ -354,6 +354,12 @@ main{padding-bottom:96px}
 .free-box{display:grid;gap:4px;justify-items:center;text-align:center;padding:12px;border-radius:12px;background:var(--soft)}.free-box b{font-size:14px}.free-box span{font-size:12.5px;color:var(--muted)}.free-box .b-light{margin-top:6px;padding:0 18px}
 .tiers-mini{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:12.5px;color:var(--muted)}.tiers-mini li{display:flex;justify-content:space-between}.tiers-mini b{color:var(--fg)}
 @media(min-width:860px){.cart{grid-template-columns:minmax(0,1fr) 340px;align-items:start}.c-sum{position:sticky;top:84px}}
+
+/* 내 구매 */
+.mine{margin-top:10px}.mine li{grid-template-columns:64px 1fr auto}
+.mine-help{margin-top:22px;padding:20px;border-radius:16px;background:var(--soft);display:grid;gap:6px;justify-items:center;text-align:center}
+.mine-help b{font-size:15px}.mine-help span{font-size:13px;color:var(--muted)}
+.mh-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}.mh-btns>*{padding:0 18px;height:42px}
 </style>
 </head>
 <body>
@@ -370,6 +376,7 @@ main{padding-bottom:96px}
       <a href="#free" data-r="free">무료자료</a>
       <a href="#about" data-r="about">ABOUT</a>
       <a href="#my" data-r="my">찜한 자료</a>
+      <a href="#mine" data-r="mine">내 구매</a>
     </nav>
     <div class="icons">
       <a class="icon-btn" href="#library" id="searchBtn" aria-label="자료 검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></a>
@@ -609,7 +616,7 @@ function brand(){return `<div class="wrap"><section class="cta-dark"><h2>원하�
   <div><p>이메일만 넣으면 무료 체험권이 와요. 분석보드와 각도별 개별컷 원본을 워터마크 없이 받아보세요.</p><a class="btn" href="#free">무료로 시작하기 ›</a></div></section></div>
   <footer class="foot"><div class="wrap"><div class="cols">
     <div><h5>미.술집</h5><span>그림 그리는 사람들의 소재창고</span><span>좋은 소재가 좋은 그림을 만듭니다</span></div>
-    <div><h5>둘러보기</h5><a href="#library">자료실</a><a href="#free">무료자료</a><a href="#my">찜한 자료</a></div>
+    <div><h5>둘러보기</h5><a href="#library">자료실</a><a href="#free">무료자료</a><a href="#my">찜한 자료</a><a href="#mine">내 구매</a></div>
     <div><h5>안내</h5><a href="#about">ABOUT</a><span>개인 학습용 · 재배포 금지</span></div>
     <div><h5>문의</h5><a href="https://www.instagram.com/mi.sulzip/" target="_blank" rel="noopener">Instagram</a><a href="mailto:misulzip@gmail.com">misulzip@gmail.com</a></div>
   </div><div class="copy"><span>© 2026 미.술집 Mi.Sulzip</span><span>Reference Library</span></div></div></footer>`}
@@ -711,6 +718,7 @@ const rdGet=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{retu
 const rdSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
 function passList(first){const L=first?[...PASSES].sort((a,b)=>(b[0]===first)-(a[0]===first)):PASSES;return `<div class="opts">${L.map(([id,n,p,d])=>{const u=PASS_BUY[id];return `<a class="opt${id==="free"?" free":""}" ${u?`href="${u}" target="_blank" rel="noopener"`:`href="#" data-soon="1"`}><span class="o-l"><b>${n}</b><small>${d}</small></span><span class="o-p">${p}</span></a>`}).join("")}</div>`}
 function openRedeem(item,mode){
+  if(!item){toast("받을 소재 페이지에서 '구매한 코드로 받기'를 눌러 주세요");location.hash="library";return}
   const it=byId(item); const used=rdGet(RD_USED,{}); const name=it?it.title.replace(/ 레퍼런스$/,""):"원본";
   const back=document.createElement("div"); back.className="rd-back";
   back.innerHTML=`<div class="rd" role="dialog" aria-modal="true"><button class="x" aria-label="닫기">×</button>
@@ -731,7 +739,7 @@ function openRedeem(item,mode){
     try{
       const r=await fetch("/api/redeem",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key,item,instanceId:(used[key]||{})[item]||""})});
       const d=await r.json();
-      if(r.ok&&d.url){rdSet(RD_KEY,key);used[key]={...(used[key]||{}),[item]:d.instanceId};rdSet(RD_USED,used);
+      if(r.ok&&d.url){rdSet(RD_KEY,key);used[key]={...(used[key]||{}),[item]:d.instanceId};rdSet(RD_USED,used);const ow=rdGet(OWN_KEY,{});ow[item]={key,inst:d.instanceId,at:Date.now()};rdSet(OWN_KEY,ow);
         if(win)win.location.href=d.url;else location.href=d.url;
         msg.textContent=d.again?"이미 받은 소재라 횟수는 차감되지 않았어요.":`원본 폴더를 열었어요 · 사용 ${d.usage}/${d.limit}회`;}
       else{if(win)win.close();msg.textContent=d.error==="used_up"?`이 코드는 모두 사용했어요 (${d.usage}/${d.limit}). 위에서 새로 구매해 주세요.`:d.error==="item"?"이 소재는 원본 준비 중이에요.":"코드를 확인할 수 없어요. 다시 확인해 주세요."}
@@ -760,8 +768,21 @@ function vCart(){
     <dl><div><dt>정가</dt><dd>${wonf(full)}</dd></div>${full>total?`<div class="disc"><dt>묶음 할인</dt><dd>− ${wonf(full-total)}</dd></div>`:""}<div class="tot"><dt>합계</dt><dd>${wonf(total)}</dd></div></dl>
     <button class="b-dark big" data-pay>결제하기</button>
     <div class="free-box"><b>처음이세요?</b><span>담은 소재 중 3개까지 무료로 받을 수 있어요</span><button class="b-light" data-freeclaim>무료로 3개 받기</button></div>
+    <a class="linkish" style="justify-self:center;font-size:12.5px" href="#mine">이미 구매했어요 → 내 구매</a>
     <ul class="tiers-mini"><li><span>1~4개</span><b>개당 ₩ 990</b></li><li><span>5~9개</span><b>개당 ₩ 780</b></li><li><span>10개 이상</span><b>개당 ₩ 690</b></li></ul>
    </aside></div>`:`<div class="empty"><b>장바구니가 비어 있어요</b>마음에 드는 소재를 담아 보세요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료 둘러보기</a></div></div>`}
+  </div>${brand()}`;
+}
+
+// ===== 내 구매 =====
+const OWN_KEY="mz_owned", ORDERS_URL="https://app.lemonsqueezy.com/my-orders";
+function vMine(){
+  const ow=rdGet(OWN_KEY,{}); const ids=Object.keys(ow).filter(id=>byId(id)).sort((a,b)=>ow[b].at-ow[a].at);
+  return `<div class="wrap"><div class="page-title"><h1>내 구매</h1><p>${ids.length?`받은 원본 ${ids.length}개 · 이 기기에 저장돼요`:"아직 받은 원본이 없어요"}</p></div>
+  ${ids.length?`<ul class="c-list mine">${ids.map(id=>{const it=byId(id);return `<li><a href="#p-${id}"><img src="${it.thumb||it.img}" alt=""></a><span class="c-n"><b>${esc(it.title.replace(/ 레퍼런스$/,""))}</b><small>${new Date(ow[id].at).toLocaleDateString("ko-KR")} 받음</small></span><button class="b-dark" style="height:36px;padding:0 14px" data-reopen="${id}">원본 열기</button></li>`}).join("")}</ul>`:`<div class="empty"><b>받은 원본이 여기에 모여요</b>구매하거나 무료로 받은 소재가 이 목록에 남아요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료 둘러보기</a></div></div>`}
+  <div class="mine-help"><b>다른 기기에서 샀거나 목록이 비어 있나요?</b>
+   <span>구매할 때 쓴 이메일을 넣으면 주문 내역과 원본 코드를 메일로 다시 보내드려요.</span>
+   <div class="mh-btns"><a class="b-dark" href="${ORDERS_URL}" target="_blank" rel="noopener">구매 메일 다시 받기</a><button class="b-light" data-redeem="">코드로 원본 받기</button></div></div>
   </div>${brand()}`;
 }
 
@@ -775,6 +796,7 @@ function route(){
   else if(h==="free")html=vFree();
   else if(h==="my")html=vMy();
   else if(h==="cart")html=vCart();
+  else if(h==="mine")html=vMine();
   else if(h==="about")html=vAbout();
   else {html=vHome();r="home"}
   app.innerHTML=html;
@@ -793,6 +815,7 @@ app.addEventListener("click",e=>{
   if(dlBtn){e.preventDefault();const f=dlBtn.dataset.freedl;
     fetch(f+"?t="+Date.now()).then(r=>r.blob()).then(bl=>{const u=URL.createObjectURL(bl),x=document.createElement("a");x.href=u;x.download=f.split("/").pop();document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("원본을 저장했어요")}).catch(()=>{location.href=f+"?dl="+Date.now()});
     return}
+  const ro=e.target.closest("[data-reopen]");if(ro){e.preventDefault();const id=ro.dataset.reopen,o=rdGet(OWN_KEY,{})[id];if(!o)return;const win=window.open("","_blank");fetch("/api/redeem",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:o.key,item:id,instanceId:o.inst})}).then(r=>r.json()).then(d=>{if(d.url){win?win.location.href=d.url:location.href=d.url}else{win&&win.close();toast("원본을 열 수 없어요. 구매 메일을 확인해 주세요")}}).catch(()=>{win&&win.close();toast("잠시 후 다시 시도해 주세요")});return}
   const ca=e.target.closest("[data-cart]");if(ca){e.preventDefault();e.stopPropagation();addCart(ca.dataset.cart,ca.dataset.go==="1");return}
   const uc=e.target.closest("[data-uncart]");if(uc){e.preventDefault();cart=cart.filter(x=>x!==uc.dataset.uncart);saveCart();route();return}
   if(e.target.closest("[data-pay]")){toast("결제 연결을 준비 중이에요");return}
