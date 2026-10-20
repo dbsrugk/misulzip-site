@@ -794,16 +794,18 @@ function vMine(){
 // ===== English page (Pinterest landing) =====
 const EN_NAMES={tiger:"Tiger",rooster:"Rooster",hermitcrab:"Hermit Crab",octopus:"Octopus",pufferfish:"Pufferfish",trex:"T-Rex",violin:"Violin",microscope:"Microscope",glasscherry:"Glass Cherry",chromebear:"Chrome Bear",pig:"Pig",balloondog:"Metal Balloon Dog"};
 const EN_FREE=["tiger","rooster","pig","balloondog"];
+const enImg=id=>`img/${id}/cut01.jpg`;
+const enMosaic=()=>`<div class="sh-mosaic">${["tiger","rooster","octopus","violin","hermitcrab","glasscherry","pufferfish","microscope","trex","chromebear","pig","balloondog"].map(id=>`<img src="${enImg(id)}" alt="" loading="lazy">`).join("")}</div>`;
 function vEn(){
   const subs=["tiger","rooster","hermitcrab","octopus","pufferfish","trex","violin","microscope","glasscherry","chromebear"].map(id=>byId(id)).filter(Boolean);
   const free=EN_FREE.map(id=>FREEBIES.find(f=>f.item===id)).filter(Boolean);
-  return `<section class="shop-hero">${mosaic()}<b class="sh-word">Reference</b></section>
+  return `<section class="shop-hero">${enMosaic()}<b class="sh-word">Reference</b></section>
   <div class="wrap"><div class="sh-bar"><h1>Drawing reference packs for artists</h1><a class="btn solid" href="#library">Browse the library ›</a></div>
   <div class="free-hero" style="text-align:center;justify-items:center"><h2>Study form, texture and material</h2><p>Individual angles + design-analysis boards, made for art students and illustrators.</p></div>
   <section class="sec"><div class="sec-head"><h2>Free samples</h2><span class="more">Download now, no signup</span></div>
-  <div class="grid">${free.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${byId(f.item)?.thumb||f.file}" alt="${EN_NAMES[f.item]} reference" loading="lazy"><span class="badge free">FREE</span></div><div class="ttl"><h3>${EN_NAMES[f.item]}</h3></div><div class="btns"><span class="b-dark b-full">Free download</span></div></a>`).join("")}</div></section>
+  <div class="grid">${free.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${enImg(f.item)}" alt="${EN_NAMES[f.item]} reference" loading="lazy"><span class="badge free">FREE</span></div><div class="ttl"><h3>${EN_NAMES[f.item]}</h3></div><div class="btns"><span class="b-dark b-full">Free download</span></div></a>`).join("")}</div></section>
   <section class="sec"><div class="sec-head"><h2>Popular subjects</h2><span class="more">${subs.length} of ${ITEMS.length}</span></div>
-  <div class="grid">${subs.map(it=>`<a class="card" href="#p-${it.id}"><div class="img"><img src="${it.thumb||it.img}" alt="${EN_NAMES[it.id]} reference images" loading="lazy"></div><div class="ttl"><h3>${EN_NAMES[it.id]}</h3></div><p class="desc">${it.cuts?it.cuts+" angles":"Multi-angle sheet"} · reference pack</p></a>`).join("")}</div></section>
+  <div class="grid">${subs.map(it=>`<a class="card" href="#p-${it.id}"><div class="img"><img src="${enImg(it.id)}" alt="${EN_NAMES[it.id]} reference images" loading="lazy"></div><div class="ttl"><h3>${EN_NAMES[it.id]}</h3></div><p class="desc">${it.cuts?it.cuts+" angles":"Multi-angle sheet"} · reference pack</p></a>`).join("")}</div></section>
   <section class="sec"><dl class="about-list">
     <div><dt>What you get</dt><dd>For each subject: individual cuts from several angles (front, 3/4, side, back, top, close-up) plus a design-analysis board. Original files have no watermark.</dd></div>
     <div><dt>How it works</dt><dd>Pick a subject, get a license key by email, then unlock the original files. Original-file packs are opening soon. Free samples are available now.</dd></div>
