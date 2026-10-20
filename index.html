@@ -361,7 +361,16 @@ main{padding-bottom:96px}
 .mine-help{margin-top:22px;padding:20px;border-radius:16px;background:var(--soft);display:grid;gap:6px;justify-items:center;text-align:center}
 .mine-help b{font-size:15px}.mine-help span{font-size:13px;color:var(--muted)}
 .mh-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}.mh-btns>*{padding:0 18px;height:42px}
+
+/* 3D 뷰어 */
+.v3d model-viewer{width:100%;height:min(62vw,440px);min-height:300px;border-radius:14px;background:radial-gradient(circle at 50% 35%,#fff,#ecebe6);--poster-color:transparent}
+.v3d-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--muted);margin-left:6px;vertical-align:middle}
+.v3d-ctl{display:grid;gap:10px;margin-top:10px}
+.v3d-fov{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700}.v3d-fov input{flex:1}.v3d-fov output{min-width:38px;text-align:right;font-weight:600;color:var(--muted)}
+.v3d-btns{display:flex;gap:8px;flex-wrap:wrap}.v3d-btns button{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.v3d-btns button.on{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
 </style>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
 </head>
 <body>
 
@@ -663,6 +672,7 @@ function vDetail(it){
         <div class="d-title"><h1>${esc(it.title.replace(/ 레퍼런스$/,""))}</h1>${badgeHtml(it.badge)}</div>
         <p class="d-price">₩ 990</p><p class="d-free">처음이면 3개까지 무료</p>
         <p class="d-meta"><span>${it.cuts?`분석보드 + 개별컷 ${it.cuts}장 원본`:"분석보드 + 각도별 모음컷 원본"} · 워터마크 없음</span></p></div>
+      ${viewer3d(it)}
       <div class="block"><h2>포함 내용</h2><ul class="checks">${it.contents.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
       ${pv.length?`<div class="block"><h2>미리보기</h2><p class="sm">${it.cuts?"각도별 단독컷과 모음컷입니다.":"정면 · 측면 · 후면 · 상단 · 디테일을 한 장에 모은 컷입니다."}</p><div class="pv${pv.length<3?" wide":""}">${pv.map(p=>`<div><img src="${p}" alt="미리보기 페이지" loading="lazy"></div>`).join("")}</div></div>`:""}
       <div class="block"><h2>이런 분께 추천해요</h2><ul class="checks">${it.who.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
@@ -815,6 +825,33 @@ function vEn(){
   </dl></section></div>${brand()}`;
 }
 
+// ===== 3D 뷰어 (시험 중) =====
+const GLB={violin:"3d/violin.glb"};
+function viewer3d(it){
+  const f=GLB[it.id]; if(!f)return "";
+  const nm=esc(it.title.replace(/ 레퍼런스$/,""));
+  return `<div class="block v3d"><h2>3D로 돌려보기 <span class="v3d-tag">시험 중</span></h2>
+  <model-viewer id="mv3d" src="${f}" alt="${nm} 3D 모델" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1.05" field-of-view="30deg" auto-rotate interaction-prompt="auto"></model-viewer>
+  <div class="v3d-ctl">
+    <label class="v3d-fov">렌즈 <input type="range" id="v3dFov" min="12" max="80" value="30" data-v3d="fov"><output id="v3dFovV">30°</output></label>
+    <div class="v3d-btns"><button type="button" data-v3d="rot" class="on">자동 회전</button><button type="button" data-v3d="clay">클레이 모드</button><button type="button" data-v3d="reset">처음 각도</button></div>
+  </div>
+  <p class="sm">손으로 돌리고, 휠이나 두 손가락으로 확대해요. 렌즈를 바꾸면 같은 크기로 원근 왜곡만 달라져요. AI로 만든 3D라 안 보이던 면은 추정이에요.</p></div>`;
+}
+const v3dBase={orbit:null,fov:30,mats:[]};
+function v3dFov(mv,deg){
+  const o=mv.getCameraOrbit(); if(!v3dBase.orbit)v3dBase.orbit=o;
+  const r=o.radius*Math.tan(v3dBase.fov*Math.PI/360)/Math.tan(deg*Math.PI/360);
+  mv.fieldOfView=deg+"deg"; mv.cameraOrbit=`${o.theta}rad ${o.phi}rad ${r}m`; v3dBase.fov=deg;
+}
+function v3dClay(mv,on){
+  const ms=mv.model?.materials||[];
+  ms.forEach((m,i)=>{const pb=m.pbrMetallicRoughness;
+    if(on){ if(!v3dBase.mats[i])v3dBase.mats[i]={c:pb.baseColorFactor.slice(),m:pb.metallicFactor,r:pb.roughnessFactor,t:pb.baseColorTexture?.texture||null};
+      pb.baseColorTexture?.setTexture(null); pb.setBaseColorFactor([.78,.76,.72,1]); pb.setMetallicFactor(0); pb.setRoughnessFactor(.9);}
+    else if(v3dBase.mats[i]){const o=v3dBase.mats[i]; pb.baseColorTexture?.setTexture(o.t); pb.setBaseColorFactor(o.c); pb.setMetallicFactor(o.m); pb.setRoughnessFactor(o.r);}});
+}
+
 function route(){
   const h=(location.hash||"#home").slice(1);
   let r=h, html;
@@ -840,7 +877,14 @@ setTimeout(saveCart,0);
 
 app.addEventListener("contextmenu",e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()});
 app.addEventListener("dragstart",e=>{if(e.target.closest(".d-hero,.pv,.feat .thumb"))e.preventDefault()});
+app.addEventListener("input",e=>{const t=e.target.closest("[data-v3d=fov]"); if(t){const mv=document.getElementById("mv3d"); if(mv){v3dFov(mv,+t.value); document.getElementById("v3dFovV").textContent=t.value+"°"}}});
 app.addEventListener("click",e=>{
+  const vb=e.target.closest("button[data-v3d]");
+  if(vb){const mv=document.getElementById("mv3d"); const a=vb.dataset.v3d; if(mv){
+    if(a==="rot"){mv.autoRotate=!mv.autoRotate; vb.classList.toggle("on",mv.autoRotate)}
+    else if(a==="clay"){const on=!vb.classList.contains("on"); vb.classList.toggle("on",on); v3dClay(mv,on)}
+    else if(a==="reset"){mv.cameraOrbit="0deg 75deg auto"; mv.fieldOfView="30deg"; v3dBase.fov=30; v3dBase.orbit=null; const r=document.getElementById("v3dFov"); if(r){r.value=30; document.getElementById("v3dFovV").textContent="30°"}}}
+    return}
   const dlBtn=e.target.closest("[data-freedl]");
   if(dlBtn){e.preventDefault();const f=dlBtn.dataset.freedl;
     fetch(f+"?t="+Date.now()).then(r=>r.blob()).then(bl=>{const u=URL.createObjectURL(bl),x=document.createElement("a");x.href=u;x.download=f.split("/").pop();document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("원본을 저장했어요")}).catch(()=>{location.href=f+"?dl="+Date.now()});
