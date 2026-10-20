@@ -830,9 +830,10 @@ function vEn(){
 }
 
 // ===== 3D 뷰어 (시험 중) =====
-const GLB={violin:"3d/violin.glb"};
+// 소재별 3D 파일과 기본 재질: gloss 0~100(무광→유광), metal 0~1(선택)
+const GLB={violin:{src:"3d/violin.glb",gloss:58}};
 function viewer3d(it){
-  const f=GLB[it.id]; if(!f)return "";
+  const g=GLB[it.id]; if(!g)return ""; const f=g.src;
   const nm=esc(it.title.replace(/ 레퍼런스$/,""));
   const sl=(id,key,lab,min,max,val,unit)=>`<label class="v3d-fov">${lab} <input type="range" id="${id}" min="${min}" max="${max}" value="${val}" data-v3d="${key}"><output id="${id}V">${val}${unit}</output></label>`;
   return `<div class="block v3d"><h2>3D로 돌려보기 <span class="v3d-tag">시험 중</span></h2>
@@ -878,7 +879,11 @@ document.addEventListener("fullscreenchange",()=>{const b=document.getElementByI
 function v3dInit(){
   const mv=document.getElementById("mv3d"); if(!mv)return;
   v3dBase.r30=0; v3dBase.fov=30; v3dBase.mats=[];
-  mv.addEventListener("load",()=>{v3dSave(mv); const r=v3dBase.mats[0]?.r??.5; v3dBase.g0=Math.max(0,Math.min(100,Math.round((.95-r)/.9*100))); v3dSet("v3dGloss",v3dBase.g0,String(v3dBase.g0))});
+  const id=(location.hash||"").replace("#p-",""), d=GLB[id]||{};
+  mv.addEventListener("load",()=>{v3dSave(mv);
+    if(d.metal!=null)(mv.model?.materials||[]).forEach(m=>{m.pbrMetallicRoughness.setMetallicFactor(d.metal); if(v3dBase.mats[0])v3dBase.mats.forEach(o=>o.m=d.metal)});
+    const g=d.gloss!=null?d.gloss:Math.max(0,Math.min(100,Math.round((.95-(v3dBase.mats[0]?.r??.5))/.9*100)));
+    v3dBase.g0=g; v3dGloss(mv,g); v3dSet("v3dGloss",g,String(g))});
 }
 
 function route(){
