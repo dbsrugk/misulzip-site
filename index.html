@@ -831,17 +831,17 @@ function viewer3d(it){
   const f=GLB[it.id]; if(!f)return "";
   const nm=esc(it.title.replace(/ 레퍼런스$/,""));
   return `<div class="block v3d"><h2>3D로 돌려보기 <span class="v3d-tag">시험 중</span></h2>
-  <model-viewer id="mv3d" src="${f}" alt="${nm} 3D 모델" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1.05" field-of-view="30deg" auto-rotate interaction-prompt="auto"></model-viewer>
+  <model-viewer id="mv3d" src="${f}" alt="${nm} 3D 모델" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1.05" field-of-view="30deg" min-field-of-view="10deg" max-field-of-view="90deg" min-camera-orbit="auto auto 0.2m" max-camera-orbit="auto auto 6m" auto-rotate interaction-prompt="auto"></model-viewer>
   <div class="v3d-ctl">
     <label class="v3d-fov">렌즈 <input type="range" id="v3dFov" min="12" max="80" value="30" data-v3d="fov"><output id="v3dFovV">30°</output></label>
     <div class="v3d-btns"><button type="button" data-v3d="rot" class="on">자동 회전</button><button type="button" data-v3d="clay">클레이 모드</button><button type="button" data-v3d="reset">처음 각도</button></div>
   </div>
   <p class="sm">손으로 돌리고, 휠이나 두 손가락으로 확대해요. 렌즈를 바꾸면 같은 크기로 원근 왜곡만 달라져요. AI로 만든 3D라 안 보이던 면은 추정이에요.</p></div>`;
 }
-const v3dBase={orbit:null,fov:30,mats:[]};
+const v3dBase={r30:0,fov:30,mats:[]};
 function v3dFov(mv,deg){
-  const o=mv.getCameraOrbit(); if(!v3dBase.orbit)v3dBase.orbit=o;
-  const r=o.radius*Math.tan(v3dBase.fov*Math.PI/360)/Math.tan(deg*Math.PI/360);
+  if(!v3dBase.r30)v3dBase.r30=mv.getCameraOrbit().radius;
+  const o=mv.getCameraOrbit(), r=v3dBase.r30*Math.tan(15*Math.PI/180)/Math.tan(deg*Math.PI/360);
   mv.fieldOfView=deg+"deg"; mv.cameraOrbit=`${o.theta}rad ${o.phi}rad ${r}m`; v3dBase.fov=deg;
 }
 function v3dClay(mv,on){
@@ -883,7 +883,7 @@ app.addEventListener("click",e=>{
   if(vb){const mv=document.getElementById("mv3d"); const a=vb.dataset.v3d; if(mv){
     if(a==="rot"){mv.autoRotate=!mv.autoRotate; vb.classList.toggle("on",mv.autoRotate)}
     else if(a==="clay"){const on=!vb.classList.contains("on"); vb.classList.toggle("on",on); v3dClay(mv,on)}
-    else if(a==="reset"){mv.cameraOrbit="0deg 75deg auto"; mv.fieldOfView="30deg"; v3dBase.fov=30; v3dBase.orbit=null; const r=document.getElementById("v3dFov"); if(r){r.value=30; document.getElementById("v3dFovV").textContent="30°"}}}
+    else if(a==="reset"){mv.cameraOrbit="0deg 75deg auto"; mv.fieldOfView="30deg"; v3dBase.fov=30; const r=document.getElementById("v3dFov"); if(r){r.value=30; document.getElementById("v3dFovV").textContent="30°"}}}
     return}
   const dlBtn=e.target.closest("[data-freedl]");
   if(dlBtn){e.preventDefault();const f=dlBtn.dataset.freedl;
