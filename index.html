@@ -269,6 +269,7 @@ main{padding-bottom:96px}
       <a href="#free" data-r="free">무료자료</a>
       <a href="#about" data-r="about">ABOUT</a>
       <a href="#my" data-r="my">찜한 자료</a>
+      <a href="#en" data-r="en">EN</a>
     </nav>
     <div class="icons">
       <a class="icon-btn" href="#library" id="searchBtn" aria-label="자료 검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></a>
@@ -516,7 +517,7 @@ function vHome(){
 function brand(){return `<section class="brand"><div class="wrap">
   <p class="q">“ 좋은 소재가 좋은 그림을 만듭니다. ”</p>
   <p>미.술집은 늘, 그림 그리는 당신을 응원합니다.</p>
-  <p class="eyebrow">Mi.Sulzip · Sketch · Explore · Create</p></div></section>`}
+  <p class="eyebrow">Mi.Sulzip · Sketch · Explore · Create</p><p style="margin-top:8px"><a href="#en" style="text-decoration:underline;text-underline-offset:3px">English</a></p></div></section>`}
 
 function filtered(){
   const q=state.q.trim().toLowerCase();
@@ -608,6 +609,28 @@ function vAbout(){
   </div></section></div>${brand()}`;
 }
 
+// ===== English page (Pinterest landing) =====
+const EN_NAMES={tiger:"Tiger",rooster:"Rooster",hermitcrab:"Hermit Crab",octopus:"Octopus",pufferfish:"Pufferfish",trex:"T-Rex",violin:"Violin",microscope:"Microscope",glasscherry:"Glass Cherry",chromebear:"Chrome Bear",pig:"Pig",balloondog:"Metal Balloon Dog"};
+const EN_FREE=["tiger","rooster","pig","balloondog"];
+const enImg=id=>`img/${id}/cut01.jpg`;
+function vEn(){
+  const subs=["tiger","rooster","hermitcrab","octopus","pufferfish","trex","violin","microscope","glasscherry","chromebear"].map(id=>byId(id)).filter(Boolean);
+  const free=EN_FREE.map(id=>FREEBIES.find(f=>f.item===id)).filter(Boolean);
+  return `<div class="wrap"><div class="page-title"><p class="eyebrow">English</p><h1>Drawing reference packs for artists</h1><p>Individual angles + design-analysis boards, made for art students and illustrators.</p></div>
+  <div class="free-hero" style="text-align:center;justify-items:center"><p class="eyebrow">Free samples</p><h2>Study form, texture and material</h2><p>Download free samples now. No signup needed.</p><a class="btn solid" href="#library" style="margin-top:12px">Browse the library ›</a></div>
+  <section class="sec"><div class="sec-head"><h2>Free samples</h2></div>
+  <div class="grid">${free.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${enImg(f.item)}" alt="${EN_NAMES[f.item]} reference" loading="lazy"><span class="badge free">FREE</span></div><h3>${EN_NAMES[f.item]}</h3><div class="row"><span class="status">Free download ›</span></div></a>`).join("")}</div></section>
+  <section class="sec"><div class="sec-head"><h2>Popular subjects</h2><span class="more">${subs.length} of ${ITEMS.length}</span></div>
+  <div class="grid">${subs.map(it=>`<a class="card" href="#p-${it.id}"><div class="img"><img src="${enImg(it.id)}" alt="${EN_NAMES[it.id]} reference images" loading="lazy"></div><h3>${EN_NAMES[it.id]}</h3><p class="desc">${it.cuts?it.cuts+" angles":"Multi-angle sheet"} · reference pack</p></a>`).join("")}</div></section>
+  <section class="sec"><dl class="about-list">
+    <div><dt>What you get</dt><dd>For each subject: individual cuts from several angles (front, 3/4, side, back, top, close-up) plus a design-analysis board. Original files have no watermark.</dd></div>
+    <div><dt>How it works</dt><dd>Free samples are available now. Original-file packs are opening soon: pick a subject, get a license key by email, then unlock the original files.</dd></div>
+    <div><dt>About the images</dt><dd>The images are generated with AI tools, then selected, edited and annotated by hand. Product pages are currently in Korean; the images speak for themselves.</dd></div>
+    <div><dt>License</dt><dd>Personal study and practice only. No redistribution or resale.</dd></div>
+    <div><dt>Contact</dt><dd><a href="mailto:misulzip@gmail.com">misulzip@gmail.com</a></dd></div>
+  </dl></section></div>${brand()}`;
+}
+
 function route(){
   const h=(location.hash||"#home").slice(1);
   let r=h, html;
@@ -617,6 +640,7 @@ function route(){
   else if(h==="library")html=vLibrary();
   else if(h==="free")html=vFree();
   else if(h==="my")html=vMy();
+  else if(h==="en"){html=vEn();r="en"}
   else if(h==="about")html=vAbout();
   else {html=vHome();r="home"}
   app.innerHTML=html;
