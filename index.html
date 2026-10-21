@@ -364,15 +364,21 @@ main{padding-bottom:96px}
 
 /* 3D 뷰어 */
 .v3d-box{background:var(--bg)}
+.v3d-stage{position:relative}
 .v3d model-viewer{width:100%;height:min(62vw,440px);min-height:300px;border-radius:14px;background:radial-gradient(circle at 50% 35%,#fff,#ecebe6);--poster-color:transparent;display:block}
 .v3d-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--muted);margin-left:6px;vertical-align:middle}
-.v3d-ctl{display:grid;gap:8px;margin-top:10px}
-.v3d-fov{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700}.v3d-fov input{flex:1}.v3d-fov output{min-width:42px;text-align:right;font-weight:600;color:var(--muted)}
-.v3d-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}.v3d-btns button{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--fg)}
+.v3d-top{position:absolute;top:10px;right:10px;display:flex;gap:8px;z-index:3}
+.v3d-chip{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:38px;min-width:38px;padding:0 12px;border-radius:999px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.88);backdrop-filter:blur(6px);color:var(--fg);font:700 12.5px/1 inherit;font-family:inherit;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.v3d-chip svg{width:18px;height:18px}.v3d-chip.v3d-ico{padding:0;width:38px}.v3d-chip.on{background:var(--ink);color:var(--on-ink)}
+.v3d-panel{position:absolute;left:10px;right:10px;bottom:10px;z-index:3;display:grid;gap:8px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(0,0,0,.12)}
+.v3d-panel[hidden]{display:none}
+.v3d-fov{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#222}.v3d-fov input{flex:1;min-width:0}.v3d-fov output{min-width:42px;text-align:right;font-weight:600;color:#666}
+.v3d-btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.v3d-btns button{height:38px;padding:0 6px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--fg);white-space:nowrap}
 .v3d-btns button.on{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
 .v3d-box:fullscreen,.v3d-box.fs{padding:14px;overflow:auto;display:flex;flex-direction:column}
 .v3d-box.fs{position:fixed;inset:0;z-index:200}
-.v3d-box:fullscreen model-viewer,.v3d-box.fs model-viewer{flex:1;height:auto;min-height:240px}
+.v3d-box:fullscreen .v3d-stage,.v3d-box.fs .v3d-stage{flex:1;min-height:0}
+.v3d-box:fullscreen model-viewer,.v3d-box.fs model-viewer{height:100%;min-height:240px}
 </style>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
 </head>
@@ -836,17 +842,23 @@ function viewer3d(it){
   const g=GLB[it.id]; if(!g)return ""; const f=g.src;
   const nm=esc(it.title.replace(/ 레퍼런스$/,""));
   const sl=(id,key,lab,min,max,val,unit)=>`<label class="v3d-fov">${lab} <input type="range" id="${id}" min="${min}" max="${max}" value="${val}" data-v3d="${key}"><output id="${id}V">${val}${unit}</output></label>`;
+  const icoSet='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>';
+  const icoFs='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
   return `<div class="block v3d"><h2>3D로 돌려보기 <span class="v3d-tag">시험 중</span></h2>
   <div class="v3d-box" id="v3dBox">
-  <model-viewer id="mv3d" src="${f}" alt="${nm} 3D 모델" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1.05" environment-intensity="1" field-of-view="30deg" min-field-of-view="10deg" max-field-of-view="90deg" min-camera-orbit="auto auto 0.2m" max-camera-orbit="auto auto 6m" auto-rotate interaction-prompt="auto"></model-viewer>
-  <div class="v3d-ctl">
-    ${sl("v3dFov","fov","렌즈",12,80,30,"°")}
-    ${sl("v3dGloss","gloss","광택",0,100,50,"")}
-    ${sl("v3dRefl","refl","반사",0,200,100,"%")}
-    ${sl("v3dExp","exp","밝기",40,200,105,"%")}
-    <div class="v3d-btns"><button type="button" data-v3d="rot" class="on">자동 회전</button><button type="button" data-v3d="clay">클레이 모드</button><button type="button" data-v3d="reset">처음 상태</button><button type="button" data-v3d="fs" id="v3dFs">전체 화면</button></div>
-  </div></div>
-  <p class="sm">손으로 돌리고, 휠이나 두 손가락으로 확대해요. 렌즈는 같은 크기로 원근 왜곡만, 광택·반사·밝기는 재질이 빛을 받는 느낌만 바꿔요. AI로 만든 3D라 안 보이던 면은 추정이에요.</p></div>`;
+  <div class="v3d-stage">
+    <model-viewer id="mv3d" src="${f}" alt="${nm} 3D 모델" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1.05" environment-intensity="1" field-of-view="30deg" min-field-of-view="10deg" max-field-of-view="90deg" min-camera-orbit="auto auto 0.2m" max-camera-orbit="auto auto 6m" auto-rotate interaction-prompt="auto"></model-viewer>
+    <div class="v3d-top"><button type="button" class="v3d-chip" data-v3d="set" id="v3dSet" aria-label="설정" aria-expanded="false">${icoSet}<span>설정</span></button><button type="button" class="v3d-chip v3d-ico" data-v3d="fs" id="v3dFs" aria-label="전체 화면">${icoFs}</button></div>
+    <div class="v3d-panel" id="v3dPanel" hidden>
+      ${sl("v3dFov","fov","렌즈",12,80,30,"°")}
+      ${sl("v3dGloss","gloss","광택",0,100,50,"")}
+      ${sl("v3dRefl","refl","반사",0,200,100,"%")}
+      ${sl("v3dExp","exp","밝기",40,200,105,"%")}
+    </div>
+  </div>
+  <div class="v3d-btns"><button type="button" data-v3d="rot" class="on">자동 회전</button><button type="button" data-v3d="clay">클레이 모드</button><button type="button" data-v3d="reset">처음 상태</button></div>
+  </div>
+  <p class="sm">손으로 돌리고, 휠이나 두 손가락으로 확대해요. 설정에서 렌즈(원근 왜곡), 광택, 반사, 밝기를 바꿔 볼 수 있어요. AI로 만든 3D라 안 보이던 면은 추정이에요.</p></div>`;
 }
 const v3dBase={r30:0,fov:30,mats:[],g0:50};
 function v3dSave(mv){
@@ -869,13 +881,16 @@ function v3dGloss(mv,g){
   (mv.model?.materials||[]).forEach(m=>m.pbrMetallicRoughness.setRoughnessFactor(r));
 }
 function v3dSet(id,val,txt){const e=document.getElementById(id); if(e)e.value=val; const o=document.getElementById(id+"V"); if(o)o.textContent=txt}
+function v3dFsUi(on){const b=document.getElementById("v3dFs"); if(!b)return; b.classList.toggle("on",on); b.setAttribute("aria-label",on?"전체 화면 닫기":"전체 화면");
+  b.innerHTML=on?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>'}
 function v3dFs(){
-  const box=document.getElementById("v3dBox"),b=document.getElementById("v3dFs"); if(!box)return;
+  const box=document.getElementById("v3dBox"); if(!box)return;
   const on=!(document.fullscreenElement||box.classList.contains("fs"));
-  if(on){ if(box.requestFullscreen){box.requestFullscreen().catch(()=>box.classList.add("fs"))} else box.classList.add("fs"); b.textContent="전체 화면 닫기"; b.classList.add("on")}
-  else{ if(document.fullscreenElement)document.exitFullscreen(); box.classList.remove("fs"); b.textContent="전체 화면"; b.classList.remove("on")}
+  if(on){ if(box.requestFullscreen){box.requestFullscreen().catch(()=>box.classList.add("fs"))} else box.classList.add("fs"); v3dFsUi(true)}
+  else{ if(document.fullscreenElement)document.exitFullscreen(); box.classList.remove("fs"); v3dFsUi(false)}
 }
-document.addEventListener("fullscreenchange",()=>{const b=document.getElementById("v3dFs"); if(b&&!document.fullscreenElement&&!document.getElementById("v3dBox")?.classList.contains("fs")){b.textContent="전체 화면"; b.classList.remove("on")}});
+function v3dPanel(){const p=document.getElementById("v3dPanel"),b=document.getElementById("v3dSet"); if(!p)return; p.hidden=!p.hidden; b.classList.toggle("on",!p.hidden); b.setAttribute("aria-expanded",String(!p.hidden))}
+document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement&&!document.getElementById("v3dBox")?.classList.contains("fs"))v3dFsUi(false)});
 function v3dInit(){
   const mv=document.getElementById("mv3d"); if(!mv)return;
   v3dBase.r30=0; v3dBase.fov=30; v3dBase.mats=[];
@@ -919,7 +934,7 @@ app.addEventListener("input",e=>{const t=e.target.closest("input[data-v3d]"); if
   else if(k==="exp"){mv.exposure=v/100; v3dSet("v3dExp",v,v+"%")}});
 app.addEventListener("click",e=>{
   const vb=e.target.closest("button[data-v3d]");
-  if(vb){const mv=document.getElementById("mv3d"); const k=vb.dataset.v3d; if(k==="fs"){v3dFs(); return} if(mv){
+  if(vb){const mv=document.getElementById("mv3d"); const k=vb.dataset.v3d; if(k==="fs"){v3dFs(); return} if(k==="set"){v3dPanel(); return} if(mv){
     if(k==="rot"){mv.autoRotate=!mv.autoRotate; vb.classList.toggle("on",mv.autoRotate)}
     else if(k==="clay"){const on=!vb.classList.contains("on"); vb.classList.toggle("on",on); v3dClay(mv,on)}
     else if(k==="reset"){mv.cameraOrbit="0deg 75deg auto"; mv.fieldOfView="30deg"; v3dBase.fov=30; mv.environmentIntensity=1; mv.exposure=1.05;
