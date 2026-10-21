@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>미.술집 Reference Library</title>
-<meta name="description" content="그림 그리는 사람들의 소재창고. 기초디자인에 바로 쓰는 소재 레퍼런스 라이브러리 미.술집 베타.">
-<meta property="og:title" content="미.술집 Reference Library">
-<meta property="og:description" content="그림 그리는 사람들의 소재창고 · 기초디자인 소재 레퍼런스">
+<title>Mi.Sulzip · Reference Library</title>
+<meta name="description" content="A reference library for people who draw. Reference images for drawing and design basics. Mi.Sulzip beta.">
+<meta property="og:title" content="Mi.Sulzip · Reference Library">
+<meta property="og:description" content="A reference library for people who draw">
 <meta property="og:image" content="/img/cherry/thumb.jpg">
 <meta property="og:type" content="website">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
@@ -52,6 +52,8 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backgroun
 .top .icons{margin-left:auto;display:flex;gap:6px}
 .icon-btn{width:38px;height:38px;display:grid;place-items:center;border-radius:50%}
 .icon-btn:hover{background:var(--soft)}
+.lang-btn{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:16px;background:transparent;color:var(--fg);font-family:inherit;font-weight:600;font-size:12.5px;line-height:1;cursor:pointer;align-self:center;white-space:nowrap}
+.lang-btn:hover{background:var(--soft)}
 .icon-btn svg{width:21px;height:21px}
 
 /* bottom tabs */
@@ -382,27 +384,28 @@ main{padding-bottom:96px}
 .v3d-box:fullscreen model-viewer,.v3d-box.fs model-viewer{height:100%;min-height:240px}
 </style>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<script src="i18n.js"></script>
 </head>
 <body>
 
 
-<div class="beta"><b>BETA</b> · 결제 없이 무료 자료와 미리보기만 운영 중이에요</div>
+<div class="beta"><b>BETA</b> · <span data-t="결제 없이 무료 자료와 미리보기만 운영 중이에요">결제 없이 무료 자료와 미리보기만 운영 중이에요</span></div>
 
 <header class="top">
   <div class="wrap">
-    <a href="#home" class="logo" aria-label="미.술집 홈">미<span>.</span>술집</a>
+    <a href="#home" class="logo" id="logo" data-ta="미.술집 홈" aria-label="미.술집 홈">미<span>.</span>술집</a>
     <nav class="topnav" id="topnav">
-      <a href="#home" data-r="home">홈</a>
-      <a href="#library" data-r="library">자료실</a>
-      <a href="#free" data-r="free">무료자료</a>
-      <a href="#about" data-r="about">ABOUT</a>
-      <a href="#mine" data-r="mine">마이</a>
-      <a href="#en" data-r="en">EN</a>
+      <a href="#home" data-r="home" data-t="홈">홈</a>
+      <a href="#library" data-r="library" data-t="자료실">자료실</a>
+      <a href="#free" data-r="free" data-t="무료자료">무료자료</a>
+      <a href="#about" data-r="about" data-t="소개">ABOUT</a>
+      <a href="#mine" data-r="mine" data-t="마이">마이</a>
     </nav>
     <div class="icons">
-      <a class="icon-btn" href="#library" id="searchBtn" aria-label="자료 검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></a>
-      <a class="icon-btn cart-btn" href="#cart" aria-label="장바구니"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h14l-1.6 8.5H7.6z"/><path d="M6 7 5.2 4H3"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg><b id="cartN" hidden>0</b></a>
-      <a class="icon-btn" href="#about" aria-label="미.술집 소개"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></a>
+      <button type="button" class="lang-btn" id="langBtn" data-ta="언어 선택" aria-label="Language">EN</button>
+      <a class="icon-btn" href="#library" id="searchBtn" data-ta="자료 검색" aria-label="자료 검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></a>
+      <a class="icon-btn cart-btn" href="#cart" data-ta="장바구니" aria-label="장바구니"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h14l-1.6 8.5H7.6z"/><path d="M6 7 5.2 4H3"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg><b id="cartN" hidden>0</b></a>
+      <a class="icon-btn" href="#about" data-ta="미.술집 소개" aria-label="미.술집 소개"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></a>
     </div>
   </div>
 </header>
@@ -410,15 +413,61 @@ main{padding-bottom:96px}
 <main id="app"></main>
 
 <nav class="tabs" id="tabs">
-  <a href="#home" data-r="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20h-5v-5h-6v5H4z"/></svg>홈</a>
-  <a href="#library" data-r="library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></svg>자료실</a>
-  <a href="#free" data-r="free"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>무료자료</a>
-  <a href="#mine" data-r="mine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>마이</a>
+  <a href="#home" data-r="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20h-5v-5h-6v5H4z"/></svg><span data-t="홈">홈</span></a>
+  <a href="#library" data-r="library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></svg><span data-t="자료실">자료실</span></a>
+  <a href="#free" data-r="free"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-t="무료자료">무료자료</span></a>
+  <a href="#mine" data-r="mine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg><span data-t="마이">마이</span></a>
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
+// ===== 다국어 (기본: 영어, 한국어 선택 가능) · 번역 데이터는 i18n.js =====
+const LANGS=["en","ko"];
+function detectLang(){
+  try{const q=new URLSearchParams(location.search).get("lang");if(LANGS.includes(q)){localStorage.setItem("mz-lang",q);return q}}catch(e){}
+  try{const s=localStorage.getItem("mz-lang");if(LANGS.includes(s))return s}catch(e){}
+  return /^ko/i.test(navigator.language||"")?"ko":"en";
+}
+let LANG=detectLang();
+const T=()=>LANG==="ko"?null:(window.I18N&&window.I18N[LANG]);
+function t(k,v){const d=T();let s=(d&&d.ui[k])||k;return v?s.replace(/\{(\w+)\}/g,(m,a)=>v[a]!=null?v[a]:m):s}
+const tCat=c=>c==="전체"?t("전체"):(T()&&T().cat[c])||c;
+const tTag=g=>(T()&&T().tag[g])||g;
+const iTitle=it=>{const d=T();return d&&d.item[it.id]?d.item[it.id][0]:it.title.replace(/ 레퍼런스$/,"")};
+const iDesc=it=>{const d=T();return d&&d.item[it.id]?d.item[it.id][1]:it.desc};
+const pkx=pk=>{const d=T();return (d&&d.pack[pk.id])||[pk.name,pk.desc,pk.point]};
+const fx=f=>{const d=T();return (d&&d.free[f.id])||[f.title,f.desc,f.tips]};
+function iContents(it){
+  if(!T())return it.contents;
+  const board=!/분석보드 준비 중/.test(it.contents.join(" "));
+  return [board?"Analysis board: observation references · form details · texture and color · design-use tips":"Analysis board coming soon (the overview sheet is shown for now)",
+    it.cuts?`${it.cuts} individual angle cuts (originals) plus an overview sheet`:"Multi-angle overview sheet (original)","Original files without watermark"];
+}
+function iWho(it){
+  if(!T())return it.who;
+  const c=it.cat;
+  if(c==="동물")return ["Artists who want to study animal form and gesture from every angle","Art students practicing fur, feather or scale textures"];
+  if(c==="음식"||c==="과일"||c==="음료"||c==="식물·자연")return ["Artists studying texture, layers and organic form","Art students practicing still-life subjects"];
+  if(c==="캐릭터·인형"||c==="인체")return ["Artists studying volume and surface texture","Illustrators looking for character and figure reference"];
+  return ["Artists practicing metal, glass and reflection rendering","Art students who need strong material-contrast subjects"];
+}
+const PRICE={
+  ko:{one:990,five:780,ten:690,fmt:n=>"₩ "+n.toLocaleString("ko-KR"),p5:"₩ 3,900",p10:"₩ 6,900"},
+  en:{one:.99,five:.80,ten:.70,fmt:n=>"$"+n.toFixed(2),p5:"$3.99",p10:"$6.99"} // 임시 달러 가격: 결제 연결 전에 확정 필요
+};
+const PR=()=>PRICE[LANG==="ko"?"ko":"en"];
+function applyStatic(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll("[data-t]").forEach(e=>{e.textContent=t(e.dataset.t)});
+  document.querySelectorAll("[data-ta]").forEach(e=>e.setAttribute("aria-label",t(e.dataset.ta)));
+  const lg=document.getElementById("logo");if(lg)lg.innerHTML=LANG==="ko"?'미<span>.</span>술집':'Mi<span>.</span>Sulzip';
+  const lb=document.getElementById("langBtn");if(lb)lb.textContent=LANG==="ko"?"EN":"한국어";
+  document.title=LANG==="ko"?"미.술집 Reference Library":"Mi.Sulzip · Reference Library";
+  const md=document.querySelector("meta[name=description]");if(md)md.content=t("그림 그리는 사람들의 소재창고")+". "+t("기초디자인에 바로 쓰는 소재 레퍼런스 라이브러리 미.술집 베타.");
+}
+function setLang(l){if(!LANGS.includes(l))return;LANG=l;try{localStorage.setItem("mz-lang",l)}catch(e){}applyStatic();route()}
+
 const CATS=["과일","음식","음료","동물","생활용품","재질·표현","인체","조합소재","캐릭터·인형","식물·자연","탈것·기계"];
 const CAT_IMG={"과일":"img/strawberry/thumb.jpg","음식":"img/hamburger/thumb.jpg","동물":"img/octopus/thumb.jpg","생활용품":"img/iron/thumb.jpg","재질·표현":"img/balloondog/thumb.jpg","인체":"img/david/thumb.jpg","조합소재":"img/corn/thumb.jpg","캐릭터·인형":"img/capybara/thumb.jpg","식물·자연":"img/lily/thumb.jpg","탈것·기계":"img/robotarm/thumb.jpg"};
 
@@ -517,18 +566,18 @@ function packCard(pk){
   const liked=likes.has("pack:"+pk.id);
   return `<a class="pack" href="#pk-${pk.id}">
     <span class="collage">${th.map(i=>`<img src="${i.thumb||i.img}" alt="" loading="lazy">`).join("")}</span>
-    <span class="pack-body"><span class="pack-no">${pk.no} THEME PACK</span><b>${esc(pk.name)}</b><small>소재 ${pk.items.length}종${liked?" · 찜함 ♥":""}</small></span></a>`;
+    <span class="pack-body"><span class="pack-no">${pk.no} THEME PACK</span><b>${esc(pkx(pk)[0])}</b><small>${t("소재 {n}종",{n:pk.items.length})}${liked?t(" · 찜함 ♥"):""}</small></span></a>`;
 }
 function vPack(pk){
   const list=pk.items.map(byId).filter(Boolean); const liked=likes.has("pack:"+pk.id);
-  return `<div class="wrap"><a class="back" href="#home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>홈으로</a>
-  <div class="page-title"><p class="eyebrow">${pk.no} Theme Pack · 소재 ${list.length}종</p><h1 style="margin-top:6px">${esc(pk.name)}</h1><p>${esc(pk.desc)}</p></div>
-  <div class="pack-info"><div><b>연습 포인트</b><span>${esc(pk.point)}</span></div><div><b>정식 오픈 때 포함</b><span>소재별 고해상도 원본 · 인쇄용 PDF · 묶음 한 번에 받기</span></div></div>
+  return `<div class="wrap"><a class="back" href="#home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>${t("홈으로")}</a>
+  <div class="page-title"><p class="eyebrow">${t("{no} Theme Pack · 소재 {n}종",{no:pk.no,n:list.length})}</p><h1 style="margin-top:6px">${esc(pkx(pk)[0])}</h1><p>${esc(pkx(pk)[1])}</p></div>
+  <div class="pack-info"><div><b>${t("연습 포인트")}</b><span>${esc(pkx(pk)[2])}</span></div><div><b>${t("정식 오픈 때 포함")}</b><span>${t("소재별 고해상도 원본 · 인쇄용 PDF · 묶음 한 번에 받기")}</span></div></div>
   <div class="d-cta" style="position:static;border:0">
-    <button class="btn ${liked?"line":"solid"}" data-like="pack:${pk.id}" aria-pressed="${liked}">${liked?"이 팩 찜했어요 ✓ (다시 누르면 해제)":"♡ 이 팩 먼저 열어주세요"}</button>
-    <p class="cta-note">찜이 많이 모인 팩부터 원본으로 먼저 공개해요.</p></div>
+    <button class="btn ${liked?"line":"solid"}" data-like="pack:${pk.id}" aria-pressed="${liked}">${liked?t("이 팩 찜했어요 ✓ (다시 누르면 해제)"):t("♡ 이 팩 먼저 열어주세요")}</button>
+    <p class="cta-note">${t("찜이 많이 모인 팩부터 원본으로 먼저 공개해요.")}</p></div>
   <section class="sec"><div class="grid">${list.map(card).join("")}</div></section>
-  <section class="sec"><div class="sec-head"><h2>다른 테마 팩</h2></div><div class="packs">${PACKS.filter(x=>x.id!==pk.id).map(packCard).join("")}</div></section></div>`;
+  <section class="sec"><div class="sec-head"><h2>${t("다른 테마 팩")}</h2></div><div class="packs">${PACKS.filter(x=>x.id!==pk.id).map(packCard).join("")}</div></section></div>`;
 }
 
 // 무료 다운로드 (인스타 DM 링크용: #free-<id>)
@@ -568,24 +617,23 @@ function vFreebie(f){
   const it=byId(f.item), pk=PACKS.find(x=>x.id===f.pack);
   const others=pk?pk.items.filter(id=>id!==f.item).map(byId).filter(Boolean).slice(0,6):[];
   const liked=pk&&likes.has("pack:"+pk.id);
-  return `<div class="wrap"><div class="page-title"><p class="eyebrow">Free Download · 미.술집</p><h1 style="margin-top:6px">${esc(f.title)}</h1><p>${esc(f.desc)}</p></div>
-  <div class="dl-top"><button class="btn solid dl-btn" data-redeem="${f.item}" data-mode="free">무료로 원본 받기</button>
-  <p class="cta-note">처음이면 원하는 소재 3개까지 무료예요</p></div>
+  return `<div class="wrap"><div class="page-title"><p class="eyebrow">${t("Free Download · 미.술집")}</p><h1 style="margin-top:6px">${esc(fx(f)[0])}</h1><p>${esc(fx(f)[1])}</p></div>
+  <div class="dl-top"><button class="btn solid dl-btn" data-redeem="${f.item}" data-mode="free">${t("무료로 원본 받기")}</button>
+  <p class="cta-note">${t("처음이면 원하는 소재 3개까지 무료예요")}</p></div>
   <div class="freebie">
-    <div class="freebie-img"><img src="${f.file}" alt="${esc(f.title)}"></div>
+    <div class="freebie-img"><img src="${f.file}" alt="${esc(fx(f)[0])}"></div>
     <div class="freebie-body">
-      <div class="block"><h2>그릴 때 포인트</h2><ul class="checks">${f.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>
-      <div class="notice"><i>!</i><span>개인 학습용으로 자유롭게 쓰세요. 재배포와 상업적 이용은 안 돼요.</span></div>
+      <div class="block"><h2>${t("그릴 때 포인트")}</h2><ul class="checks">${fx(f)[2].map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div class="notice"><i>!</i><span>${t("개인 학습용으로 자유롭게 쓰세요. 재배포와 상업적 이용은 안 돼요.")}</span></div>
     </div>
   </div>
-  ${pk?`<section class="sec"><div class="sec-head"><h2>${pk.no} ${esc(pk.name)}의 다른 소재</h2><a class="more" href="#pk-${pk.id}">팩 전체 보기 ›</a></div>
+  ${pk?`<section class="sec"><div class="sec-head"><h2>${t("{no} {name}의 다른 소재",{no:pk.no,name:pkx(pk)[0]})}</h2><a class="more" href="#pk-${pk.id}">${t("팩 전체 보기 ›")}</a></div>
     <div class="grid">${others.map(card).join("")}</div>
     <div class="d-cta" style="position:static;border:0;margin-top:18px">
-      <button class="btn ${liked?"line":"solid"}" data-like="pack:${pk.id}" aria-pressed="${liked}">${liked?"이 팩 찜했어요 ✓":"♡ 이 팩 원본도 받고 싶어요"}</button>
-      <p class="cta-note">찜이 많이 모인 팩부터 원본 전체를 먼저 공개해요.</p></div></section>`:""}
+      <button class="btn ${liked?"line":"solid"}" data-like="pack:${pk.id}" aria-pressed="${liked}">${liked?t("이 팩 찜했어요 ✓"):t("♡ 이 팩 원본도 받고 싶어요")}</button>
+      <p class="cta-note">${t("찜이 많이 모인 팩부터 원본 전체를 먼저 공개해요.")}</p></div></section>`:""}
   </div>`;
 }
-const won=n=>n===0?"무료":"₩"+n.toLocaleString("ko-KR");
 
 // 찜 (브라우저에만 저장)
 let likes=new Set();
@@ -599,177 +647,179 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2200)}
 
 const heartSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>';
-function badgeHtml(b){return b==="best"?'<span class="badge">BEST</span>':b==="new"?'<span class="badge new">NEW</span>':b==="free"?'<span class="badge free">FREE</span>':b==="soon"?'<span class="badge soon">준비 중</span>':""}
-function imgHtml(it,big){return it.img?`<img src="${it.thumb&&!big?it.thumb:it.img}" alt="${esc(it.title)} 미리보기 이미지" loading="lazy">`:`<div class="placeholder"><b>${esc(it.ph)}</b><small>COMING SOON</small></div>`}
-function card(it){const t=it.title.replace(/ 레퍼런스$/,""), liked=likes.has(it.id);return `<article class="card" data-go="${it.id}" tabindex="0">
-  <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}<span class="cat-pill">${esc(it.cat)}</span><button class="heart-ov ${liked?"on":""}" data-like="${it.id}" aria-label="찜하기" aria-pressed="${liked}">${heartSvg}</button></div>
-  <div class="ttl"><h3>${esc(t)}</h3><b class="pr">₩ 990</b></div><p class="desc">${esc(it.desc)}</p>
-  <div class="btns">${cartBtn(it.id,"b-light")}<button class="b-dark" data-cart="${it.id}" data-go="1">바로 구매</button></div></article>`}
+function badgeHtml(b){return b==="best"?'<span class="badge">BEST</span>':b==="new"?'<span class="badge new">NEW</span>':b==="free"?'<span class="badge free">FREE</span>':b==="soon"?`<span class="badge soon">${t("준비 중")}</span>`:""}
+function imgHtml(it,big){return it.img?`<img src="${it.thumb&&!big?it.thumb:it.img}" alt="${esc(iTitle(it))} ${t("미리보기 이미지")}" loading="lazy">`:`<div class="placeholder"><b>${esc(it.ph)}</b><small>COMING SOON</small></div>`}
+function card(it){const ti=iTitle(it), liked=likes.has(it.id);return `<article class="card" data-go="${it.id}" tabindex="0">
+  <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}<span class="cat-pill">${esc(tCat(it.cat))}</span><button class="heart-ov ${liked?"on":""}" data-like="${it.id}" aria-label="${t("찜하기")}" aria-pressed="${liked}">${heartSvg}</button></div>
+  <div class="ttl"><h3>${esc(ti)}</h3><b class="pr">${wonf(PR().one)}</b></div><p class="desc">${esc(iDesc(it))}</p>
+  <div class="btns">${cartBtn(it.id,"b-light")}<button class="b-dark" data-cart="${it.id}" data-go="1">${t("바로 구매")}</button></div></article>`}
 
 function vHome(){
   const best=ITEMS.find(i=>i.id==="cherry");
   const fresh=ITEMS.filter(i=>i.price>0).sort((a,b)=>b.order-a.order).slice(0,4);
   const free=ITEMS.filter(i=>i.price===0).slice(0,4);
   return `<section class="shop-hero">${mosaic()}<b class="sh-word">Reference</b></section>
-  <div class="wrap"><div class="sh-bar"><h1>그림 그리는 사람들의 소재창고</h1><a class="btn solid" href="#library">자료 보러가기 ›</a></div>
+  <div class="wrap"><div class="sh-bar"><h1>${t("그림 그리는 사람들의 소재창고")}</h1><a class="btn solid" href="#library">${t("자료 보러가기 ›")}</a></div>
     <section class="sec">
-      <div class="sec-head"><h2>다양한 소재를 만나보세요</h2></div>
-      <div class="cats">${CATS.filter(c=>ITEMS.some(i=>i.cat===c)).map(c=>`<a class="cat" href="#library" data-cat="${c}"><span class="ph">${CAT_IMG[c]?`<img src="${CAT_IMG[c]}" alt="" loading="lazy">`:`<b>${c[0]}</b>`}</span>${c}</a>`).join("")}<a class="cat" href="#free"><span class="ph"><b>F</b></span>무료자료</a></div>
+      <div class="sec-head"><h2>${t("다양한 소재를 만나보세요")}</h2></div>
+      <div class="cats">${CATS.filter(c=>ITEMS.some(i=>i.cat===c)).map(c=>`<a class="cat" href="#library" data-cat="${c}"><span class="ph">${CAT_IMG[c]?`<img src="${CAT_IMG[c]}" alt="" loading="lazy">`:`<b>${tCat(c)[0]}</b>`}</span>${tCat(c)}</a>`).join("")}<a class="cat" href="#free"><span class="ph"><b>F</b></span>${t("무료자료")}</a></div>
     </section>
     <section class="sec" style="padding-top:4px">
-      <div class="sec-head"><h2>테마 팩</h2><span class="more">주제별로 묶어 보기</span></div>
+      <div class="sec-head"><h2>${t("테마 팩")}</h2><span class="more">${t("주제별로 묶어 보기")}</span></div>
       <div class="packs">${PACKS.map(packCard).join("")}</div>
     </section>
     <section class="sec" style="padding-top:4px">
-      <div class="sec-head"><h2>이달의 추천 자료</h2><a class="more" href="#library">전체보기 ›</a></div>
+      <div class="sec-head"><h2>${t("이달의 추천 자료")}</h2><a class="more" href="#library">${t("전체보기 ›")}</a></div>
       <a class="feat" href="#p-${best.id}"><span class="thumb"><img src="${best.img}" alt=""></span>
-        <span><span class="badge">BEST</span><h3>${best.title}</h3><p>${best.desc}</p><p class="status" style="margin-top:10px">베타 미리보기 · 찜 받는 중</p></span></a>
+        <span><span class="badge">BEST</span><h3>${esc(iTitle(best))}</h3><p>${esc(iDesc(best))}</p><p class="status" style="margin-top:10px">${t("베타 미리보기 · 찜 받는 중")}</p></span></a>
     </section>
     <section class="sec">
-      <div class="sec-head"><h2>신규 자료</h2><a class="more" href="#library">전체보기 ›</a></div>
+      <div class="sec-head"><h2>${t("신규 자료")}</h2><a class="more" href="#library">${t("전체보기 ›")}</a></div>
       <div class="grid">${fresh.map(card).join("")}</div>
     </section>
     ${free.length?`<section class="sec">
-      <div class="sec-head"><h2>무료 미리보기</h2><a class="more" href="#free">전체보기 ›</a></div>
+      <div class="sec-head"><h2>${t("무료 미리보기")}</h2><a class="more" href="#free">${t("전체보기 ›")}</a></div>
       <div class="grid">${free.map(card).join("")}</div>
     </section>`:""}
   </div>
   ${brand()}`;
 }
 const mosaic=()=>`<div class="sh-mosaic">${ITEMS.filter(i=>i.thumb).slice(-12).map(i=>`<img src="${i.thumb}" alt="" loading="lazy">`).join("")}</div>`;
-function brand(){return `<div class="wrap"><section class="cta-dark"><h2>원하는 소재 3개,<br>무료로 받아보세요</h2>
-  <div><p>이메일만 넣으면 무료 체험권이 와요. 분석보드와 각도별 개별컷 원본을 워터마크 없이 받아보세요.</p><a class="btn" href="#free">무료로 시작하기 ›</a></div></section></div>
+function brand(){return `<div class="wrap"><section class="cta-dark"><h2>${t("원하는 소재 3개,")}<br>${t("무료로 받아보세요")}</h2>
+  <div><p>${t("이메일만 넣으면 무료 체험권이 와요. 분석보드와 각도별 개별컷 원본을 워터마크 없이 받아보세요.")}</p><a class="btn" href="#free">${t("무료로 시작하기 ›")}</a></div></section></div>
   <footer class="foot"><div class="wrap"><div class="cols">
-    <div><h5>미.술집</h5><span>그림 그리는 사람들의 소재창고</span><span>좋은 소재가 좋은 그림을 만듭니다</span></div>
-    <div><h5>둘러보기</h5><a href="#library">자료실</a><a href="#free">무료자료</a><a href="#mine">마이 (내 구매·찜)</a></div>
-    <div><h5>안내</h5><a href="#about">ABOUT</a><a href="#en">English</a><span>개인 학습용 · 재배포 금지</span></div>
-    <div><h5>문의</h5><a href="https://www.instagram.com/mi.sulzip/" target="_blank" rel="noopener">Instagram</a><a href="mailto:misulzip@gmail.com">misulzip@gmail.com</a></div>
-  </div><div class="copy"><span>© 2026 미.술집 Mi.Sulzip</span><span>Reference Library</span></div></div></footer>`}
+    <div><h5>${t("미.술집")}</h5><span>${t("그림 그리는 사람들의 소재창고")}</span><span>${t("좋은 소재가 좋은 그림을 만듭니다")}</span></div>
+    <div><h5>${t("둘러보기")}</h5><a href="#library">${t("자료실")}</a><a href="#free">${t("무료자료")}</a><a href="#mine">${t("마이 (내 구매·찜)")}</a></div>
+    <div><h5>${t("안내")}</h5><a href="#about">ABOUT</a><a href="#" data-lang="${LANG==="ko"?"en":"ko"}">${LANG==="ko"?"English":"한국어"}</a><span>${t("개인 학습용 · 재배포 금지")}</span></div>
+    <div><h5>${t("문의")}</h5><a href="https://www.instagram.com/mi.sulzip/" target="_blank" rel="noopener">Instagram</a><a href="mailto:misulzip@gmail.com">misulzip@gmail.com</a></div>
+  </div><div class="copy"><span>© 2026 ${t("미.술집")} Mi.Sulzip</span><span>Reference Library</span></div></div></footer>`}
 
 function filtered(){
   const q=state.q.trim().toLowerCase();
   let list=ITEMS.filter(it=>(state.cat==="전체"||it.cat===state.cat)&&(!state.tag||it.tags.includes(state.tag))&&
-    (!q||(it.title+" "+it.desc+" "+it.tags.join(" ")+" "+it.cat).toLowerCase().includes(q)));
+    (!q||(it.title+" "+it.desc+" "+it.tags.join(" ")+" "+it.cat+" "+iTitle(it)+" "+iDesc(it)+" "+it.tags.map(tTag).join(" ")+" "+tCat(it.cat)).toLowerCase().includes(q)));
   return list.sort((a,b)=>state.sort==="pop"?b.pop-a.pop:b.order-a.order);
 }
 function tagPool(){const s=new Set();ITEMS.filter(i=>state.cat==="전체"||i.cat===state.cat).forEach(i=>i.tags.slice(1,5).forEach(t=>s.add(t)));return [...s].slice(0,14)}
 function vLibrary(){
   return `<section class="shop-hero">${mosaic()}<b class="sh-word">Library</b></section>
-  <div class="wrap"><div class="sh-bar"><h1>원하는 소재를 찾아보세요</h1>
+  <div class="wrap"><div class="sh-bar"><h1>${t("원하는 소재를 찾아보세요")}</h1>
     <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-    <input id="q" type="search" placeholder="소재 검색 (예: 금속, 반사, 체리)" value="${esc(state.q)}" autocomplete="off"></label></div>
-  <div class="lib-wrap" style="margin-top:14px"><aside class="side"><h4>카테고리</h4>${["전체",...CATS].map(c=>`<button data-setcat="${c}" class="${state.cat===c?"on":""}">${c==="전체"?"전체 소재":c}</button>`).join("")}</aside>
+    <input id="q" type="search" placeholder="${t("소재 검색 (예: 금속, 반사, 체리)")}" value="${esc(state.q)}" autocomplete="off"></label></div>
+  <div class="lib-wrap" style="margin-top:14px"><aside class="side"><h4>${t("카테고리")}</h4>${["전체",...CATS].map(c=>`<button data-setcat="${c}" class="${state.cat===c?"on":""}">${c==="전체"?t("전체 소재"):tCat(c)}</button>`).join("")}</aside>
   <div><div class="filters" style="margin-top:0">
-      <div class="chips" id="catChips">${["전체",...CATS].map(c=>`<button class="chip ${state.cat===c?"on":""}" data-setcat="${c}">${c}</button>`).join("")}</div>
+      <div class="chips" id="catChips">${["전체",...CATS].map(c=>`<button class="chip ${state.cat===c?"on":""}" data-setcat="${c}">${tCat(c)}</button>`).join("")}</div>
       <div class="chips" id="tagChips"></div></div>
-    <div class="lib-meta"><span id="count"></span><div class="sort"><button data-sort="new">최신순</button><button data-sort="pop">인기순</button></div></div>
+    <div class="lib-meta"><span id="count"></span><div class="sort"><button data-sort="new">${t("최신순")}</button><button data-sort="pop">${t("인기순")}</button></div></div>
     <div class="grid" id="libGrid"></div></div></div></div>${brand()}`;
 }
 function renderLib(){
   const list=filtered();
-  document.getElementById("count").textContent=`자료 ${list.length}개`;
-  document.getElementById("tagChips").innerHTML=tagPool().map(t=>`<button class="chip tag ${state.tag===t?"on":""}" data-settag="${t}">#${t}</button>`).join("");
+  document.getElementById("count").textContent=t("자료 {n}개",{n:list.length});
+  document.getElementById("tagChips").innerHTML=tagPool().map(g=>`<button class="chip tag ${state.tag===g?"on":""}" data-settag="${g}">#${tTag(g)}</button>`).join("");
   document.querySelectorAll("[data-sort]").forEach(b=>b.classList.toggle("on",b.dataset.sort===state.sort));
   document.querySelectorAll("[data-setcat]").forEach(b=>b.classList.toggle("on",b.dataset.setcat===state.cat));
   document.getElementById("libGrid").innerHTML=list.length?list.map(card).join(""):
-    `<div class="empty" style="grid-column:1/-1"><b>‘${esc(state.q||state.tag)}’에 맞는 자료가 아직 없어요</b>다른 소재로 검색하거나 필터를 지워보세요.</div>`;
+    `<div class="empty" style="grid-column:1/-1"><b>${t("‘{q}’에 맞는 자료가 아직 없어요",{q:esc(state.q||tTag(state.tag))})}</b>${t("다른 소재로 검색하거나 필터를 지워보세요.")}</div>`;
 }
 
 function vDetail(it){
   const rel=ITEMS.filter(i=>i.id!==it.id).map(i=>[i,(i.cat===it.cat?10:0)+i.tags.filter(t=>it.tags.includes(t)).length]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>x[0]);
   const pv=it.pv||(it.img?[it.img]:[]);
   const free=it.price===0, soon=it.badge==="soon";
-  return `<div class="wrap"><a class="back" href="#library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>자료실로</a>
+  return `<div class="wrap"><a class="back" href="#library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>${t("자료실로")}</a>
   <div class="d-wrap">
     <div class="d-hero">${imgHtml(it,true)}</div>
     <div class="d-body">
-      <div><p class="crumb">${it.cat} ›</p>
-        <div class="d-title"><h1>${esc(it.title.replace(/ 레퍼런스$/,""))}</h1>${badgeHtml(it.badge)}</div>
-        <p class="d-price">₩ 990</p><p class="d-free">처음이면 3개까지 무료</p>
-        <p class="d-meta"><span>${it.cuts?`분석보드 + 개별컷 ${it.cuts}장 원본`:"분석보드 + 각도별 모음컷 원본"} · 워터마크 없음</span></p></div>
+      <div><p class="crumb">${tCat(it.cat)} ›</p>
+        <div class="d-title"><h1>${esc(iTitle(it))}</h1>${badgeHtml(it.badge)}</div>
+        <p class="d-price">${wonf(PR().one)}</p><p class="d-free">${t("처음이면 3개까지 무료")}</p>
+        <p class="d-meta"><span>${it.cuts?t("분석보드 + 개별컷 {n}장 원본",{n:it.cuts}):t("분석보드 + 각도별 모음컷 원본")} · ${t("워터마크 없음")}</span></p></div>
       ${viewer3d(it)}
-      <div class="block"><h2>포함 내용</h2><ul class="checks">${it.contents.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
-      ${pv.length?`<div class="block"><h2>미리보기</h2><p class="sm">${it.cuts?"각도별 단독컷과 모음컷입니다.":"정면 · 측면 · 후면 · 상단 · 디테일을 한 장에 모은 컷입니다."}</p><div class="pv${pv.length<3?" wide":""}">${pv.map(p=>`<div><img src="${p}" alt="미리보기 페이지" loading="lazy"></div>`).join("")}</div></div>`:""}
-      <div class="block"><h2>이런 분께 추천해요</h2><ul class="checks">${it.who.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
-      ${packOf(it.id)?`<a class="pack-link" href="#pk-${packOf(it.id).id}"><span>이 소재가 들어있는 팩</span><b>${packOf(it.id).no} ${esc(packOf(it.id).name)} ›</b></a>`:""}
-      <div class="block"><h2>태그</h2><div class="tags">${it.tags.map(t=>`<a class="chip tag" href="#library" data-jumptag="${t}">#${t}</a>`).join("")}</div></div>
-      <div class="notice"><i>!</i><span>개인 학습용으로만 사용 가능합니다. 무단 배포 및 상업적 이용을 금지합니다.</span></div>
+      <div class="block"><h2>${t("포함 내용")}</h2><ul class="checks">${iContents(it).map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
+      ${pv.length?`<div class="block"><h2>${t("미리보기")}</h2><p class="sm">${it.cuts?t("각도별 단독컷과 모음컷입니다."):t("정면 · 측면 · 후면 · 상단 · 디테일을 한 장에 모은 컷입니다.")}</p><div class="pv${pv.length<3?" wide":""}">${pv.map(p=>`<div><img src="${p}" alt="${t("미리보기 페이지")}" loading="lazy"></div>`).join("")}</div></div>`:""}
+      <div class="block"><h2>${t("이런 분께 추천해요")}</h2><ul class="checks">${iWho(it).map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>
+      ${packOf(it.id)?`<a class="pack-link" href="#pk-${packOf(it.id).id}"><span>${t("이 소재가 들어있는 팩")}</span><b>${packOf(it.id).no} ${esc(pkx(packOf(it.id))[0])} ›</b></a>`:""}
+      <div class="block"><h2>${t("태그")}</h2><div class="tags">${it.tags.map(g=>`<a class="chip tag" href="#library" data-jumptag="${g}">#${tTag(g)}</a>`).join("")}</div></div>
+      <div class="notice"><i>!</i><span>${t("개인 학습용으로만 사용 가능합니다. 무단 배포 및 상업적 이용을 금지합니다.")}</span></div>
       <div class="d-cta"><div class="btns" style="padding-top:0">
-        ${cartBtn(it.id,"b-light big")}<button class="b-dark big" data-cart="${it.id}" data-go="1">바로 구매</button></div>
-        <p class="cta-note"><button class="linkish ${likes.has(it.id)?"on":""}" data-like="${it.id}" aria-pressed="${likes.has(it.id)}">${likes.has(it.id)?"♥ 찜함":"♡ 찜하기"}</button> · <button class="linkish" data-redeem="${it.id}">구매한 코드로 받기</button></p>
+        ${cartBtn(it.id,"b-light big")}<button class="b-dark big" data-cart="${it.id}" data-go="1">${t("바로 구매")}</button></div>
+        <p class="cta-note"><button class="linkish ${likes.has(it.id)?"on":""}" data-like="${it.id}" aria-pressed="${likes.has(it.id)}">${likes.has(it.id)?t("♥ 찜함"):t("♡ 찜하기")}</button> · <button class="linkish" data-redeem="${it.id}">${t("구매한 코드로 받기")}</button></p>
       </div>
     </div>
   </div>
-  ${rel.length?`<section class="sec"><div class="sec-head"><h2>관련 자료</h2></div><div class="grid">${rel.map(card).join("")}</div></section>`:""}
+  ${rel.length?`<section class="sec"><div class="sec-head"><h2>${t("관련 자료")}</h2></div><div class="grid">${rel.map(card).join("")}</div></section>`:""}
   </div>`;
 }
 
 function vFree(){
-  return `<div class="wrap"><div class="page-title"><h1>무료자료</h1><p>워터마크 없이 바로 받는 미.술집 무료 원본</p></div>
-  <div class="free-hero" style="text-align:center;justify-items:center"><h2>원하는 소재 원본 받기</h2><p>3개 무료로 받아보세요!</p></div>
-  <section class="sec"><div class="grid">${FREEBIES.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${byId(f.item)?.thumb||f.file}" alt="" loading="lazy"><span class="badge free">FREE</span></div><div class="ttl"><h3>${esc(f.title)}</h3></div><p class="desc">${esc(f.desc)}</p><div class="btns"><span class="b-dark b-full">무료 원본 받기</span></div></a>`).join("")}</div></section></div>`;
+  return `<div class="wrap"><div class="page-title"><h1>${t("무료자료")}</h1><p>${t("워터마크 없이 바로 받는 미.술집 무료 원본")}</p></div>
+  <div class="free-hero" style="text-align:center;justify-items:center"><h2>${t("원하는 소재 원본 받기")}</h2><p>${t("3개 무료로 받아보세요!")}</p></div>
+  <section class="sec"><div class="grid">${FREEBIES.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${byId(f.item)?.thumb||f.file}" alt="" loading="lazy"><span class="badge free">FREE</span></div><div class="ttl"><h3>${esc(fx(f)[0])}</h3></div><p class="desc">${esc(fx(f)[1])}</p><div class="btns"><span class="b-dark b-full">${t("무료 원본 받기")}</span></div></a>`).join("")}</div></section></div>`;
 }
 
 function vMy(){
   const list=ITEMS.filter(i=>likes.has(i.id)); const pl=PACKS.filter(pk=>likes.has("pack:"+pk.id));
-  return `<div class="wrap"><div class="page-title"><h1>찜한 자료</h1><p>하트를 누른 자료가 여기에 모여요. 이 기기에서만 보관됩니다.</p></div>
-  ${pl.length?`<section class="sec" style="padding-bottom:0"><div class="sec-head"><h2>찜한 테마 팩</h2></div><div class="packs">${pl.map(packCard).join("")}</div></section>`:""}
+  return `<div class="wrap"><div class="page-title"><h1>${t("찜한 자료")}</h1><p>${t("하트를 누른 자료가 여기에 모여요. 이 기기에서만 보관됩니다.")}</p></div>
+  ${pl.length?`<section class="sec" style="padding-bottom:0"><div class="sec-head"><h2>${t("찜한 테마 팩")}</h2></div><div class="packs">${pl.map(packCard).join("")}</div></section>`:""}
   <section class="sec">${list.length?`<div class="grid">${list.map(card).join("")}</div>`:
-  `<div class="empty"><b>아직 찜한 자료가 없어요</b>자료 카드의 하트를 눌러 저장해 보세요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료 둘러보기</a></div></div>`}</section></div>`;
+  `<div class="empty"><b>${t("아직 찜한 자료가 없어요")}</b>${t("자료 카드의 하트를 눌러 저장해 보세요.")}<div style="margin-top:18px"><a class="btn solid" href="#library">${t("자료 둘러보기")}</a></div></div>`}</section></div>`;
 }
 
 function vAbout(){
-  return `<div class="wrap"><div class="page-title"><p class="eyebrow">About</p><h1 style="font-family:var(--display);font-weight:900;font-size:30px;margin-top:6px">미.술집</h1>
-  <p>그림 그리는 사람들의 소재창고, Reference Library</p></div>
+  const p=PR();
+  return `<div class="wrap"><div class="page-title"><p class="eyebrow">About</p><h1 style="font-family:var(--display);font-weight:900;font-size:30px;margin-top:6px">${t("미.술집")}</h1>
+  <p>${t("그림 그리는 사람들의 소재창고")}, Reference Library</p></div>
   <dl class="about-list">
-    <div><dt>무엇을</dt><dd>과일 · 음식 · 음료 · 동물 · 생활용품 · 재질 · 인체까지, 드로잉에 바로 쓰는 소재를 각도 · 구조 · 색으로 정리한 분석보드와 각도별 개별컷 원본</dd></div>
-    <div><dt>누구에게</dt><dd>소재가 막히는 미술 입시생, 일러스트레이터, 그림을 가르치는 선생님</dd></div>
-    <div><dt>어떻게</dt><dd>Instagram과 Pinterest에서 소재를 보고, 미.술집에서 검색 · 저장 · 다운로드</dd></div>
-    <div><dt>이용 범위</dt><dd>개인 학습용. 무단 배포와 상업적 이용은 금지합니다.</dd></div>
+    <div><dt>${t("무엇을")}</dt><dd>${t("과일 · 음식 · 음료 · 동물 · 생활용품 · 재질 · 인체까지, 드로잉에 바로 쓰는 소재를 각도 · 구조 · 색으로 정리한 분석보드와 각도별 개별컷 원본")}</dd></div>
+    <div><dt>${t("누구에게")}</dt><dd>${t("소재가 막히는 미술 입시생, 일러스트레이터, 그림을 가르치는 선생님")}</dd></div>
+    <div><dt>${t("어떻게")}</dt><dd>${t("Instagram과 Pinterest에서 소재를 보고, 미.술집에서 검색 · 저장 · 다운로드")}</dd></div>
+    ${T()?`<div><dt>${t("AI 이미지")}</dt><dd>${t("이미지는 AI 도구로 생성한 뒤 직접 고르고 편집하고 주석을 달아 만들었어요.")}</dd></div>`:""}
+    <div><dt>${t("이용 범위")}</dt><dd>${t("개인 학습용. 무단 배포와 상업적 이용은 금지합니다.")}</dd></div>
   </dl>
-  <section class="sec"><div class="sec-head"><h2>이용 방식</h2></div>
+  <section class="sec"><div class="sec-head"><h2>${t("이용 방식")}</h2></div>
   <div class="tiers">
-    <div><b>무료</b><p>처음이면 원하는 소재 3개까지 원본 무료 · 이메일만 입력</p></div>
-    <div><b>단품</b><p>소재 1개 원본 ₩ 990</p></div>
-    <div><b>묶음</b><p>5개 ₩ 3,900 (개당 ₩ 780) · 10개 ₩ 6,900 (개당 ₩ 690) · 장바구니에서 자동 적용</p></div>
+    <div><b>${t("무료")}</b><p>${t("처음이면 원하는 소재 3개까지 원본 무료 · 이메일만 입력")}</p></div>
+    <div><b>${t("단품")}</b><p>${t("소재 1개 원본 {p}",{p:p.fmt(p.one)})}</p></div>
+    <div><b>${t("묶음")}</b><p>${t("5개 {p5} (개당 {u5}) · 10개 {p10} (개당 {u10}) · 장바구니에서 자동 적용",{p5:p.p5,u5:p.fmt(p.five),p10:p.p10,u10:p.fmt(p.ten)})}</p></div>
   </div></section></div>${brand()}`;
 }
 
 
 // ===== 이용권(Lemon Squeezy 라이선스 키) =====
 const PASS_BUY={free:"",one:"",five:"",ten:""}; // Lemon Squeezy 결제 링크 (상품 공개 후 입력)
-const PASSES=[["one","이 소재만","₩ 990","소재 1개"],["five","5개 묶음","₩ 3,900","원하는 소재 5개 · 개당 ₩ 780"],["ten","10개 묶음","₩ 6,900","원하는 소재 10개 · 개당 ₩ 690"],["free","처음이세요?","무료","원하는 소재 3개 무료 · 이메일만 입력"]];
+const passes=()=>{const p=PR();return [["one",t("이 소재만"),p.fmt(p.one),t("소재 1개")],["five",t("5개 묶음"),p.p5,t("원하는 소재 5개 · 개당 {u}",{u:p.fmt(p.five)})],["ten",t("10개 묶음"),p.p10,t("원하는 소재 10개 · 개당 {u}",{u:p.fmt(p.ten)})],["free",t("처음이세요?"),t("무료"),t("원하는 소재 3개 무료 · 이메일만 입력")]]};
 const RD_KEY="mz_pass", RD_USED="mz_used";
 const rdGet=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 const rdSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
-function passList(first){const L=first?[...PASSES].sort((a,b)=>(b[0]===first)-(a[0]===first)):PASSES;return `<div class="opts">${L.map(([id,n,p,d])=>{const u=PASS_BUY[id];return `<a class="opt${id==="free"?" free":""}" ${u?`href="${u}" target="_blank" rel="noopener"`:`href="#" data-soon="1"`}><span class="o-l"><b>${n}</b><small>${d}</small></span><span class="o-p">${p}</span></a>`}).join("")}</div>`}
+function passList(first){const L=first?[...passes()].sort((a,b)=>(b[0]===first)-(a[0]===first)):passes();return `<div class="opts">${L.map(([id,n,p,d])=>{const u=PASS_BUY[id];return `<a class="opt${id==="free"?" free":""}" ${u?`href="${u}" target="_blank" rel="noopener"`:`href="#" data-soon="1"`}><span class="o-l"><b>${n}</b><small>${d}</small></span><span class="o-p">${p}</span></a>`}).join("")}</div>`}
 function openRedeem(item,mode){
-  if(!item){toast("받을 소재 페이지에서 '구매한 코드로 받기'를 눌러 주세요");location.hash="library";return}
-  const it=byId(item); const used=rdGet(RD_USED,{}); const name=it?it.title.replace(/ 레퍼런스$/,""):"원본";
+  if(!item){toast(t("받을 소재 페이지에서 '구매한 코드로 받기'를 눌러 주세요"));location.hash="library";return}
+  const it=byId(item); const used=rdGet(RD_USED,{}); const name=it?iTitle(it):t("원본");
   const back=document.createElement("div"); back.className="rd-back";
-  back.innerHTML=`<div class="rd" role="dialog" aria-modal="true"><button class="x" aria-label="닫기">×</button>
-   <h3>${esc(name)} 원본 구매</h3>
-   <p>분석보드 · 개별컷 원본(워터마크 없음)을 받을 수 있어요.</p>
+  back.innerHTML=`<div class="rd" role="dialog" aria-modal="true"><button class="x" aria-label="${t("닫기")}">×</button>
+   <h3>${esc(t("{name} 원본 구매",{name}))}</h3>
+   <p>${t("분석보드 · 개별컷 원본(워터마크 없음)을 받을 수 있어요.")}</p>
    ${passList(mode==="free"?"free":"")}
-   <p class="fine">결제하면 메일로 <b>원본 코드</b>가 와요. 아래에 코드를 넣으면 원본 폴더가 열려요. 묶음 코드는 다른 소재에도 쓸 수 있어요.</p>
-   <details class="code" ${rdGet(RD_KEY,"")?"open":""}><summary>이미 코드가 있어요</summary>
-   <div class="code-in"><input id="rdKey" placeholder="원본 코드 입력" autocomplete="off" value="${esc(rdGet(RD_KEY,""))}">
-   <button class="b-dark" id="rdGo" style="height:44px;padding:0 16px">원본 받기</button></div><div class="msg" id="rdMsg"></div></details></div>`;
+   <p class="fine">${t("결제하면 메일로 <b>원본 코드</b>가 와요. 아래에 코드를 넣으면 원본 폴더가 열려요. 묶음 코드는 다른 소재에도 쓸 수 있어요.")}</p>
+   <details class="code" ${rdGet(RD_KEY,"")?"open":""}><summary>${t("이미 코드가 있어요")}</summary>
+   <div class="code-in"><input id="rdKey" placeholder="${t("원본 코드 입력")}" autocomplete="off" value="${esc(rdGet(RD_KEY,""))}">
+   <button class="b-dark" id="rdGo" style="height:44px;padding:0 16px">${t("원본 받기")}</button></div><div class="msg" id="rdMsg"></div></details></div>`;
   document.body.appendChild(back);
   const close=()=>back.remove();
-  back.addEventListener("click",e=>{if(e.target===back||e.target.closest(".x"))close();const s=e.target.closest("[data-soon]");if(s){e.preventDefault();toast("결제 연결을 준비 중이에요")}});
+  back.addEventListener("click",e=>{if(e.target===back||e.target.closest(".x"))close();const s=e.target.closest("[data-soon]");if(s){e.preventDefault();toast(t("결제 연결을 준비 중이에요"))}});
   const msg=back.querySelector("#rdMsg"), btn=back.querySelector("#rdGo"), inp=back.querySelector("#rdKey");
   btn.addEventListener("click",async()=>{
-    const key=inp.value.trim(); if(!key){msg.textContent="원본 코드를 입력해 주세요";return}
-    const win=window.open("","_blank"); btn.disabled=true; msg.textContent="확인 중이에요…";
+    const key=inp.value.trim(); if(!key){msg.textContent=t("원본 코드를 입력해 주세요");return}
+    const win=window.open("","_blank"); btn.disabled=true; msg.textContent=t("확인 중이에요…");
     try{
       const r=await fetch("/api/redeem",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key,item,instanceId:(used[key]||{})[item]||""})});
       const d=await r.json();
       if(r.ok&&d.url){rdSet(RD_KEY,key);used[key]={...(used[key]||{}),[item]:d.instanceId};rdSet(RD_USED,used);const ow=rdGet(OWN_KEY,{});ow[item]={key,inst:d.instanceId,at:Date.now()};rdSet(OWN_KEY,ow);
         if(win)win.location.href=d.url;else location.href=d.url;
-        msg.textContent=d.again?"이미 받은 소재라 횟수는 차감되지 않았어요.":`원본 폴더를 열었어요 · 사용 ${d.usage}/${d.limit}회`;}
-      else{if(win)win.close();msg.textContent=d.error==="used_up"?`이 코드는 모두 사용했어요 (${d.usage}/${d.limit}). 위에서 새로 구매해 주세요.`:d.error==="item"?"이 소재는 원본 준비 중이에요.":"코드를 확인할 수 없어요. 다시 확인해 주세요."}
-    }catch{if(win)win.close();msg.textContent="잠시 후 다시 시도해 주세요."}
+        msg.textContent=d.again?t("이미 받은 소재라 횟수는 차감되지 않았어요."):t("원본 폴더를 열었어요 · 사용 {u}/{l}회",{u:d.usage,l:d.limit});}
+      else{if(win)win.close();msg.textContent=d.error==="used_up"?t("이 코드는 모두 사용했어요 ({u}/{l}). 위에서 새로 구매해 주세요.",{u:d.usage,l:d.limit}):d.error==="item"?t("이 소재는 원본 준비 중이에요."):t("코드를 확인할 수 없어요. 다시 확인해 주세요.")}
+    }catch{if(win)win.close();msg.textContent=t("잠시 후 다시 시도해 주세요.")}
     btn.disabled=false;
   });
 }
@@ -777,26 +827,26 @@ function openRedeem(item,mode){
 // ===== 장바구니 =====
 const CART_KEY="mz_cart";
 let cart=rdGet(CART_KEY,[]).filter(id=>byId(id));
-const unitOf=n=>n>=10?690:n>=5?780:990;
-const wonf=n=>"₩ "+n.toLocaleString("ko-KR");
+const unitOf=n=>{const p=PR();return n>=10?p.ten:n>=5?p.five:p.one};
+const wonf=n=>PR().fmt(n);
 function saveCart(){rdSet(CART_KEY,cart);const b=document.getElementById("cartN");if(b){b.textContent=cart.length;b.hidden=!cart.length}}
-function addCart(id,go){if(!cart.includes(id)){cart.push(id);saveCart();toast("장바구니에 담았어요")}else if(!go)toast("이미 담겨 있어요");if(go)location.hash="cart";else{const y=scrollY;route();scrollTo(0,y)}}
-function cartBtn(id,cls){const inC=cart.includes(id);return `<button class="${cls} ${inC?"on":""}" data-cart="${id}">${inC?"✓ 담김":"장바구니"}</button>`}
+function addCart(id,go){if(!cart.includes(id)){cart.push(id);saveCart();toast(t("장바구니에 담았어요"))}else if(!go)toast(t("이미 담겨 있어요"));if(go)location.hash="cart";else{const y=scrollY;route();scrollTo(0,y)}}
+function cartBtn(id,cls){const inC=cart.includes(id);return `<button class="${cls} ${inC?"on":""}" data-cart="${id}">${inC?t("✓ 담김"):t("장바구니")}</button>`}
 function vCart(){
-  const n=cart.length, unit=unitOf(n), full=n*990, total=n*unit, next=n<5?5:n<10?10:0;
-  const tip=!n?"":next?`${next-n}개 더 담으면 개당 ${wonf(unitOf(next))}`:"최대 할인 적용 중 (개당 ₩ 690)";
+  const n=cart.length, unit=unitOf(n), full=n*PR().one, total=n*unit, next=n<5?5:n<10?10:0;
+  const tip=!n?"":next?t("{n}개 더 담으면 개당 {u}",{n:next-n,u:wonf(unitOf(next))}):t("최대 할인 적용 중 (개당 {u})",{u:wonf(PR().ten)});
   const pct=!n?0:Math.min(100,Math.round(n/10*100));
-  return `<div class="wrap"><div class="page-title"><h1>장바구니</h1><p>${n?`소재 ${n}개`:"담은 소재가 없어요"}</p></div>
+  return `<div class="wrap"><div class="page-title"><h1>${t("장바구니")}</h1><p>${n?t("소재 {n}개",{n}):t("담은 소재가 없어요")}</p></div>
   ${n?`<div class="cart">
-   <ul class="c-list">${cart.map(id=>{const it=byId(id);return `<li><a href="#p-${id}"><img src="${it.thumb||it.img}" alt=""></a><span class="c-n"><b>${esc(it.title.replace(/ 레퍼런스$/,""))}</b><small>분석보드 + 개별컷 원본</small></span><span class="c-p">${unit<990?`<s>${wonf(990)}</s>`:""}${wonf(unit)}</span><button class="c-x" data-uncart="${id}" aria-label="빼기">×</button></li>`}).join("")}</ul>
+   <ul class="c-list">${cart.map(id=>{const it=byId(id);return `<li><a href="#p-${id}"><img src="${it.thumb||it.img}" alt=""></a><span class="c-n"><b>${esc(iTitle(it))}</b><small>${t("분석보드 + 개별컷 원본")}</small></span><span class="c-p">${unit<PR().one?`<s>${wonf(PR().one)}</s>`:""}${wonf(unit)}</span><button class="c-x" data-uncart="${id}" aria-label="${t("빼기")}">×</button></li>`}).join("")}</ul>
    <aside class="c-sum">
-    <div class="tier"><div class="bar"><i style="width:${pct}%"></i><em style="left:50%">5개</em><em style="left:100%;transform:translateX(-80%)">10개</em></div><p>${tip}</p></div>
-    <dl><div><dt>정가</dt><dd>${wonf(full)}</dd></div>${full>total?`<div class="disc"><dt>묶음 할인</dt><dd>− ${wonf(full-total)}</dd></div>`:""}<div class="tot"><dt>합계</dt><dd>${wonf(total)}</dd></div></dl>
-    <button class="b-dark big" data-pay>결제하기</button>
-    <div class="free-box"><b>처음이세요?</b><span>담은 소재 중 3개까지 무료로 받을 수 있어요</span><button class="b-light" data-freeclaim>무료로 3개 받기</button></div>
-    <a class="linkish" style="justify-self:center;font-size:12.5px" href="#mine">이미 구매했어요 → 마이</a>
-    <ul class="tiers-mini"><li><span>1~4개</span><b>개당 ₩ 990</b></li><li><span>5~9개</span><b>개당 ₩ 780</b></li><li><span>10개 이상</span><b>개당 ₩ 690</b></li></ul>
-   </aside></div>`:`<div class="empty"><b>장바구니가 비어 있어요</b>마음에 드는 소재를 담아 보세요.<div style="margin-top:18px"><a class="btn solid" href="#library">자료 둘러보기</a></div></div>`}
+    <div class="tier"><div class="bar"><i style="width:${pct}%"></i><em style="left:50%">5</em><em style="left:100%;transform:translateX(-80%)">10</em></div><p>${tip}</p></div>
+    <dl><div><dt>${t("정가")}</dt><dd>${wonf(full)}</dd></div>${full>total?`<div class="disc"><dt>${t("묶음 할인")}</dt><dd>− ${wonf(full-total)}</dd></div>`:""}<div class="tot"><dt>${t("합계")}</dt><dd>${wonf(total)}</dd></div></dl>
+    <button class="b-dark big" data-pay>${t("결제하기")}</button>
+    <div class="free-box"><b>${t("처음이세요?")}</b><span>${t("담은 소재 중 3개까지 무료로 받을 수 있어요")}</span><button class="b-light" data-freeclaim>${t("무료로 3개 받기")}</button></div>
+    <a class="linkish" style="justify-self:center;font-size:12.5px" href="#mine">${t("이미 구매했어요 → 마이")}</a>
+    <ul class="tiers-mini"><li><span>${t("1~4개")}</span><b>${t("개당 {u}",{u:wonf(PR().one)})}</b></li><li><span>${t("5~9개")}</span><b>${t("개당 {u}",{u:wonf(PR().five)})}</b></li><li><span>${t("10개 이상")}</span><b>${t("개당 {u}",{u:wonf(PR().ten)})}</b></li></ul>
+   </aside></div>`:`<div class="empty"><b>${t("장바구니가 비어 있어요")}</b>${t("마음에 드는 소재를 담아 보세요.")}<div style="margin-top:18px"><a class="btn solid" href="#library">${t("자료 둘러보기")}</a></div></div>`}
   </div>${brand()}`;
 }
 
@@ -805,39 +855,15 @@ const OWN_KEY="mz_owned", ORDERS_URL="https://app.lemonsqueezy.com/my-orders";
 function vMine(){
   const ow=rdGet(OWN_KEY,{}); const ids=Object.keys(ow).filter(id=>byId(id)).sort((a,b)=>ow[b].at-ow[a].at);
   const liked=ITEMS.filter(i=>likes.has(i.id));
-  return `<div class="wrap"><div class="page-title"><h1>마이</h1><p>이 기기에 저장된 내 구매와 찜 목록이에요</p></div>
-  <section class="sec" style="padding-bottom:0"><div class="sec-head"><h2>내 구매</h2><span class="more">${ids.length?`원본 ${ids.length}개`:""}</span></div>
-  ${ids.length?`<ul class="c-list mine">${ids.map(id=>{const it=byId(id);return `<li><a href="#p-${id}"><img src="${it.thumb||it.img}" alt=""></a><span class="c-n"><b>${esc(it.title.replace(/ 레퍼런스$/,""))}</b><small>${new Date(ow[id].at).toLocaleDateString("ko-KR")} 받음</small></span><button class="b-dark" style="height:36px;padding:0 14px" data-reopen="${id}">원본 열기</button></li>`}).join("")}</ul>`:`<p class="mine-empty">아직 받은 원본이 없어요. 구매하거나 무료로 받은 소재가 여기에 모여요.</p>`}</section>
-  <section class="sec"><div class="sec-head"><h2>찜한 자료</h2><span class="more">${liked.length?`${liked.length}개`:""}</span></div>
-  ${liked.length?`<div class="grid">${liked.map(card).join("")}</div>`:`<p class="mine-empty">하트를 누른 소재가 여기에 모여요. <a href="#library" class="linkish">자료 둘러보기</a></p>`}</section>
-  <div class="mine-help"><b>다른 기기에서 샀거나 목록이 비어 있나요?</b>
-   <span>구매할 때 쓴 이메일을 넣으면 주문 내역과 원본 코드를 메일로 다시 보내드려요.</span>
-   <div class="mh-btns"><a class="b-dark" href="${ORDERS_URL}" target="_blank" rel="noopener">구매 메일 다시 받기</a><button class="b-light" data-redeem="">코드로 원본 받기</button></div></div>
+  return `<div class="wrap"><div class="page-title"><h1>${t("마이")}</h1><p>${t("이 기기에 저장된 내 구매와 찜 목록이에요")}</p></div>
+  <section class="sec" style="padding-bottom:0"><div class="sec-head"><h2>${t("내 구매")}</h2><span class="more">${ids.length?t("원본 {n}개",{n:ids.length}):""}</span></div>
+  ${ids.length?`<ul class="c-list mine">${ids.map(id=>{const it=byId(id);return `<li><a href="#p-${id}"><img src="${it.thumb||it.img}" alt=""></a><span class="c-n"><b>${esc(iTitle(it))}</b><small>${t("{d} 받음",{d:new Date(ow[id].at).toLocaleDateString(LANG==="ko"?"ko-KR":"en-US")})}</small></span><button class="b-dark" style="height:36px;padding:0 14px" data-reopen="${id}">${t("원본 열기")}</button></li>`}).join("")}</ul>`:`<p class="mine-empty">${t("아직 받은 원본이 없어요. 구매하거나 무료로 받은 소재가 여기에 모여요.")}</p>`}</section>
+  <section class="sec"><div class="sec-head"><h2>${t("찜한 자료")}</h2><span class="more">${liked.length?t("{n}개",{n:liked.length}):""}</span></div>
+  ${liked.length?`<div class="grid">${liked.map(card).join("")}</div>`:`<p class="mine-empty">${t("하트를 누른 소재가 여기에 모여요.")} <a href="#library" class="linkish">${t("자료 둘러보기")}</a></p>`}</section>
+  <div class="mine-help"><b>${t("다른 기기에서 샀거나 목록이 비어 있나요?")}</b>
+   <span>${t("구매할 때 쓴 이메일을 넣으면 주문 내역과 원본 코드를 메일로 다시 보내드려요.")}</span>
+   <div class="mh-btns"><a class="b-dark" href="${ORDERS_URL}" target="_blank" rel="noopener">${t("구매 메일 다시 받기")}</a><button class="b-light" data-redeem="">${t("코드로 원본 받기")}</button></div></div>
   </div>${brand()}`;
-}
-
-// ===== English page (Pinterest landing) =====
-const EN_NAMES={tiger:"Tiger",rooster:"Rooster",hermitcrab:"Hermit Crab",octopus:"Octopus",pufferfish:"Pufferfish",trex:"T-Rex",violin:"Violin",microscope:"Microscope",glasscherry:"Glass Cherry",chromebear:"Chrome Bear",pig:"Pig",balloondog:"Metal Balloon Dog"};
-const EN_FREE=["tiger","rooster","pig","balloondog"];
-const enImg=id=>`img/${id}/cut01.jpg`;
-const enMosaic=()=>`<div class="sh-mosaic">${["tiger","rooster","octopus","violin","hermitcrab","glasscherry","pufferfish","microscope","trex","chromebear","pig","balloondog"].map(id=>`<img src="${enImg(id)}" alt="" loading="lazy">`).join("")}</div>`;
-function vEn(){
-  const subs=["tiger","rooster","hermitcrab","octopus","pufferfish","trex","violin","microscope","glasscherry","chromebear"].map(id=>byId(id)).filter(Boolean);
-  const free=EN_FREE.map(id=>FREEBIES.find(f=>f.item===id)).filter(Boolean);
-  return `<section class="shop-hero">${enMosaic()}<b class="sh-word">Reference</b></section>
-  <div class="wrap"><div class="sh-bar"><h1>Drawing reference packs for artists</h1><a class="btn solid" href="#library">Browse the library ›</a></div>
-  <div class="free-hero" style="text-align:center;justify-items:center"><h2>Study form, texture and material</h2><p>Individual angles + design-analysis boards, made for art students and illustrators.</p></div>
-  <section class="sec"><div class="sec-head"><h2>Free samples</h2><span class="more">Download now, no signup</span></div>
-  <div class="grid">${free.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${enImg(f.item)}" alt="${EN_NAMES[f.item]} reference" loading="lazy"><span class="badge free">FREE</span></div><div class="ttl"><h3>${EN_NAMES[f.item]}</h3></div><div class="btns"><span class="b-dark b-full">Free download</span></div></a>`).join("")}</div></section>
-  <section class="sec"><div class="sec-head"><h2>Popular subjects</h2><span class="more">${subs.length} of ${ITEMS.length}</span></div>
-  <div class="grid">${subs.map(it=>`<a class="card" href="#p-${it.id}"><div class="img"><img src="${enImg(it.id)}" alt="${EN_NAMES[it.id]} reference images" loading="lazy"></div><div class="ttl"><h3>${EN_NAMES[it.id]}</h3></div><p class="desc">${it.cuts?it.cuts+" angles":"Multi-angle sheet"} · reference pack</p></a>`).join("")}</div></section>
-  <section class="sec"><dl class="about-list">
-    <div><dt>What you get</dt><dd>For each subject: individual cuts from several angles (front, 3/4, side, back, top, close-up) plus a design-analysis board. Original files have no watermark.</dd></div>
-    <div><dt>How it works</dt><dd>Pick a subject, get a license key by email, then unlock the original files. Original-file packs are opening soon. Free samples are available now.</dd></div>
-    <div><dt>About the images</dt><dd>The images are generated with AI tools, then selected, edited and annotated by hand. Product pages are currently in Korean; the images speak for themselves.</dd></div>
-    <div><dt>License</dt><dd>Personal study and practice only. No redistribution or resale.</dd></div>
-    <div><dt>Contact</dt><dd><a href="mailto:misulzip@gmail.com">misulzip@gmail.com</a></dd></div>
-  </dl></section></div>${brand()}`;
 }
 
 // ===== 3D 뷰어 (시험 중) =====
@@ -845,25 +871,25 @@ function vEn(){
 const GLB={violin:{src:"3d/violin.glb",gloss:58}};
 function viewer3d(it){
   const g=GLB[it.id]; if(!g)return ""; const f=g.src;
-  const nm=esc(it.title.replace(/ 레퍼런스$/,""));
+  const nm=esc(iTitle(it));
   const sl=(id,key,lab,min,max,val,unit)=>`<label class="v3d-fov">${lab} <input type="range" id="${id}" min="${min}" max="${max}" value="${val}" data-v3d="${key}"><output id="${id}V">${val}${unit}</output></label>`;
   const icoSet='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>';
   const icoFs='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
-  return `<div class="block v3d"><h2>3D로 돌려보기 <span class="v3d-tag">시험 중</span></h2>
+  return `<div class="block v3d"><h2>${t("3D로 돌려보기")} <span class="v3d-tag">${t("시험 중")}</span></h2>
   <div class="v3d-box" id="v3dBox">
   <div class="v3d-stage">
-    <model-viewer id="mv3d" src="${f}" alt="${nm} 3D 모델" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1.05" environment-intensity="1" field-of-view="30deg" min-field-of-view="10deg" max-field-of-view="90deg" min-camera-orbit="auto auto 0.2m" max-camera-orbit="auto auto 6m" auto-rotate interaction-prompt="auto"></model-viewer>
-    <div class="v3d-top"><button type="button" class="v3d-chip" data-v3d="set" id="v3dSet" aria-label="설정" aria-expanded="false">${icoSet}<span>설정</span></button><button type="button" class="v3d-chip v3d-ico" data-v3d="fs" id="v3dFs" aria-label="전체 화면">${icoFs}</button></div>
+    <model-viewer id="mv3d" src="${f}" alt="${nm} ${t("3D 모델")}" camera-controls touch-action="pan-y" shadow-intensity="1" exposure="1.05" environment-intensity="1" field-of-view="30deg" min-field-of-view="10deg" max-field-of-view="90deg" min-camera-orbit="auto auto 0.2m" max-camera-orbit="auto auto 6m" auto-rotate interaction-prompt="auto"></model-viewer>
+    <div class="v3d-top"><button type="button" class="v3d-chip" data-v3d="set" id="v3dSet" aria-label="${t("설정")}" aria-expanded="false">${icoSet}<span>${t("설정")}</span></button><button type="button" class="v3d-chip v3d-ico" data-v3d="fs" id="v3dFs" aria-label="${t("전체 화면")}">${icoFs}</button></div>
     <div class="v3d-panel" id="v3dPanel" hidden>
-      ${sl("v3dFov","fov","렌즈",12,80,30,"°")}
-      ${sl("v3dGloss","gloss","광택",0,100,50,"")}
-      ${sl("v3dRefl","refl","반사",0,200,100,"%")}
-      ${sl("v3dExp","exp","밝기",40,200,105,"%")}
+      ${sl("v3dFov","fov",t("렌즈"),12,80,30,"°")}
+      ${sl("v3dGloss","gloss",t("광택"),0,100,50,"")}
+      ${sl("v3dRefl","refl",t("반사"),0,200,100,"%")}
+      ${sl("v3dExp","exp",t("밝기"),40,200,105,"%")}
     </div>
   </div>
-  <div class="v3d-btns"><button type="button" data-v3d="rot" class="on">자동 회전</button><button type="button" data-v3d="clay">클레이 모드</button><button type="button" data-v3d="reset">처음 상태</button></div>
+  <div class="v3d-btns"><button type="button" data-v3d="rot" class="on">${t("자동 회전")}</button><button type="button" data-v3d="clay">${t("클레이 모드")}</button><button type="button" data-v3d="reset">${t("처음 상태")}</button></div>
   </div>
-  <p class="sm">손으로 돌리고, 휠이나 두 손가락으로 확대해요. 설정에서 렌즈(원근 왜곡), 광택, 반사, 밝기를 바꿔 볼 수 있어요. AI로 만든 3D라 안 보이던 면은 추정이에요.</p></div>`;
+  <p class="sm">${t("손으로 돌리고, 휠이나 두 손가락으로 확대해요. 설정에서 렌즈(원근 왜곡), 광택, 반사, 밝기를 바꿔 볼 수 있어요. AI로 만든 3D라 안 보이던 면은 추정이에요.")}</p></div>`;
 }
 const v3dBase={r30:0,fov:30,mats:[],g0:50};
 function v3dSave(mv){
@@ -886,7 +912,7 @@ function v3dGloss(mv,g){
   (mv.model?.materials||[]).forEach(m=>m.pbrMetallicRoughness.setRoughnessFactor(r));
 }
 function v3dSet(id,val,txt){const e=document.getElementById(id); if(e)e.value=val; const o=document.getElementById(id+"V"); if(o)o.textContent=txt}
-function v3dFsUi(on){const b=document.getElementById("v3dFs"); if(!b)return; b.classList.toggle("on",on); b.setAttribute("aria-label",on?"전체 화면 닫기":"전체 화면");
+function v3dFsUi(on){const b=document.getElementById("v3dFs"); if(!b)return; b.classList.toggle("on",on); b.setAttribute("aria-label",on?t("전체 화면 닫기"):t("전체 화면"));
   b.innerHTML=on?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>'}
 function v3dFs(){
   const box=document.getElementById("v3dBox"); if(!box)return;
@@ -917,7 +943,7 @@ function route(){
   else if(h==="my"){html=vMine();r="mine"}
   else if(h==="cart")html=vCart();
   else if(h==="mine")html=vMine();
-  else if(h==="en"){html=vEn();r="en"}
+  else if(h==="en"||h==="ko"){LANG=h;try{localStorage.setItem("mz-lang",h)}catch(e){}applyStatic();location.replace("#home");return}
   else if(h==="about")html=vAbout();
   else {html=vHome();r="home"}
   app.innerHTML=html;
@@ -946,24 +972,25 @@ app.addEventListener("click",e=>{
       v3dClay(mv,false); document.querySelector("button[data-v3d=clay]")?.classList.remove("on"); v3dGloss(mv,v3dBase.g0);
       v3dSet("v3dFov",30,"30°"); v3dSet("v3dGloss",v3dBase.g0,String(v3dBase.g0)); v3dSet("v3dRefl",100,"100%"); v3dSet("v3dExp",105,"105%")}}
     return}
+  const lg=e.target.closest("[data-lang]");if(lg){e.preventDefault();setLang(lg.dataset.lang);return}
   const dlBtn=e.target.closest("[data-freedl]");
   if(dlBtn){e.preventDefault();const f=dlBtn.dataset.freedl;
-    fetch(f+"?t="+Date.now()).then(r=>r.blob()).then(bl=>{const u=URL.createObjectURL(bl),x=document.createElement("a");x.href=u;x.download=f.split("/").pop();document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("원본을 저장했어요")}).catch(()=>{location.href=f+"?dl="+Date.now()});
+    fetch(f+"?t="+Date.now()).then(r=>r.blob()).then(bl=>{const u=URL.createObjectURL(bl),x=document.createElement("a");x.href=u;x.download=f.split("/").pop();document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast(t("원본을 저장했어요"))}).catch(()=>{location.href=f+"?dl="+Date.now()});
     return}
-  const ro=e.target.closest("[data-reopen]");if(ro){e.preventDefault();const id=ro.dataset.reopen,o=rdGet(OWN_KEY,{})[id];if(!o)return;const win=window.open("","_blank");fetch("/api/redeem",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:o.key,item:id,instanceId:o.inst})}).then(r=>r.json()).then(d=>{if(d.url){win?win.location.href=d.url:location.href=d.url}else{win&&win.close();toast("원본을 열 수 없어요. 구매 메일을 확인해 주세요")}}).catch(()=>{win&&win.close();toast("잠시 후 다시 시도해 주세요")});return}
+  const ro=e.target.closest("[data-reopen]");if(ro){e.preventDefault();const id=ro.dataset.reopen,o=rdGet(OWN_KEY,{})[id];if(!o)return;const win=window.open("","_blank");fetch("/api/redeem",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:o.key,item:id,instanceId:o.inst})}).then(r=>r.json()).then(d=>{if(d.url){win?win.location.href=d.url:location.href=d.url}else{win&&win.close();toast(t("원본을 열 수 없어요. 구매 메일을 확인해 주세요"))}}).catch(()=>{win&&win.close();toast(t("잠시 후 다시 시도해 주세요"))});return}
   const ca=e.target.closest("[data-cart]");if(ca){e.preventDefault();e.stopPropagation();addCart(ca.dataset.cart,ca.dataset.go==="1");return}
   const uc=e.target.closest("[data-uncart]");if(uc){e.preventDefault();cart=cart.filter(x=>x!==uc.dataset.uncart);saveCart();route();return}
-  if(e.target.closest("[data-pay]")){toast("결제 연결을 준비 중이에요");return}
-  if(e.target.closest("[data-freeclaim]")){toast("무료 받기 연결을 준비 중이에요");return}
+  if(e.target.closest("[data-pay]")){toast(t("결제 연결을 준비 중이에요"));return}
+  if(e.target.closest("[data-freeclaim]")){toast(t("무료 받기 연결을 준비 중이에요"));return}
   const rdm=e.target.closest("[data-redeem]");if(rdm){e.preventDefault();e.stopPropagation();openRedeem(rdm.dataset.redeem,rdm.dataset.mode);return}
   const like=e.target.closest("[data-like]");
   if(like){e.preventDefault();e.stopPropagation();const id=like.dataset.like;
     likes.has(id)?likes.delete(id):likes.add(id);saveLikes();
-    toast(likes.has(id)?(id.startsWith("pack:")?"이 팩을 찜했어요":"찜한 자료에 담았어요"):"찜을 해제했어요");
-    if(location.hash==="#my"||location.hash==="#mine"||location.hash.startsWith("#p")||location.hash.startsWith("#free-")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id));if(like.classList.contains("linkish"))like.textContent=likes.has(id)?"♥ 찜함":"♡ 찜하기"}
+    toast(likes.has(id)?(id.startsWith("pack:")?t("이 팩을 찜했어요"):t("찜한 자료에 담았어요")):t("찜을 해제했어요"));
+    if(location.hash==="#my"||location.hash==="#mine"||location.hash.startsWith("#p")||location.hash.startsWith("#free-")){const y=scrollY;route();scrollTo(0,y)}else{like.classList.toggle("on");like.setAttribute("aria-pressed",likes.has(id));if(like.classList.contains("linkish"))like.textContent=likes.has(id)?t("♥ 찜함"):t("♡ 찜하기")}
     return}
-  const dl=e.target.closest("[data-dl]");if(dl){toast("베타 기간에는 화면 미리보기만 제공해요");return}
-  const buy=e.target.closest("[data-buy]");if(buy){toast("유료 자료는 정식 오픈 때 판매를 시작해요");return}
+  const dl=e.target.closest("[data-dl]");if(dl){toast(t("베타 기간에는 화면 미리보기만 제공해요"));return}
+  const buy=e.target.closest("[data-buy]");if(buy){toast(t("유료 자료는 정식 오픈 때 판매를 시작해요"));return}
   const c=e.target.closest("[data-cat]");if(c){state.cat=c.dataset.cat;state.tag="";state.q="";}
   const jt=e.target.closest("[data-jumptag]");if(jt){state.tag=jt.dataset.jumptag;state.cat="전체";state.q="";}
   const sc=e.target.closest("[data-setcat]");if(sc){state.cat=sc.dataset.setcat;state.tag="";renderLib();return}
@@ -973,7 +1000,9 @@ app.addEventListener("click",e=>{
 });
 app.addEventListener("keydown",e=>{const go=e.target.closest&&e.target.closest("[data-go]");if(go&&e.key==="Enter"&&e.target===go)location.hash="p-"+go.dataset.go});
 app.addEventListener("input",e=>{if(e.target.id==="q"){state.q=e.target.value;renderLib()}});
+document.getElementById("langBtn").addEventListener("click",()=>setLang(LANG==="ko"?"en":"ko"));
 document.getElementById("searchBtn").addEventListener("click",()=>{setTimeout(()=>{const q=document.getElementById("q");q&&q.focus()},50)});
+applyStatic();
 route();
 </script>
 
