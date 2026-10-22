@@ -803,7 +803,7 @@ function vAbout(){
 
 
 // ===== 이용권(Lemon Squeezy 라이선스 키) =====
-const PASS_BUY={free:"https://misulzip.lemonsqueezy.com/checkout/buy/6b7c0500-1ff4-4712-b0de-4cdf5926b302?enabled=2252843",one:"https://misulzip.lemonsqueezy.com/checkout/buy/6b7c0500-1ff4-4712-b0de-4cdf5926b302?enabled=2252740",five:"https://misulzip.lemonsqueezy.com/checkout/buy/6b7c0500-1ff4-4712-b0de-4cdf5926b302?enabled=2252783",ten:"https://misulzip.lemonsqueezy.com/checkout/buy/6b7c0500-1ff4-4712-b0de-4cdf5926b302?enabled=2252835"}; // Lemon Squeezy 체크아웃(상품 1442962, 변형별). 지금은 테스트 모드 링크 — 라이브 전환 후 링크 재확인 // Lemon Squeezy 결제 링크 (상품 공개 후 입력)
+const PASS_BUY={free:"https://misulzip.lemonsqueezy.com/checkout/buy/0e87f3bf-7e3f-4c64-bab9-3a6c2bb95dab?enabled=2281601",one:"https://misulzip.lemonsqueezy.com/checkout/buy/0e87f3bf-7e3f-4c64-bab9-3a6c2bb95dab?enabled=2281598",five:"https://misulzip.lemonsqueezy.com/checkout/buy/0e87f3bf-7e3f-4c64-bab9-3a6c2bb95dab?enabled=2281599",ten:"https://misulzip.lemonsqueezy.com/checkout/buy/0e87f3bf-7e3f-4c64-bab9-3a6c2bb95dab?enabled=2281600"}; // Lemon Squeezy 라이브 체크아웃(상품 1462706, 변형별)
 const passes=()=>{const p=PR();return [["one",t("이 소재만"),p.fmt(p.one),t("소재 1개")],["five",t("5개 묶음"),p.p5,t("원하는 소재 5개 · 개당 {u}",{u:p.fmt(p.five)})],["ten",t("10개 묶음"),p.p10,t("원하는 소재 10개 · 개당 {u}",{u:p.fmt(p.ten)})],["free",t("처음이세요?"),t("무료"),t("원하는 소재 3개 무료 · 이메일만 입력")]]};
 const RD_KEY="mz_pass", RD_USED="mz_used";
 const rdGet=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
