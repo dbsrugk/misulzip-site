@@ -2,7 +2,7 @@
 // POST { key, item, instanceId? } → { url, instanceId, usage, limit, variant }
 // 유료 폴더 주소는 저장소가 공개라 코드에 두지 않고 Vercel 환경변수 PAID_FOLDERS({"<id>":"<driveFolderId>"})에만 둔다.
 const STORE_ID = 497344;
-const PRODUCT_ID = 1442962;
+const PRODUCT_ID = 1462706; // 라이브 상품(테스트 모드 상품은 1442962)
 const LS = "https://api.lemonsqueezy.com/v1/licenses/";
 
 async function ls(action, params) {
