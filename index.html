@@ -470,7 +470,7 @@ function iWho(it){
 }
 const PRICE={
   ko:{one:990,five:780,ten:690,fmt:n=>"₩ "+n.toLocaleString("ko-KR"),p5:"₩ 3,900",p10:"₩ 6,900"},
-  en:{one:1.99,five:6.99/5,ten:11.99/10,fmt:n=>"$"+n.toFixed(2),p5:"$6.99",p10:"$11.99"} // 확정 달러 가격(2026-10-22): 단품 $1.99 · 5개 $6.99 · 10개 $11.99
+  en:{one:0.75,five:2.99/5,ten:4.99/10,fmt:n=>"$"+n.toFixed(2),p5:"$2.99",p10:"$4.99"} // 달러 가격(2026-10-23, ₩990 기준으로 인하): 단품 $0.75 · 5개 $2.99 · 10개 $4.99
 };
 const PR=()=>PRICE[LANG==="ko"?"ko":"en"];
 function applyStatic(){
