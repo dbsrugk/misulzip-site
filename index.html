@@ -54,6 +54,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backgroun
 .icon-btn:hover{background:var(--soft)}
 .lang-btn{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:16px;background:transparent;color:var(--fg);font-family:inherit;font-weight:600;font-size:12.5px;line-height:1;cursor:pointer;align-self:center;white-space:nowrap}
 .lang-btn:hover{background:var(--soft)}
+.lang-btn{display:none!important}
 .icon-btn svg{width:21px;height:21px}
 
 /* bottom tabs */
@@ -284,6 +285,16 @@ main{padding-bottom:96px}
 .sh-mosaic img{width:100%;height:100%;object-fit:cover;display:block}
 .shop-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,20,20,.08),rgba(20,20,20,.32))}
 .sh-word{position:absolute;left:50%;bottom:-.08em;transform:translateX(-50%);z-index:1;font-family:var(--body);font-weight:900;font-size:clamp(56px,17.5vw,230px);line-height:1;letter-spacing:-.055em;color:#fff;white-space:nowrap;text-shadow:0 2px 30px rgba(0,0,0,.12)}
+.hero-main{height:clamp(380px,58vw,560px);background:#222}
+.hero-main::after{background:linear-gradient(180deg,rgba(15,15,15,.55),rgba(15,15,15,.72))}
+.hero-copy{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:0 20px;max-width:980px;margin:0 auto;color:#fff}
+.hero-copy h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,8.6vw,64px);line-height:1.08;letter-spacing:-.03em;margin:6px 0 12px}
+.hero-eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.85;font-weight:700}
+.hero-sub{font-size:clamp(15px,3.8vw,19px);line-height:1.5;max-width:520px;opacity:.95}
+.hero-cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.hero-cta .btn{border-radius:999px;height:48px}
+.hero-cta .btn.solid{background:#fff;color:#111;border-color:#fff}
+.hero-cta .hero-line{background:transparent;color:#fff;border-color:#fff}
 .sh-bar{position:relative;z-index:2;margin-top:-14px;background:var(--bg);border-radius:16px 16px 0 0;padding:18px 2px 6px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .sh-bar h1{font-size:clamp(19px,4.6vw,24px);font-weight:800;letter-spacing:-.025em}
 .sh-bar .search{margin-top:0;flex:1 1 240px;max-width:400px;border-radius:999px;height:44px}
@@ -425,9 +436,9 @@ main{padding-bottom:96px}
 // ===== 다국어 (기본: 영어, 한국어 선택 가능) · 번역 데이터는 i18n.js =====
 const LANGS=["en","ko"];
 function detectLang(){
-  try{const q=new URLSearchParams(location.search).get("lang");if(LANGS.includes(q)){localStorage.setItem("mz-lang",q);return q}}catch(e){}
-  try{const s=localStorage.getItem("mz-lang");if(LANGS.includes(s))return s}catch(e){}
-  return /^ko/i.test(navigator.language||"")?"ko":"en";
+  // 지금은 영어 전용 배포. 한국어는 ?lang=ko 로만 확인(저장 안 함).
+  try{const q=new URLSearchParams(location.search).get("lang");if(LANGS.includes(q))return q}catch(e){}
+  return "en";
 }
 let LANG=detectLang();
 const T=()=>LANG==="ko"?null:(window.I18N&&window.I18N[LANG]);
@@ -436,6 +447,9 @@ const tCat=c=>c==="전체"?t("전체"):(T()&&T().cat[c])||c;
 const tTag=g=>(T()&&T().tag[g])||g;
 const iTitle=it=>{const d=T();return d&&d.item[it.id]?d.item[it.id][0]:it.title.replace(/ 레퍼런스$/,"")};
 const bimg=it=>(LANG!=="ko"&&it.imgEn)?it.imgEn:it.img;
+const isKoImg=(it,p)=>LANG!=="ko"&&!it.imgEn&&(p===it.img||/set1?\.jpg$/.test(p));
+function cleanPv(it){const all=it.pv||(it.img?[it.img]:[]);const m=all.map(p=>p===it.img?bimg(it):p);if(LANG==="ko"||it.imgEn)return m.filter(p=>!/set1?\.jpg$/.test(p)||LANG==="ko");const f=all.filter(p=>!isKoImg(it,p));return f.length?f:m}
+const heroImg=it=>{if(LANG==="ko"||it.imgEn)return bimg(it);const f=cleanPv(it);return f[0]||it.thumb||it.img};
 const iDesc=it=>{const d=T();return d&&d.item[it.id]?d.item[it.id][1]:it.desc};
 const pkx=pk=>{const d=T();return (d&&d.pack[pk.id])||[pk.name,pk.desc,pk.point]};
 const fx=f=>{const d=T();return (d&&d.free[f.id])||[f.title,f.desc,f.tips]};
@@ -622,7 +636,7 @@ function vFreebie(f){
   <div class="dl-top"><button class="btn solid dl-btn" data-redeem="${f.item}" data-mode="free">${t("무료로 원본 받기")}</button>
   <p class="cta-note">${t("처음이면 원하는 소재 3개까지 무료예요")}</p></div>
   <div class="freebie">
-    <div class="freebie-img"><img src="${f.file}" alt="${esc(fx(f)[0])}"></div>
+    <div class="freebie-img"><img src="${LANG!=="ko"&&it?heroImg(it):f.file}" alt="${esc(fx(f)[0])}"></div>
     <div class="freebie-body">
       <div class="block"><h2>${t("그릴 때 포인트")}</h2><ul class="checks">${fx(f)[2].map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
       <div class="notice"><i>!</i><span>${t("개인 학습용으로 자유롭게 쓰세요. 재배포와 상업적 이용은 안 돼요.")}</span></div>
@@ -649,18 +663,18 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
 
 const heartSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></svg>';
 function badgeHtml(b){return b==="best"?'<span class="badge">BEST</span>':b==="new"?'<span class="badge new">NEW</span>':b==="free"?'<span class="badge free">FREE</span>':b==="soon"?`<span class="badge soon">${t("준비 중")}</span>`:""}
-function imgHtml(it,big){return it.img?`<img src="${it.thumb&&!big?it.thumb:bimg(it)}" alt="${esc(iTitle(it))} ${t("미리보기 이미지")}" loading="lazy">`:`<div class="placeholder"><b>${esc(it.ph)}</b><small>COMING SOON</small></div>`}
+function imgHtml(it,big){return it.img?`<img src="${it.thumb&&!big?it.thumb:heroImg(it)}" alt="${esc(iTitle(it))} ${t("미리보기 이미지")}" loading="lazy">`:`<div class="placeholder"><b>${esc(it.ph)}</b><small>COMING SOON</small></div>`}
 function card(it){const ti=iTitle(it), liked=likes.has(it.id);return `<article class="card" data-go="${it.id}" tabindex="0">
   <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}<span class="cat-pill">${esc(tCat(it.cat))}</span><button class="heart-ov ${liked?"on":""}" data-like="${it.id}" aria-label="${t("찜하기")}" aria-pressed="${liked}">${heartSvg}</button></div>
   <div class="ttl"><h3>${esc(ti)}</h3><b class="pr">${wonf(PR().one)}</b></div><p class="desc">${esc(iDesc(it))}</p>
   <div class="btns">${cartBtn(it.id,"b-light")}<button class="b-dark" data-cart="${it.id}" data-go="1">${t("바로 구매")}</button></div></article>`}
 
 function vHome(){
-  const best=ITEMS.find(i=>i.id==="cherry");
+  const best=ITEMS.find(i=>i.id==="deer")||ITEMS.find(i=>i.id==="cherry");
   const fresh=ITEMS.filter(i=>i.price>0).sort((a,b)=>b.order-a.order).slice(0,4);
   const free=ITEMS.filter(i=>i.price===0).slice(0,4);
-  return `<section class="shop-hero">${mosaic()}<b class="sh-word">Reference</b></section>
-  <div class="wrap"><div class="sh-bar"><h1>${t("그림 그리는 사람들의 소재창고")}</h1><a class="btn solid" href="#library">${t("자료 보러가기 ›")}</a></div>
+  return `<section class="shop-hero hero-main">${mosaic()}<div class="hero-copy"><p class="hero-eyebrow">${t("Drawing reference library")}</p><h1>${t("Drawing reference for artists")}</h1><p class="hero-sub">${t("Multi-angle cuts and design-analysis boards to study form, texture and material.")}</p><div class="hero-cta"><a class="btn solid" href="#library">${t("자료 보러가기 ›")}</a><a class="btn hero-line" href="#free">${t("Get free samples")}</a></div></div></section>
+  <div class="wrap">
     <section class="sec">
       <div class="sec-head"><h2>${t("다양한 소재를 만나보세요")}</h2></div>
       <div class="cats">${CATS.filter(c=>ITEMS.some(i=>i.cat===c)).map(c=>`<a class="cat" href="#library" data-cat="${c}"><span class="ph">${CAT_IMG[c]?`<img src="${CAT_IMG[c]}" alt="" loading="lazy">`:`<b>${tCat(c)[0]}</b>`}</span>${tCat(c)}</a>`).join("")}<a class="cat" href="#free"><span class="ph"><b>F</b></span>${t("무료자료")}</a></div>
@@ -671,7 +685,7 @@ function vHome(){
     </section>
     <section class="sec" style="padding-top:4px">
       <div class="sec-head"><h2>${t("이달의 추천 자료")}</h2><a class="more" href="#library">${t("전체보기 ›")}</a></div>
-      <a class="feat" href="#p-${best.id}"><span class="thumb"><img src="${best.img}" alt=""></span>
+      <a class="feat" href="#p-${best.id}"><span class="thumb"><img src="${heroImg(best)}" alt=""></span>
         <span><span class="badge">BEST</span><h3>${esc(iTitle(best))}</h3><p>${esc(iDesc(best))}</p><p class="status" style="margin-top:10px">${t("베타 미리보기 · 찜 받는 중")}</p></span></a>
     </section>
     <section class="sec">
@@ -685,13 +699,14 @@ function vHome(){
   </div>
   ${brand()}`;
 }
-const mosaic=()=>`<div class="sh-mosaic">${ITEMS.filter(i=>i.thumb).slice(-12).map(i=>`<img src="${i.thumb}" alt="" loading="lazy">`).join("")}</div>`;
+const MOSAIC_IDS=["deer","tiger","octopus","violin","rooster","chromebear","hermitcrab","pufferfish","microscope","glasscherry","trex","pig"];
+const mosaic=()=>`<div class="sh-mosaic">${MOSAIC_IDS.map(id=>byId(id)).filter(i=>i&&i.cuts).map(i=>`<img src="img/${i.id}/cut01.jpg" alt="" loading="eager">`).join("")}</div>`;
 function brand(){return `<div class="wrap"><section class="cta-dark"><h2>${t("원하는 소재 3개,")}<br>${t("무료로 받아보세요")}</h2>
   <div><p>${t("이메일만 넣으면 무료 체험권이 와요. 분석보드와 각도별 개별컷 원본을 워터마크 없이 받아보세요.")}</p><a class="btn" href="#free">${t("무료로 시작하기 ›")}</a></div></section></div>
   <footer class="foot"><div class="wrap"><div class="cols">
     <div><h5>${t("미.술집")}</h5><span>${t("그림 그리는 사람들의 소재창고")}</span><span>${t("좋은 소재가 좋은 그림을 만듭니다")}</span></div>
     <div><h5>${t("둘러보기")}</h5><a href="#library">${t("자료실")}</a><a href="#free">${t("무료자료")}</a><a href="#mine">${t("마이 (내 구매·찜)")}</a></div>
-    <div><h5>${t("안내")}</h5><a href="#about">ABOUT</a><a href="#" data-lang="${LANG==="ko"?"en":"ko"}">${LANG==="ko"?"English":"한국어"}</a><span>${t("개인 학습용 · 재배포 금지")}</span></div>
+    <div><h5>${t("안내")}</h5><a href="#about">ABOUT</a><span>${t("개인 학습용 · 재배포 금지")}</span></div>
     <div><h5>${t("문의")}</h5><a href="https://www.instagram.com/mi.sulzip/" target="_blank" rel="noopener">Instagram</a><a href="mailto:misulzip@gmail.com">misulzip@gmail.com</a></div>
   </div><div class="copy"><span>© 2026 ${t("미.술집")} Mi.Sulzip</span><span>Reference Library</span></div></div></footer>`}
 
@@ -726,7 +741,7 @@ function renderLib(){
 
 function vDetail(it){
   const rel=ITEMS.filter(i=>i.id!==it.id).map(i=>[i,(i.cat===it.cat?10:0)+i.tags.filter(t=>it.tags.includes(t)).length]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>x[0]);
-  const pv=(it.pv||(it.img?[it.img]:[])).map(p=>p===it.img?bimg(it):p);
+  const pv=cleanPv(it);
   const free=it.price===0, soon=it.badge==="soon";
   return `<div class="wrap"><a class="back" href="#library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>${t("자료실로")}</a>
   <div class="d-wrap">
@@ -756,7 +771,7 @@ function vDetail(it){
 function vFree(){
   return `<div class="wrap"><div class="page-title"><h1>${t("무료자료")}</h1><p>${t("워터마크 없이 바로 받는 미.술집 무료 원본")}</p></div>
   <div class="free-hero" style="text-align:center;justify-items:center"><h2>${t("원하는 소재 원본 받기")}</h2><p>${t("3개 무료로 받아보세요!")}</p></div>
-  <section class="sec"><div class="grid">${FREEBIES.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${byId(f.item)?.thumb||f.file}" alt="" loading="lazy"><span class="badge free">FREE</span></div><div class="ttl"><h3>${esc(fx(f)[0])}</h3></div><p class="desc">${esc(fx(f)[1])}</p><div class="btns"><span class="b-dark b-full">${t("무료 원본 받기")}</span></div></a>`).join("")}</div></section></div>`;
+  <section class="sec"><div class="grid">${FREEBIES.filter(f=>LANG==="ko"||byId(f.item)).map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${byId(f.item)?.thumb||f.file}" alt="" loading="lazy"><span class="badge free">FREE</span></div><div class="ttl"><h3>${esc(fx(f)[0])}</h3></div><p class="desc">${esc(fx(f)[1])}</p><div class="btns"><span class="b-dark b-full">${t("무료 원본 받기")}</span></div></a>`).join("")}</div></section></div>`;
 }
 
 function vMy(){
