@@ -15,7 +15,9 @@ async function ls(action, params) {
 }
 
 function folders() {
-  try { return JSON.parse(process.env.PAID_FOLDERS || "{}"); } catch { return {}; }
+  // PAID_FOLDERS: 기존 소재(민감 값이라 수정·열람 불가), PAID_FOLDERS_2: 이후 추가한 소재({"<id>":"<driveFolderId>"})
+  const read = (k) => { try { return JSON.parse(process.env[k] || "{}"); } catch { return {}; } };
+  return { ...read("PAID_FOLDERS"), ...read("PAID_FOLDERS_2") };
 }
 
 const ours = (d) => d && d.meta && d.meta.store_id === STORE_ID && d.meta.product_id === PRODUCT_ID;
