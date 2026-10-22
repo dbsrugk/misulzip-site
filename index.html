@@ -803,7 +803,7 @@ function vAbout(){
 
 
 // ===== 이용권(Lemon Squeezy 라이선스 키) =====
-const PASS_BUY={free:"",one:"",five:"",ten:""}; // Lemon Squeezy 결제 링크 (상품 공개 후 입력)
+const PASS_BUY={free:"https://misulzip.lemonsqueezy.com/checkout/buy/6b7c0500-1ff4-4712-b0de-4cdf5926b302?enabled=2252843",one:"https://misulzip.lemonsqueezy.com/checkout/buy/6b7c0500-1ff4-4712-b0de-4cdf5926b302?enabled=2252740",five:"https://misulzip.lemonsqueezy.com/checkout/buy/6b7c0500-1ff4-4712-b0de-4cdf5926b302?enabled=2252783",ten:"https://misulzip.lemonsqueezy.com/checkout/buy/6b7c0500-1ff4-4712-b0de-4cdf5926b302?enabled=2252835"}; // Lemon Squeezy 체크아웃(상품 1442962, 변형별). 지금은 테스트 모드 링크 — 라이브 전환 후 링크 재확인 // Lemon Squeezy 결제 링크 (상품 공개 후 입력)
 const passes=()=>{const p=PR();return [["one",t("이 소재만"),p.fmt(p.one),t("소재 1개")],["five",t("5개 묶음"),p.p5,t("원하는 소재 5개 · 개당 {u}",{u:p.fmt(p.five)})],["ten",t("10개 묶음"),p.p10,t("원하는 소재 10개 · 개당 {u}",{u:p.fmt(p.ten)})],["free",t("처음이세요?"),t("무료"),t("원하는 소재 3개 무료 · 이메일만 입력")]]};
 const RD_KEY="mz_pass", RD_USED="mz_used";
 const rdGet=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
@@ -996,8 +996,8 @@ app.addEventListener("click",e=>{
   const ro=e.target.closest("[data-reopen]");if(ro){e.preventDefault();const id=ro.dataset.reopen,o=rdGet(OWN_KEY,{})[id];if(!o)return;const win=window.open("","_blank");fetch("/api/redeem",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:o.key,item:id,instanceId:o.inst})}).then(r=>r.json()).then(d=>{if(d.url){win?win.location.href=d.url:location.href=d.url}else{win&&win.close();toast(t("원본을 열 수 없어요. 구매 메일을 확인해 주세요"))}}).catch(()=>{win&&win.close();toast(t("잠시 후 다시 시도해 주세요"))});return}
   const ca=e.target.closest("[data-cart]");if(ca){e.preventDefault();e.stopPropagation();addCart(ca.dataset.cart,ca.dataset.go==="1");return}
   const uc=e.target.closest("[data-uncart]");if(uc){e.preventDefault();cart=cart.filter(x=>x!==uc.dataset.uncart);saveCart();route();return}
-  if(e.target.closest("[data-pay]")){toast(t("결제 연결을 준비 중이에요"));return}
-  if(e.target.closest("[data-freeclaim]")){toast(t("무료 받기 연결을 준비 중이에요"));return}
+  if(e.target.closest("[data-pay]")){if(cart.length)openRedeem(cart[0],"");else toast(t("결제 연결을 준비 중이에요"));return}
+  if(e.target.closest("[data-freeclaim]")){if(cart.length)openRedeem(cart[0],"free");else toast(t("무료 받기 연결을 준비 중이에요"));return}
   const rdm=e.target.closest("[data-redeem]");if(rdm){e.preventDefault();e.stopPropagation();openRedeem(rdm.dataset.redeem,rdm.dataset.mode);return}
   const like=e.target.closest("[data-like]");
   if(like){e.preventDefault();e.stopPropagation();const id=like.dataset.like;
