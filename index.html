@@ -79,6 +79,7 @@ main{padding-bottom:96px}
 .chip.tag.on{border-color:var(--ink);background:var(--ink);color:var(--on-ink)}
 
 /* hero */
+.en-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0 4px}.en-hero img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:#fff;border:1px solid var(--line)}@media(min-width:720px){.en-hero{grid-template-columns:repeat(6,1fr)}}
 .hero{background:var(--soft)}
 .hero .wrap{display:grid;grid-template-columns:1fr;gap:8px;padding-block:28px 24px;position:relative}
 .hero h1{font-family:var(--display);font-weight:900;font-size:clamp(28px,7.4vw,46px);line-height:1.18;letter-spacing:-.03em}
@@ -614,13 +615,13 @@ function vAbout(){
 }
 
 // ===== English page (Pinterest landing) =====
-const EN_NAMES={tiger:"Tiger",rooster:"Rooster",hermitcrab:"Hermit Crab",octopus:"Octopus",pufferfish:"Pufferfish",trex:"T-Rex",violin:"Violin",microscope:"Microscope",glasscherry:"Glass Cherry",chromebear:"Chrome Bear",pig:"Pig",balloondog:"Metal Balloon Dog"};
+const EN_NAMES={deer:"Red Deer",tiger:"Tiger",rooster:"Rooster",hermitcrab:"Hermit Crab",octopus:"Octopus",pufferfish:"Pufferfish",trex:"T-Rex",violin:"Violin",microscope:"Microscope",glasscherry:"Glass Cherry",chromebear:"Chrome Bear",pig:"Pig",balloondog:"Metal Balloon Dog"};
 const EN_FREE=["tiger","rooster","pig","balloondog"];
 const enImg=id=>`img/${id}/cut01.jpg`;
 function vEn(){
-  const subs=["tiger","rooster","hermitcrab","octopus","pufferfish","trex","violin","microscope","glasscherry","chromebear"].map(id=>byId(id)).filter(Boolean);
+  const subs=["deer","tiger","rooster","hermitcrab","octopus","pufferfish","trex","violin","microscope","glasscherry","chromebear"].map(id=>byId(id)).filter(Boolean);
   const free=EN_FREE.map(id=>FREEBIES.find(f=>f.item===id)).filter(Boolean);
-  return `<div class="wrap"><div class="page-title"><p class="eyebrow">English</p><h1>Drawing reference packs for artists</h1><p>Individual angles + design-analysis boards, made for art students and illustrators.</p></div>
+  return `<div class="wrap"><div class="en-hero">${["tiger","deer","octopus","violin","rooster","chromebear"].map(id=>`<img src="img/${id}/cut01.jpg" alt="${EN_NAMES[id]||id} reference" loading="eager">`).join("")}</div><div class="page-title"><p class="eyebrow">English</p><h1>Drawing reference packs for artists</h1><p>Individual angles + design-analysis boards, made for art students and illustrators.</p></div>
   <div class="free-hero" style="text-align:center;justify-items:center"><p class="eyebrow">Free samples</p><h2>Study form, texture and material</h2><p>Download free samples now. No signup needed.</p><a class="btn solid" href="#library" style="margin-top:12px">Browse the library ›</a></div>
   <section class="sec"><div class="sec-head"><h2>Free samples</h2></div>
   <div class="grid">${free.map(f=>`<a class="card" href="#free-${f.id}"><div class="img"><img src="${enImg(f.item)}" alt="${EN_NAMES[f.item]} reference" loading="lazy"><span class="badge free">FREE</span></div><h3>${EN_NAMES[f.item]}</h3><div class="row"><span class="status">Free download ›</span></div></a>`).join("")}</div></section>
