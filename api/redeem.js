@@ -15,9 +15,9 @@ async function ls(action, params) {
 }
 
 function folders() {
-  // PAID_FOLDERS: 기존 소재(민감 값이라 수정·열람 불가), PAID_FOLDERS_2·PAID_FOLDERS_3: 이후 추가한 소재({"<id>":"<driveFolderId>"}; 값을 읽을 수 없어 소재를 더할 때는 새 변수를 만든다)
+  // PAID_FOLDERS: 기존 소재(민감 값이라 수정·열람 불가), PAID_FOLDERS_2·_3·_4: 이후 추가한 소재({"<id>":"<driveFolderId>"}; 값을 읽을 수 없어 소재를 더할 때는 새 변수를 만든다)
   const read = (k) => { try { return JSON.parse(process.env[k] || "{}"); } catch { return {}; } };
-  return { ...read("PAID_FOLDERS"), ...read("PAID_FOLDERS_2"), ...read("PAID_FOLDERS_3") };
+  return { ...read("PAID_FOLDERS"), ...read("PAID_FOLDERS_2"), ...read("PAID_FOLDERS_3"), ...read("PAID_FOLDERS_4") };
 }
 
 const ours = (d) => d && d.meta && d.meta.store_id === STORE_ID && d.meta.product_id === PRODUCT_ID;
