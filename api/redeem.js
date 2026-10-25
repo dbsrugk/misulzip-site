@@ -15,9 +15,9 @@ async function ls(action, params) {
 }
 
 function folders() {
-  // PAID_FOLDERS: 기존 소재(민감 값이라 수정·열람 불가), PAID_FOLDERS_2·_3·_4·_5·_6·_7·_8·_9·_10·_11·_12: 이후 추가한 소재({"<id>":"<driveFolderId>"}; 값을 읽을 수 없어 소재를 더할 때는 새 변수를 만든다)
+  // PAID_FOLDERS: 기존 소재(민감 값이라 수정·열람 불가), PAID_FOLDERS_2·_3·_4·_5·_6·_7·_8·_9·_10·_11·_12·_13: 이후 추가한 소재({"<id>":"<driveFolderId>"}; 값을 읽을 수 없어 소재를 더할 때는 새 변수를 만든다)
   const read = (k) => { try { return JSON.parse(process.env[k] || "{}"); } catch { return {}; } };
-  return { ...read("PAID_FOLDERS"), ...read("PAID_FOLDERS_2"), ...read("PAID_FOLDERS_3"), ...read("PAID_FOLDERS_4"), ...read("PAID_FOLDERS_5"), ...read("PAID_FOLDERS_6"), ...read("PAID_FOLDERS_7"), ...read("PAID_FOLDERS_8"), ...read("PAID_FOLDERS_9"), ...read("PAID_FOLDERS_10"), ...read("PAID_FOLDERS_11"), ...read("PAID_FOLDERS_12") };
+  return { ...read("PAID_FOLDERS"), ...read("PAID_FOLDERS_2"), ...read("PAID_FOLDERS_3"), ...read("PAID_FOLDERS_4"), ...read("PAID_FOLDERS_5"), ...read("PAID_FOLDERS_6"), ...read("PAID_FOLDERS_7"), ...read("PAID_FOLDERS_8"), ...read("PAID_FOLDERS_9"), ...read("PAID_FOLDERS_10"), ...read("PAID_FOLDERS_11"), ...read("PAID_FOLDERS_12"), ...read("PAID_FOLDERS_13") };
 }
 
 const ours = (d) => d && d.meta && d.meta.store_id === STORE_ID && d.meta.product_id === PRODUCT_ID;
