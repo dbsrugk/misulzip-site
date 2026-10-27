@@ -1059,7 +1059,7 @@ function vMine(){
 
 // ===== 3D 뷰어 (시험 중) =====
 // 소재별 3D 파일과 기본 재질: gloss 0~100(무광→유광), metal 0~1(선택)
-const GLB={violin:{src:"3d/violin.glb",gloss:58},typewriter:{src:"3d/typewriter.glb",gloss:60}};
+const GLB={violin:{src:"3d/violin.glb",gloss:58},typewriter:{src:"3d/typewriter.glb",gloss:60},dialphone:{src:"3d/dialphone.glb",gloss:62,metal:0.6}};
 function viewer3d(it){
   const g=GLB[it.id]; if(!g)return ""; const f=g.src;
   const nm=esc(iTitle(it));
