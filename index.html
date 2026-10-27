@@ -152,6 +152,14 @@ main{padding-bottom:96px}
 .sort{display:flex;gap:4px}
 .sort button{padding:4px 8px;border-radius:6px;font-size:13px;color:var(--muted)}
 .sort button.on{color:var(--fg);font-weight:700}
+.cat small{font-size:11px;color:var(--muted);margin-top:-4px}
+.chip em,.side button em{font-style:normal;font-size:11.5px;opacity:.55;margin-left:5px}
+.side button{justify-content:space-between}.side button em{margin-left:auto;padding-left:8px}
+.side h5{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--muted);margin:14px 12px 4px}
+.strip{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;margin-inline:calc(var(--gut,16px)*-1);padding-inline:var(--gut,16px);padding-bottom:4px}
+.strip::-webkit-scrollbar{display:none}
+.strip .card{flex:0 0 150px;scroll-snap-align:start}
+@media(min-width:640px){.strip .card{flex-basis:200px}.strip{margin-inline:0;padding-inline:0}}
 .empty{padding:48px 0;text-align:center;color:var(--muted)}
 .empty b{display:block;color:var(--fg);font-size:16px;margin-bottom:6px}
 
@@ -260,7 +268,7 @@ main{padding-bottom:96px}
 /* tablet / desktop */
 @media (min-width:640px){
   .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .cats{grid-template-columns:repeat(8,1fr)}
+  .cats{grid-template-columns:repeat(6,1fr)}
   .hero .wrap{grid-template-columns:1.2fr 1fr;align-items:center}
   .hero-img{width:min(280px,100%)}
   .hero .hand-en{display:block}
@@ -483,7 +491,9 @@ function applyStatic(){
 }
 function setLang(l){if(!LANGS.includes(l))return;LANG=l;try{localStorage.setItem("mz-lang",l)}catch(e){}applyStatic();route()}
 
-const CATS=["과일","음식","음료","동물","생활용품","재질·표현","인체","조합소재","캐릭터·인형","식물·자연","탈것·기계","기초도형"];
+// 카테고리 그룹(찾기 쉬운 순서): 생물·자연 → 사물·기계 → 표현 연구. 소재가 0개인 카테고리는 자동으로 숨김
+const CAT_GROUPS=[["생물·자연",["동물","식물·자연","과일","음식","음료","인체","캐릭터·인형"]],["사물·기계",["생활용품","탈것·기계","조합소재"]],["표현 연구",["재질·표현","기초도형"]]];
+const CATS=CAT_GROUPS.flatMap(g=>g[1]);
 const CAT_IMG={"과일":"img/strawberry/thumb.jpg","음식":"img/hamburger/thumb.jpg","동물":"img/octopus/thumb.jpg","생활용품":"img/iron/thumb.jpg","재질·표현":"img/balloondog/thumb.jpg","인체":"img/david/thumb.jpg","조합소재":"img/corn/thumb.jpg","캐릭터·인형":"img/capybara/thumb.jpg","식물·자연":"img/lily/thumb.jpg","탈것·기계":"img/robotarm/thumb.jpg","기초도형":"img/shape_sphere/thumb.jpg"};
 
 // 자료 데이터: 드라이브 '미.술집_원본' 분류표 기준 (베타)
@@ -722,6 +732,12 @@ try{likes=new Set(JSON.parse(localStorage.getItem("mz-likes")||"[]"))}catch(e){}
 function saveLikes(){try{localStorage.setItem("mz-likes",JSON.stringify([...likes]))}catch(e){}}
 
 const state={q:"",cat:"전체",tag:"",sort:"new"};
+const catCount=c=>c==="전체"?ITEMS.length:ITEMS.filter(i=>i.cat===c).length;
+const catGroupsShown=()=>CAT_GROUPS.map(g=>[g[0],g[1].filter(c=>catCount(c)>0)]).filter(g=>g[1].length);
+const NEW_N=10;
+const newest=n=>ITEMS.slice().sort((a,b)=>b.order-a.order).slice(0,n);
+const NEWSET=new Set(newest(12).map(i=>i.id)); // NEW 배지는 최근 12개에만 표시(81개 전부 NEW라 묻히던 문제)
+const badgeOf=it=>it.badge==="new"?(NEWSET.has(it.id)?"new":""):it.badge;
 const app=document.getElementById("app");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -731,19 +747,23 @@ const heartSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 function badgeHtml(b){return b==="best"?'<span class="badge">BEST</span>':b==="new"?'<span class="badge new">NEW</span>':b==="free"?'<span class="badge free">FREE</span>':b==="soon"?`<span class="badge soon">${t("준비 중")}</span>`:""}
 function imgHtml(it,big){return it.img?`<img src="${it.thumb&&!big?it.thumb:heroImg(it)}" alt="${esc(iTitle(it))} ${t("미리보기 이미지")}" loading="lazy">`:`<div class="placeholder"><b>${esc(it.ph)}</b><small>COMING SOON</small></div>`}
 function card(it){const ti=iTitle(it), liked=likes.has(it.id);return `<article class="card" data-go="${it.id}" tabindex="0">
-  <div class="img">${imgHtml(it)}${badgeHtml(it.badge)}<span class="cat-pill">${esc(tCat(it.cat))}</span><button class="heart-ov ${liked?"on":""}" data-like="${it.id}" aria-label="${t("찜하기")}" aria-pressed="${liked}">${heartSvg}</button></div>
+  <div class="img">${imgHtml(it)}${badgeHtml(badgeOf(it))}<span class="cat-pill">${esc(tCat(it.cat))}</span><button class="heart-ov ${liked?"on":""}" data-like="${it.id}" aria-label="${t("찜하기")}" aria-pressed="${liked}">${heartSvg}</button></div>
   <div class="ttl"><h3>${esc(ti)}</h3><b class="pr">${wonf(PR().one)}</b></div><p class="desc">${esc(iDesc(it))}</p>
   <div class="btns">${cartBtn(it.id,"b-light")}<button class="b-dark" data-cart="${it.id}" data-go="1">${t("바로 구매")}</button></div></article>`}
 
 function vHome(){
   const best=ITEMS.find(i=>i.id==="deer")||ITEMS.find(i=>i.id==="cherry");
-  const fresh=ITEMS.filter(i=>i.price>0).sort((a,b)=>b.order-a.order).slice(0,4);
+  const fresh=newest(NEW_N);
   const free=ITEMS.filter(i=>i.price===0).slice(0,4);
   return `<section class="shop-hero hero-main">${mosaic()}<div class="hero-copy"><p class="hero-eyebrow">${t("Drawing reference library")}</p><h1>${t("Drawing reference for artists")}</h1><p class="hero-sub">${t("Multi-angle cuts and design-analysis boards to study form, texture and material.")}</p><div class="hero-cta"><a class="btn solid" href="#library">${t("자료 보러가기 ›")}</a><a class="btn hero-line" href="#free">${t("Get free samples")}</a></div></div></section>
   <div class="wrap">
     <section class="sec">
-      <div class="sec-head"><h2>${t("다양한 소재를 만나보세요")}</h2></div>
-      <div class="cats">${CATS.filter(c=>ITEMS.some(i=>i.cat===c)).map(c=>`<a class="cat" href="#library" data-cat="${c}"><span class="ph">${CAT_IMG[c]?`<img src="${CAT_IMG[c]}" alt="" loading="lazy">`:`<b>${tCat(c)[0]}</b>`}</span>${tCat(c)}</a>`).join("")}<a class="cat" href="#free"><span class="ph"><b>F</b></span>${t("무료자료")}</a></div>
+      <div class="sec-head"><h2>${t("신규 자료")}</h2><a class="more" href="#library" data-cat="전체">${t("전체보기 ›")}</a></div>
+      <div class="strip">${fresh.map(card).join("")}</div>
+    </section>
+    <section class="sec" style="padding-top:4px">
+      <div class="sec-head"><h2>${t("다양한 소재를 만나보세요")}</h2><span class="more">${t("소재 {n}종",{n:ITEMS.length})}</span></div>
+      <div class="cats">${catGroupsShown().flatMap(g=>g[1]).map(c=>`<a class="cat" href="#library" data-cat="${c}"><span class="ph">${CAT_IMG[c]?`<img src="${CAT_IMG[c]}" alt="" loading="lazy">`:`<b>${tCat(c)[0]}</b>`}</span>${tCat(c)}<small>${catCount(c)}</small></a>`).join("")}<a class="cat" href="#free"><span class="ph"><b>F</b></span>${t("무료자료")}</a></div>
     </section>
     <section class="sec" style="padding-top:4px">
       <div class="sec-head"><h2>${t("테마 팩")}</h2><span class="more">${t("주제별로 묶어 보기")}</span></div>
@@ -753,10 +773,6 @@ function vHome(){
       <div class="sec-head"><h2>${t("이달의 추천 자료")}</h2><a class="more" href="#library">${t("전체보기 ›")}</a></div>
       <a class="feat" href="#p-${best.id}"><span class="thumb"><img src="${heroImg(best)}" alt=""></span>
         <span><span class="badge">BEST</span><h3>${esc(iTitle(best))}</h3><p>${esc(iDesc(best))}</p><p class="status" style="margin-top:10px">${t("베타 미리보기 · 찜 받는 중")}</p></span></a>
-    </section>
-    <section class="sec">
-      <div class="sec-head"><h2>${t("신규 자료")}</h2><a class="more" href="#library">${t("전체보기 ›")}</a></div>
-      <div class="grid">${fresh.map(card).join("")}</div>
     </section>
     ${free.length?`<section class="sec">
       <div class="sec-head"><h2>${t("무료 미리보기")}</h2><a class="more" href="#free">${t("전체보기 ›")}</a></div>
@@ -780,7 +796,7 @@ function filtered(){
   const q=state.q.trim().toLowerCase();
   let list=ITEMS.filter(it=>(state.cat==="전체"||it.cat===state.cat)&&(!state.tag||it.tags.includes(state.tag))&&
     (!q||(it.title+" "+it.desc+" "+it.tags.join(" ")+" "+it.cat+" "+iTitle(it)+" "+iDesc(it)+" "+it.tags.map(tTag).join(" ")+" "+tCat(it.cat)).toLowerCase().includes(q)));
-  return list.sort((a,b)=>state.sort==="pop"?b.pop-a.pop:b.order-a.order);
+  return list.sort((a,b)=>state.sort==="pop"?b.pop-a.pop:state.sort==="name"?iTitle(a).localeCompare(iTitle(b),LANG==="ko"?"ko":"en"):b.order-a.order);
 }
 function tagPool(){const s=new Set();ITEMS.filter(i=>state.cat==="전체"||i.cat===state.cat).forEach(i=>i.tags.slice(1,5).forEach(t=>s.add(t)));return [...s].slice(0,14)}
 function vLibrary(){
@@ -788,11 +804,11 @@ function vLibrary(){
   <div class="wrap"><div class="sh-bar"><h1>${t("원하는 소재를 찾아보세요")}</h1>
     <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
     <input id="q" type="search" placeholder="${t("소재 검색 (예: 금속, 반사, 체리)")}" value="${esc(state.q)}" autocomplete="off"></label></div>
-  <div class="lib-wrap" style="margin-top:14px"><aside class="side"><h4>${t("카테고리")}</h4>${["전체",...CATS].map(c=>`<button data-setcat="${c}" class="${state.cat===c?"on":""}">${c==="전체"?t("전체 소재"):tCat(c)}</button>`).join("")}</aside>
+  <div class="lib-wrap" style="margin-top:14px"><aside class="side"><h4>${t("카테고리")}</h4><button data-setcat="전체" class="${state.cat==="전체"?"on":""}">${t("전체 소재")}<em>${catCount("전체")}</em></button>${catGroupsShown().map(g=>`<h5>${t(g[0])}</h5>`+g[1].map(c=>`<button data-setcat="${c}" class="${state.cat===c?"on":""}">${tCat(c)}<em>${catCount(c)}</em></button>`).join("")).join("")}</aside>
   <div><div class="filters" style="margin-top:0">
-      <div class="chips" id="catChips">${["전체",...CATS].map(c=>`<button class="chip ${state.cat===c?"on":""}" data-setcat="${c}">${tCat(c)}</button>`).join("")}</div>
+      <div class="chips" id="catChips">${["전체",...catGroupsShown().flatMap(g=>g[1])].map(c=>`<button class="chip ${state.cat===c?"on":""}" data-setcat="${c}">${tCat(c)}<em>${catCount(c)}</em></button>`).join("")}</div>
       <div class="chips" id="tagChips"></div></div>
-    <div class="lib-meta"><span id="count"></span><div class="sort"><button data-sort="new">${t("최신순")}</button><button data-sort="pop">${t("인기순")}</button></div></div>
+    <div class="lib-meta"><span id="count"></span><div class="sort"><button data-sort="new">${t("최신순")}</button><button data-sort="pop">${t("인기순")}</button><button data-sort="name">${t("이름순")}</button></div></div>
     <div class="grid" id="libGrid"></div></div></div></div>${brand()}`;
 }
 function renderLib(){
@@ -801,6 +817,8 @@ function renderLib(){
   document.getElementById("tagChips").innerHTML=tagPool().map(g=>`<button class="chip tag ${state.tag===g?"on":""}" data-settag="${g}">#${tTag(g)}</button>`).join("");
   document.querySelectorAll("[data-sort]").forEach(b=>b.classList.toggle("on",b.dataset.sort===state.sort));
   document.querySelectorAll("[data-setcat]").forEach(b=>b.classList.toggle("on",b.dataset.setcat===state.cat));
+  const on=document.querySelector("#catChips .chip.on");if(on&&on.scrollIntoView&&!state.q)on.parentNode.scrollTo({left:Math.max(0,on.offsetLeft-12),behavior:"auto"});
+  if(location.hash.split("?")[0]==="#library"){const p=new URLSearchParams();if(state.cat!=="전체")p.set("cat",state.cat);if(state.sort!=="new")p.set("sort",state.sort);if(state.tag)p.set("tag",state.tag);const qs=p.toString();try{history.replaceState(null,"","#library"+(qs?"?"+qs:""))}catch(e){}}
   document.getElementById("libGrid").innerHTML=list.length?list.map(card).join(""):
     `<div class="empty" style="grid-column:1/-1"><b>${t("‘{q}’에 맞는 자료가 아직 없어요",{q:esc(state.q||tTag(state.tag))})}</b>${t("다른 소재로 검색하거나 필터를 지워보세요.")}</div>`;
 }
@@ -814,7 +832,7 @@ function vDetail(it){
     <div class="d-hero">${imgHtml(it,true)}</div>
     <div class="d-body">
       <div><p class="crumb">${tCat(it.cat)} ›</p>
-        <div class="d-title"><h1>${esc(iTitle(it))}</h1>${badgeHtml(it.badge)}</div>
+        <div class="d-title"><h1>${esc(iTitle(it))}</h1>${badgeHtml(badgeOf(it))}</div>
         <p class="d-price">${wonf(PR().one)}</p><p class="d-free">${t("처음이면 3개까지 무료")}</p>
         <p class="d-meta"><span>${it.cuts?t("분석보드 + 개별컷 {n}장 원본",{n:it.cuts}):t("분석보드 + 각도별 모음컷 원본")} · ${t("워터마크 없음")}</span></p></div>
       ${viewer3d(it)}
@@ -1015,12 +1033,13 @@ function v3dInit(){
 }
 
 function route(){
-  const h=(location.hash||"#home").slice(1);
+  let h=(location.hash||"#home").slice(1), qs="";
+  const qi=h.indexOf("?");if(qi>-1){qs=h.slice(qi+1);h=h.slice(0,qi)}
   let r=h, html;
   if(h.startsWith("free-")){const f=FREEBIES.find(x=>"free-"+x.id===h);html=f?vFreebie(f):vFree();r="free"}
   else if(h.startsWith("pk-")){const pk=PACKS.find(x=>"pk-"+x.id===h);html=pk?vPack(pk):vHome();r="home"}
   else if(h.startsWith("p-")){const it=ITEMS.find(i=>"p-"+i.id===h);html=it?vDetail(it):vLibrary();r="library"}
-  else if(h==="library")html=vLibrary();
+  else if(h==="library"){if(qs){const p=new URLSearchParams(qs),c=p.get("cat");if(c)state.cat=(c==="전체"||CATS.includes(c))?c:"전체";if(["new","pop","name"].includes(p.get("sort")))state.sort=p.get("sort");state.tag=p.get("tag")||"";state.q=""}html=vLibrary()}
   else if(h==="free")html=vFree();
   else if(h==="my"){html=vMine();r="mine"}
   else if(h==="cart")html=vCart();
