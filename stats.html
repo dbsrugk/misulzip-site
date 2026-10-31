@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>방문 통계 · Mi.Sulzip</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1c1a17;--mut:#7a746a;--line:#e4dfd5;--acc:#2f6b4f}
+@media (prefers-color-scheme:dark){:root{--bg:#161512;--card:#201e1a;--ink:#f1ede4;--mut:#a39c8f;--line:#34312b;--acc:#7fc9a2}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Malgun Gothic",sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mut);font-size:13px;margin-bottom:16px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;cursor:pointer}
+button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.card h2{font-size:13px;color:var(--mut);font-weight:600;margin:0 0 8px}
+.big{font-size:32px;font-weight:700}
+.chart{display:flex;align-items:flex-end;gap:3px;height:120px}
+.chart i{flex:1;background:var(--acc);border-radius:3px 3px 0 0;min-height:2px;opacity:.85}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:5px 0;border-top:1px solid var(--line)}td:last-child{text-align:right;color:var(--mut);white-space:nowrap}
+tr:first-child td{border-top:0}
+#msg{padding:24px;text-align:center;color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+<h1>방문 통계</h1>
+<div class="sub" id="sub">Vercel Web Analytics 기준 · 나만 보는 페이지</div>
+<div class="bar" id="bar"></div>
+<div id="msg">불러오는 중…</div>
+<div id="out" hidden>
+  <div class="kpi">
+    <div class="card"><h2>방문자</h2><div class="big" id="v">-</div></div>
+    <div class="card"><h2>페이지뷰</h2><div class="big" id="p">-</div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px"><h2>일별 방문자</h2><div class="chart" id="chart"></div><div class="sub" id="axis" style="margin:6px 0 0"></div></div>
+  <div class="grid" id="grid"></div>
+</div>
+</main>
+<script>
+(function(){
+  var KEY="";try{KEY=localStorage.getItem("ms_stats_key")||""}catch(e){}
+  var q=new URLSearchParams(location.search);
+  if(q.get("key")){KEY=q.get("key");try{localStorage.setItem("ms_stats_key",KEY)}catch(e){}history.replaceState(null,"","/stats")}
+  var days=7;
+  var bar=document.getElementById("bar");
+  [1,7,30,90].forEach(function(d){var b=document.createElement("button");b.textContent=d===1?"오늘":d+"일";b.onclick=function(){days=d;load()};b.dataset.d=d;bar.appendChild(b)});
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function fmt(n){return Number(n||0).toLocaleString("ko-KR")}
+  function rows(title,arr,key){
+    var h='<div class="card"><h2>'+title+'</h2><table>';
+    (arr||[]).forEach(function(r){var k=r[key]||"(직접 방문)";h+="<tr><td>"+esc(k)+"</td><td>"+fmt(r.visitors)+"명 · "+fmt(r.pageviews)+"뷰</td></tr>"});
+    if(!(arr||[]).length)h+="<tr><td>데이터 없음</td><td></td></tr>";
+    return h+"</table></div>";
+  }
+  function load(){
+    Array.prototype.forEach.call(bar.children,function(b){b.className=(+b.dataset.d===days)?"on":""});
+    var msg=document.getElementById("msg"),out=document.getElementById("out");
+    msg.hidden=false;msg.textContent="불러오는 중…";out.hidden=true;
+    if(!KEY){var k=prompt("통계 비밀키를 입력하세요");if(!k){msg.textContent="비밀키가 필요해요";return}KEY=k;try{localStorage.setItem("ms_stats_key",KEY)}catch(e){}}
+    fetch("/api/stats?days="+days+"&key="+encodeURIComponent(KEY)).then(function(r){return r.json().then(function(j){return{ok:r.ok,s:r.status,j:j}})}).then(function(x){
+      if(x.s===401){try{localStorage.removeItem("ms_stats_key")}catch(e){}KEY="";msg.textContent="비밀키가 맞지 않아요. 새로고침해서 다시 입력하세요";return}
+      if(!x.ok){msg.textContent=x.j.error==="no_token"?"서버에 VERCEL_API_TOKEN이 아직 설정되지 않았어요":"오류: "+(x.j.error||x.s);return}
+      var d=x.j;msg.hidden=true;out.hidden=false;
+      document.getElementById("v").textContent=fmt(d.total.visitors);
+      document.getElementById("p").textContent=fmt(d.total.pageviews);
+      var by=(d.byDay||[]).slice().sort(function(a,b){return String(a.timestamp||"")<String(b.timestamp||"")?-1:1});
+      var max=Math.max.apply(null,by.map(function(r){return r.visitors||0}).concat([1]));
+      document.getElementById("chart").innerHTML=by.map(function(r){return'<i title="'+esc(String(r.timestamp||"").slice(0,10))+": "+fmt(r.visitors)+'명" style="height:'+Math.max(2,Math.round((r.visitors||0)/max*100))+'%"></i>'}).join("");
+      document.getElementById("axis").textContent=by.length?String(by[0].timestamp||"").slice(0,10)+" ~ "+String(by[by.length-1].timestamp||"").slice(0,10):"";
+      document.getElementById("grid").innerHTML=rows("유입 경로",d.referrer,"referrerHostname")+rows("국가",d.country,"country")+rows("인기 페이지",d.page,"requestPath")+rows("기기",d.device,"deviceType")+rows("운영체제",d.os,"osName")+rows("브라우저",d.browser,"browserName");
+    }).catch(function(){msg.textContent="불러오지 못했어요. 잠시 후 다시 시도하세요"});
+  }
+  load();
+})();
+</script>
+</body>
+</html>
