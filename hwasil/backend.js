@@ -1,7 +1,7 @@
 /* 작은 화실 — Supabase backend that mimics the window.claude.use('room'|'db'|'user') surface
    the studio code was written against. Data lives in the private `hwasil` schema and is only
-   reachable through hwasil_* RPCs that check the entry code. Realtime uses public broadcast/
-   presence channels whose names are derived from the entry code. */
+   reachable through hwasil_* RPCs that check the entry code. Realtime uses public broadcast
+   channels whose names are derived from the entry code. */
 (function () {
   var SB_URL = 'https://ldmsoceblbyvcoddquvn.supabase.co';
   /* No entry screen: the page enters with this code by itself. Change it together with hwasil.config.code_hash. */
@@ -58,83 +58,96 @@
     inviteLink: function () { return code ? location.origin + location.pathname + '#c=' + encodeURIComponent(code) : ''; }
   };
 
-  /* ---------- room (presence + broadcast) ---------- */
+  /* ---------- room (broadcast only; no Supabase Presence, it is rate-limited on the free plan) ----------
+     Every client sends its own state ("_st") whenever it changes (at most ~3/s) and at least every 2.5 s.
+     A joiner says "_hello" and everyone answers with their state. Peers that go quiet for 7 s are dropped. */
   var FAST = { x: 1, z: 1, h: 1, w: 1 };
+  var stats = hw.stats = { rx: 0, tx: 0, lobby: '연결 중', room: '-' };
+  var STEP = 330, BEAT = 2500, EXPIRE = 7000;
   function makeRoom(name, isLobby) {
-    var peerId = rand(8);
-    var ch = sb.channel(chanBase + '-' + name, { config: { presence: { key: peerId }, broadcast: { self: false, ack: false } } });
-    var mine = {}, lastTrack = 0, trackT = 0, lastSlow = '', posT = 0, lastPosAt = 0;
-    var fast = {};          // peer -> latest fast fields from broadcast
-    var peersCbs = [], errCbs = [], topicCbs = {}, alive = true, joined = false;
-    function peers() {
-      var st = ch.presenceState(), out = [];
-      Object.keys(st).forEach(function (k) {
-        var metas = st[k]; if (!metas || !metas.length) return;
-        var pr = Object.assign({}, metas[metas.length - 1]); delete pr.presence_ref;
-        if (fast[k]) Object.assign(pr, fast[k]);
-        out.push({ peer: k, kind: 'viewer', isMe: k === peerId, sameTab: k === peerId, presence: pr });
-      });
-      Object.keys(fast).forEach(function (k) { if (!st[k]) delete fast[k]; });
+    var peerId = rand(8), slot = isLobby ? 'lobby' : 'room';
+    var ch = sb.channel(chanBase + '-' + name, { config: { broadcast: { self: false, ack: false } } });
+    var mine = {}, peers = {}, dirty = false, lastSend = 0, sendT = 0, joined = false, alive = true;
+    var peersCbs = [], errCbs = [], topicCbs = {}, notifyT = 0, beatI = 0;
+    function snapshot() {
+      var out = [{ peer: peerId, kind: 'viewer', isMe: true, sameTab: true, presence: Object.assign({}, mine) }];
+      Object.keys(peers).forEach(function (k) { out.push({ peer: k, kind: 'viewer', isMe: false, sameTab: false, presence: peers[k].pr }); });
       return out;
     }
-    var notifyT = 0;
-    function notify() { if (notifyT) return; notifyT = setTimeout(function () { notifyT = 0; var p = { peers: peers() }; peersCbs.forEach(function (f) { try { f(p); } catch (e) {} }); }, 30); }
-    ch.on('presence', { event: 'sync' }, notify);
-    ch.on('broadcast', { event: '_pos' }, function (m) {
-      var d = m.payload; if (!d || typeof d.k !== 'string') return;
-      fast[d.k] = { x: d.x, z: d.z, h: d.h, w: d.w }; notify();
+    function notify() { if (notifyT) return; notifyT = setTimeout(function () { notifyT = 0; var c = { peers: snapshot() }; peersCbs.forEach(function (f) { try { f(c); } catch (e) {} }); }, 40); }
+    function tx(event, payload) { stats.tx++; return ch.send({ type: 'broadcast', event: event, payload: payload }).then(function () {}, function () {}); }
+    function sendState() {
+      sendT = 0; dirty = false; if (!joined || !alive) return;
+      lastSend = Date.now(); tx('_st', { k: peerId, p: mine });
+    }
+    function queueState(urgent) {
+      dirty = true; if (sendT || !joined) return;
+      sendT = setTimeout(sendState, urgent ? 60 : Math.max(0, STEP - (Date.now() - lastSend)));
+    }
+    ch.on('broadcast', { event: '_st' }, function (m) {
+      var d = m.payload; if (!d || typeof d.k !== 'string' || d.k === peerId || !d.p || typeof d.p !== 'object') return;
+      stats.rx++;
+      var isNew = !peers[d.k];
+      peers[d.k] = { pr: d.p, seen: Date.now() }; notify();
+      if (isNew && joined) queueState(true);          /* tell a newcomer about me right away */
+    });
+    ch.on('broadcast', { event: '_hello' }, function (m) {
+      var d = m.payload; if (!d || d.k === peerId) return;
+      stats.rx++; setTimeout(function () { if (alive && joined) { dirty = true; sendState(); } }, Math.random() * 250);
+    });
+    ch.on('broadcast', { event: '_bye' }, function (m) {
+      var d = m.payload; if (d && peers[d.k]) { delete peers[d.k]; notify(); }
     });
     ch.on('broadcast', { event: '_m' }, function (m) {
       var d = m.payload; if (!d || typeof d.t !== 'string') return;
+      stats.rx++;
       (topicCbs[d.t] || []).forEach(function (f) { try { f({ topic: d.t, data: d.d, peer: d.k, isMe: false }); } catch (e) {} });
     });
     var subscribed = new Promise(function (res) {
       ch.subscribe(function (status) {
-        if (status === 'SUBSCRIBED') { joined = true; doTrack(); res(true); }
-        else if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') && alive && !joined) { res(false); }
-        else if (status === 'CHANNEL_ERROR' && joined) { errCbs.forEach(function (f) { try { f(); } catch (e) {} }); }
+        stats[slot] = status === 'SUBSCRIBED' ? '연결됨' : (status === 'TIMED_OUT' ? '시간 초과' : status === 'CLOSED' ? '끊김' : status === 'CHANNEL_ERROR' ? '오류' : status);
+        if (status === 'SUBSCRIBED') { joined = true; tx('_hello', { k: peerId }); sendState(); notify(); res(true); }
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (!joined) res(false); else errCbs.forEach(function (f) { try { f(); } catch (e) {} });
+        }
       });
-      setTimeout(function () { res(joined); }, 8000);
+      setTimeout(function () { res(joined); }, 9000);
     });
-    function doTrack() { if (!joined || !alive) return; lastTrack = Date.now(); ch.track(Object.assign({}, mine)).catch(function () {}); }
-    function scheduleTrack(urgent) {
-      if (trackT) return;
-      var wait = urgent ? Math.max(0, 300 - (Date.now() - lastTrack)) : Math.max(0, 2500 - (Date.now() - lastTrack));
-      trackT = setTimeout(function () { trackT = 0; doTrack(); }, wait);
-    }
-    function sendPos() {
-      posT = 0; if (!joined || !alive) return; lastPosAt = Date.now();
-      ch.send({ type: 'broadcast', event: '_pos', payload: { k: peerId, x: mine.x, z: mine.z, h: mine.h, w: mine.w } }).catch(function () {});
-    }
+    beatI = setInterval(function () {
+      if (!alive) return;
+      var now = Date.now(), gone = false;
+      Object.keys(peers).forEach(function (k) { if (now - peers[k].seen > EXPIRE) { delete peers[k]; gone = true; } });
+      if (gone) notify();
+      if (joined && now - lastSend > BEAT) { dirty = true; sendState(); }
+    }, 1000);
     var api = {
       peer: peerId,
       presence: function (patch) {
-        var slowChanged = false, fastChanged = false;
+        var changed = false, slow = false;
         Object.keys(patch || {}).forEach(function (k) {
           if (mine[k] === patch[k]) return;
-          mine[k] = patch[k]; if (FAST[k]) fastChanged = true; else slowChanged = true;
+          mine[k] = patch[k]; changed = true; if (!FAST[k]) slow = true;
         });
-        var slow = JSON.stringify(Object.keys(mine).filter(function (k) { return !FAST[k]; }).map(function (k) { return [k, mine[k]]; }));
-        if (slowChanged && slow !== lastSlow) { lastSlow = slow; scheduleTrack(true); }
-        else if (fastChanged) {
-          scheduleTrack(false);                       // keep late joiners' snapshot fresh, slowly
-          if (!posT) posT = setTimeout(sendPos, Math.max(0, 220 - (Date.now() - lastPosAt)));
-        }
+        if (changed) { queueState(slow); notify(); }
         return Promise.resolve();
       },
       emit: function (topic, data) {
         if (!joined || !alive) return Promise.resolve();
-        return ch.send({ type: 'broadcast', event: '_m', payload: { t: topic, k: peerId, d: data } }).then(function () {}, function () {});
+        return tx('_m', { t: topic, k: peerId, d: data });
       },
       on: function (topic, cb) { (topicCbs[topic] = topicCbs[topic] || []).push(cb); },
       onPeers: function (cb, err) { peersCbs.push(cb); if (err) errCbs.push(err); if (joined) notify(); },
-      leave: function () { alive = false; clearTimeout(trackT); clearTimeout(posT); return sb.removeChannel(ch).then(function () {}, function () {}); }
+      leave: function () {
+        if (joined && alive) tx('_bye', { k: peerId });
+        alive = false; clearTimeout(sendT); clearInterval(beatI);
+        return sb.removeChannel(ch).then(function () {}, function () {});
+      }
     };
     if (isLobby) {
       api.join = function (n) {
         if (!/^studio-[1-9]$/.test(n)) return Promise.resolve(null);
         var r = makeRoom(n, false);
-        return r._ready.then(function (ok) { if (!ok) { r.leave(); return null; } return r; });
+        return r._ready.then(function (ok) { if (!ok) { r.leave(); stats.room = '연결 실패'; return null; } return r; });
       };
     }
     api._ready = subscribed;
