@@ -438,7 +438,7 @@ body.padOpen #hud { visibility: hidden; }
   const scene = new T.Scene();
   scene.background = new T.Color(0xcfe6f2);
   scene.fog = new T.Fog(0xcfe6f2, 95, 330);
-  const camera = new T.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.5, 400);
+  const camera = new T.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 1, 380);
   function onResize() {
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h);
@@ -483,8 +483,8 @@ body.padOpen #hud { visibility: hidden; }
   const floor = new T.Mesh(new T.PlaneGeometry(RM.hx * 2, RM.hz * 2), new T.MeshLambertMaterial({ map: plankTexture() }));
   floor.rotation.x = -Math.PI / 2; scene.add(floor);
   /* ground outside the building, seen when the far camera looks in over a wall */
-  const ground = new T.Mesh(new T.PlaneGeometry(1000, 1000), new T.MeshLambertMaterial({ color: 0x93bd6a }));
-  ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; scene.add(ground);
+  const ground = new T.Mesh(new T.PlaneGeometry(650, 1000), new T.MeshLambertMaterial({ color: 0x93bd6a }));
+  ground.rotation.x = -Math.PI / 2; ground.position.set(SEA_X - 325, -0.05, 0); scene.add(ground);   /* ends at the shore so it never z-fights with the sea */
 
   const wallMat = L(0xefe8da), baseMat = L(0x8d6b45);
   function wall(w, x, z, ry, mat) {
