@@ -1493,6 +1493,7 @@ body.padOpen #hud { visibility: hidden; }
   padCv.addEventListener('pointerdown', e => {
     if (pad.pid !== null) return;
     e.preventDefault();
+    $('#sizeFloat').hidden = true;                      /* the size/tool hint must never cover what I am about to draw */
     if (pad.tool === 'f') { doFill(pt(e)); return; }
     if (pad.tool === 'i') { doPick(e); return; }
     pad.pid = e.pointerId; try { padCv.setPointerCapture(e.pointerId); } catch (x) {}

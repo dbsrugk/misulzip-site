@@ -16,5 +16,17 @@ const { start, vis, until, check, done } = require('./lib');
   await B.waitForTimeout(1500);
   const ink = w ? await B.evaluate(() => { const c = document.querySelector('#watchCanvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 90 && d[i + 1] < 90 && d[i + 2] < 90) n++; return n; }) : 0;
   check(ink > 100, "B sees A's line being drawn (ink pixels: " + ink + ')');
+  if (w) {                                                    /* paint bucket must show up live for the watcher too */
+    await A.click('#padClear'); await A.click('#padClear'); await A.waitForTimeout(600);
+    const bb = await A.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+    const at = (fx, fy) => [bb.x + bb.w * fx, bb.y + bb.h * fy];
+    let [sx, sy] = at(0.3, 0.3); await A.mouse.move(sx, sy); await A.mouse.down();
+    for (const [fx, fy] of [[0.7, 0.3], [0.7, 0.7], [0.3, 0.7], [0.3, 0.3]]) { const [x2, y2] = at(fx, fy); await A.mouse.move(x2, y2, { steps: 6 }); }
+    await A.mouse.up();
+    await A.click('#tools button[data-tool=f]'); await A.locator('#swatches .sw:not(.tool)').nth(3).click();
+    const [cx, cy] = at(0.5, 0.5); await A.mouse.click(cx, cy); await B.waitForTimeout(2500);
+    const red = await B.evaluate(() => { const c = document.querySelector('#watchCanvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 180 && d[i + 1] < 90 && d[i + 2] < 90) n++; return n; });
+    check(red > 300, "B sees A's paint bucket fill (red pixels: " + red + ')');
+  }
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
