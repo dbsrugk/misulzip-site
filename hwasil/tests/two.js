@@ -4,6 +4,10 @@ const { start, vis, until, check, done } = require('./lib');
   const t = await start(); const A = await t.client('A'); await t.enter(A, '첫째'); const B = await t.client('B'); await t.enter(B, '둘째');
   await A.waitForTimeout(3000);
   check(/2\/20/.test(await A.textContent('#online')) && /2\/20/.test(await B.textContent('#online')), 'both see 2/20: ' + await A.textContent('#online') + ' | ' + await B.textContent('#online'));
+  await A.click('#dressBtn'); await A.waitForTimeout(500);   /* A dresses up; B must see the new look */
+  await A.click('#dressRows button[data-i="1"][data-v="5"]'); await A.click('#dressRows button[data-i="3"][data-v="4"]'); await A.click('#dressClose');
+  const lookA = await A.evaluate(() => window.__hw.look()); await B.waitForTimeout(2500);
+  check(await B.evaluate(l => Array.from(window.__hw.remotes.values()).some(r => r.look === l), lookA), "B sees A's new look: " + lookA);
   let tapped = false;                                          /* both start at the same spot, so the same screen point hits the same easel */
   for (let y = 60; y < 700 && !tapped; y += 30) for (let x = 20; x < 380 && !tapped; x += 25) { await A.mouse.click(x, y); await A.waitForTimeout(60); tapped = await A.evaluate(() => { const e = document.querySelector('#toast'); return !!(e && !e.hidden && /걸어가요/.test(e.textContent)); }); }
   check(tapped, 'A taps an easel');

@@ -253,6 +253,17 @@ body.padOpen #hud { visibility: hidden; }
 .roomRow .c { font-size: 13px; color: #6f665a; }
 #roomsList, #placesList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 /* works sheet */
+#dress { position: fixed; inset: 0; z-index: 40; background: rgba(36, 32, 28, 0.55); display: flex; align-items: flex-end; justify-content: center; }
+#dress .sheet { max-height: 92%; }
+.dressBody { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; touch-action: pan-y; padding: 2px; }
+#dressCanvas { align-self: center; width: 150px; height: 188px; flex: 0 0 auto; border: 2px solid var(--ink); border-radius: 18px; background: linear-gradient(#cfe6f2, #f3efd6); }
+.dressRow .lab { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+.dressRow .opts { display: flex; flex-wrap: wrap; gap: 7px; }
+.dressRow { margin-bottom: 4px; }
+.opt { border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); padding: 6px 12px; font: 400 17px/1 var(--font-display); cursor: pointer; }
+.opt.on { background: var(--ink); color: var(--paper); }
+.dressFoot { display: flex; gap: 8px; }
+.dressFoot .btn { flex: 1; }
 #works, #rooms, #places {
   position: fixed;
   inset: 0;
@@ -314,6 +325,7 @@ body.padOpen #hud { visibility: hidden; }
     <button class="chip" id="worksBtn" type="button">내 그림 <b id="worksCount">0</b></button>
     <button class="chip" id="online" type="button">나 혼자 있는 중</button>
     <button class="chip" id="placesBtn" type="button">장소 이동</button>
+    <button class="chip" id="dressBtn" type="button">꾸미기</button>
   </div>
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
@@ -409,6 +421,17 @@ body.padOpen #hud { visibility: hidden; }
   </div>
 </div>
 
+<div id="dress" hidden>
+  <div class="sheet" role="dialog" aria-label="캐릭터 꾸미기">
+    <div class="sheetHead"><h2>캐릭터 꾸미기</h2><button class="btn primary" id="dressClose" type="button">완료</button></div>
+    <div class="dressBody">
+      <canvas id="dressCanvas" width="320" height="400" aria-label="내 캐릭터 미리보기"></canvas>
+      <div id="dressRows"></div>
+    </div>
+    <div class="dressFoot"><button class="btn" id="dressRandom" type="button">🎲 랜덤으로 바꾸기</button></div>
+  </div>
+</div>
+
 <div id="intro">
   <div class="card">
     <h1>작은 화실</h1>
@@ -429,6 +452,7 @@ body.padOpen #hud { visibility: hidden; }
     <label class="field" for="nameInput">화가 이름
       <span class="nameRow"><input id="nameInput" type="text" maxlength="10" autocomplete="off" placeholder="10자까지"><button class="btn" id="nameDice" type="button" aria-label="이름 랜덤으로 바꾸기">🎲</button></span>
     </label>
+    <button class="btn" id="introDress" type="button" style="width:100%;margin-bottom:10px">🎨 내 캐릭터 꾸미기</button>
     <button class="btn go" id="startBtn" type="button">입장하기</button>
   </div>
 </div>
@@ -905,22 +929,111 @@ body.padOpen #hud { visibility: hidden; }
   }
 
   /* ---------- avatars / name plates ---------- */
-  const COATS = [0xff7a59, 0x4a8fd8, 0x6dbd63, 0xf2c14e, 0xc79bff, 0xff8fb1, 0x4ecdc4, 0xe84b4b];
-  const skin = L(0xffd9b8), legM = L(0x3b3f6b), hatM = L(0x2c47c8), eyeM = B(0x2a2233);
-  const blobGeo = new T.CircleGeometry(0.75, 16), blobMat = B(0x000000, { transparent: true, opacity: 0.22 });
-  function makeAvatar(coatHex) {
-    const g = new T.Group(), coat = L(coatHex);
-    const body = new T.Mesh(new T.SphereGeometry(0.55, 14, 10), coat); body.scale.set(1, 1.15, 0.95); put(g, body, 0, 1.0, 0);
-    put(g, new T.Mesh(new T.SphereGeometry(0.42, 14, 10), skin), 0, 1.85, 0);
-    const beret = put(g, new T.Mesh(new T.SphereGeometry(0.5, 12, 8), hatM), 0.08, 2.17, 0); beret.scale.set(1, 0.4, 1);
-    put(g, new T.Mesh(cyl(0.04, 0.04, 0.14, 5), hatM), 0.08, 2.4, 0);
-    [-0.15, 0.15].forEach(x => put(g, new T.Mesh(new T.SphereGeometry(0.06, 6, 6), eyeM), x, 1.86, 0.39));
-    function limb(x, y, mat, r, h) { const l = new T.Group(); l.position.set(x, y, 0); const m = new T.Mesh(cyl(r, r, h, 6), mat); m.position.y = -h / 2; l.add(m); g.add(l); return l; }
-    return { group: g, legL: limb(-0.2, 0.6, legM, 0.13, 0.55), legR: limb(0.2, 0.6, legM, 0.13, 0.55), armL: limb(-0.58, 1.3, coat, 0.1, 0.5), armR: limb(0.58, 1.3, coat, 0.1, 0.5) };
+  /* ---------- characters: a round, toon-shaded painter you can dress up ---------- */
+  const SKINS = [0xffe0c4, 0xf7c9a6, 0xe8b08a, 0xcf9468, 0xb07a52, 0x8a5e40];
+  const HAIRCOLS = [0x2a2233, 0x5a3a28, 0xa66a3c, 0xe3b45a, 0xd9534f, 0x7a4fd1, 0x3aa0c8, 0xf2a0c0];
+  const COATS = [0xff7a59, 0x4a8fd8, 0x6dbd63, 0xf2c14e, 0xc79bff, 0xff8fb1, 0x4ecdc4, 0xe84b4b, 0xf5f0e6, 0x3a3f6b];
+  const HAIR_NAMES = ['민머리', '짧은 머리', '단발', '긴 머리', '똥머리', '곱슬', '말총머리'];
+  const HAT_NAMES = ['없음', '베레모', '밀짚모자', '벙거지', '비니', '화가 모자'];
+  const ACC_NAMES = ['없음', '스카프', '팔레트', '배낭', '안경'];
+  const FACE_NAMES = ['방긋', '활짝', '졸린 눈', '반짝'];
+  const LOOK_MAX = [6, 7, 8, 6, 10, 5, 4];            /* options per slot: skin, hair, hair colour, hat, coat, accessory, face */
+  function parseLook(s) { if (typeof s !== 'string' || !/^\d{7}$/.test(s)) return null; const a = s.split('').map(Number); for (let i = 0; i < 7; i++) if (a[i] >= LOOK_MAX[i]) return null; return a; }
+  function randomLook() { return LOOK_MAX.map(n => (Math.random() * n) | 0); }
+  const toonGrad = new T.DataTexture(new Uint8Array([120, 195, 255]), 3, 1, T.LuminanceFormat);
+  toonGrad.minFilter = toonGrad.magFilter = T.NearestFilter; toonGrad.generateMipmaps = false; toonGrad.needsUpdate = true;
+  const toonCache = {};
+  const TN = (c, o) => { const k = c + (o ? JSON.stringify(o) : ''); return toonCache[k] || (toonCache[k] = new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: toonGrad }, o || {}))); };
+  const inkM = new T.MeshBasicMaterial({ color: 0x2a2233, side: T.BackSide });
+  const faceTexCache = {};
+  function faceTex(style, blink) {
+    const key = style + (blink ? 'b' : 'o');
+    if (faceTexCache[key]) return faceTexCache[key];
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128; const x = c.getContext('2d'), ink = '#17101c';
+    x.fillStyle = 'rgba(255,120,140,0.5)'; [56, 200].forEach(bx0 => { x.beginPath(); x.ellipse(bx0, 86, 18, 10, 0, 0, 6.2832); x.fill(); });
+    x.strokeStyle = ink; x.fillStyle = ink; x.lineCap = 'round'; x.lineWidth = 7;
+    [84, 172].forEach(ex => {
+      if (blink || style === 2) { x.beginPath(); x.arc(ex, 52, 13, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke(); }
+      else if (style === 3) { x.beginPath(); x.ellipse(ex, 58, 13, 17, 0, 0, 6.2832); x.fill(); x.fillStyle = '#fff'; x.beginPath(); x.arc(ex - 4, 51, 5.5, 0, 6.2832); x.fill(); x.beginPath(); x.arc(ex + 4, 64, 3, 0, 6.2832); x.fill(); x.fillStyle = ink; }
+      else { x.beginPath(); x.ellipse(ex, 58, 11, 16, 0, 0, 6.2832); x.fill(); x.fillStyle = '#fff'; x.beginPath(); x.arc(ex - 3, 52, 4.6, 0, 6.2832); x.fill(); x.beginPath(); x.arc(ex + 3.5, 65, 2.2, 0, 6.2832); x.fill(); x.fillStyle = ink; }
+    });
+    if (style === 0) { x.beginPath(); x.arc(128, 84, 14, 0.2 * Math.PI, 0.8 * Math.PI); x.stroke(); }
+    else if (style === 1) { x.beginPath(); x.ellipse(128, 86, 16, 13, 0, 0, Math.PI); x.fill(); x.fillStyle = '#ff8fa3'; x.beginPath(); x.ellipse(128, 97, 8, 5, 0, 0, Math.PI); x.fill(); x.fillStyle = ink; }
+    else if (style === 2) { x.beginPath(); x.ellipse(128, 92, 6, 7, 0, 0, 6.2832); x.stroke(); }
+    else { x.beginPath(); x.arc(118, 88, 10, 0, Math.PI); x.stroke(); x.beginPath(); x.arc(138, 88, 10, 0, Math.PI); x.stroke(); }
+    const t = new T.CanvasTexture(c); t.minFilter = T.LinearFilter; t.generateMipmaps = false;
+    return (faceTexCache[key] = t);
   }
-  function swing(av, phase, amp) {
-    const s = Math.sin(phase) * 0.8 * amp;
-    av.legL.rotation.x = s; av.legR.rotation.x = -s; av.armL.rotation.x = -s * 0.9; av.armR.rotation.x = s * 0.9;
+  const blobGeo = new T.CircleGeometry(0.8, 18), blobMat = B(0x000000, { transparent: true, opacity: 0.22 });
+  function makeAvatar(look) {
+    const skinC = SKINS[look[0]], hairC = HAIRCOLS[look[2]], coatC = COATS[look[4]], hairI = look[1], hatI = look[3], accI = look[5], faceI = look[6];
+    const g = new T.Group(), av = { group: g, look: look, seed: look.reduce((a, b, i) => a + b * (i + 3), 0) * 0.37, blinking: false };
+    let rs = (av.seed * 9973 + 7) % 1; const rnd2 = () => { rs = (rs * 16807 + 0.318) % 1; return rs; };
+    const accent = new T.Color(coatC).offsetHSL(0.5, 0.05, -0.12).getHex();
+    const coat = TN(coatC), skin = TN(skinC), hairM = TN(hairC, { side: T.DoubleSide }), dark = TN(0x3a3f6b), wood = TN(0xb58b57);
+    /* torso: a smock */
+    const prof = [[0.001, 0.52], [0.36, 0.52], [0.47, 0.7], [0.52, 0.98], [0.45, 1.28], [0.3, 1.46], [0.001, 1.5]].map(q => new T.Vector2(q[0], q[1]));
+    const torso = new T.Mesh(new T.LatheGeometry(prof, 22), coat); g.add(torso); av.torso = torso;
+    const tInk = new T.Mesh(torso.geometry, inkM); tInk.scale.set(1.07, 1.02, 1.07); torso.add(tInk);
+    const belt = new T.Mesh(new T.TorusGeometry(0.505, 0.045, 6, 22), TN(new T.Color(coatC).multiplyScalar(0.7).getHex())); belt.rotation.x = Math.PI / 2; belt.position.y = 0.95; torso.add(belt);
+    for (let i = 0; i < 4; i++) {                                           /* paint smudges */
+      const a = (rnd2() - 0.5) * 2.2, y = 0.62 + rnd2() * 0.6, r0 = 0.5 - 0.04 * Math.abs(y - 0.95);
+      const sm = new T.Mesh(new T.SphereGeometry(0.07 + rnd2() * 0.05, 8, 6), TN(PAL[(rnd2() * PAL.length) | 0])); sm.scale.set(1, 1, 0.35);
+      sm.position.set(Math.sin(a) * r0, y, Math.cos(a) * r0); sm.lookAt(sm.position.x * 2, y, sm.position.z * 2); torso.add(sm);
+    }
+    /* head */
+    const headG = new T.Group(); headG.position.y = 1.85; g.add(headG); av.headG = headG;
+    const head = new T.Mesh(new T.SphereGeometry(0.6, 24, 18), skin); headG.add(head);
+    const hInk = new T.Mesh(head.geometry, inkM); hInk.scale.setScalar(1.05); head.add(hInk);
+    [-1, 1].forEach(sd => { const ear = new T.Mesh(new T.SphereGeometry(0.1, 8, 6), skin); ear.position.set(sd * 0.6, -0.02, 0); ear.scale.set(0.7, 1, 1); headG.add(ear); });
+    av.texOpen = faceTex(faceI, false); av.texBlink = faceTex(faceI, true);
+    av.faceMat = new T.MeshBasicMaterial({ map: av.texOpen, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    headG.add(new T.Mesh(new T.SphereGeometry(0.606, 24, 14, Math.PI / 2 - 0.8, 1.6, Math.PI / 2 - 0.42, 0.85), av.faceMat));
+    /* hair */
+    const cap = () => { const m = new T.Mesh(new T.SphereGeometry(0.645, 22, 14, 0, Math.PI * 2, 0, 1.75), hairM); m.rotation.x = -0.4; m.position.y = 0.02; return m; };
+    const backHalf = (R, sy, y, th) => { const m = new T.Mesh(new T.SphereGeometry(R, 18, 12, Math.PI, Math.PI, 0, th), hairM); m.scale.set(1, sy, 1); m.position.set(0, y, -0.02); return m; };
+    if (hairI >= 1) headG.add(cap());
+    if (hairI === 2) headG.add(backHalf(0.7, 1, -0.12, 2.3));
+    if (hairI === 3) { headG.add(backHalf(0.7, 1, -0.1, 2.5)); const lh = new T.Mesh(new T.CylinderGeometry(0.62, 0.45, 1.1, 18, 1, true, Math.PI * 0.5, Math.PI), hairM); lh.position.set(0, -0.55, -0.08); headG.add(lh); }
+    if (hairI === 4) { const bun = new T.Mesh(new T.SphereGeometry(0.27, 12, 10), hairM); bun.position.set(0, 0.74, -0.12); headG.add(bun); }
+    if (hairI === 5) for (let i = 0; i < 9; i++) { const a = i / 9 * 6.2832, cl = new T.Mesh(new T.SphereGeometry(0.22, 8, 6), hairM); cl.position.set(Math.sin(a) * 0.55, 0.38 + (i % 2) * 0.12, Math.cos(a) * 0.5 - 0.08); headG.add(cl); }
+    if (hairI === 6) { const kn = new T.Mesh(new T.SphereGeometry(0.15, 10, 8), hairM); kn.position.set(0, 0.28, -0.66); headG.add(kn); const tl = new T.Mesh(new T.ConeGeometry(0.17, 0.75, 8), hairM); tl.position.set(0, -0.18, -0.78); tl.rotation.x = Math.PI + 0.28; headG.add(tl); }
+    /* hats */
+    const hatCol = TN(accent);
+    if (hatI === 1) { const b = new T.Mesh(new T.SphereGeometry(0.58, 16, 10), hatCol); b.scale.set(1, 0.38, 1); b.position.set(0.08, 0.64, 0); b.rotation.z = -0.12; headG.add(b); const st = new T.Mesh(cyl(0.04, 0.04, 0.14, 5), hatCol); st.position.set(0.1, 0.84, 0); headG.add(st); }
+    if (hatI === 2) { const br = new T.Mesh(cyl(1.0, 1.0, 0.05, 26), TN(0xe6c56a)); br.position.y = 0.5; headG.add(br); const dm = new T.Mesh(cyl(0.52, 0.58, 0.36, 20), TN(0xe6c56a)); dm.position.y = 0.7; headG.add(dm); const bd = new T.Mesh(cyl(0.59, 0.59, 0.09, 20), hatCol); bd.position.y = 0.57; headG.add(bd); }
+    if (hatI === 3) { const bk = new T.Mesh(cyl(0.58, 0.7, 0.46, 20), TN(0xf3ead8)); bk.position.y = 0.72; headG.add(bk); const br = new T.Mesh(cyl(0.9, 0.9, 0.05, 24), TN(0xf3ead8)); br.position.y = 0.5; headG.add(br); }
+    if (hatI === 4) { const bn = new T.Mesh(new T.SphereGeometry(0.64, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), hatCol); bn.position.y = 0.36; headG.add(bn); const cf = new T.Mesh(cyl(0.65, 0.65, 0.16, 20), TN(0xf5f0e6)); cf.position.y = 0.4; headG.add(cf); const pm = new T.Mesh(new T.SphereGeometry(0.16, 10, 8), TN(0xf5f0e6)); pm.position.y = 1.0; headG.add(pm); }
+    if (hatI === 5) { const dm = new T.Mesh(new T.SphereGeometry(0.66, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), TN(0x3a3f6b)); dm.position.y = 0.28; dm.scale.y = 0.7; headG.add(dm); const vs = new T.Mesh(new T.CylinderGeometry(0.78, 0.78, 0.05, 16, 1, false, -0.95, 1.9), TN(0x3a3f6b)); vs.position.set(0, 0.42, 0.1); vs.rotation.x = 0.15; headG.add(vs); }
+    /* arms and legs */
+    function limb(x, y, parts) { const l = new T.Group(); l.position.set(x, y, 0); parts.forEach(q => l.add(q)); g.add(l); return l; }
+    const sleeve = (sx) => { const m = new T.Mesh(cyl(0.11, 0.1, 0.5, 8), coat); m.position.y = -0.25; return m; };
+    const hand = () => { const m = new T.Mesh(new T.SphereGeometry(0.125, 10, 8), skin); m.position.y = -0.56; return m; };
+    const leg = () => { const m = new T.Mesh(cyl(0.14, 0.13, 0.32, 8), dark); m.position.y = -0.16; return m; };
+    const boot = () => { const m = new T.Mesh(new T.SphereGeometry(0.17, 10, 8), TN(0x6a4a3a)); m.scale.set(1, 0.78, 1.35); m.position.set(0, -0.38, 0.05); return m; };
+    av.armL = limb(-0.56, 1.32, [sleeve(), hand()]); av.armR = limb(0.56, 1.32, [sleeve(), hand()]);
+    av.legL = limb(-0.2, 0.62, [leg(), boot()]); av.legR = limb(0.2, 0.62, [leg(), boot()]);
+    /* accessories */
+    if (accI === 1) { const sc = new T.Mesh(new T.TorusGeometry(0.34, 0.1, 8, 18), hatCol); sc.rotation.x = Math.PI / 2; sc.position.y = 1.42; g.add(sc); const tl = new T.Mesh(new T.BoxGeometry(0.15, 0.5, 0.06), hatCol); tl.position.set(0.2, 1.2, 0.36); tl.rotation.z = 0.12; g.add(tl); }
+    if (accI === 2) { const pal = new T.Group(); pal.position.set(0, -0.58, 0.16); pal.rotation.set(0.5, 0, 0); const base = new T.Mesh(cyl(0.34, 0.34, 0.04, 16), wood); base.scale.set(1, 1, 0.75); pal.add(base); [0xd9342b, 0xf3c431, 0x2c47c8, 0x3f9b4f].forEach((c, i) => { const d = new T.Mesh(cyl(0.05, 0.05, 0.06, 8), TN(c)); d.position.set(-0.18 + i * 0.12, 0.03, -0.06 + (i % 2) * 0.1); pal.add(d); }); av.armL.add(pal); }
+    if (accI === 3) { const bp = new T.Mesh(new T.BoxGeometry(0.56, 0.66, 0.26), TN(new T.Color(coatC).multiplyScalar(0.75).getHex())); bp.position.set(0, 1.0, -0.52); g.add(bp); const rl = new T.Mesh(cyl(0.09, 0.09, 0.62, 8), TN(0xf3ead8)); rl.rotation.z = Math.PI / 2; rl.position.set(0, 1.42, -0.52); g.add(rl); }
+    if (accI === 4) { const gm = TN(0x2a2233); [-1, 1].forEach(sd => { const rg = new T.Mesh(new T.TorusGeometry(0.15, 0.025, 6, 16), gm); rg.position.set(sd * 0.21, 0.04, 0.585); headG.add(rg); }); const br = new T.Mesh(cyl(0.015, 0.015, 0.14, 4), gm); br.rotation.z = Math.PI / 2; br.position.set(0, 0.07, 0.6); headG.add(br); }
+    return av;
+  }
+  function disposeAvatar(av) { av.group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); if (av.faceMat) av.faceMat.dispose(); }
+  /* walking, painting at an easel, breathing, blinking */
+  function animateAvatar(av, phase, amp, t, painting) {
+    if (painting && amp < 0.15) {
+      av.armR.rotation.x = -1.25 + Math.sin(t * 7 + av.seed) * 0.22; av.armR.rotation.z = -0.12 + Math.sin(t * 3.1) * 0.08;
+      av.armL.rotation.x = -0.75; av.armL.rotation.z = 0.12; av.legL.rotation.x = av.legR.rotation.x = 0;
+    } else {
+      const s = Math.sin(phase) * 0.8 * amp;
+      av.legL.rotation.x = s; av.legR.rotation.x = -s; av.armL.rotation.x = -s * 0.9; av.armR.rotation.x = s * 0.9; av.armL.rotation.z = av.armR.rotation.z = 0;
+    }
+    av.torso.scale.y = 1 + 0.022 * Math.sin(t * 2.2 + av.seed);
+    av.headG.position.y = 1.85 + 0.014 * Math.sin(t * 2.2 + av.seed + 0.6);
+    const bl = ((t + av.seed) % 3.7) < 0.14;
+    if (bl !== av.blinking) { av.blinking = bl; av.faceMat.map = bl ? av.texBlink : av.texOpen; }
   }
   function rr(x, px, py, w, h, r) {
     x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r);
@@ -1157,10 +1270,69 @@ body.padOpen #hud { visibility: hidden; }
   }
   const isDefaultName = n => /^화가\d{1,3}$/.test(n);
   let myName = (store('hw-name') || '').slice(0, 10); if (!myName || isDefaultName(myName)) myName = funName();
-  let myCol = parseInt(store('hw-col'), 10);
-  if (!(myCol >= 0 && myCol < COATS.length)) { myCol = (Math.random() * COATS.length) | 0; store('hw-col', String(myCol)); }
-  const me = makeAvatar(COATS[myCol]), player = me.group; scene.add(player);
-  const myPlate = makeNamePlate(myName); myPlate.sprite.position.y = 2.85; player.add(myPlate.sprite);
+  let myLook = parseLook(store('hw-look'));
+  if (!myLook) { myLook = randomLook(); const oldCol = parseInt(store('hw-col'), 10); if (oldCol >= 0 && oldCol < 8) myLook[4] = oldCol; store('hw-look', myLook.join('')); }
+  let me = makeAvatar(myLook), player = me.group; scene.add(player);
+  const myPlate = makeNamePlate(myName); myPlate.sprite.position.y = 3.35; player.add(myPlate.sprite);
+  function rebuildMe() {
+    const old = me, nu = makeAvatar(myLook);
+    nu.group.position.copy(player.position); nu.group.rotation.copy(player.rotation); nu.group.visible = player.visible;
+    player.remove(myPlate.sprite); scene.remove(player); disposeAvatar(old);
+    me = nu; player = nu.group; scene.add(player); player.add(myPlate.sprite);
+  }
+  /* ---------- dress-up sheet; the live preview is drawn by the main renderer into a small target ---------- */
+  const DRESS_ROWS = [
+    { i: 0, label: '피부', colors: SKINS }, { i: 1, label: '머리', names: HAIR_NAMES }, { i: 2, label: '머리 색', colors: HAIRCOLS },
+    { i: 3, label: '모자', names: HAT_NAMES }, { i: 4, label: '옷 색', colors: COATS }, { i: 5, label: '소품', names: ACC_NAMES }, { i: 6, label: '얼굴', names: FACE_NAMES }
+  ];
+  let prev = null, dressT = 0;
+  function initPreview() {
+    if (prev) return prev;
+    const rt = new T.WebGLRenderTarget(320, 400), sc2 = new T.Scene();
+    sc2.add(new T.HemisphereLight(0xfff6e8, 0x8a7a66, 1.0)); const dl = new T.DirectionalLight(0xfff0d0, 0.6); dl.position.set(3, 6, 5); sc2.add(dl);
+    const cam = new T.PerspectiveCamera(30, 320 / 400, 0.5, 40); cam.position.set(0, 2.0, 7.3); cam.lookAt(0, 1.65, 0);
+    prev = { rt: rt, sc2: sc2, cam: cam, av: null, buf: new Uint8Array(320 * 400 * 4), cv: $('#dressCanvas') };
+    prev.ctx = prev.cv.getContext('2d'); prev.img = prev.ctx.createImageData(320, 400);
+    return prev;
+  }
+  function drawPreview(t) {
+    const p = initPreview();
+    if (!p.av || p.av.look.join('') !== myLook.join('')) { if (p.av) { p.sc2.remove(p.av.group); disposeAvatar(p.av); } p.av = makeAvatar(myLook); p.sc2.add(p.av.group); }
+    p.av.group.rotation.y = Math.sin(t * 0.8) * 0.6; animateAvatar(p.av, 0, 0, t, false);
+    const oc = new T.Color(); renderer.getClearColor(oc); const oa = renderer.getClearAlpha();
+    renderer.setRenderTarget(p.rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(p.sc2, p.cam);
+    renderer.setRenderTarget(null); renderer.setClearColor(oc, oa);
+    renderer.readRenderTargetPixels(p.rt, 0, 0, 320, 400, p.buf);
+    const d = p.img.data, rowB = 320 * 4;
+    for (let y = 0; y < 400; y++) d.set(p.buf.subarray((399 - y) * rowB, (400 - y) * rowB), y * rowB);
+    p.ctx.putImageData(p.img, 0, 0);
+  }
+  function markDress() { document.querySelectorAll('#dressRows button').forEach(b => b.classList.toggle('on', myLook[Number(b.dataset.i)] === Number(b.dataset.v))); }
+  function applyMyLook() { store('hw-look', myLook.join('')); rebuildMe(); markDress(); if (started) pushPresence(true); drawPreview(performance.now() / 1000); }
+  function renderDress() {
+    const box = $('#dressRows'); box.textContent = '';
+    DRESS_ROWS.forEach(row => {
+      const wrap = document.createElement('div'); wrap.className = 'dressRow';
+      const lab = document.createElement('div'); lab.className = 'lab'; lab.textContent = row.label; wrap.appendChild(lab);
+      const opts = document.createElement('div'); opts.className = 'opts';
+      const n = row.colors ? row.colors.length : row.names.length;
+      for (let v = 0; v < n; v++) {
+        const b = document.createElement('button'); b.type = 'button'; b.dataset.i = String(row.i); b.dataset.v = String(v);
+        if (row.colors) { b.className = 'sw'; b.style.background = '#' + row.colors[v].toString(16).padStart(6, '0'); b.setAttribute('aria-label', row.label + ' ' + (v + 1)); }
+        else { b.className = 'opt'; b.textContent = row.names[v]; }
+        b.addEventListener('click', () => { myLook = myLook.slice(); myLook[row.i] = v; applyMyLook(); });
+        opts.appendChild(b);
+      }
+      wrap.appendChild(opts); box.appendChild(wrap);
+    });
+    markDress();
+  }
+  function openDress() { renderDress(); $('#dress').hidden = false; clearInterval(dressT); drawPreview(performance.now() / 1000); dressT = setInterval(() => drawPreview(performance.now() / 1000), 90); }
+  function closeDress() { $('#dress').hidden = true; clearInterval(dressT); }
+  $('#dressBtn').addEventListener('click', () => { if (started) openDress(); });
+  $('#introDress').addEventListener('click', openDress);
+  $('#dressClose').addEventListener('click', closeDress);
+  $('#dressRandom').addEventListener('click', () => { myLook = randomLook(); applyMyLook(); });
   const blob = new T.Mesh(blobGeo, blobMat); blob.rotation.x = -Math.PI / 2; scene.add(blob);
 
   /* ---------- state & input ---------- */
@@ -1283,7 +1455,7 @@ body.padOpen #hud { visibility: hidden; }
   let tap = null;
   function shown(o) { for (; o; o = o.parent) if (!o.visible) return false; return true; }
   function onTap(cx, cy) {
-    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden) return;
+    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#dress').hidden) return;
     const r = cv.getBoundingClientRect();
     ray.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -((cy - r.top) / r.height) * 2 + 1 }, camera);
     const hits = ray.intersectObjects(hitList, false);
@@ -1862,15 +2034,23 @@ body.padOpen #hud { visibility: hidden; }
 
   /* ---------- other people in the room ---------- */
   let roomNS = null, lastSend = 0, lastSent = '', inRoomCount = 1;
+  function lookOf(pr) { const l = parseLook(pr.a); if (l) return l; const c = clamp(Math.floor(Number(pr.c)) || 0, 0, COATS.length - 1); return [1, 1, 1, 1, c, 0, 0]; }
+  function rebuildRemote(r, code) {
+    const look = parseLook(code); if (!look) return;
+    const old = r.av, nu = makeAvatar(look);
+    nu.group.position.copy(old.group.position); nu.group.rotation.copy(old.group.rotation);
+    old.group.remove(r.shadow); old.group.remove(r.plate.sprite); scene.remove(old.group); disposeAvatar(old);
+    nu.group.add(r.shadow); nu.group.add(r.plate.sprite); scene.add(nu.group); r.av = nu; r.look = code;
+  }
   function addRemote(p) {
     const pr = p.presence || {};
-    const col = clamp(Math.floor(Number(pr.c)) || 0, 0, COATS.length - 1);
+    const look = lookOf(pr);
     const name = sanitize(typeof pr.n === 'string' ? pr.n : '').slice(0, 10) || '화가';
-    const av = makeAvatar(COATS[col]);
+    const av = makeAvatar(look);
     const sh = new T.Mesh(blobGeo, blobMat); sh.rotation.x = -Math.PI / 2; sh.position.y = 0.04; av.group.add(sh);
-    const plate = makeNamePlate(name); plate.sprite.position.y = 2.85; av.group.add(plate.sprite);
+    const plate = makeNamePlate(name); plate.sprite.position.y = 3.35; av.group.add(plate.sprite);
     scene.add(av.group);
-    const r = { av: av, plate: plate, name: name, x: 0, z: 0, h: 0, tx: 0, tz: 0, th: 0, w: 0, phase: 0, amp: 0, e: -1, init: false };
+    const r = { av: av, shadow: sh, look: look.join(''), plate: plate, name: name, x: 0, z: 0, h: 0, tx: 0, tz: 0, th: 0, w: 0, phase: 0, amp: 0, e: -1, init: false };
     remotes.set(p.peer, r); return r;
   }
   function syncPeers(list) {
@@ -1885,6 +2065,7 @@ body.padOpen #hud { visibility: hidden; }
       const r = remotes.get(p.peer) || addRemote(p);
       const nm = sanitize(typeof pr.n === 'string' ? pr.n : '').slice(0, 10) || '화가';
       if (nm !== r.name) { r.name = nm; r.plate.set(nm); }
+      const lc = lookOf(pr).join(''); if (lc !== r.look) rebuildRemote(r, lc);
       r.tx = clamp(pr.x, -RM.hx, OUT.x1 + 2); r.tz = clamp(pr.z, OUT.z0 - 2, Math.max(GZ1, OUT.z1));
       r.th = typeof pr.h === 'number' && isFinite(pr.h) ? pr.h : r.th; r.w = pr.w === 1 ? 1 : 0;
       r.e = typeof pr.e === 'number' && pr.e >= 0 && pr.e < easels.length ? Math.floor(pr.e) : -1;
@@ -1901,8 +2082,8 @@ body.padOpen #hud { visibility: hidden; }
   function pushPresence(force) {
     if (!roomNS || !started) return;
     const now = performance.now();
-    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myCol, e: myEasel };
-    const k = patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e;
+    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel };
+    const k = patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.a;
     if (!force && (k === lastSent || now - lastSend < 100 + Math.min(200, (inRoomCount - 1) * 12))) return;
     lastSend = now; lastSent = k;
     roomNS.presence(patch).catch(function () {});
@@ -2044,7 +2225,7 @@ body.padOpen #hud { visibility: hidden; }
         }
       }
     } else walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10));
-    swing(me, walkPhase, walkAmp);
+    animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0);
     player.position.set(pos.x, 0.0 + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp, pos.z);
     player.rotation.y = heading;
     blob.position.set(pos.x, 0.05, pos.z);
@@ -2055,7 +2236,7 @@ body.padOpen #hud { visibility: hidden; }
       r.x += dx * f2; r.z += dz * f2; r.h += angDiff(r.h, r.th) * Math.min(1, dt * 12);
       r.amp = lerp(r.amp, moving ? 1 : 0, Math.min(1, dt * 10)); if (r.amp > 0.05) r.phase += dt * 10;
       r.av.group.position.set(r.x, Math.abs(Math.sin(r.phase)) * 0.09 * r.amp, r.z); r.av.group.rotation.y = r.h;
-      swing(r.av, r.phase, r.amp);
+      animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0);
       r.plate.sprite.visible = Math.hypot(r.x - pos.x, r.z - pos.z) < 28;
     });
     updateSitBtn(); updateViewBtn();

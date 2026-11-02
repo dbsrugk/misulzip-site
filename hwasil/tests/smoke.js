@@ -5,6 +5,19 @@ const { start, vis, until, check, done } = require('./lib');
   const def = await p.inputValue('#nameInput'); check(def.length > 0 && def.length <= 10 && !/^화가\d+$/.test(def), 'fun random default name: ' + def);
   await t.enter(p, '시험');
   check(/화실 1/.test(await p.textContent('#online')), 'enters a studio: ' + await p.textContent('#online'));
+  await p.click('#dressBtn'); await p.waitForTimeout(800);   /* dress-up sheet with a live preview */
+  check(await vis(p, '#dress'), 'dress-up sheet opens');
+  const look0 = await p.evaluate(() => window.__hw.look());
+  await p.click('#dressRows button[data-i="1"][data-v="3"]'); await p.click('#dressRows button[data-i="3"][data-v="2"]'); await p.waitForTimeout(500);
+  const look1 = await p.evaluate(() => window.__hw.look());
+  check(look1[1] === '3' && look1[3] === '2', 'look changes with the buttons: ' + look0 + ' -> ' + look1);
+  const drawn = await p.evaluate(() => { const c = document.querySelector('#dressCanvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n; });
+  await (await p.$('#dressCanvas')).screenshot({ path: t.out('dress.png') });
+  check(drawn > 4000, 'character preview is drawn (' + drawn + ' px)');
+  await p.click('#dressRandom'); await p.waitForTimeout(300);
+  check(/^\d{7}$/.test(await p.evaluate(() => window.__hw.look())), 'random look is a valid look');
+  await p.click('#dressClose'); await p.waitForTimeout(300);
+  check(!(await vis(p, '#dress')), 'dress-up sheet closes');
   await p.reload(); await p.waitForTimeout(5000);          /* a reload must not ask to enter again */
   check(!(await vis(p, '#intro')) && /화실 1/.test(await p.textContent('#online')), 'reload goes straight back in: ' + await p.textContent('#online'));
   check((await p.evaluate(() => localStorage.getItem('hw-name'))) === '시험', 'name is remembered across the reload');
