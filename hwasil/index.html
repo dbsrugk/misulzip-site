@@ -882,7 +882,9 @@ body.padOpen #hud { visibility: hidden; }
       const x = 20 + i * 17 + (rnd() - 0.5) * 8, z = -100 - rnd() * 45, h = 24 + rnd() * 22, r = 15 + rnd() * 9;
       const col = near.clone().lerp(far, (-z - 100) / 45);
       at(new T.Mesh(new T.ConeGeometry(r, h, 7), L(col.getHex())), x, h / 2, z);
-      at(new T.Mesh(new T.ConeGeometry(r * 0.4, h * 0.4, 7), L(0xffffff)), x, h * 0.8, z);
+      /* the snow cap shares the mountain's slope; push it slightly out and pull it towards the camera so the two surfaces never fight (flicker) */
+      const cap = at(new T.Mesh(new T.ConeGeometry(r * 0.4 * 1.05, h * 0.4 * 1.02, 7), L(0xffffff, { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })), x, h * 0.8 + 0.1, z);
+      cap.rotation.y = 0;
     }
     for (let i = 0; i < 9; i++) {
       const hill = new T.Mesh(new T.SphereGeometry(16, 14, 8), L(0x7fb35d)); hill.scale.set(1.7 + rnd() * 0.6, 0.65, 1);
