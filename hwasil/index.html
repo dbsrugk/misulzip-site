@@ -180,6 +180,17 @@ button.chip { pointer-events: auto; cursor: pointer; }
   padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
 }
 .padTop { display: flex; gap: 8px; align-items: center; }
+.padView { display: none; }
+.padMain { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+/* scenery above the pad / scenery behind a see-through sheet */
+#pad.split, #pad.ghost { background: transparent; }
+#pad.split .padView { display: block; flex: 0 0 calc(var(--sceneH, 240px) - 58px); }
+#pad.split .padMain { background: var(--chalk); border: 2px solid var(--ink); border-bottom: 0; border-radius: 18px 18px 0 0; padding: 8px 12px 0; margin: 0 -14px -10px; }
+#pad.split .padTop .btn, #pad.ghost .padTop .btn { box-shadow: 0 2px 8px rgba(36, 32, 28, 0.35); }
+#pad.ghost .padMain { background: transparent; }
+#pad.ghost #padCanvas { opacity: var(--ghost, 0.6); }
+#pad.ghost .padTools, #pad.ghost .swatches, #pad.ghost .padStatus { background: rgba(244, 239, 228, 0.82); border-radius: 12px; padding: 4px 6px; }
+body.padOpen #hud { visibility: hidden; }
 .padTop input { flex: 1; min-width: 0; }
 .padStatus { min-height: 18px; font-size: 13px; color: var(--muted); text-align: center; }
 .padStatus.bad { color: var(--danger); font-weight: 700; }
@@ -277,9 +288,17 @@ button.chip { pointer-events: auto; cursor: pointer; }
     <input id="padTitle" type="text" maxlength="24" autocomplete="off" placeholder="그림 제목" aria-label="그림 제목">
     <button class="btn primary" id="padSave" type="button">저장</button>
   </div>
+  <div class="padView" aria-hidden="true"></div>
+  <div class="padMain" id="padMain">
   <div class="padStatus" id="padStatus" role="status" aria-live="polite"></div>
   <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas></div>
   <div class="padTools">
+    <div class="seg" id="viewSeg" role="group" aria-label="풍경 보기" hidden>
+      <button type="button" data-view="off">풍경 끔</button>
+      <button type="button" data-view="split">풍경 위</button>
+      <button type="button" data-view="ghost">겹쳐 보기</button>
+    </div>
+    <label class="size" id="ghostWrap" for="padGhost" hidden>종이 <input id="padGhost" type="range" min="25" max="95" value="60"></label>
     <div class="seg" id="tools" role="group" aria-label="도구">
       <button type="button" data-tool="p" class="on">연필</button>
       <button type="button" data-tool="b">붓</button>
@@ -290,6 +309,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
     <button class="btn" id="padClear" type="button">전체 지우기</button>
   </div>
   <div class="swatches" id="swatches" role="group" aria-label="색"></div>
+  </div>
 </div>
 
 <div id="watch" hidden>
@@ -1091,7 +1111,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
   }
 
   /* ---------- drawing pad ---------- */
-  const pad = { open: false, W: 1000, H: 750, strokes: [], tool: 'p', color: '#1c1a18', size: 6, id: null, easel: -1, dirty: false, saving: false, cur: null, pid: null, raf: 0, confirmClose: false, confirmClear: false, sentOff: 0 };
+  const pad = { view: 'off', open: false, W: 1000, H: 750, strokes: [], tool: 'p', color: '#1c1a18', size: 6, id: null, easel: -1, dirty: false, saving: false, cur: null, pid: null, raf: 0, confirmClose: false, confirmClear: false, sentOff: 0 };
   const padEl = $('#pad'), padCv = $('#padCanvas'), padCtx = padCv.getContext('2d');
   const baseCv = document.createElement('canvas'), baseCtx = baseCv.getContext('2d');
   const statusEl = $('#padStatus');
@@ -1130,14 +1150,33 @@ button.chip { pointer-events: auto; cursor: pointer; }
     sc = padCv.width / pad.W;
     rebuildBase(); present();
   }
+  /* views: 'off' = full sheet, 'split' = scenery on top, 'ghost' = scenery behind a see-through sheet */
+  function viewFor(easel) {
+    if (!(easel >= 0)) return 'off';
+    const v = store('hw-view');
+    if (v === 'off' || v === 'split' || v === 'ghost') return v;
+    return easels[easel].pos.x > RM.hx ? 'split' : 'off';
+  }
+  function applyView() {
+    const v = pad.open ? pad.view : 'off';
+    padEl.classList.toggle('split', v === 'split'); padEl.classList.toggle('ghost', v === 'ghost');
+    document.body.classList.toggle('padOpen', pad.open);
+    padEl.style.setProperty('--sceneH', Math.round(window.innerHeight * 0.3) + 'px');
+    $('#viewSeg').hidden = !(pad.open && pad.easel >= 0); $('#ghostWrap').hidden = v !== 'ghost';
+    document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('on', b.dataset.view === pad.view));
+    requestAnimationFrame(fitPad);
+  }
+  document.querySelectorAll('#viewSeg button').forEach(b => b.addEventListener('click', () => { pad.view = b.dataset.view; store('hw-view', pad.view); applyView(); }));
+  $('#padGhost').addEventListener('input', e => { padEl.style.setProperty('--ghost', String((Number(e.target.value) || 60) / 100)); });
   function openPad(opts) {
     resetJoy();
+    pad.view = viewFor(opts.easel);
     const w = opts.work;
     if (w) { pad.W = w.w; pad.H = w.h; pad.strokes = JSON.parse(JSON.stringify(w.strokes)); pad.id = w.id; $('#padTitle').value = w.title || ''; }
-    else { const portrait = window.innerHeight > window.innerWidth * 1.05; pad.W = portrait ? 750 : 1000; pad.H = portrait ? 1000 : 750; pad.strokes = []; pad.id = null; $('#padTitle').value = ''; }
+    else { const portrait = window.innerHeight > window.innerWidth * 1.05 && pad.view !== 'split'; pad.W = portrait ? 750 : 1000; pad.H = portrait ? 1000 : 750; pad.strokes = []; pad.id = null; $('#padTitle').value = ''; }
     pad.easel = opts.easel; pad.dirty = false; pad.cur = null; pad.pid = null; pad.confirmClose = false; pad.confirmClear = false;
     $('#padClose').textContent = '닫기'; $('#padClear').textContent = '전체 지우기';
-    pad.open = true; padEl.hidden = false; sitBtn.hidden = true;
+    pad.open = true; padEl.hidden = false; sitBtn.hidden = true; applyView();
     setStatus(dbNS ? (pad.easel >= 0 ? (pad.easel + 1) + '번 이젤에서 그리는 중' : '') : '이 화면에서는 저장되지 않아요. 로그인한 화면에서 열어 주세요.', !dbNS);
     requestAnimationFrame(fitPad);
     pushPresence(true);
@@ -1152,7 +1191,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
   }
   function closePad() {
     finishEasel();
-    pad.open = false; padEl.hidden = true; pad.easel = -1; myEasel = -1;
+    pad.open = false; padEl.hidden = true; pad.easel = -1; myEasel = -1; applyView();
     clearTimeout(closeTimer); clearTimeout(clearTimer);
     pushPresence(true);
   }
@@ -1738,19 +1777,39 @@ button.chip { pointer-events: auto; cursor: pointer; }
     const dx = camTx + Math.sin(camYaw) * cp * camDist;
     const dy = 2.4 + Math.sin(camPitch) * camDist;
     const dz = camTz + Math.cos(camYaw) * cp * camDist;
+    const artist = pad.open && pad.view !== 'off' && pad.easel >= 0;
+    player.visible = !artist; blob.visible = !artist;
+    if (artist) {                                       /* the artist's own eyes: from the seat, over the easel, towards the scenery */
+      const fx = Math.sin(heading), fz = Math.cos(heading), f = 1 - Math.exp(-dt * 5);
+      camPos.lerp(_v.set(pos.x - fx * 1.4, 4.4, pos.z - fz * 1.4), f); lookCur.lerp(_v2.set(pos.x + fx * 30, 3.7, pos.z + fz * 30), f);
+      camera.position.copy(camPos); camera.lookAt(lookCur);
+      const sB = (camPos.z > RM.hz) === (pos.z > RM.hz);
+      if (sB !== seamShown) { seamShown = sB; seam.forEach(m => { m.visible = sB; }); }
+      for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax]; w.o.visible = w.inside > 0 ? c > w.lim : c < w.lim; }
+      return;
+    }
     if (!camInit) { camPos.set(dx, dy, dz); camInit = true; } else camPos.lerp(_v.set(dx, dy, dz), 1 - Math.exp(-dt * 10));
     camera.position.copy(camPos);
     camera.lookAt(camTx, 2.0, camTz);
+    lookCur.set(camTx, 2.0, camTz);
     const seamOn = (camPos.z > RM.hz) === (camTz > RM.hz);
     if (seamOn !== seamShown) { seamShown = seamOn; seam.forEach(m => { m.visible = seamOn; }); }
     for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax]; w.o.visible = w.inside > 0 ? c > w.lim : c < w.lim; }
   }
-  const camPos = new T.Vector3(), _v = new T.Vector3(); let camInit = false, seamShown = true;
+  const camPos = new T.Vector3(), _v = new T.Vector3(), _v2 = new T.Vector3(), lookCur = new T.Vector3(0, 2, 0); let camInit = false, seamShown = true;
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     update(dt);
-    if (!pad.open && !watch.open) renderer.render(scene, camera);
+    const artistView = pad.open && pad.view !== 'off' && pad.easel >= 0;
+    if (!watch.open && (!pad.open || artistView)) {
+      const W = window.innerWidth, H = window.innerHeight, sh = Math.round(H * 0.3), split = artistView && pad.view === 'split';
+      const vh = split ? sh : H, asp = W / vh, fov = asp < 1 ? 64 : 52;
+      if (split) { renderer.setScissorTest(true); renderer.setViewport(0, H - sh, W, sh); renderer.setScissor(0, H - sh, W, sh); }
+      else { renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H); }
+      if (Math.abs(camera.aspect - asp) > 1e-4 || camera.fov !== fov) { camera.aspect = asp; camera.fov = fov; camera.updateProjectionMatrix(); }
+      renderer.render(scene, camera);
+    }
     requestAnimationFrame(frame);
   }
   onResize();
