@@ -187,6 +187,10 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #pad.split .padView { display: block; flex: 0 0 calc(var(--sceneH, 240px) - 58px); }
 #pad.split .padMain { background: var(--chalk); border: 2px solid var(--ink); border-bottom: 0; border-radius: 18px 18px 0 0; padding: 8px 12px 0; margin: 0 -14px -10px; }
 #pad.split .padTop .btn, #pad.ghost .padTop .btn { box-shadow: 0 2px 8px rgba(36, 32, 28, 0.35); }
+#pad.split .padTools { gap: 5px; }
+#pad.split .padTools .btn { padding: 6px 10px; font-size: 16px; }
+#pad.split .seg button { padding: 6px 10px; font-size: 16px; }
+#pad.split .swatches { gap: 6px; }
 #pad.ghost .padMain { background: transparent; }
 #pad.ghost #padCanvas { opacity: var(--ghost, 0.6); }
 #pad.ghost .padTools, #pad.ghost .swatches, #pad.ghost .padStatus { background: rgba(244, 239, 228, 0.82); border-radius: 12px; padding: 4px 6px; }
@@ -680,7 +684,7 @@ body.padOpen #hud { visibility: hidden; }
     const sit = { x: px + 2.7 * ox, z: pz + 2.7 * oz };
     const ring = new T.Mesh(new T.RingGeometry(0.75, 0.95, 28), B(0xf3c431, { transparent: true, opacity: 0.55, side: T.DoubleSide }));
     ring.rotation.x = -Math.PI / 2; ring.position.set(sit.x, 0.05, sit.z); scene.add(ring);
-    const e = { idx: i, pos: { x: px, z: pz }, sit: sit, heading: Math.atan2(-ox, -oz), cvs: cvs, tex: tex, ring: ring };
+    const e = { idx: i, pos: { x: px, z: pz }, sit: sit, heading: Math.atan2(-ox, -oz), cvs: cvs, tex: tex, ring: ring, grp: g };
     easels.push(e);
     colliders.push({ x: e.pos.x, z: e.pos.z, r: 1.6 });
   }
@@ -1779,6 +1783,8 @@ body.padOpen #hud { visibility: hidden; }
     const dz = camTz + Math.cos(camYaw) * cp * camDist;
     const artist = pad.open && pad.view !== 'off' && pad.easel >= 0;
     player.visible = !artist; blob.visible = !artist;
+    if (hiddenEasel >= 0 && (!artist || hiddenEasel !== pad.easel)) { easels[hiddenEasel].grp.visible = true; easels[hiddenEasel].ring.visible = true; hiddenEasel = -1; }
+    if (artist && hiddenEasel !== pad.easel) { hiddenEasel = pad.easel; easels[hiddenEasel].grp.visible = false; easels[hiddenEasel].ring.visible = false; }   /* clear view past my own easel */
     if (artist) {                                       /* the artist's own eyes: from the seat, over the easel, towards the scenery */
       const fx = Math.sin(heading), fz = Math.cos(heading), f = 1 - Math.exp(-dt * 5);
       camPos.lerp(_v.set(pos.x - fx * 1.4, 4.4, pos.z - fz * 1.4), f); lookCur.lerp(_v2.set(pos.x + fx * 30, 3.7, pos.z + fz * 30), f);
@@ -1796,7 +1802,7 @@ body.padOpen #hud { visibility: hidden; }
     if (seamOn !== seamShown) { seamShown = seamOn; seam.forEach(m => { m.visible = seamOn; }); }
     for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax]; w.o.visible = w.inside > 0 ? c > w.lim : c < w.lim; }
   }
-  const camPos = new T.Vector3(), _v = new T.Vector3(), _v2 = new T.Vector3(), lookCur = new T.Vector3(0, 2, 0); let camInit = false, seamShown = true;
+  const camPos = new T.Vector3(), _v = new T.Vector3(), _v2 = new T.Vector3(), lookCur = new T.Vector3(0, 2, 0); let camInit = false, seamShown = true, hiddenEasel = -1;
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
