@@ -4,6 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta name="description" content="산, 바다, 호숫가, 풍차 들판에서 친구들과 함께 그림을 그리는 작은 가상 화실">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="작은 화실">
+<meta property="og:title" content="작은 화실">
+<meta property="og:description" content="산, 바다, 호숫가, 풍차 들판에서 친구들과 함께 그림을 그려요">
+<meta property="og:url" content="https://jakeun-hwasil.vercel.app/">
+<meta property="og:image" content="https://jakeun-hwasil.vercel.app/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="작은 화실">
+<meta name="twitter:description" content="산, 바다, 호숫가, 풍차 들판에서 친구들과 함께 그림을 그려요">
+<meta name="twitter:image" content="https://jakeun-hwasil.vercel.app/og.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%A8%3C/text%3E%3C/svg%3E">
 <title>작은 화실</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -180,7 +196,10 @@ button.chip { pointer-events: auto; cursor: pointer; }
   padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
 }
 .padTop { display: flex; gap: 8px; align-items: center; }
-.padView { display: none; }
+.padView { display: none; position: relative; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; }
+.padView:active { cursor: grabbing; }
+.lookHint { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); max-width: 92%; padding: 4px 12px; border-radius: 999px; background: rgba(36, 32, 28, 0.55); color: #fffdf7; font-size: 13px; white-space: nowrap; pointer-events: none; transition: opacity 0.6s; }
+.lookHint.gone { opacity: 0; }
 .padMain { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 /* scenery above the pad / scenery behind a see-through sheet */
 #pad.split, #pad.ghost { background: transparent; }
@@ -292,7 +311,7 @@ body.padOpen #hud { visibility: hidden; }
     <input id="padTitle" type="text" maxlength="24" autocomplete="off" placeholder="그림 제목" aria-label="그림 제목">
     <button class="btn primary" id="padSave" type="button">저장</button>
   </div>
-  <div class="padView" aria-hidden="true"></div>
+  <div class="padView" id="padView" aria-label="풍경 둘러보기"><span class="lookHint" id="lookHint">끌어서 둘러보기 · 두 번 누르면 처음 방향</span></div>
   <div class="padMain" id="padMain">
   <div class="padStatus" id="padStatus" role="status" aria-live="polite"></div>
   <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas></div>
@@ -914,9 +933,9 @@ body.padOpen #hud { visibility: hidden; }
     const SPOTS = [{ x: 85, z: -46, r: 16 }, { x: LAKE.x, z: LAKE.z, r: 21 }, { x: MILL.x, z: MILL.z, r: 22 }];
     function free(x, z) {
       if (Math.abs(z) < 4.5 && x < 140) return false;
-      if (Math.abs(x - 85) < 4.5 && z < 4 && z > -50) return false;
-      if (Math.abs(x - LAKE.x) < 4.5 && z < 26 && z > 0) return false;
-      if (Math.abs(x - MILL.x) < 4.5 && z < 30 && z > 0) return false;
+      if (Math.abs(x - 85) < 8 && z < 4 && z > -50) return false;            /* keep a wide clear lane along the branch paths so the view is never blocked */
+      if (Math.abs(x - LAKE.x) < 9 && z < 26 && z > 0) return false;
+      if (Math.abs(x - MILL.x) < 9 && z < 30 && z > 0) return false;
       if (Math.hypot(x - 40, z) < 9) return false;
       for (let i = 0; i < SPOTS.length; i++) if (Math.hypot(x - SPOTS[i].x, z - SPOTS[i].z) < SPOTS[i].r) return false;
       return x > OUT.x0 + 2 && x < 130 && z > OUT.z0 + 2 && z < OUT.z1 - 2;
@@ -1236,8 +1255,9 @@ body.padOpen #hud { visibility: hidden; }
     if (!(easel >= 0)) return 'off';
     const v = store('hw-view');
     if (v === 'off' || v === 'split' || v === 'ghost') return v;
-    return easels[easel].pos.x > RM.hx ? 'split' : 'off';
+    return 'split';
   }
+  let lookHintT = 0;
   function applyView() {
     const v = pad.open ? pad.view : 'off';
     padEl.classList.toggle('split', v === 'split'); padEl.classList.toggle('ghost', v === 'ghost');
@@ -1248,10 +1268,35 @@ body.padOpen #hud { visibility: hidden; }
     requestAnimationFrame(fitPad);
   }
   document.querySelectorAll('#viewSeg button').forEach(b => b.addEventListener('click', () => { pad.view = b.dataset.view; store('hw-view', pad.view); applyView(); }));
+  /* look around the scenery: drag = turn, pinch / wheel = zoom, double tap = back to the front */
+  (function () {
+    const vw = $('#padView'), ptr = new Map(); let pinch = 0, lastTap = 0, moved = 0;
+    const clampLook = () => { look.yaw = clamp(look.yaw, -2.6, 2.6); look.pitch = clamp(look.pitch, -0.4, 0.7); look.zoom = clamp(look.zoom, 0.45, 1.25); };
+    vw.addEventListener('pointerdown', e => { ptr.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { vw.setPointerCapture(e.pointerId); } catch (x) {} moved = 0; pinch = 0; $('#lookHint').classList.add('gone'); e.preventDefault(); });
+    vw.addEventListener('pointermove', e => {
+      const q = ptr.get(e.pointerId); if (!q) return;
+      if (ptr.size === 2) {
+        const a = Array.from(ptr.values()), other = a.find(v => v !== q) || a[0];
+        const nd = Math.hypot(e.clientX - other.x, e.clientY - other.y), od = Math.hypot(q.x - other.x, q.y - other.y);
+        if (od > 10 && nd > 10) look.zoom *= od / nd;
+        moved += 20;
+      } else {
+        const dx = e.clientX - q.x, dy = e.clientY - q.y; moved += Math.abs(dx) + Math.abs(dy);
+        look.yaw += dx * 0.006 * look.zoom; look.pitch += dy * 0.004 * look.zoom;
+      }
+      q.x = e.clientX; q.y = e.clientY; clampLook();
+    });
+    const up = e => {
+      if (!ptr.has(e.pointerId)) return; ptr.delete(e.pointerId);
+      if (e.type === 'pointerup' && moved < 8 && ptr.size === 0) { const now = performance.now(); if (now - lastTap < 350) { look.yaw = 0; look.pitch = 0; look.zoom = 1; lastTap = 0; } else lastTap = now; }
+    };
+    vw.addEventListener('pointerup', up); vw.addEventListener('pointercancel', up);
+    vw.addEventListener('wheel', e => { look.zoom *= e.deltaY > 0 ? 1.08 : 0.92; clampLook(); e.preventDefault(); }, { passive: false });
+  })();
   $('#padGhost').addEventListener('input', e => { padEl.style.setProperty('--ghost', String((Number(e.target.value) || 60) / 100)); });
   function openPad(opts) {
     resetJoy();
-    pad.view = viewFor(opts.easel);
+    pad.view = viewFor(opts.easel); look.yaw = 0; look.pitch = 0; look.zoom = 1; $('#lookHint').classList.remove('gone'); clearTimeout(lookHintT); lookHintT = setTimeout(() => $('#lookHint').classList.add('gone'), 6000);
     const w = opts.work;
     if (w) { pad.W = w.w; pad.H = w.h; pad.strokes = JSON.parse(JSON.stringify(w.strokes)); pad.id = w.id; $('#padTitle').value = w.title || ''; }
     else { const portrait = window.innerHeight > window.innerWidth * 1.05 && pad.view !== 'split'; pad.W = portrait ? 750 : 1000; pad.H = portrait ? 1000 : 750; pad.strokes = []; pad.id = null; $('#padTitle').value = ''; }
@@ -1863,8 +1908,8 @@ body.padOpen #hud { visibility: hidden; }
     if (hiddenEasel >= 0 && (!artist || hiddenEasel !== pad.easel)) { easels[hiddenEasel].grp.visible = true; easels[hiddenEasel].ring.visible = true; hiddenEasel = -1; }
     if (artist && hiddenEasel !== pad.easel) { hiddenEasel = pad.easel; easels[hiddenEasel].grp.visible = false; easels[hiddenEasel].ring.visible = false; }   /* clear view past my own easel */
     if (artist) {                                       /* the artist's own eyes: from the seat, over the easel, towards the scenery */
-      const fx = Math.sin(heading), fz = Math.cos(heading), f = 1 - Math.exp(-dt * 5);
-      camPos.lerp(_v.set(pos.x - fx * 1.4, 4.4, pos.z - fz * 1.4), f); lookCur.lerp(_v2.set(pos.x + fx * 30, 3.7, pos.z + fz * 30), f);
+      const ha = heading + look.yaw, fx = Math.sin(ha), fz = Math.cos(ha), f = 1 - Math.exp(-dt * 6);
+      camPos.lerp(_v.set(pos.x, 4.3, pos.z), f); lookCur.lerp(_v2.set(pos.x + fx * 30, 4.0 + Math.tan(look.pitch) * 30, pos.z + fz * 30), f);
       camera.position.copy(camPos); camera.lookAt(lookCur);
       const sB = (camPos.z > RM.hz) === (pos.z > RM.hz);
       if (sB !== seamShown) { seamShown = sB; seam.forEach(m => { m.visible = sB; }); }
@@ -1879,7 +1924,7 @@ body.padOpen #hud { visibility: hidden; }
     if (seamOn !== seamShown) { seamShown = seamOn; seam.forEach(m => { m.visible = seamOn; }); }
     for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax]; w.o.visible = w.inside > 0 ? c > w.lim : c < w.lim; }
   }
-  const camPos = new T.Vector3(), _v = new T.Vector3(), _v2 = new T.Vector3(), lookCur = new T.Vector3(0, 2, 0); let camInit = false, seamShown = true, hiddenEasel = -1;
+  const camPos = new T.Vector3(), _v = new T.Vector3(), _v2 = new T.Vector3(), lookCur = new T.Vector3(0, 2, 0), look = { yaw: 0, pitch: 0, zoom: 1 }; let camInit = false, seamShown = true, hiddenEasel = -1;
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -1887,7 +1932,7 @@ body.padOpen #hud { visibility: hidden; }
     const artistView = pad.open && pad.view !== 'off' && pad.easel >= 0;
     if (!watch.open && (!pad.open || artistView)) {
       const W = window.innerWidth, H = window.innerHeight, sh = Math.round(H * 0.3), split = artistView && pad.view === 'split';
-      const vh = split ? sh : H, asp = W / vh, fov = asp < 1 ? 64 : 52;
+      const vh = split ? sh : H, asp = W / vh, fov = (asp < 1 ? 64 : 52) * (artistView ? look.zoom : 1);
       if (split) { renderer.setScissorTest(true); renderer.setViewport(0, H - sh, W, sh); renderer.setScissor(0, H - sh, W, sh); }
       else { renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H); }
       if (Math.abs(camera.aspect - asp) > 1e-4 || camera.fov !== fov) { camera.aspect = asp; camera.fov = fov; camera.updateProjectionMatrix(); }

@@ -24,8 +24,8 @@ async function start(opts) {
   opts = opts || {};
   const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
   const pages = [], errors = [];
-  async function client(name, query) {
-    const i = pages.length, ctx = await browser.newContext({ viewport: { width: 390, height: 800 } });
+  async function client(name, query, vp) {
+    const i = pages.length, ctx = await browser.newContext({ viewport: vp || { width: 390, height: 800 } });
     const p = await ctx.newPage(); pages.push(p); p.name = name || ('p' + i);
     p.on('pageerror', e => errors.push(p.name + ': ' + e));
     await p.exposeFunction('__busSend', (n, e, pl) => { pages.forEach((q, j) => { if (j !== i) q.evaluate(([a, b, c]) => window.__busRecv(a, b, c), [n, e, pl]).catch(() => {}); }); });
