@@ -1,8 +1,13 @@
 /* One player: enter, fast travel, tap-to-walk through the east door, sit outdoors, scenery views. Screenshots go to tests/out/. */
 const { start, vis, until, check, done } = require('./lib');
 (async () => {
-  const t = await start(); const p = await t.client('solo'); await t.enter(p, '시험');
+  const t = await start(); const p = await t.client('solo');
+  const def = await p.inputValue('#nameInput'); check(def.length > 0 && def.length <= 10 && !/^화가\d+$/.test(def), 'fun random default name: ' + def);
+  await t.enter(p, '시험');
   check(/화실 1/.test(await p.textContent('#online')), 'enters a studio: ' + await p.textContent('#online'));
+  await p.reload(); await p.waitForTimeout(5000);          /* a reload must not ask to enter again */
+  check(!(await vis(p, '#intro')) && /화실 1/.test(await p.textContent('#online')), 'reload goes straight back in: ' + await p.textContent('#online'));
+  check((await p.evaluate(() => localStorage.getItem('hw-name'))) === '시험', 'name is remembered across the reload');
   async function place(i, shot) { await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(i).click(); await p.waitForTimeout(1800); await p.screenshot({ path: t.out(shot) }); }
   await place(2, 'mountain.png'); await place(3, 'beach.png'); await place(4, 'lake.png'); await place(5, 'field.png'); await place(0, 'studio.png');
   const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 36, 'easels: ' + n);

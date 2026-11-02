@@ -285,6 +285,14 @@ body.padOpen #hud { visibility: hidden; }
 #keyBox .field { margin: 10px 0 8px; }
 #keyBox .btn { width: 100%; margin-top: 8px; }
 #keyMsg { margin-top: 8px; font-weight: 500; }
+.nameRow { display: flex; gap: 8px; align-items: stretch; }
+.nameRow input { flex: 1; min-width: 0; }
+.nameRow .btn { padding: 4px 12px; font-size: 22px; line-height: 1; }
+#nameBox { flex: 0 0 auto; border-top: 2px dashed var(--ink); padding-top: 10px; }
+#nameBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
+#nameBox .field { margin: 10px 0 8px; }
+#nameBox > .btn { width: 100%; }
+#renameMsg { margin-top: 8px; font-weight: 500; }
 #keyMsg.bad { color: var(--danger); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -349,6 +357,14 @@ body.padOpen #hud { visibility: hidden; }
     <div class="sheetHead"><h2>내 그림</h2><button class="btn" id="worksClose" type="button">닫기</button></div>
     <p class="empty" id="worksEmpty" hidden>아직 저장한 그림이 없어요. 이젤 앞에 앉아서 첫 그림을 그려 보세요.</p>
     <div id="worksGrid"></div>
+    <details id="nameBox">
+      <summary>내 화가 이름 바꾸기</summary>
+      <label class="field" for="renameInput">새 이름
+        <span class="nameRow"><input id="renameInput" type="text" maxlength="10" autocomplete="off" placeholder="10자까지"><button class="btn" id="renameDice" type="button" aria-label="이름 랜덤으로 바꾸기">🎲</button></span>
+      </label>
+      <button class="btn primary" id="renameBtn" type="button">이름 바꾸기</button>
+      <p class="empty" id="renameMsg" hidden></p>
+    </details>
     <details id="keyBox">
       <summary>다른 기기로 옮기기</summary>
       <p class="empty">내 그림은 이 기기의 '열쇠'로 찾아요. 열쇠를 복사해 두었다가 다른 기기에서 붙여넣으면 같은 그림 목록이 열려요. 열쇠를 아는 사람은 내 그림을 지울 수도 있으니 아무에게나 보여 주지 마세요.</p>
@@ -402,7 +418,7 @@ body.padOpen #hud { visibility: hidden; }
     </label>
     <p id="codeMsg" hidden></p>
     <label class="field" for="nameInput">화가 이름
-      <input id="nameInput" type="text" maxlength="10" autocomplete="off" placeholder="10자까지">
+      <span class="nameRow"><input id="nameInput" type="text" maxlength="10" autocomplete="off" placeholder="10자까지"><button class="btn" id="nameDice" type="button" aria-label="이름 랜덤으로 바꾸기">🎲</button></span>
     </label>
     <button class="btn go" id="startBtn" type="button">입장하기</button>
   </div>
@@ -1039,7 +1055,23 @@ body.padOpen #hud { visibility: hidden; }
     sign('풍차 들판', MILL.x - 6.5, 12);
   })();
 
-  let myName = (store('hw-name') || '').slice(0, 10) || ('화가' + (10 + ((Math.random() * 90) | 0)));
+  /* fun random names: famous painters (with a twist), animals, pigment colours */
+  const NAME_PAINTERS = ['고흐', '모네', '피카소', '달리', '클림트', '프리다', '마티스', '세잔', '르누아르', '뭉크', '고갱', '렘브란트', '베르메르', '샤갈', '워홀', '호쿠사이', '김홍도', '신윤복', '이중섭', '박수근', '김환기', '정선', '쿠사마', '바스키아', '마네', '드가', '미로', '칸딘스키', '몬드리안', '다빈치', '미켈란젤로', '고야', '루벤스', '뒤러', '쇠라', '실레', '호퍼', '폴록', '로스코', '터너', '나혜석', '천경자', '장승업', '김정희', '이쾌대', '모딜리아니', '라파엘로', '르동', '앙리 루소'];
+  const NAME_MODS = ['졸린', '배고픈', '수줍은', '신난', '엉뚱한', '느긋한', '덜렁대는', '꼼꼼한', '심심한', '용감한', '새벽의', '씩씩한', '포근한', '반짝이는', '몽실몽실', '출출한', '떠돌이', '지각한'];
+  const NAME_ANIMALS = ['곰', '여우', '고양이', '다람쥐', '펭귄', '오리', '토끼', '수달', '너구리', '판다', '고슴도치', '부엉이', '거북이', '강아지', '햄스터'];
+  const NAME_COLORS = ['코발트', '버밀리온', '울트라마린', '카드뮴', '세피아', '시에나', '마젠타', '인디고', '오커', '터콰이즈', '연지', '쪽빛', '단청', '남색', '주황'];
+  const pickOne = a => a[(Math.random() * a.length) | 0];
+  function funName() {
+    const r = Math.random(), P = pickOne(NAME_PAINTERS); let n;
+    if (r < 0.38) n = pickOne(NAME_MODS) + ' ' + P;
+    else if (r < 0.58) n = P + pickOne(['의 제자', ' 지망생', '의 후예', ' 팬클럽', '의 친구']);
+    else if (r < 0.78) { const a = pickOne(NAME_ANIMALS); n = pickOne(['붓 든 ' + a, a + ' 화백', '물감 ' + a, a + ' 작가', '졸린 ' + a + ' 화가']); }
+    else n = pickOne(NAME_COLORS) + pickOne([' 화가', '의 붓', ' 물감', ' 팔레트']);
+    n = sanitize(n);
+    return n.length <= 10 ? n : P;
+  }
+  const isDefaultName = n => /^화가\d{1,3}$/.test(n);
+  let myName = (store('hw-name') || '').slice(0, 10); if (!myName || isDefaultName(myName)) myName = funName();
   let myCol = parseInt(store('hw-col'), 10);
   if (!(myCol >= 0 && myCol < COATS.length)) { myCol = (Math.random() * COATS.length) | 0; store('hw-col', String(myCol)); }
   const me = makeAvatar(COATS[myCol]), player = me.group; scene.add(player);
@@ -1146,11 +1178,11 @@ body.padOpen #hud { visibility: hidden; }
     let ok = false;
     try { ok = await window.hwasil.enter(code); } catch (e) { ok = null; }
     entering = false; $('#startBtn').disabled = false; $('#startBtn').textContent = '입장하기';
-    if (ok === null) { codeMsg('연결이 안 돼요. 인터넷을 확인하고 다시 눌러 주세요.'); return; }
-    if (!ok) { $('#codeField').hidden = false; codeMsg('코드가 맞지 않아요. 한 번 더 확인해 주세요.'); $('#codeInput').select(); return; }
+    if (ok === null) { $('#intro').hidden = false; codeMsg('연결이 안 돼요. 인터넷을 확인하고 다시 눌러 주세요.'); return; }
+    if (!ok) { $('#intro').hidden = false; $('#codeField').hidden = false; codeMsg('코드가 맞지 않아요. 한 번 더 확인해 주세요.'); $('#codeInput').select(); return; }
     const nm = sanitize($('#nameInput').value).slice(0, 10);
     if (nm) { myName = nm; store('hw-name', nm); myPlate.set(myName); }
-    started = true; $('#intro').hidden = true;
+    started = true; $('#intro').hidden = true; store('hw-in', '1');   /* remembered: a reload goes straight back in */
     pushPresence(true);
     toast('이젤을 눌러 보세요. 비어 있으면 앉아서 그리고, 누가 그리는 중이면 구경해요', 7000);
   });
@@ -1511,7 +1543,15 @@ body.padOpen #hud { visibility: hidden; }
       acts.appendChild(b1); acts.appendChild(b3); acts.appendChild(b2); item.appendChild(acts); grid.appendChild(item);
     });
   }
-  $('#worksBtn').addEventListener('click', () => { renderWorks(); $('#works').hidden = false; });
+  $('#worksBtn').addEventListener('click', () => { renderWorks(); $('#renameInput').value = myName; $('#works').hidden = false; });
+  $('#nameDice').addEventListener('click', () => { $('#nameInput').value = funName(); });
+  $('#renameDice').addEventListener('click', () => { $('#renameInput').value = funName(); $('#renameMsg').hidden = true; });
+  $('#renameBtn').addEventListener('click', () => {
+    const nm = sanitize($('#renameInput').value).slice(0, 10), m = $('#renameMsg');
+    if (!nm) { m.textContent = '이름을 적어 주세요.'; m.className = 'empty bad'; m.hidden = false; return; }
+    myName = nm; store('hw-name', nm); myPlate.set(myName); pushPresence(true);
+    m.textContent = '이제 "' + nm + '"(으)로 불려요.'; m.className = 'empty'; m.hidden = false;
+  });
   $('#worksClose').addEventListener('click', () => { $('#works').hidden = true; });
   $('#works').addEventListener('click', e => { if (e.target === $('#works')) $('#works').hidden = true; });
 
@@ -1941,6 +1981,7 @@ body.padOpen #hud { visibility: hidden; }
     requestAnimationFrame(frame);
   }
   onResize();
+  if (store('hw-in') === '1') { $('#intro').hidden = true; toast('다시 들어가는 중…', 4000); setTimeout(() => $('#startBtn').click(), 0); }   /* reload: skip the entry screen */
   requestAnimationFrame(frame);
 })();
 </script>
