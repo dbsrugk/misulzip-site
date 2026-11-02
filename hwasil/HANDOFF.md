@@ -5,7 +5,7 @@
 
 ## 지금 어디서 돌아가나
 - 주소: https://jakeun-hwasil.vercel.app/  (초대 링크 = 주소 + `#c=입장코드`)
-- 입장 코드: 저장소에 적지 않음. 주인이 알고 있음. (바꾸는 법은 아래)
+- 입장 코드: 입장 화면에서는 안 물어봄. `backend.js`의 `OPEN_CODE`가 자동으로 들어감(= 주소를 아는 사람은 누구나 입장). 코드를 바꾸면 `OPEN_CODE`도 같이 바꿔서 재배포해야 함. 코드가 안 맞으면 입력 칸이 다시 나타남.
 - Vercel 프로젝트: `jakeun-hwasil` (팀 dbsrugks-projects, team_1lA40DV0lR9QYGgUsIEKJgj3, prj_vUVwnB7Vda5wtwolaTvjkshDa7Sj)
   - Git 자동 배포 **안 걸려 있음**. 고친 뒤에는 수동 배포:
     create_deployment(project=jakeun-hwasil, target=production,

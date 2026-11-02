@@ -4,6 +4,8 @@
    presence channels whose names are derived from the entry code. */
 (function () {
   var SB_URL = 'https://ldmsoceblbyvcoddquvn.supabase.co';
+  /* No entry screen: the page enters with this code by itself. Change it together with hwasil.config.code_hash. */
+  var OPEN_CODE = '6nk9z69j';
   var SB_KEY = 'sb_publishable_Oxq65uoB-aYijOCtc4j_Vg_I3McW6Ao';
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} return null; }
   function hex(buf) { return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
@@ -29,7 +31,7 @@
     savedCode: function () {
       var m = /[#&]c=([^&]+)/.exec(location.hash);
       if (m) return normCode(decodeURIComponent(m[1]));
-      return store('hw-code');
+      return store('hw-code') || OPEN_CODE;
     },
     enter: function (c) {
       c = normCode(c);
