@@ -209,9 +209,9 @@ button.chip { pointer-events: auto; cursor: pointer; }
 .roomRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 2px solid var(--ink); border-radius: 12px; padding: 10px 14px; background: var(--paper); }
 .roomRow .n { font: 400 22px/1 var(--font-display); }
 .roomRow .c { font-size: 13px; color: #6f665a; }
-#roomsList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+#roomsList, #placesList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 /* works sheet */
-#works, #rooms {
+#works, #rooms, #places {
   position: fixed;
   inset: 0;
   z-index: 25;
@@ -263,6 +263,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
   <div class="row">
     <button class="chip" id="worksBtn" type="button">내 그림 <b id="worksCount">0</b></button>
     <button class="chip" id="online" type="button">나 혼자 있는 중</button>
+    <button class="chip" id="placesBtn" type="button">장소 이동</button>
   </div>
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
@@ -333,12 +334,20 @@ button.chip { pointer-events: auto; cursor: pointer; }
   </div>
 </div>
 
+<div id="places" hidden>
+  <div class="sheet" role="dialog" aria-label="장소 이동">
+    <div class="sheetHead"><h2>장소 이동</h2><button class="btn" id="placesClose" type="button">닫기</button></div>
+    <div id="placesList"></div>
+  </div>
+</div>
+
 <div id="intro">
   <div class="card">
     <h1>작은 화실</h1>
     <p>이젤 앞에 앉으면 그림판이 열려요. 그린 그림은 내 그림 목록에 저장돼요.</p>
     <ul>
       <li>왼쪽 아래 조이스틱으로 걷기</li>
+      <li>화실 옆문으로 나가면 산, 바다 같은 야외 그림 자리가 있어요. 위쪽 '장소 이동'으로 바로 갈 수도 있어요</li>
       <li>이젤을 누르면 걸어가서 앉아요. 누가 그리는 중이면 바로 구경해요</li>
       <li>이젤 가까이 가면 앉기 버튼도 나와요</li>
       <li>화실 하나에 20명까지 들어와요. 위쪽 화실 칩을 눌러 다른 화실로 옮길 수 있어요</li>
@@ -403,7 +412,8 @@ button.chip { pointer-events: auto; cursor: pointer; }
   $('#stage').appendChild(renderer.domElement);
   const cv = renderer.domElement;
   const scene = new T.Scene();
-  scene.background = new T.Color(0x24201c);
+  scene.background = new T.Color(0xcfe6f2);
+  scene.fog = new T.Fog(0xcfe6f2, 95, 330);
   const camera = new T.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.5, 400);
   function onResize() {
     const w = window.innerWidth, h = window.innerHeight;
@@ -424,6 +434,8 @@ button.chip { pointer-events: auto; cursor: pointer; }
   /* ---------- the studio room ---------- */
   const RM = { hx: 32, hz: 24, h: 10 };
   const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, DOOR = 2.4;
+  /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
+  const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150;
   const colliders = [];
   function plankTexture() {
     const c = document.createElement('canvas'); c.width = c.height = 512;
@@ -447,7 +459,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
   const floor = new T.Mesh(new T.PlaneGeometry(RM.hx * 2, RM.hz * 2), new T.MeshLambertMaterial({ map: plankTexture() }));
   floor.rotation.x = -Math.PI / 2; scene.add(floor);
   /* ground outside the building, seen when the far camera looks in over a wall */
-  const ground = new T.Mesh(new T.PlaneGeometry(400, 400), new T.MeshLambertMaterial({ color: 0x8f8576 }));
+  const ground = new T.Mesh(new T.PlaneGeometry(1000, 1000), new T.MeshLambertMaterial({ color: 0x93bd6a }));
   ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; scene.add(ground);
 
   const wallMat = L(0xefe8da), baseMat = L(0x8d6b45);
@@ -470,7 +482,15 @@ button.chip { pointer-events: auto; cursor: pointer; }
   seam.push(wall(RM.hx - DOOR, -(RM.hx + DOOR) / 2, RM.hz, Math.PI));
   seam.push(wall(RM.hx - DOOR, (RM.hx + DOOR) / 2, RM.hz, Math.PI));
   wall(RM.hz * 2, -RM.hx, 0, Math.PI / 2);
-  wall(RM.hz * 2, RM.hx, 0, -Math.PI / 2);
+  wall(RM.hz - DOOR, RM.hx, -(RM.hz + DOOR) / 2, -Math.PI / 2);
+  wall(RM.hz - DOOR, RM.hx, (RM.hz + DOOR) / 2, -Math.PI / 2);
+  (function () {                                   /* east doorway out to the field */
+    const woodDoor = L(0x6b4a2f);
+    [-1, 1].forEach(sd => put(scene, new T.Mesh(bx(0.7, 7, 0.5), woodDoor), RM.hx, 3.5, sd * DOOR));
+    put(scene, new T.Mesh(bx(0.7, 0.55, DOOR * 2 + 1), woodDoor), RM.hx, 7.25, 0);
+    const g = new T.Group(); g.position.set(RM.hx - 0.03, 0, 0); g.rotation.y = -Math.PI / 2; scene.add(g);
+    put(g, new T.Mesh(new T.PlaneGeometry(DOOR * 2, RM.h - 7.5), wallMat), 0, 7.5 + (RM.h - 7.5) / 2, 0);
+  })();
 
   /* north windows + light on the floor */
   (function () {
@@ -623,9 +643,11 @@ button.chip { pointer-events: auto; cursor: pointer; }
   /* ---------- easels: inner ring of 6, outer ring of 14 ---------- */
   const PAPER = '#fffdf7';
   const easels = [];
-  function addEasel(th, R) {
+  /* an easel at (x, z); th = direction from the easel towards the artist's seat (the artist looks the other way) */
+  function addEasel(th, R) { addEaselAt(R * Math.cos(th), R * Math.sin(th), th); }
+  function addEaselAt(px, pz, th) {
     const i = easels.length, ox = Math.cos(th), oz = Math.sin(th);
-    const g = new T.Group(); g.position.set(R * ox, 0, R * oz); g.rotation.y = Math.PI / 2 - th; scene.add(g);
+    const g = new T.Group(); g.position.set(px, 0, pz); g.rotation.y = Math.PI / 2 - th; scene.add(g);
     const wood = L(0xb08a5a), dark = L(0x7b5a36);
     [-1.1, 1.1].forEach(x => { const l = put(g, new T.Mesh(bx(0.14, 3.6, 0.14), dark), x, 1.8, 0.25); l.rotation.x = -0.08; });
     const bl = put(g, new T.Mesh(bx(0.14, 3.7, 0.14), dark), 0, 1.8, -0.9); bl.rotation.x = 0.32;
@@ -635,10 +657,10 @@ button.chip { pointer-events: auto; cursor: pointer; }
     const tex = new T.CanvasTexture(cvs); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
     put(g, new T.Mesh(new T.PlaneGeometry(2.5, 1.875), new T.MeshBasicMaterial({ map: tex })), 0, 2.6, 0.2);
     const hit = put(g, new T.Mesh(bx(3.8, 4.4, 2.6), hitMat), 0, 2.1, 0); hit.userData.easel = i; hitList.push(hit);
-    const sit = { x: (R + 2.7) * ox, z: (R + 2.7) * oz };
+    const sit = { x: px + 2.7 * ox, z: pz + 2.7 * oz };
     const ring = new T.Mesh(new T.RingGeometry(0.75, 0.95, 28), B(0xf3c431, { transparent: true, opacity: 0.55, side: T.DoubleSide }));
     ring.rotation.x = -Math.PI / 2; ring.position.set(sit.x, 0.05, sit.z); scene.add(ring);
-    const e = { idx: i, pos: { x: R * ox, z: R * oz }, sit: sit, heading: Math.atan2(-ox, -oz), cvs: cvs, tex: tex, ring: ring };
+    const e = { idx: i, pos: { x: px, z: pz }, sit: sit, heading: Math.atan2(-ox, -oz), cvs: cvs, tex: tex, ring: ring };
     easels.push(e);
     colliders.push({ x: e.pos.x, z: e.pos.z, r: 1.6 });
   }
@@ -770,6 +792,133 @@ button.chip { pointer-events: auto; cursor: pointer; }
     s.set(name); return s;
   }
 
+  /* ---------- outdoors: a field east of the studio with scenic drawing spots ---------- */
+  const anim = [];                       /* per-frame animations: fn(dt, t) */
+  const PLACES = [
+    { name: '화실', note: '이젤이 모여 있는 곳', x: 0, z: 14, h: Math.PI },
+    { name: '전시관', note: '함께 그린 그림이 걸린 곳', x: 0, z: 31, h: 0 },
+    { name: '산 전망대', note: '눈 덮인 봉우리를 바라보며', x: 85, z: -41, h: Math.PI, pitch: 0.22 },
+    { name: '바닷가', note: '모래사장과 수평선, 등대', x: 134, z: 0, h: Math.PI / 2, pitch: 0.22 }
+  ];
+  (function () {
+    const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
+    const flat = (geo, mat, x, y, z) => { const m = new T.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; return at(m, x, y, z); };
+    const wood = L(0xb89a6a), woodD2 = L(0x7b5a36);
+
+    /* paths */
+    const pathM = L(0xe0cf9f);
+    function strip(x1, z1, x2, z2, w) {
+      const len = Math.hypot(x2 - x1, z2 - z1), g = new T.Group();
+      const m = new T.Mesh(new T.PlaneGeometry(w, len), pathM); m.rotation.x = -Math.PI / 2; g.add(m);
+      g.position.set((x1 + x2) / 2, 0.03, (z1 + z2) / 2); g.rotation.y = Math.atan2(x2 - x1, z2 - z1); scene.add(g);
+    }
+    strip(RM.hx, 0, 138, 0, 3.4); strip(85, 0, 85, -46, 3);
+    flat(new T.CircleGeometry(6.5, 32), pathM, 40, 0.031, 0);
+
+    /* sea, beach, foam */
+    flat(new T.PlaneGeometry(40, 400), L(0x74cdea), SEA_X + 20, -0.01, 0);
+    flat(new T.PlaneGeometry(700, 400), L(0x3b97d6), SEA_X + 40 + 350, -0.02, 0);
+    flat(new T.PlaneGeometry(16, 200), L(0xf1e3b4), 142, 0.01, 0);
+    const foam = [];
+    for (let i = 0; i < 3; i++) {
+      const f = flat(new T.PlaneGeometry(1.2, 200), B(0xffffff, { transparent: true, opacity: 0.4, depthWrite: false }), SEA_X + 2, 0.0, 0);
+      foam.push(f);
+    }
+    anim.push((dt, t) => foam.forEach((f, i) => { const k = t * 0.9 + i * 2.1; f.position.x = SEA_X + 1.5 + i * 5 + 1.6 * Math.sin(k); f.material.opacity = 0.18 + 0.22 * (1 + Math.sin(k + 1)) / 2; }));
+
+    /* boardwalk + railing at the beach spot */
+    at(new T.Mesh(bx(7.5, 0.25, 40), wood), 140, 0.13, 0);
+    for (let z = -20; z <= 20.01; z += 4) at(new T.Mesh(cyl(0.18, 0.18, 1.8, 6), woodD2), 144.2, 0.9, z);
+    at(new T.Mesh(bx(0.2, 0.2, 40), woodD2), 144.2, 1.7, 0);
+    /* parasols on the sand */
+    [[133, -14, 0xd9342b], [133, 15, 0x2c47c8]].forEach(q => {
+      at(new T.Mesh(cyl(0.08, 0.08, 3.2, 6), woodD2), q[0], 1.6, q[1]);
+      at(new T.Mesh(new T.ConeGeometry(2.4, 0.9, 10), L(q[2])), q[0], 3.4, q[1]);
+    });
+    /* lighthouse on a rock island, sailboat */
+    at(new T.Mesh(cyl(8, 10, 1.6, 12), L(0x8a8f95)), 196, 0.2, -38);
+    const lh = new T.Group(); lh.position.set(196, 1, -38); scene.add(lh);
+    put(lh, new T.Mesh(cyl(1.3, 2.1, 12, 12), L(0xf7f4ee)), 0, 6, 0);
+    put(lh, new T.Mesh(cyl(1.98, 2.04, 1.4, 12), L(0xd9342b)), 0, 3, 0);
+    put(lh, new T.Mesh(cyl(1.64, 1.7, 1.4, 12), L(0xd9342b)), 0, 8, 0);
+    put(lh, new T.Mesh(cyl(1.15, 1.15, 1.6, 10), B(0xfff0a0)), 0, 12.8, 0);
+    put(lh, new T.Mesh(new T.ConeGeometry(1.7, 1.9, 10), L(0xd9342b)), 0, 14.5, 0);
+    const boat = new T.Group(); scene.add(boat);
+    put(boat, new T.Mesh(bx(5, 0.9, 2), wood), 0, 0.3, 0);
+    put(boat, new T.Mesh(cyl(0.07, 0.07, 6, 6), woodD2), 0, 3.3, 0);
+    const sail = put(boat, new T.Mesh(new T.ConeGeometry(2, 5, 3), B(0xffffff)), 0.2, 3.6, 0); sail.scale.set(1, 1, 0.05); sail.rotation.y = Math.PI / 2;
+    anim.push((dt, t) => {
+      const z = 22 + 16 * Math.sin(t * 0.12), dir = Math.cos(t * 0.12) > 0 ? 0 : Math.PI;
+      boat.position.set(178, 0.05 + 0.1 * Math.sin(t * 1.3), z); boat.rotation.set(0, Math.PI / 2 + dir, 0.05 * Math.sin(t * 1.1));
+    });
+
+    /* mountains (far, fading in the fog), snow caps, green foothills */
+    const near = new T.Color(0x6f9c8a), far = new T.Color(0xa7bdd2);
+    for (let i = -3; i < 15; i++) {
+      const x = 20 + i * 17 + (rnd() - 0.5) * 8, z = -100 - rnd() * 45, h = 24 + rnd() * 22, r = 15 + rnd() * 9;
+      const col = near.clone().lerp(far, (-z - 100) / 45);
+      at(new T.Mesh(new T.ConeGeometry(r, h, 7), L(col.getHex())), x, h / 2, z);
+      at(new T.Mesh(new T.ConeGeometry(r * 0.4, h * 0.4, 7), L(0xffffff)), x, h * 0.8, z);
+    }
+    for (let i = 0; i < 9; i++) {
+      const hill = new T.Mesh(new T.SphereGeometry(16, 14, 8), L(0x7fb35d)); hill.scale.set(1.7 + rnd() * 0.6, 0.65, 1);
+      at(hill, 20 + i * 18 + rnd() * 6, -3, -78 - rnd() * 8);
+    }
+    /* clouds */
+    const cloudM = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.92, fog: false });
+    for (let i = 0; i < 9; i++) {
+      const g = new T.Group();
+      for (let k = 0; k < 4; k++) { const b = new T.Mesh(new T.SphereGeometry(4 + rnd() * 3, 10, 8), cloudM); b.position.set(k * 5 - 7, rnd() * 2, (rnd() - 0.5) * 3); b.scale.set(1.3, 0.7, 1); g.add(b); }
+      g.position.set(-80 + rnd() * 340, 50 + rnd() * 18, -150 + rnd() * 260); scene.add(g);
+      anim.push(dt => { g.position.x += dt * (0.8 + i * 0.05); if (g.position.x > 280) g.position.x = -120; });
+    }
+
+    /* trees (instanced): kept off the paths, the plaza and the drawing spots */
+    const SPOTS = [{ x: 85, z: -46, r: 16 }];
+    function free(x, z) {
+      if (Math.abs(z) < 4.5 && x < 140) return false;
+      if (Math.abs(x - 85) < 4.5 && z < 4 && z > -50) return false;
+      if (Math.hypot(x - 40, z) < 9) return false;
+      for (let i = 0; i < SPOTS.length; i++) if (Math.hypot(x - SPOTS[i].x, z - SPOTS[i].z) < SPOTS[i].r) return false;
+      return x > OUT.x0 + 2 && x < 130 && z > OUT.z0 + 2 && z < OUT.z1 - 2;
+    }
+    const treePts = [];
+    for (let tries = 0; tries < 400 && treePts.length < 70; tries++) {
+      const x = OUT.x0 + 2 + rnd() * (130 - OUT.x0 - 2), z = OUT.z0 + 2 + rnd() * (OUT.z1 - OUT.z0 - 4);
+      if (free(x, z) && !treePts.some(q => Math.hypot(q.x - x, q.z - z) < 4.5)) treePts.push({ x: x, z: z, s: 0.85 + rnd() * 0.6 });
+    }
+    const N = treePts.length, trunkIM = new T.InstancedMesh(cyl(0.35, 0.45, 2.2, 6), L(0x7b5a36), N);
+    const cone1 = new T.InstancedMesh(new T.ConeGeometry(2.3, 4.2, 7), L(0xffffff), N), cone2 = new T.InstancedMesh(new T.ConeGeometry(1.7, 3.4, 7), L(0xffffff), N);
+    const dm = new T.Object3D(), gc = new T.Color();
+    treePts.forEach((q, i) => {
+      dm.rotation.set(0, rnd() * 6, 0); dm.scale.setScalar(q.s);
+      dm.position.set(q.x, 1.1 * q.s, q.z); dm.updateMatrix(); trunkIM.setMatrixAt(i, dm.matrix);
+      dm.position.set(q.x, 3.8 * q.s, q.z); dm.updateMatrix(); cone1.setMatrixAt(i, dm.matrix);
+      dm.position.set(q.x, 5.3 * q.s, q.z); dm.updateMatrix(); cone2.setMatrixAt(i, dm.matrix);
+      gc.setHex(0x3f9a4a).offsetHSL((rnd() - 0.5) * 0.06, 0, (rnd() - 0.5) * 0.12); cone1.setColorAt(i, gc); cone2.setColorAt(i, gc);
+      colliders.push({ x: q.x, z: q.z, r: 0.9 });
+    });
+    scene.add(trunkIM); scene.add(cone1); scene.add(cone2);
+
+    /* signs */
+    function sign(text, x, z) {
+      at(new T.Mesh(cyl(0.18, 0.22, 5, 8), woodD2), x, 2.5, z);
+      const pl = makeNamePlate(text); pl.sprite.scale.set(5, 1.25, 1); pl.sprite.position.set(x, 5.6, z); scene.add(pl.sprite);
+    }
+
+    /* spot 1: mountain viewpoint (looking north) */
+    at(new T.Mesh(cyl(15, 15, 0.3, 32), L(0xc4bdb0)), 85, 0.15, -46);
+    for (let x = 69; x <= 101.01; x += 4) at(new T.Mesh(cyl(0.18, 0.18, 1.8, 6), woodD2), x, 0.9, -53);
+    at(new T.Mesh(bx(32, 0.2, 0.2), woodD2), 85, 1.7, -53);
+    for (let i = 0; i < 4; i++) addEaselAt(85 + (i - 1.5) * 7, -48, Math.PI / 2);
+    sign('산 전망대', 80, -33);
+
+    /* spot 2: beach (looking east, out to sea) */
+    for (let i = 0; i < 4; i++) addEaselAt(141, (i - 1.5) * 7, Math.PI);
+    sign('바닷가', 127, -5);
+    sign('야외 그림터', 40, -8);
+  })();
+
   let myName = (store('hw-name') || '').slice(0, 10) || ('화가' + (10 + ((Math.random() * 90) | 0)));
   let myCol = parseInt(store('hw-col'), 10);
   if (!(myCol >= 0 && myCol < COATS.length)) { myCol = (Math.random() * COATS.length) | 0; store('hw-col', String(myCol)); }
@@ -811,7 +960,9 @@ button.chip { pointer-events: auto; cursor: pointer; }
   function walkable(x, z) {
     if (Math.abs(x) <= RM.hx - 1 && Math.abs(z) <= RM.hz - 1) return true;
     if (Math.abs(x) <= DOOR - 0.5 && z > RM.hz - 1.01 && z <= GZ0 + 1.01) return true;
-    return Math.abs(x) <= GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1;
+    if (Math.abs(x) <= GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;
+    if (Math.abs(z) <= DOOR - 0.5 && x > RM.hx - 1.01 && x <= OUT.x0 + 0.01) return true;     /* east doorway */
+    return x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1;                           /* the field */
   }
   function tryMove(mx, mz) {
     const ox = pos.x, oz = pos.z, nx = ox + mx, nz = oz + mz;
@@ -895,7 +1046,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
   let tap = null;
   function shown(o) { for (; o; o = o.parent) if (!o.visible) return false; return true; }
   function onTap(cx, cy) {
-    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden) return;
+    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden) return;
     const r = cv.getBoundingClientRect();
     ray.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -((cy - r.top) / r.height) * 2 + 1 }, camera);
     const hits = ray.intersectObjects(hitList, false);
@@ -923,9 +1074,18 @@ button.chip { pointer-events: auto; cursor: pointer; }
   cv.addEventListener('pointercancel', () => { tap = null; });
   /* next point to walk to: out through the doorway first if I am in the gallery */
   function walkTarget() {
-    if (pos.z > RM.hz - 1) {
+    const inOut = pos.x > RM.hx - 0.5, gOut = goal.x > RM.hx;
+    if (!inOut && pos.z > RM.hz - 1) {
       if (Math.abs(pos.x) > 1.2 && pos.z > RM.hz + 1.2) return { x: 0, z: RM.hz + 1.6, way: true };
       return { x: 0, z: RM.hz - 2.5, way: true };
+    }
+    if (!inOut && gOut) {                                 /* studio -> field: line up with the east door, go through */
+      if (pos.x < RM.hx - 2 && Math.abs(pos.z) > 1.2) return { x: RM.hx - 4, z: 0, way: true };
+      return { x: RM.hx + 3, z: 0, way: true };
+    }
+    if (inOut && !gOut) {                                 /* field -> studio */
+      if (pos.x > OUT.x0 + 2 && Math.abs(pos.z) > 1.2) return { x: OUT.x0 + 3, z: 0, way: true };
+      return { x: RM.hx - 3, z: 0, way: true };
     }
     return { x: goal.x, z: goal.z, way: false };
   }
@@ -1379,7 +1539,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
       const r = remotes.get(p.peer) || addRemote(p);
       const nm = sanitize(typeof pr.n === 'string' ? pr.n : '').slice(0, 10) || '화가';
       if (nm !== r.name) { r.name = nm; r.plate.set(nm); }
-      r.tx = clamp(pr.x, -RM.hx, RM.hx); r.tz = clamp(pr.z, -RM.hz, GZ1);
+      r.tx = clamp(pr.x, -RM.hx, OUT.x1 + 2); r.tz = clamp(pr.z, OUT.z0 - 2, Math.max(GZ1, OUT.z1));
       r.th = typeof pr.h === 'number' && isFinite(pr.h) ? pr.h : r.th; r.w = pr.w === 1 ? 1 : 0;
       r.e = typeof pr.e === 'number' && pr.e >= 0 && pr.e < easels.length ? Math.floor(pr.e) : -1;
       if (!r.init) { r.x = r.tx; r.z = r.tz; r.h = r.th; r.init = true; }
@@ -1457,6 +1617,29 @@ button.chip { pointer-events: auto; cursor: pointer; }
   }
   $('#online').addEventListener('click', () => { if (lobbyFailed) { location.reload(); return; } if (!lobby || switching) return; renderRooms(); $('#rooms').hidden = false; });
   $('#roomsClose').addEventListener('click', () => { $('#rooms').hidden = true; });
+  /* ---------- fast travel ---------- */
+  function goPlace(pl) {
+    if (!started || pad.open || watch.open) return;
+    $('#places').hidden = true; goal = null;
+    pos.x = pl.x; pos.z = pl.z; heading = pl.h; camYaw = pl.h + Math.PI; camPitch = pl.pitch || 0.5; camTx = pos.x; camTz = pos.z; camInit = false; myEasel = -1;
+    pushPresence(true); toast(pl.name + '에 왔어요', 3000);
+  }
+  function renderPlaces() {
+    const list = $('#placesList'); list.textContent = '';
+    PLACES.forEach(pl => {
+      const row = document.createElement('div'); row.className = 'roomRow';
+      const left = document.createElement('div'); left.className = 'l';
+      const nm = document.createElement('div'); nm.className = 'n'; nm.textContent = pl.name;
+      const ct = document.createElement('div'); ct.className = 'c'; ct.textContent = pl.note;
+      left.appendChild(nm); left.appendChild(ct);
+      const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn primary'; bt.textContent = '가기';
+      bt.addEventListener('click', () => goPlace(pl));
+      row.appendChild(left); row.appendChild(bt); list.appendChild(row);
+    });
+  }
+  $('#placesBtn').addEventListener('click', () => { if (!started) return; renderPlaces(); $('#places').hidden = false; });
+  $('#placesClose').addEventListener('click', () => { $('#places').hidden = true; });
+  $('#places').addEventListener('click', e => { if (e.target === $('#places')) $('#places').hidden = true; });
   $('#rooms').addEventListener('click', e => { if (e.target === $('#rooms')) $('#rooms').hidden = true; });
   (async function () {
     try {
@@ -1483,6 +1666,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
   /* ---------- loop ---------- */
   function update(dt) {
     tNow += dt;
+    for (let i = 0; i < anim.length; i++) anim[i](dt, tNow);
     let ix = joy.x + ((keys['d'] || keys['arrowright']) ? 1 : 0) - ((keys['a'] || keys['arrowleft']) ? 1 : 0);
     let iy = joy.y + ((keys['w'] || keys['arrowup']) ? 1 : 0) - ((keys['s'] || keys['arrowdown']) ? 1 : 0);
     const len = Math.hypot(ix, iy); if (len > 1) { ix /= len; iy /= len; }
