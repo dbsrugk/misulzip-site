@@ -457,9 +457,9 @@ body.padOpen #hud { visibility: hidden; }
 
   /* ---------- the studio room ---------- */
   const RM = { hx: 32, hz: 24, h: 10 };
-  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, DOOR = 2.4;
+  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, DOOR = 3.8, DSH = 4.7;   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
-  const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150;
+  const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 };
   const colliders = [];
   function plankTexture() {
     const c = document.createElement('canvas'); c.width = c.height = 512;
@@ -497,6 +497,17 @@ body.padOpen #hud { visibility: hidden; }
   /* everything on the room/gallery boundary (z = RM.hz); hidden when the camera is on the other side,
      so the camera can always stay far away instead of being squeezed against the wall */
   const seam = [];
+  /* arched doorway = a wall piece with an arch-shaped hole + a wooden arch frame (the band between two arches) */
+  function archShape(r) { const sh = new T.Shape(); sh.moveTo(-r, 0); sh.lineTo(-r, DSH); sh.absarc(0, DSH, r, Math.PI, 0, true); sh.lineTo(r, 0); sh.lineTo(-r, 0); return sh; }
+  function archWallGeo() {
+    const sh = new T.Shape(), w = DOOR + 0.3;
+    sh.moveTo(-w, -0.2); sh.lineTo(w, -0.2); sh.lineTo(w, RM.h); sh.lineTo(-w, RM.h); sh.lineTo(-w, -0.2);
+    sh.holes.push(archShape(DOOR)); return new T.ShapeGeometry(sh, 18);
+  }
+  function archFrameGeo() {
+    const sh = archShape(DOOR); sh.holes.push(archShape(DOOR - 0.45));
+    const g = new T.ExtrudeGeometry(sh, { depth: 0.7, bevelEnabled: false, curveSegments: 20 }); g.translate(0, 0, -0.35); return g;
+  }
   /* things hung on an outer wall: shown only while the camera is on the inside of that wall */
   const onWall = [];
   const hitList = [];  /* tappable things: easels and gallery frames */
@@ -510,10 +521,9 @@ body.padOpen #hud { visibility: hidden; }
   wall(RM.hz - DOOR, RM.hx, (RM.hz + DOOR) / 2, -Math.PI / 2);
   (function () {                                   /* east doorway out to the field */
     const woodDoor = L(0x6b4a2f);
-    [-1, 1].forEach(sd => put(scene, new T.Mesh(bx(0.7, 7, 0.5), woodDoor), RM.hx, 3.5, sd * DOOR));
-    put(scene, new T.Mesh(bx(0.7, 0.55, DOOR * 2 + 1), woodDoor), RM.hx, 7.25, 0);
+    const fr = new T.Mesh(archFrameGeo(), woodDoor); fr.position.set(RM.hx, 0, 0); fr.rotation.y = -Math.PI / 2; scene.add(fr);
     const g = new T.Group(); g.position.set(RM.hx - 0.03, 0, 0); g.rotation.y = -Math.PI / 2; scene.add(g);
-    put(g, new T.Mesh(new T.PlaneGeometry(DOOR * 2, RM.h - 7.5), wallMat), 0, 7.5 + (RM.h - 7.5) / 2, 0);
+    put(g, new T.Mesh(archWallGeo(), wallMat), 0, 0, 0);
   })();
 
   /* north windows + light on the floor */
@@ -538,11 +548,10 @@ body.padOpen #hud { visibility: hidden; }
   const gWall = L(0xe6e2d8);
   (function () {
     const woodDoor = L(0x6b4a2f);
-    [-1, 1].forEach(sd => seam.push(put(scene, new T.Mesh(bx(0.5, 7, 0.7), woodDoor), sd * DOOR, 3.5, RM.hz)));
-    seam.push(put(scene, new T.Mesh(bx(DOOR * 2 + 1, 0.55, 0.7), woodDoor), 0, 7.25, RM.hz));
+    seam.push(put(scene, new T.Mesh(archFrameGeo(), woodDoor), 0, 0, RM.hz));
     [[RM.hz - 0.03, Math.PI], [RM.hz + 0.03, 0]].forEach(q => {
       const g = new T.Group(); g.position.set(0, 0, q[0]); g.rotation.y = q[1]; scene.add(g); seam.push(g);
-      put(g, new T.Mesh(new T.PlaneGeometry(DOOR * 2, RM.h - 7.5), q[1] ? wallMat : gWall), 0, 7.5 + (RM.h - 7.5) / 2, 0);
+      put(g, new T.Mesh(archWallGeo(), q[1] ? wallMat : gWall), 0, 0, 0);
     });
     seam.push(wall(GX - DOOR, -(GX + DOOR) / 2, RM.hz + 0.03, 0, gWall));
     seam.push(wall(GX - DOOR, (GX + DOOR) / 2, RM.hz + 0.03, 0, gWall));
@@ -568,7 +577,7 @@ body.padOpen #hud { visibility: hidden; }
       tex.needsUpdate = true;
     }
     draw();
-    const sg = new T.Mesh(new T.PlaneGeometry(5, 1.56), new T.MeshBasicMaterial({ map: tex })); sg.position.set(0, 8.7, RM.hz - 0.1); sg.rotation.y = Math.PI; scene.add(sg); seam.push(sg);
+    const sg = new T.Mesh(new T.PlaneGeometry(4.4, 1.37), new T.MeshBasicMaterial({ map: tex })); sg.position.set(0, 9.28, RM.hz - 0.1); sg.rotation.y = Math.PI; scene.add(sg); seam.push(sg);
     if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '전시관함께그린그림이걸려있어요').then(draw).catch(() => {});
     [-5, 5].forEach(sx => {
       put(scene, new T.Mesh(bx(0.3, 6.4, 17), L(0xf2eee6)), sx, 3.2, RM.hz + 15);
@@ -822,7 +831,9 @@ body.padOpen #hud { visibility: hidden; }
     { name: '화실', note: '이젤이 모여 있는 곳', x: 0, z: 14, h: Math.PI },
     { name: '전시관', note: '함께 그린 그림이 걸린 곳', x: 0, z: 31, h: 0 },
     { name: '산 전망대', note: '눈 덮인 봉우리를 바라보며', x: 85, z: -41, h: Math.PI, pitch: 0.22 },
-    { name: '바닷가', note: '모래사장과 수평선, 등대', x: 134, z: 0, h: Math.PI / 2, pitch: 0.22 }
+    { name: '바닷가', note: '모래사장과 수평선, 등대', x: 134, z: 0, h: Math.PI / 2, pitch: 0.22 },
+    { name: '호숫가', note: '잔잔한 물, 수련, 작은 배', x: 72, z: 19.5, h: 0, pitch: 0.22 },
+    { name: '풍차 들판', note: '꽃밭 너머로 돌아가는 풍차', x: 112, z: 24, h: 0, pitch: 0.25 }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
@@ -836,7 +847,7 @@ body.padOpen #hud { visibility: hidden; }
       const m = new T.Mesh(new T.PlaneGeometry(w, len), pathM); m.rotation.x = -Math.PI / 2; g.add(m);
       g.position.set((x1 + x2) / 2, 0.03, (z1 + z2) / 2); g.rotation.y = Math.atan2(x2 - x1, z2 - z1); scene.add(g);
     }
-    strip(RM.hx, 0, 138, 0, 3.4); strip(85, 0, 85, -46, 3);
+    strip(RM.hx, 0, 138, 0, 3.4); strip(85, 0, 85, -46, 3); strip(LAKE.x, 0, LAKE.x, 21, 3); strip(MILL.x, 0, MILL.x, 25, 3);
     flat(new T.CircleGeometry(6.5, 32), pathM, 40, 0.031, 0);
 
     /* sea, beach, foam */
@@ -900,10 +911,12 @@ body.padOpen #hud { visibility: hidden; }
     }
 
     /* trees (instanced): kept off the paths, the plaza and the drawing spots */
-    const SPOTS = [{ x: 85, z: -46, r: 16 }];
+    const SPOTS = [{ x: 85, z: -46, r: 16 }, { x: LAKE.x, z: LAKE.z, r: 21 }, { x: MILL.x, z: MILL.z, r: 22 }];
     function free(x, z) {
       if (Math.abs(z) < 4.5 && x < 140) return false;
       if (Math.abs(x - 85) < 4.5 && z < 4 && z > -50) return false;
+      if (Math.abs(x - LAKE.x) < 4.5 && z < 26 && z > 0) return false;
+      if (Math.abs(x - MILL.x) < 4.5 && z < 30 && z > 0) return false;
       if (Math.hypot(x - 40, z) < 9) return false;
       for (let i = 0; i < SPOTS.length; i++) if (Math.hypot(x - SPOTS[i].x, z - SPOTS[i].z) < SPOTS[i].r) return false;
       return x > OUT.x0 + 2 && x < 130 && z > OUT.z0 + 2 && z < OUT.z1 - 2;
@@ -912,6 +925,10 @@ body.padOpen #hud { visibility: hidden; }
     for (let tries = 0; tries < 400 && treePts.length < 70; tries++) {
       const x = OUT.x0 + 2 + rnd() * (130 - OUT.x0 - 2), z = OUT.z0 + 2 + rnd() * (OUT.z1 - OUT.z0 - 4);
       if (free(x, z) && !treePts.some(q => Math.hypot(q.x - x, q.z - z) < 4.5)) treePts.push({ x: x, z: z, s: 0.85 + rnd() * 0.6 });
+    }
+    for (let a = 0; a < 6.28; a += 0.42) {              /* trees ringing the lake, leaving the north shore (the easels) open */
+      if (Math.sin(a) < -0.5) continue;
+      const rr2 = LAKE.r + 4 + rnd() * 3; treePts.push({ x: LAKE.x + Math.cos(a) * rr2, z: LAKE.z + Math.sin(a) * rr2, s: 0.9 + rnd() * 0.6 });
     }
     const N = treePts.length, trunkIM = new T.InstancedMesh(cyl(0.35, 0.45, 2.2, 6), L(0x7b5a36), N);
     const cone1 = new T.InstancedMesh(new T.ConeGeometry(2.3, 4.2, 7), L(0xffffff), N), cone2 = new T.InstancedMesh(new T.ConeGeometry(1.7, 3.4, 7), L(0xffffff), N);
@@ -924,7 +941,7 @@ body.padOpen #hud { visibility: hidden; }
       gc.setHex(0x3f9a4a).offsetHSL((rnd() - 0.5) * 0.06, 0, (rnd() - 0.5) * 0.12); cone1.setColorAt(i, gc); cone2.setColorAt(i, gc);
       colliders.push({ x: q.x, z: q.z, r: 0.9 });
     });
-    scene.add(trunkIM); scene.add(cone1); scene.add(cone2);
+    [trunkIM, cone1, cone2].forEach(m => { m.frustumCulled = false; scene.add(m); });   /* instanced meshes are culled by the origin otherwise */
 
     /* signs */
     function sign(text, x, z) {
@@ -943,6 +960,64 @@ body.padOpen #hud { visibility: hidden; }
     for (let i = 0; i < 4; i++) addEaselAt(141, (i - 1.5) * 7, Math.PI);
     sign('바닷가', 127, -5);
     sign('야외 그림터', 40, -8);
+
+    /* spot 3: lakeside (looking south over the water) */
+    flat(new T.RingGeometry(LAKE.r - 0.2, LAKE.r + 1.6, 44), L(0xe9dfb4), LAKE.x, 0.015, LAKE.z);
+    flat(new T.CircleGeometry(LAKE.r, 44), L(0x5db7e8), LAKE.x, 0.02, LAKE.z);
+    const ripples = [];
+    for (let i = 0; i < 3; i++) { const rp = flat(new T.RingGeometry(0.92, 1, 40), B(0xffffff, { transparent: true, opacity: 0.4, depthWrite: false }), LAKE.x + (i - 1) * 3.5, 0.03, LAKE.z + 2 + i * 1.5); ripples.push(rp); }
+    anim.push((dt, t) => ripples.forEach((rp, i) => { const k = ((t * 0.25 + i / 3) % 1); rp.scale.setScalar(0.5 + k * 5); rp.material.opacity = 0.45 * (1 - k); }));
+    for (let i = 0; i < 16; i++) {                        /* lily pads (and a few pink flowers) */
+      const a = rnd() * 6.28, d = 2 + rnd() * (LAKE.r - 4), x = LAKE.x + Math.cos(a) * d, z = LAKE.z + Math.sin(a) * d;
+      flat(new T.CircleGeometry(0.5 + rnd() * 0.4, 10), L(0x3f9a4a), x, 0.035, z);
+      if (i % 4 === 0) at(new T.Mesh(new T.SphereGeometry(0.22, 8, 6), L(0xf08fb8)), x, 0.2, z);
+    }
+    const reedIM = new T.InstancedMesh(cyl(0.05, 0.07, 2.4, 4), L(0x9ab760), 46), rd = new T.Object3D();
+    for (let i = 0; i < 46; i++) {
+      const a = 0.2 + rnd() * 5.9; if (Math.sin(a) < -0.6) { rd.position.set(0, -50, 0); } else rd.position.set(LAKE.x + Math.cos(a) * (LAKE.r + 0.6 + rnd()), 1.1, LAKE.z + Math.sin(a) * (LAKE.r + 0.6 + rnd()));
+      rd.rotation.set((rnd() - 0.5) * 0.2, 0, (rnd() - 0.5) * 0.2); rd.updateMatrix(); reedIM.setMatrixAt(i, rd.matrix);
+    }
+    reedIM.frustumCulled = false; scene.add(reedIM);
+    const rowboat = new T.Group(); scene.add(rowboat);
+    put(rowboat, new T.Mesh(bx(3.6, 0.7, 1.5), wood), 0, 0.25, 0);
+    put(rowboat, new T.Mesh(bx(0.12, 0.12, 3.2), woodD2), 0.4, 0.8, 0).rotation.y = 0.5;
+    anim.push((dt, t) => { rowboat.position.set(LAKE.x + 4 + 2 * Math.sin(t * 0.15), 0.06 + 0.05 * Math.sin(t * 1.2), LAKE.z + 3 + 1.5 * Math.cos(t * 0.11)); rowboat.rotation.set(0, 0.6 + 0.2 * Math.sin(t * 0.2), 0.03 * Math.sin(t * 1.1)); });
+    for (let i = 0; i < 4; i++) addEaselAt(LAKE.x + (i - 1.5) * 7, LAKE.z - LAKE.r - 3, -Math.PI / 2);
+    sign('호숫가', LAKE.x - 6.5, 12);
+
+    /* spot 4: windmill field (looking south over the flowers) */
+    const wm = new T.Group(); wm.position.set(MILL.x, 0, MILL.z); scene.add(wm);
+    put(wm, new T.Mesh(cyl(2.4, 3.6, 10, 12), L(0xf3ead8)), 0, 5, 0);
+    put(wm, new T.Mesh(new T.ConeGeometry(3.3, 3.6, 12), L(0xb5452c)), 0, 11.8, 0);
+    put(wm, new T.Mesh(bx(1.7, 2.6, 0.5), woodD2), 0, 1.3, -3.5);
+    put(wm, new T.Mesh(bx(1.1, 1.1, 0.3), L(0x9cc9e8)), 0, 6, -2.95);
+    const hub = put(wm, new T.Mesh(cyl(0.5, 0.5, 1.2, 8), woodD2), 0, 8.4, -3.2); hub.rotation.x = Math.PI / 2;
+    const blades = new T.Group(); blades.position.set(0, 8.4, -3.9); wm.add(blades);
+    for (let k = 0; k < 4; k++) {
+      const arm = new T.Group(); arm.rotation.z = k * Math.PI / 2; blades.add(arm);
+      put(arm, new T.Mesh(bx(0.22, 7.6, 0.2), woodD2), 0, 3.8, 0);
+      put(arm, new T.Mesh(bx(1.5, 5.2, 0.1), L(0xf6efe0)), 0.85, 4.6, -0.12);
+    }
+    anim.push(dt => { blades.rotation.z -= dt * 0.7; });
+    colliders.push({ x: MILL.x, z: MILL.z, r: 3.6 });
+    /* flowers (instanced) and hay bales */
+    const FN = 420, stems = new T.InstancedMesh(cyl(0.04, 0.05, 0.9, 4), L(0x4f9a46), FN), heads = new T.InstancedMesh(new T.SphereGeometry(0.3, 6, 5), L(0xffffff), FN), fd = new T.Object3D(), fc = new T.Color();
+    let fi = 0;
+    for (let tries = 0; tries < 1200 && fi < FN; tries++) {
+      const x = 96 + rnd() * 34, z = 31 + rnd() * 22;
+      if (Math.hypot(x - MILL.x, z - MILL.z) < 5.2) continue;
+      fd.rotation.set(0, 0, 0); fd.scale.setScalar(0.8 + rnd() * 0.6);
+      fd.position.set(x, 0.45 * fd.scale.y, z); fd.updateMatrix(); stems.setMatrixAt(fi, fd.matrix);
+      fd.position.set(x, 0.95 * fd.scale.y, z); fd.updateMatrix(); heads.setMatrixAt(fi, fd.matrix);
+      fc.setHex(PAL[(rnd() * PAL.length) | 0]); heads.setColorAt(fi, fc); fi++;
+    }
+    stems.count = heads.count = fi; stems.frustumCulled = heads.frustumCulled = false; scene.add(stems); scene.add(heads);
+    [[103, 36], [121, 45], [124, 34], [100, 49]].forEach(q => {
+      const bale = new T.Mesh(cyl(1.1, 1.1, 1.5, 12), L(0xe6c36a)); bale.rotation.z = Math.PI / 2; at(bale, q[0], 1.1, q[1]);
+      colliders.push({ x: q[0], z: q[1], r: 1.5 });
+    });
+    for (let i = 0; i < 4; i++) addEaselAt(MILL.x + (i - 1.5) * 7, 29, -Math.PI / 2);
+    sign('풍차 들판', MILL.x - 6.5, 12);
   })();
 
   let myName = (store('hw-name') || '').slice(0, 10) || ('화가' + (10 + ((Math.random() * 90) | 0)));
@@ -988,7 +1063,7 @@ body.padOpen #hud { visibility: hidden; }
     if (Math.abs(x) <= DOOR - 0.5 && z > RM.hz - 1.01 && z <= GZ0 + 1.01) return true;
     if (Math.abs(x) <= GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;
     if (Math.abs(z) <= DOOR - 0.5 && x > RM.hx - 1.01 && x <= OUT.x0 + 0.01) return true;     /* east doorway */
-    return x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1;                           /* the field */
+    return x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1 && Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 0.5;   /* the field, minus the lake */
   }
   function tryMove(mx, mz) {
     const ox = pos.x, oz = pos.z, nx = ox + mx, nz = oz + mz;

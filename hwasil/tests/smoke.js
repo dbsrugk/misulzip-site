@@ -4,10 +4,11 @@ const { start, vis, until, check, done } = require('./lib');
   const t = await start(); const p = await t.client('solo'); await t.enter(p, '시험');
   check(/화실 1/.test(await p.textContent('#online')), 'enters a studio: ' + await p.textContent('#online'));
   async function place(i, shot) { await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(i).click(); await p.waitForTimeout(1800); await p.screenshot({ path: t.out(shot) }); }
-  await place(2, 'mountain.png'); await place(3, 'beach.png'); await place(0, 'studio.png');
-  const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 28, 'easels: ' + n);
+  await place(2, 'mountain.png'); await place(3, 'beach.png'); await place(4, 'lake.png'); await place(5, 'field.png'); await place(0, 'studio.png');
+  const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 36, 'easels: ' + n);
+  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 6, 'six places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
   await p.evaluate(() => window.__hw.go(25));                /* studio -> beach easel: through the east door */
-  check(await until(p, () => !document.querySelector('#pad').hidden, null, 150), 'walks out the east door and sits at a beach easel');
+  check(await until(p, () => !document.querySelector('#pad').hidden, null, 200), 'walks out the east door and sits at a beach easel');
   await p.waitForTimeout(2500);
   check(await p.evaluate(() => document.querySelector('#pad').classList.contains('split')), 'outdoor easel opens scenery split view');
   await p.screenshot({ path: t.out('split.png') });
@@ -19,6 +20,6 @@ const { start, vis, until, check, done } = require('./lib');
   await p.click('#padClose'); await p.waitForTimeout(300); await p.click('#padClose'); await p.waitForTimeout(500);
   check(!(await vis(p, '#pad')), 'pad closes');
   await p.evaluate(() => window.__hw.go(3));                  /* beach -> studio easel */
-  check(await until(p, () => !document.querySelector('#pad').hidden, null, 150), 'walks back in through the door and sits at a studio easel');
+  check(await until(p, () => !document.querySelector('#pad').hidden, null, 200), 'walks back in through the door and sits at a studio easel');
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
