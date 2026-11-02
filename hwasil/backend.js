@@ -26,8 +26,29 @@
     });
   }
 
+  /* ---------- tiny diagnostics: shows up in Supabase edge logs as GET /rpc/hwasil_check?code=dg~... ---------- */
+  var stats = { rx: 0, tx: 0, lobby: '연결 중', room: '-' };
+  var sid = rand(2), t0 = Date.now(), dgN = 0, dgQ = [], dgT = 0;
+  function diag(text) {
+    if (!sb || dgN >= 45) return; dgN++;
+    dgQ.push('dg~' + sid + '~' + (Date.now() - t0) + '~' + String(text).replace(/[^\w.:,=@+\-]/g, '_').slice(0, 90));
+    if (!dgT) dgT = setTimeout(function flush() {
+      dgT = 0; var m = dgQ.shift(); if (!m) return;
+      try { sb.rpc('hwasil_check', { code: m }, { get: true }).then(function () {}, function () {}); } catch (e) {}
+      if (dgQ.length) dgT = setTimeout(flush, 350);
+    }, 50);
+  }
+  function uaTag() {
+    var u = navigator.userAgent, t = [];
+    t.push(/iPhone|iPad/.test(u) ? 'ios' : /Android/.test(u) ? 'and' : 'pc');
+    if (/KAKAOTALK/i.test(u)) t.push('kakao'); if (/; wv\)/.test(u)) t.push('wv'); if (/NAVER/i.test(u)) t.push('naver');
+    t.push(navigator.onLine ? 'on' : 'off'); return t.join('+');
+  }
+  window.addEventListener('error', function (e) { diag('jserr=' + (e && e.message)); });
+
   /* ---------- entry code ---------- */
   var hw = window.hwasil = {
+    stats: stats,
     savedCode: function () {
       var m = /[#&]c=([^&]+)/.exec(location.hash);
       if (m) return normCode(decodeURIComponent(m[1]));
@@ -38,6 +59,18 @@
       if (!c) return Promise.resolve(false);
       if (!window.supabase || !window.supabase.createClient) return Promise.reject(new Error('no_supabase'));
       if (!sb) sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false, autoRefreshToken: false }, realtime: { params: { eventsPerSecond: 40 } } });
+      if (!sb.__dg) {
+        sb.__dg = 1; diag('start ' + uaTag());
+        try {
+          var rt = sb.realtime;
+          ['onOpen', 'onClose', 'onError'].forEach(function (k) { if (rt && typeof rt[k] === 'function') rt[k](function (e) { diag('ws.' + k.slice(2).toLowerCase() + (e && e.code ? '=' + e.code : '')); }); });
+        } catch (e) {}
+        [3000, 8000, 16000, 30000].forEach(function (ms) { setTimeout(function () {
+          var rt = sb.realtime, st = '';
+          try { st = rt && rt.connectionState ? rt.connectionState() : (rt && rt.isConnected && rt.isConnected() ? 'open' : '?'); } catch (e) {}
+          diag('t' + ms / 1000 + ' ws=' + st + ' lobby=' + stats.lobby + ' room=' + stats.room + ' rx=' + stats.rx + ' tx=' + stats.tx);
+        }, ms); });
+      }
       return sb.rpc('hwasil_check', { code: c }).then(function (r) {
         if (r.error) throw new Error(r.error.message);
         if (!r.data) { if (store('hw-code') === c) store('hw-code', null); return false; }
@@ -62,7 +95,6 @@
      Every client sends its own state ("_st") whenever it changes (at most ~3/s) and at least every 2.5 s.
      A joiner says "_hello" and everyone answers with their state. Peers that go quiet for 7 s are dropped. */
   var FAST = { x: 1, z: 1, h: 1, w: 1 };
-  var stats = hw.stats = { rx: 0, tx: 0, lobby: '연결 중', room: '-' };
   var STEP = 330, BEAT = 2500, EXPIRE = 7000;
   function makeRoom(name, isLobby) {
     var peerId = rand(8), slot = isLobby ? 'lobby' : 'room';
@@ -106,9 +138,11 @@
     var subscribed = new Promise(function (res) {
       ch.subscribe(function (status) {
         stats[slot] = status === 'SUBSCRIBED' ? '연결됨' : (status === 'TIMED_OUT' ? '시간 초과' : status === 'CLOSED' ? '끊김' : status === 'CHANNEL_ERROR' ? '오류' : status);
+        diag(slot + ':' + name + ' ' + status + (arguments[1] ? ' ' + (arguments[1].message || arguments[1]) : ''));
         if (status === 'SUBSCRIBED') { joined = true; tx('_hello', { k: peerId }); sendState(); notify(); res(true); }
         else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          if (!joined) res(false); else errCbs.forEach(function (f) { try { f(); } catch (e) {} });
+          var was = joined; joined = false;          /* do not keep sending (the library would fall back to REST) */
+          if (!was) res(false); else errCbs.forEach(function (f) { try { f(); } catch (e) {} });
         }
       });
       setTimeout(function () { res(joined); }, 9000);
