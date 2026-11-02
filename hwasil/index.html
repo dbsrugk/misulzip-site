@@ -1077,6 +1077,32 @@ button.chip { pointer-events: auto; cursor: pointer; }
       }, () => {});
     } catch (e) {}
   }
+  /* The server measures the stored jsonb text (", " and ": " are padded), limit 260000 bytes. */
+  const DOC_MAX = 250000;
+  function jsonbSize(d) { return new Blob([JSON.stringify(d).replace(/,/g, ', ').replace(/":/g, '": ')]).size; }
+  function simplify(p, tol) {                      /* Douglas-Peucker on a flat [x,y,...] list, keeps the ends */
+    const n = p.length / 2; if (n < 3) return p.slice();
+    const keep = new Uint8Array(n); keep[0] = 1; keep[n - 1] = 1;
+    const st = [[0, n - 1]];
+    while (st.length) {
+      const [a, b] = st.pop(); if (b - a < 2) continue;
+      const ax = p[a * 2], ay = p[a * 2 + 1], bx = p[b * 2], by = p[b * 2 + 1], dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1e-9;
+      let md = -1, mi = -1;
+      for (let i = a + 1; i < b; i++) { const d = Math.abs(dy * (p[i * 2] - ax) - dx * (p[i * 2 + 1] - ay)) / L; if (d > md) { md = d; mi = i; } }
+      if (md > tol) { keep[mi] = 1; st.push([a, mi], [mi, b]); }
+    }
+    const out = []; for (let i = 0; i < n; i++) if (keep[i]) out.push(p[i * 2], p[i * 2 + 1]);
+    return out;
+  }
+  /* returns { doc, tol } that fits the server limit, thinning the lines only as much as needed; null if hopeless */
+  function fitDoc(doc) {
+    const tols = [0, 0.6, 1, 1.6, 2.4, 3.5, 5, 8];
+    for (let i = 0; i < tols.length; i++) {
+      const d = tols[i] ? Object.assign({}, doc, { strokes: doc.strokes.map(q => ({ k: q.k, c: q.c, w: q.w, p: simplify(q.p, tols[i]) })) }) : doc;
+      if (jsonbSize(d) <= DOC_MAX) return { doc: d, tol: tols[i] };
+    }
+    return null;
+  }
   function pointsOf(strokes) { let n = 0; strokes.forEach(s => { n += s.p.length / 2; }); return n; }
   async function save() {
     if (pad.saving) return;
@@ -1085,17 +1111,18 @@ button.chip { pointer-events: auto; cursor: pointer; }
     let title = sanitize($('#padTitle').value).slice(0, 24);
     if (!title) { const d = new Date(); title = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 그림'; $('#padTitle').value = title; }
     const prev = pad.id ? works.find(q => q.id === pad.id) : null;
-    const doc = { kind: 'work', title: title, w: pad.W, h: pad.H, at: Date.now(), n: pad.strokes.length, strokes: pad.strokes.map(s => ({ k: s.k, c: s.c, w: s.w, p: s.p })) };
+    let doc = { kind: 'work', title: title, w: pad.W, h: pad.H, at: Date.now(), n: pad.strokes.length, strokes: pad.strokes.map(s => ({ k: s.k, c: s.c, w: s.w, p: s.p })) };
     if (prev && prev.exh) doc.exh = true;
-    const size = new Blob([JSON.stringify(doc)]).size;
-    if (size > 240000) { setStatus('그림이 너무 커서 저장할 수 없어요. 일부를 되돌리거나 지운 뒤 다시 눌러 주세요.', true); return; }
+    const fit = fitDoc(doc);
+    if (!fit) { setStatus('그림이 너무 커서 저장할 수 없어요. 일부를 되돌리거나 지운 뒤 다시 눌러 주세요.', true); return; }
+    doc = fit.doc; const thinned = fit.tol > 0;
     pad.saving = true; $('#padSave').disabled = true; setStatus('저장하는 중…');
     try {
       const ref = pad.id ? myCol_.doc(pad.id) : myCol_.doc();
       await ref.set(doc);
       if (doc.exh && galCol) { try { await galCol.doc(uid + '_' + ref.id).set(exhibitDoc(doc, ref.id)); } catch (e) {} }
       pad.id = ref.id; pad.dirty = false; pad.confirmClose = false; $('#padClose').textContent = '닫기';
-      setStatus('저장했어요. 내 그림 목록에서 다시 열 수 있어요.');
+      setStatus(thinned ? '저장했어요. 그림이 커서 선을 조금 단순하게 줄였어요. 내 그림 목록에서 다시 열 수 있어요.' : '저장했어요. 내 그림 목록에서 다시 열 수 있어요.');
       finishEasel();
     } catch (e) {
       const c = e && e.code;
@@ -1115,7 +1142,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
     try {
       if (on) {
         const ed = exhibitDoc(w, w.id);
-        if (new Blob([JSON.stringify(ed)]).size > 240000) { toast('그림이 너무 커서 전시할 수 없어요.'); return; }
+        if (jsonbSize(ed) > 258000) { toast('그림이 너무 커서 전시할 수 없어요.'); return; }
         await galCol.doc(gid).set(ed);
         await myCol_.doc(w.id).update({ exh: true });
         toast('전시관에 걸었어요! 남쪽 문으로 가 보세요.', 6000);
