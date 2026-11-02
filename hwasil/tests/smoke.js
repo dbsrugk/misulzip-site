@@ -25,6 +25,29 @@ const { start, vis, until, check, done } = require('./lib');
   await p.evaluate(() => { const r = document.querySelector('#padSize'); r.value = 30; r.dispatchEvent(new Event('input', { bubbles: true })); });
   await p.waitForTimeout(300); await p.screenshot({ path: t.out('brush_preview.png') });
   check(await p.evaluate(() => { const f = document.querySelector('#sizeFloat'), d = f.firstElementChild; return !f.hidden && parseFloat(d.style.width) > 8 && /굵기 30/.test(f.lastElementChild.textContent); }), 'brush size preview shows while the slider moves');
+  /* paint bucket, custom colour, eyedropper */
+  await p.click('#padClear'); await p.click('#padClear');                      /* second tap confirms */
+  const bb = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+  const at = (fx, fy) => [bb.x + bb.w * fx, bb.y + bb.h * fy];
+  const px = (fx, fy) => p.evaluate(([fx, fy]) => { const c = document.querySelector('#padCanvas'), d = c.getContext('2d').getImageData(Math.floor(c.width * fx), Math.floor(c.height * fy), 1, 1).data; return [d[0], d[1], d[2]]; }, [fx, fy]);
+  let [sx, sy] = at(0.3, 0.3); await p.mouse.move(sx, sy); await p.mouse.down();
+  for (const [fx, fy] of [[0.7, 0.3], [0.7, 0.7], [0.3, 0.7], [0.3, 0.3]]) { const [x2, y2] = at(fx, fy); await p.mouse.move(x2, y2, { steps: 6 }); }
+  await p.mouse.up();
+  await p.click('#tools button[data-tool=f]');
+  await p.locator('#swatches .sw:not(.tool)').nth(3).click();                  /* the 4th default swatch is red (#d9342b) */
+  let [fxp, fyp] = at(0.5, 0.5); await p.mouse.click(fxp, fyp); await p.waitForTimeout(500);
+  const inside = await px(0.5, 0.5), outside = await px(0.1, 0.1);
+  await p.screenshot({ path: t.out('fill.png') });
+  check(inside[0] > 200 && inside[1] < 80 && inside[2] < 80, 'paint bucket fills the closed shape red: ' + inside);
+  check(outside[1] > 240, 'paint bucket does not leak outside the shape: ' + outside);
+  await p.click('#padUndo'); await p.waitForTimeout(300);
+  check((await px(0.5, 0.5))[1] > 240, 'undo removes the fill');
+  await p.mouse.click(fxp, fyp); await p.waitForTimeout(400);                  /* fill again for the eyedropper */
+  await p.evaluate(() => { const i = document.querySelector('#padColor'); i.value = '#00aa88'; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); });
+  check(await p.evaluate(() => /rgb\(0, 170, 136\)/.test(document.querySelector('#sizeMini').style.background)), 'custom colour is used');
+  check(await p.evaluate(() => !!document.querySelector('#swatches .sw[data-c="#00aa88"]')), 'custom colour is kept in the recent colours');
+  await p.click('#eyeBtn'); await p.mouse.click(fxp, fyp); await p.waitForTimeout(300);
+  check((await p.evaluate(() => document.querySelector('#padColor').value)) === '#d9342b', 'eyedropper picks the colour from the drawing');
   const box = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   await p.mouse.move(box.x + box.w * 0.2, box.y + box.h * 0.3); await p.mouse.down(); await p.mouse.move(box.x + box.w * 0.8, box.y + box.h * 0.7, { steps: 10 }); await p.mouse.up();
   await p.click('#viewSeg button[data-view=ghost]'); await p.waitForTimeout(1500); await p.screenshot({ path: t.out('ghost.png') });
