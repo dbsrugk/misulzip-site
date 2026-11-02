@@ -426,6 +426,9 @@ button.chip { pointer-events: auto; cursor: pointer; }
   }
   const floor = new T.Mesh(new T.PlaneGeometry(RM.hx * 2, RM.hz * 2), new T.MeshLambertMaterial({ map: plankTexture() }));
   floor.rotation.x = -Math.PI / 2; scene.add(floor);
+  /* ground outside the building, seen when the far camera looks in over a wall */
+  const ground = new T.Mesh(new T.PlaneGeometry(400, 400), new T.MeshLambertMaterial({ color: 0x8f8576 }));
+  ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; scene.add(ground);
 
   const wallMat = L(0xefe8da), baseMat = L(0x8d6b45);
   function wall(w, x, z, ry, mat) {
@@ -433,16 +436,23 @@ button.chip { pointer-events: auto; cursor: pointer; }
     put(g, new T.Mesh(new T.PlaneGeometry(w, RM.h), mat || wallMat), 0, RM.h / 2, 0);
     put(g, new T.Mesh(new T.PlaneGeometry(w, 0.7), baseMat), 0, 0.35, 0.02);
     g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g);
+    return g;
   }
+  /* everything on the room/gallery boundary (z = RM.hz); hidden when the camera is on the other side,
+     so the camera can always stay far away instead of being squeezed against the wall */
+  const seam = [];
+  /* things hung on an outer wall: shown only while the camera is on the inside of that wall */
+  const onWall = [];
+  function hang(obj, ax, lim, inside) { onWall.push({ o: obj, ax: ax, lim: lim, inside: inside }); return obj; }
   wall(RM.hx * 2, 0, -RM.hz, 0);
-  wall(RM.hx - DOOR, -(RM.hx + DOOR) / 2, RM.hz, Math.PI);
-  wall(RM.hx - DOOR, (RM.hx + DOOR) / 2, RM.hz, Math.PI);
+  seam.push(wall(RM.hx - DOOR, -(RM.hx + DOOR) / 2, RM.hz, Math.PI));
+  seam.push(wall(RM.hx - DOOR, (RM.hx + DOOR) / 2, RM.hz, Math.PI));
   wall(RM.hz * 2, -RM.hx, 0, Math.PI / 2);
   wall(RM.hz * 2, RM.hx, 0, -Math.PI / 2);
 
   /* north windows + light on the floor */
   (function () {
-    const g = new T.Group(); g.position.set(0, 0, -RM.hz + 0.04); scene.add(g);
+    const g = new T.Group(); g.position.set(0, 0, -RM.hz + 0.04); scene.add(g); hang(g, 'z', -RM.hz, 1);
     [-18, -9, 0, 9, 18].forEach(x => {
       put(g, new T.Mesh(new T.PlaneGeometry(7, 5), B(0xfff3c8)), x, 5.2, 0);
       const f = L(0xf8f5ee);
@@ -462,14 +472,14 @@ button.chip { pointer-events: auto; cursor: pointer; }
   const gWall = L(0xe6e2d8);
   (function () {
     const woodDoor = L(0x6b4a2f);
-    [-1, 1].forEach(sd => put(scene, new T.Mesh(bx(0.5, 7, 0.7), woodDoor), sd * DOOR, 3.5, RM.hz));
-    put(scene, new T.Mesh(bx(DOOR * 2 + 1, 0.55, 0.7), woodDoor), 0, 7.25, RM.hz);
+    [-1, 1].forEach(sd => seam.push(put(scene, new T.Mesh(bx(0.5, 7, 0.7), woodDoor), sd * DOOR, 3.5, RM.hz)));
+    seam.push(put(scene, new T.Mesh(bx(DOOR * 2 + 1, 0.55, 0.7), woodDoor), 0, 7.25, RM.hz));
     [[RM.hz - 0.03, Math.PI], [RM.hz + 0.03, 0]].forEach(q => {
-      const g = new T.Group(); g.position.set(0, 0, q[0]); g.rotation.y = q[1]; scene.add(g);
+      const g = new T.Group(); g.position.set(0, 0, q[0]); g.rotation.y = q[1]; scene.add(g); seam.push(g);
       put(g, new T.Mesh(new T.PlaneGeometry(DOOR * 2, RM.h - 7.5), q[1] ? wallMat : gWall), 0, 7.5 + (RM.h - 7.5) / 2, 0);
     });
-    wall(GX - DOOR, -(GX + DOOR) / 2, RM.hz + 0.03, 0, gWall);
-    wall(GX - DOOR, (GX + DOOR) / 2, RM.hz + 0.03, 0, gWall);
+    seam.push(wall(GX - DOOR, -(GX + DOOR) / 2, RM.hz + 0.03, 0, gWall));
+    seam.push(wall(GX - DOOR, (GX + DOOR) / 2, RM.hz + 0.03, 0, gWall));
     wall(GL, -GX, RM.hz + GL / 2, Math.PI / 2, gWall);
     wall(GL, GX, RM.hz + GL / 2, -Math.PI / 2, gWall);
     wall(GX * 2, 0, GZ1, Math.PI, gWall);
@@ -492,7 +502,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
       tex.needsUpdate = true;
     }
     draw();
-    const sg = new T.Mesh(new T.PlaneGeometry(5, 1.56), new T.MeshBasicMaterial({ map: tex })); sg.position.set(0, 8.7, RM.hz - 0.1); sg.rotation.y = Math.PI; scene.add(sg);
+    const sg = new T.Mesh(new T.PlaneGeometry(5, 1.56), new T.MeshBasicMaterial({ map: tex })); sg.position.set(0, 8.7, RM.hz - 0.1); sg.rotation.y = Math.PI; scene.add(sg); seam.push(sg);
     if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '전시관함께그린그림이걸려있어요').then(draw).catch(() => {});
     [-5, 5].forEach(sx => {
       put(scene, new T.Mesh(bx(0.3, 6.4, 17), L(0xf2eee6)), sx, 3.2, RM.hz + 15);
@@ -572,10 +582,10 @@ button.chip { pointer-events: auto; cursor: pointer; }
     });
     /* shelves with paint jars (west) */
     for (let row = 0; row < 2; row++) {
-      put(scene, new T.Mesh(bx(1.0, 0.15, 30), L(0x8d6b45)), -RM.hx + 0.55, 2.6 + row * 2.2, 0);
+      hang(put(scene, new T.Mesh(bx(1.0, 0.15, 30), L(0x8d6b45)), -RM.hx + 0.55, 2.6 + row * 2.2, 0), 'x', -RM.hx, 1);
       for (let j = 0; j < 26; j++) {
         const jar = new T.Mesh(cyl(0.22, 0.22, 0.5, 8), L(PAL[(rnd() * PAL.length) | 0]));
-        put(scene, jar, -RM.hx + 0.55 + (rnd() - 0.5) * 0.3, 2.95 + row * 2.2, -14.5 + j * 1.12);
+        hang(put(scene, jar, -RM.hx + 0.55 + (rnd() - 0.5) * 0.3, 2.95 + row * 2.2, -14.5 + j * 1.12), 'x', -RM.hx, 1);
       }
     }
     /* leaning canvases (east) */
@@ -584,7 +594,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
       put(c, new T.Mesh(bx(0.1, 2.8, 2.2), L(0xe9e0d0)), 0, 0, 0);
       const patch = new T.Mesh(new T.PlaneGeometry(1.7, 2.3), B(PAL[(rnd() * PAL.length) | 0]));
       patch.rotation.y = -Math.PI / 2; patch.position.x = -0.06; c.add(patch);
-      c.position.set(RM.hx - 0.8, 1.35, -18 + i * 4); c.rotation.z = -0.12; c.rotation.y = (rnd() - 0.5) * 0.2; scene.add(c);
+      c.position.set(RM.hx - 0.8, 1.35, -18 + i * 4); c.rotation.z = -0.12; c.rotation.y = (rnd() - 0.5) * 0.2; scene.add(c); hang(c, 'x', RM.hx, -1);
     }
   })();
 
@@ -670,13 +680,14 @@ button.chip { pointer-events: auto; cursor: pointer; }
     put(g, new T.Mesh(new T.PlaneGeometry(3.4, 0.85), new T.MeshBasicMaterial({ map: ltex })), 0, -2.65, 0.05);
     const sl = { x: x, z: z, cv: cv, tex: tex, lc: lc, ltex: ltex, key: '', ex: null };
     slots.push(sl); drawSlot(sl, null);
+    return g;
   }
   (function () {
     const SY = 4.6;
-    [0, -5, 5, -10, 10].forEach(x => addSlot(x, SY, GZ1 - 0.1, Math.PI));
+    [0, -5, 5, -10, 10].forEach(x => hang(addSlot(x, SY, GZ1 - 0.1, Math.PI), 'z', GZ1, -1));
     for (let i = 0; i < 5; i++) {
       const z = RM.hz + 5.5 + i * 5;
-      addSlot(-GX + 0.1, SY, z, Math.PI / 2); addSlot(GX - 0.1, SY, z, -Math.PI / 2);
+      hang(addSlot(-GX + 0.1, SY, z, Math.PI / 2), 'x', -GX, 1); hang(addSlot(GX - 0.1, SY, z, -Math.PI / 2), 'x', GX, -1);
     }
     [-5, 5].forEach(sx => [-5.5, 0, 5.5].forEach(dz => {
       addSlot(sx - 0.25, 4.2, RM.hz + 15 + dz, -Math.PI / 2); addSlot(sx + 0.25, 4.2, RM.hz + 15 + dz, Math.PI / 2);
@@ -1396,15 +1407,18 @@ button.chip { pointer-events: auto; cursor: pointer; }
     camTx += (pos.x - camTx) * f; camTz += (pos.z - camTz) * f;
     camDist += ((started ? 17 : 26) - camDist) * Math.min(1, dt * 2);
     const cp = Math.cos(camPitch);
-    const inG = camTz > RM.hz - 0.5;
-    const dx = clamp(camTx + Math.sin(camYaw) * cp * camDist, inG ? -GX + 1 : -RM.hx + 1, inG ? GX - 1 : RM.hx - 1);
-    const dy = Math.min(RM.h - 1, 2.4 + Math.sin(camPitch) * camDist);
-    const dz = clamp(camTz + Math.cos(camYaw) * cp * camDist, inG ? GZ0 + 1 : -RM.hz + 1, inG ? GZ1 - 1 : RM.hz - 1);
+    /* no clamping to the walls: walls are one-sided, so from outside they vanish and the view stays wide */
+    const dx = camTx + Math.sin(camYaw) * cp * camDist;
+    const dy = 2.4 + Math.sin(camPitch) * camDist;
+    const dz = camTz + Math.cos(camYaw) * cp * camDist;
     if (!camInit) { camPos.set(dx, dy, dz); camInit = true; } else camPos.lerp(_v.set(dx, dy, dz), 1 - Math.exp(-dt * 10));
     camera.position.copy(camPos);
     camera.lookAt(camTx, 2.0, camTz);
+    const seamOn = (camPos.z > RM.hz) === (camTz > RM.hz);
+    if (seamOn !== seamShown) { seamShown = seamOn; seam.forEach(m => { m.visible = seamOn; }); }
+    for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax]; w.o.visible = w.inside > 0 ? c > w.lim : c < w.lim; }
   }
-  const camPos = new T.Vector3(), _v = new T.Vector3(); let camInit = false;
+  const camPos = new T.Vector3(), _v = new T.Vector3(); let camInit = false, seamShown = true;
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
