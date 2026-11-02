@@ -1,0 +1,1420 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>작은 화실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout concept: full-bleed 3D studio room; sketchbook-outline HUD (ink borders on paper) floating on top; the drawing pad is a full-screen sheet over the room. Single committed light look. */
+:root {
+  --bg: #24201c;
+  --chalk: #ece6d9;
+  --paper: #fffdf7;
+  --ink: #25211d;
+  --muted: #6d655b;
+  --blue: #2c47c8;
+  --yellow: #f3c431;
+  --danger: #c7372c;
+  --line: rgba(37, 33, 29, 0.18);
+  --font-display: 'Gamja Flower', 'Noto Sans KR', system-ui, sans-serif;
+  --font-body: 'Noto Sans KR', system-ui, sans-serif;
+  color-scheme: light;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input { -webkit-user-select: text; user-select: text; }
+button { font-family: inherit; color: inherit; }
+#stage { position: fixed; inset: 0; background: var(--bg); }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+.btn, .chip {
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 19px/1 var(--font-display);
+  letter-spacing: 0.01em;
+}
+.btn { padding: 10px 16px; border-radius: 12px; cursor: pointer; }
+.btn.primary { background: var(--yellow); }
+.btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn[disabled] { opacity: 0.5; cursor: default; }
+.btn:focus-visible, .chip:focus-visible, .sitBtn:focus-visible, .seg button:focus-visible, .sw:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; }
+button.chip { pointer-events: auto; cursor: pointer; }
+.chip b { font-weight: 400; background: var(--yellow); border-radius: 999px; padding: 1px 8px; font-size: 17px; font-variant-numeric: tabular-nums; }
+
+.toast {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(176px + env(safe-area-inset-bottom, 0px));
+  margin-inline: auto;
+  max-width: 420px;
+  padding: 10px 16px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+.sitBtn {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  pointer-events: auto;
+  padding: 16px 22px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--yellow);
+  box-shadow: 4px 4px 0 var(--ink);
+  font: 400 23px/1 var(--font-display);
+  cursor: pointer;
+}
+#viewer { position: fixed; inset: 0; z-index: 26; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(28, 24, 20, 0.94); padding: 16px; }
+#viewerCanvas { display: block; background: var(--paper); border: 3px solid #3a2a1c; box-shadow: 0 0 0 8px #6b4a2f, 6px 8px 0 8px rgba(0,0,0,0.35); }
+#viewerCap { color: var(--chalk); font: 400 26px/1.2 var(--font-display); text-align: center; overflow-wrap: anywhere; }
+.sitBtn[disabled] { background: var(--chalk); box-shadow: none; opacity: 0.85; cursor: default; }
+
+.joy {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background: rgba(255, 253, 247, 0.5);
+  border: 2px solid var(--ink);
+  pointer-events: auto;
+  touch-action: none;
+}
+.knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  transform: translate(-50%, -50%);
+}
+
+#intro {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-block: 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: rgba(36, 32, 28, 0.35);
+  z-index: 30;
+}
+.card {
+  width: 100%;
+  max-width: 380px;
+  box-sizing: border-box;
+  padding: 26px 22px 22px;
+  border: 2px solid var(--ink);
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+.card h1 { margin: 0 0 8px; font: 400 40px/1.1 var(--font-display); text-wrap: balance; }
+.card p { margin: 0 0 12px; font-size: 15px; line-height: 1.55; }
+.card ul { margin: 0 0 16px; padding-left: 20px; font-size: 14px; line-height: 1.7; }
+.field { display: flex; flex-direction: column; gap: 6px; margin: 0 0 16px; font-size: 13px; font-weight: 500; }
+#codeMsg { margin: -8px 0 14px; color: var(--danger); font-size: 13px; font-weight: 500; }
+.field input, .padTop input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 11px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font: 400 16px/1.2 var(--font-body);
+}
+.go { width: 100%; padding: 14px; font-size: 24px; background: var(--yellow); }
+
+/* drawing pad */
+#pad, #watch {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--chalk);
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.padTop { display: flex; gap: 8px; align-items: center; }
+.padTop input { flex: 1; min-width: 0; }
+.padStatus { min-height: 18px; font-size: 13px; color: var(--muted); text-align: center; }
+.padStatus.bad { color: var(--danger); font-weight: 700; }
+.padBoard { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.watchTitle { flex: 1; min-width: 0; text-align: center; font: 400 26px/1.2 var(--font-display); overflow-wrap: anywhere; }
+#padCanvas, #watchCanvas {
+  display: block;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-sizing: content-box;
+  touch-action: none;
+  cursor: crosshair;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.padTools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+.seg { display: inline-flex; border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; }
+.seg button { border: 0; background: var(--paper); padding: 9px 14px; font: 400 18px/1 var(--font-display); cursor: pointer; }
+.seg button + button { border-left: 2px solid var(--ink); }
+.seg button.on { background: var(--ink); color: var(--paper); }
+.size { display: inline-flex; align-items: center; gap: 8px; font: 400 17px/1 var(--font-display); }
+.size input { width: 110px; accent-color: var(--blue); }
+.swatches { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 6px; touch-action: pan-x; }
+.sw { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--ink); cursor: pointer; padding: 0; }
+.sw.on { box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--blue); }
+
+/* rooms sheet */
+.roomRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 2px solid var(--ink); border-radius: 12px; padding: 10px 14px; background: var(--paper); }
+.roomRow .n { font: 400 22px/1 var(--font-display); }
+.roomRow .c { font-size: 13px; color: #6f665a; }
+#roomsList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+/* works sheet */
+#works, #rooms {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgba(36, 32, 28, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet {
+  width: 100%;
+  max-width: 640px;
+  max-height: 86%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+}
+.sheetHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sheetHead h2 { margin: 0; font: 400 30px/1 var(--font-display); }
+#worksGrid { overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; padding: 2px; touch-action: pan-y; }
+.work { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.work canvas { width: 100%; height: auto; border: 2px solid var(--ink); border-radius: 6px; background: var(--chalk); display: block; }
+.work .t { font: 400 18px/1.2 var(--font-display); overflow-wrap: anywhere; }
+.work .d { font-size: 12px; color: var(--muted); }
+.work .acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.work .acts .btn { padding: 7px 6px; font-size: 16px; flex: 1 1 40%; white-space: nowrap; }
+.work .badge { font-size: 12px; color: var(--blue); font-weight: 700; }
+.empty { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+
+<div id="hud">
+  <div class="row">
+    <button class="chip" id="worksBtn" type="button">내 그림 <b id="worksCount">0</b></button>
+    <button class="chip" id="online" type="button">나 혼자 있는 중</button>
+  </div>
+  <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+  <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
+  <button class="sitBtn" id="viewBtn" type="button" hidden>작품 크게 보기</button>
+  <div class="joy" id="joy" aria-label="이동 조이스틱"><div class="knob" id="knob"></div></div>
+</div>
+
+<div id="pad" hidden>
+  <div class="padTop">
+    <button class="btn" id="padClose" type="button">닫기</button>
+    <input id="padTitle" type="text" maxlength="24" autocomplete="off" placeholder="그림 제목" aria-label="그림 제목">
+    <button class="btn primary" id="padSave" type="button">저장</button>
+  </div>
+  <div class="padStatus" id="padStatus" role="status" aria-live="polite"></div>
+  <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas></div>
+  <div class="padTools">
+    <div class="seg" id="tools" role="group" aria-label="도구">
+      <button type="button" data-tool="p" class="on">연필</button>
+      <button type="button" data-tool="b">붓</button>
+      <button type="button" data-tool="e">지우개</button>
+    </div>
+    <label class="size" for="padSize">굵기 <input id="padSize" type="range" min="2" max="40" value="6"></label>
+    <button class="btn" id="padUndo" type="button">되돌리기</button>
+    <button class="btn" id="padClear" type="button">전체 지우기</button>
+  </div>
+  <div class="swatches" id="swatches" role="group" aria-label="색"></div>
+</div>
+
+<div id="watch" hidden>
+  <div class="padTop">
+    <button class="btn" id="watchClose" type="button">닫기</button>
+    <div class="watchTitle" id="watchTitle">그림 구경</div>
+  </div>
+  <div class="padStatus" id="watchStatus" role="status" aria-live="polite"></div>
+  <div class="padBoard" id="watchBoard"><canvas id="watchCanvas" aria-label="구경 중인 그림"></canvas></div>
+</div>
+
+<div id="works" hidden>
+  <div class="sheet" role="dialog" aria-label="내 그림">
+    <div class="sheetHead"><h2>내 그림</h2><button class="btn" id="worksClose" type="button">닫기</button></div>
+    <p class="empty" id="worksEmpty" hidden>아직 저장한 그림이 없어요. 이젤 앞에 앉아서 첫 그림을 그려 보세요.</p>
+    <div id="worksGrid"></div>
+  </div>
+</div>
+
+<div id="viewer" hidden role="dialog" aria-label="작품 보기">
+  <canvas id="viewerCanvas"></canvas>
+  <div id="viewerCap"></div>
+  <button class="btn" id="viewerClose" type="button">닫기</button>
+</div>
+
+<div id="rooms" hidden>
+  <div class="sheet" role="dialog" aria-label="화실 고르기">
+    <div class="sheetHead"><h2>화실 고르기</h2><button class="btn" id="roomsClose" type="button">닫기</button></div>
+    <div id="roomsList"></div>
+  </div>
+</div>
+
+<div id="intro">
+  <div class="card">
+    <h1>작은 화실</h1>
+    <p>이젤 앞에 앉으면 그림판이 열려요. 그린 그림은 내 그림 목록에 저장돼요.</p>
+    <ul>
+      <li>왼쪽 아래 조이스틱으로 걷기</li>
+      <li>이젤 가까이 가면 앉기 버튼이 나와요</li>
+      <li>화실 하나에 20명까지 들어와요. 위쪽 화실 칩을 눌러 다른 화실로 옮길 수 있어요</li>
+      <li>누가 그리는 이젤에 가까이 가면 구경할 수 있어요</li>
+      <li>내 그림에서 '전시하기'를 누르면 남쪽 문 너머 전시관에 걸려요</li>
+    </ul>
+    <label class="field" for="codeInput" id="codeField">입장 코드
+      <input id="codeInput" type="text" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="초대받은 코드">
+    </label>
+    <p id="codeMsg" hidden></p>
+    <label class="field" for="nameInput">화가 이름
+      <input id="nameInput" type="text" maxlength="10" autocomplete="off" placeholder="10자까지">
+    </label>
+    <button class="btn go" id="startBtn" type="button">입장하기</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="backend.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.THREE;
+  var $ = function (s) { return document.querySelector(s); };
+  if (!T) {
+    $('#intro').innerHTML = '<div class="card"><h1>불러오지 못했어요</h1><p>인터넷 연결을 확인하고 다시 열어 주세요.</p></div>';
+    return;
+  }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const rnd = mulberry32(20261102);
+  const angDiff = (a, b) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
+  function sanitize(t) {
+    let out = '';
+    for (const ch of Array.from(String(t))) {
+      const c = ch.codePointAt(0);
+      if (c < 32 || c === 127 || (c >= 0x200b && c <= 0x200f) || (c >= 0x2028 && c <= 0x202e) || (c >= 0x2060 && c <= 0x206f) || c === 0xfeff) continue;
+      out += ch;
+    }
+    return out.trim();
+  }
+
+  /* ---------- renderer / scene ---------- */
+  let renderer;
+  try { renderer = new T.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); }
+  catch (e) {
+    $('#intro').innerHTML = '<div class="card"><h1>3D를 켜지 못했어요</h1><p>이 기기의 브라우저가 WebGL을 지원하지 않는 것 같아요.</p></div>';
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  $('#stage').appendChild(renderer.domElement);
+  const cv = renderer.domElement;
+  const scene = new T.Scene();
+  scene.background = new T.Color(0x24201c);
+  const camera = new T.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.5, 400);
+  function onResize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h; camera.fov = w / h < 1 ? 64 : 52; camera.updateProjectionMatrix();
+    if (pad.open) fitPad();
+    if (watch.open) fitWatch();
+  }
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', onResize);
+
+  const L = (c, o) => new T.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
+  const B = (c, o) => new T.MeshBasicMaterial(Object.assign({ color: c }, o || {}));
+  function put(g, mesh, x, y, z) { mesh.position.set(x, y, z); g.add(mesh); return mesh; }
+  const cyl = (a, b, h, s) => new T.CylinderGeometry(a, b, h, s || 10);
+  const bx = (w, h, d) => new T.BoxGeometry(w, h, d);
+
+  /* ---------- the studio room ---------- */
+  const RM = { hx: 32, hz: 24, h: 10 };
+  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, DOOR = 2.4;
+  const colliders = [];
+  function plankTexture() {
+    const c = document.createElement('canvas'); c.width = c.height = 512;
+    const x = c.getContext('2d'), r = mulberry32(7);
+    for (let row = 0; row < 8; row++) {
+      const y = row * 64; let px = -r() * 200;
+      while (px < 512) {
+        const len = 180 + r() * 220, v = (r() - 0.5) * 24;
+        x.fillStyle = 'rgb(' + Math.round(201 + v) + ',' + Math.round(160 + v * 0.9) + ',' + Math.round(106 + v * 0.8) + ')';
+        x.fillRect(px, y, len, 64);
+        x.fillStyle = 'rgba(60,38,18,0.35)'; x.fillRect(px, y, 2, 64);
+        px += len;
+      }
+      x.fillStyle = 'rgba(60,38,18,0.45)'; x.fillRect(0, y, 512, 2);
+    }
+    for (let i = 0; i < 500; i++) { x.fillStyle = 'rgba(80,50,20,' + (r() * 0.08) + ')'; x.fillRect(r() * 512, r() * 512, 20 + r() * 40, 1); }
+    const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(7.3, 5.5);
+    t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    return t;
+  }
+  const floor = new T.Mesh(new T.PlaneGeometry(RM.hx * 2, RM.hz * 2), new T.MeshLambertMaterial({ map: plankTexture() }));
+  floor.rotation.x = -Math.PI / 2; scene.add(floor);
+
+  const wallMat = L(0xefe8da), baseMat = L(0x8d6b45);
+  function wall(w, x, z, ry, mat) {
+    const g = new T.Group();
+    put(g, new T.Mesh(new T.PlaneGeometry(w, RM.h), mat || wallMat), 0, RM.h / 2, 0);
+    put(g, new T.Mesh(new T.PlaneGeometry(w, 0.7), baseMat), 0, 0.35, 0.02);
+    g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g);
+  }
+  wall(RM.hx * 2, 0, -RM.hz, 0);
+  wall(RM.hx - DOOR, -(RM.hx + DOOR) / 2, RM.hz, Math.PI);
+  wall(RM.hx - DOOR, (RM.hx + DOOR) / 2, RM.hz, Math.PI);
+  wall(RM.hz * 2, -RM.hx, 0, Math.PI / 2);
+  wall(RM.hz * 2, RM.hx, 0, -Math.PI / 2);
+
+  /* north windows + light on the floor */
+  (function () {
+    const g = new T.Group(); g.position.set(0, 0, -RM.hz + 0.04); scene.add(g);
+    [-18, -9, 0, 9, 18].forEach(x => {
+      put(g, new T.Mesh(new T.PlaneGeometry(7, 5), B(0xfff3c8)), x, 5.2, 0);
+      const f = L(0xf8f5ee);
+      put(g, new T.Mesh(bx(7.4, 0.25, 0.3), f), x, 7.8, 0.1);
+      put(g, new T.Mesh(bx(7.4, 0.3, 0.5), f), x, 2.6, 0.2);
+      put(g, new T.Mesh(bx(0.25, 5.2, 0.3), f), x - 3.6, 5.2, 0.1);
+      put(g, new T.Mesh(bx(0.25, 5.2, 0.3), f), x + 3.6, 5.2, 0.1);
+      put(g, new T.Mesh(bx(0.18, 5, 0.2), f), x, 5.2, 0.1);
+      put(g, new T.Mesh(bx(7, 0.18, 0.2), f), x, 5.2, 0.1);
+    });
+    const sh = new T.Shape(); sh.moveTo(-24, 24); sh.lineTo(24, 24); sh.lineTo(31, 8); sh.lineTo(-17, 8); sh.closePath();
+    const m = new T.Mesh(new T.ShapeGeometry(sh), B(0xfff0b8, { transparent: true, opacity: 0.2, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.position.y = 0.04; scene.add(m);
+  })();
+
+  /* south doorway into the gallery + the gallery shell */
+  const gWall = L(0xe6e2d8);
+  (function () {
+    const woodDoor = L(0x6b4a2f);
+    [-1, 1].forEach(sd => put(scene, new T.Mesh(bx(0.5, 7, 0.7), woodDoor), sd * DOOR, 3.5, RM.hz));
+    put(scene, new T.Mesh(bx(DOOR * 2 + 1, 0.55, 0.7), woodDoor), 0, 7.25, RM.hz);
+    [[RM.hz - 0.03, Math.PI], [RM.hz + 0.03, 0]].forEach(q => {
+      const g = new T.Group(); g.position.set(0, 0, q[0]); g.rotation.y = q[1]; scene.add(g);
+      put(g, new T.Mesh(new T.PlaneGeometry(DOOR * 2, RM.h - 7.5), q[1] ? wallMat : gWall), 0, 7.5 + (RM.h - 7.5) / 2, 0);
+    });
+    wall(GX - DOOR, -(GX + DOOR) / 2, RM.hz + 0.03, 0, gWall);
+    wall(GX - DOOR, (GX + DOOR) / 2, RM.hz + 0.03, 0, gWall);
+    wall(GL, -GX, RM.hz + GL / 2, Math.PI / 2, gWall);
+    wall(GL, GX, RM.hz + GL / 2, -Math.PI / 2, gWall);
+    wall(GX * 2, 0, GZ1, Math.PI, gWall);
+    const tc = document.createElement('canvas'); tc.width = tc.height = 128;
+    const tx = tc.getContext('2d'); tx.fillStyle = '#e6e0d3'; tx.fillRect(0, 0, 128, 128);
+    tx.fillStyle = '#d6cfc0'; tx.fillRect(0, 0, 64, 64); tx.fillRect(64, 64, 64, 64);
+    const tt = new T.CanvasTexture(tc); tt.wrapS = tt.wrapT = T.RepeatWrapping; tt.repeat.set(GX, GL / 2);
+    const gf = new T.Mesh(new T.PlaneGeometry(GX * 2, GL), new T.MeshLambertMaterial({ map: tt }));
+    gf.rotation.x = -Math.PI / 2; gf.position.set(0, 0, RM.hz + GL / 2); scene.add(gf);
+    const run = new T.Mesh(new T.PlaneGeometry(3, GL - 1), L(0x8a3030)); run.rotation.x = -Math.PI / 2; run.position.set(0, 0.02, RM.hz + GL / 2); scene.add(run);
+    const c = document.createElement('canvas'); c.width = 512; c.height = 160;
+    const x = c.getContext('2d');
+    const tex = new T.CanvasTexture(c); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
+    function draw() {
+      x.clearRect(0, 0, 512, 160); x.fillStyle = '#fffdf7'; x.fillRect(4, 4, 504, 152);
+      x.strokeStyle = '#25211d'; x.lineWidth = 6; x.strokeRect(4, 4, 504, 152);
+      x.fillStyle = '#25211d'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.font = '70px "Gamja Flower", "Noto Sans KR", sans-serif'; x.fillText('전시관', 256, 66);
+      x.font = '34px "Gamja Flower", "Noto Sans KR", sans-serif'; x.fillStyle = '#6d655b'; x.fillText('함께 그린 그림이 걸려 있어요', 256, 121);
+      tex.needsUpdate = true;
+    }
+    draw();
+    const sg = new T.Mesh(new T.PlaneGeometry(5, 1.56), new T.MeshBasicMaterial({ map: tex })); sg.position.set(0, 8.7, RM.hz - 0.1); sg.rotation.y = Math.PI; scene.add(sg);
+    if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '전시관함께그린그림이걸려있어요').then(draw).catch(() => {});
+    [-5, 5].forEach(sx => {
+      put(scene, new T.Mesh(bx(0.3, 6.4, 17), L(0xf2eee6)), sx, 3.2, RM.hz + 15);
+      put(scene, new T.Mesh(bx(0.5, 0.35, 17.4), L(0x7b5a36)), sx, 0.18, RM.hz + 15);
+      for (let zz = RM.hz + 15 - 8; zz <= RM.hz + 15 + 8.01; zz += 1.6) colliders.push({ x: sx, z: zz, r: 0.5 });
+    });
+  })();
+
+  scene.add(new T.HemisphereLight(0xfff6e8, 0x8a7a66, 0.95));
+  const key = new T.DirectionalLight(0xfff0d0, 0.55); key.position.set(6, 12, -8); scene.add(key);
+
+  /* props: rug, paint splatters, shelves, sculptures */
+  const PAL = [0xd9342b, 0xf08a24, 0xf3c431, 0x3f9b4f, 0x1fa3a3, 0x2c47c8, 0x7a3fb0, 0xec7fb0];
+  const plaster = L(0xf3efe7), plaster2 = L(0xe3ddd0), woodM = L(0x9b7b52), woodD = L(0x7b5a36);
+  function makeBust(sc) {
+    const g = new T.Group();
+    const sh = put(g, new T.Mesh(new T.SphereGeometry(0.8, 14, 8, 0, 6.2832, 0, 1.5708), plaster), 0, 0, 0); sh.scale.set(1.2, 0.62, 0.75);
+    put(g, new T.Mesh(cyl(0.3, 0.4, 0.55, 10), plaster), 0, 0.6, 0);
+    const head = put(g, new T.Mesh(new T.SphereGeometry(0.5, 14, 10), plaster), 0, 1.15, 0); head.scale.set(0.9, 1.15, 0.95);
+    const nose = put(g, new T.Mesh(new T.ConeGeometry(0.08, 0.24, 6), plaster), 0, 1.1, 0.5); nose.rotation.x = Math.PI / 2;
+    put(g, new T.Mesh(bx(0.5, 0.07, 0.14), plaster2), 0, 1.27, 0.42);
+    const hair = put(g, new T.Mesh(new T.SphereGeometry(0.52, 12, 8, 0, 6.2832, 0, 1.1), plaster2), 0, 1.3, -0.04); hair.scale.set(0.92, 0.9, 0.98);
+    g.scale.setScalar(sc); return g;
+  }
+  function makeTwist(sc) {
+    const g = new T.Group();
+    for (let i = 0; i < 7; i++) {
+      const w = 1.5 - 0.15 * i, m = put(g, new T.Mesh(bx(w, 0.52, w), i % 2 ? plaster2 : plaster), 0, 0.28 + 0.54 * i, 0);
+      m.rotation.y = i * 0.46;
+    }
+    put(g, new T.Mesh(new T.SphereGeometry(0.42, 12, 10), plaster), 0, 4.0, 0);
+    g.scale.setScalar(sc); return g;
+  }
+  function makeRing(sc) {
+    const g = new T.Group();
+    const t = put(g, new T.Mesh(new T.TorusGeometry(0.95, 0.24, 8, 20), plaster), 0, 1.3, 0); t.rotation.x = 0.35;
+    put(g, new T.Mesh(new T.SphereGeometry(0.32, 10, 8), plaster2), 0, 1.3, 0);
+    g.scale.setScalar(sc); return g;
+  }
+  function plinth(x, z, r, h) {
+    put(scene, new T.Mesh(cyl(r, r * 1.1, h, 16), woodM), x, h / 2, z);
+    colliders.push({ x: x, z: z, r: r + 0.2 });
+  }
+  (function () {
+    const rug = new T.Mesh(new T.CircleGeometry(6.2, 40), L(0xd8cfbf)); rug.rotation.x = -Math.PI / 2; rug.position.y = 0.02; scene.add(rug);
+    const rug2 = new T.Mesh(new T.RingGeometry(5.0, 5.4, 40), L(0xb9ad98)); rug2.rotation.x = -Math.PI / 2; rug2.position.y = 0.03; scene.add(rug2);
+    for (let i = 0; i < 130; i++) {
+      const x = (rnd() * 2 - 1) * (RM.hx - 2), z = (rnd() * 2 - 1) * (RM.hz - 2);
+      if (Math.hypot(x, z) < 5) continue;
+      const s = new T.Mesh(new T.CircleGeometry(0.12 + rnd() * 0.4, 9), B(PAL[(rnd() * PAL.length) | 0]));
+      s.rotation.x = -Math.PI / 2; s.position.set(x, 0.035, z); scene.add(s);
+    }
+    /* centre: four plinths around the models */
+    plinth(0, 0, 1.6, 1.3);
+    put(scene, makeTwist(1), 0, 1.3, 0);
+    plinth(-3.5, 1.5, 1.0, 1.1);
+    const b1 = put(scene, makeBust(1.1), -3.5, 1.1, 1.5); b1.rotation.y = 0.8;
+    plinth(3.5, -1.3, 1.0, 1.1);
+    const r1 = put(scene, makeRing(1), 3.5, 1.1, -1.3); r1.rotation.y = 0.5;
+    plinth(0.7, 3.8, 0.95, 0.9);
+    put(scene, new T.Mesh(new T.SphereGeometry(0.8, 14, 10), plaster), 0.2, 1.7, 3.8);
+    const cube = put(scene, new T.Mesh(bx(1.0, 1.0, 1.0), plaster), 1.4, 1.4, 3.6); cube.rotation.y = 0.5;
+    put(scene, new T.Mesh(new T.ConeGeometry(0.36, 0.8, 10), L(0xd9342b)), 1.4, 2.3, 3.6);
+    /* entrance: two tall plinths with big busts, facing into the room */
+    [-1, 1].forEach(sd => {
+      const x = sd * 5.5, z = RM.hz - 3;
+      put(scene, new T.Mesh(bx(1.5, 2.6, 1.5), woodD), x, 1.3, z);
+      const bb = put(scene, makeBust(1.7), x, 2.6, z); bb.rotation.y = Math.PI - sd * 0.4;
+      colliders.push({ x: x, z: z, r: 1.3 });
+    });
+    /* four corner sculptures */
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach((c, i) => {
+      const x = c[0] * (RM.hx - 4), z = c[1] * (RM.hz - 4);
+      put(scene, new T.Mesh(bx(2.2, 0.9, 2.2), woodD), x, 0.45, z);
+      const s = put(scene, i % 2 ? makeRing(1.6) : makeTwist(1.0), x, 0.9, z); s.rotation.y = i;
+      colliders.push({ x: x, z: z, r: 1.7 });
+    });
+    /* shelves with paint jars (west) */
+    for (let row = 0; row < 2; row++) {
+      put(scene, new T.Mesh(bx(1.0, 0.15, 30), L(0x8d6b45)), -RM.hx + 0.55, 2.6 + row * 2.2, 0);
+      for (let j = 0; j < 26; j++) {
+        const jar = new T.Mesh(cyl(0.22, 0.22, 0.5, 8), L(PAL[(rnd() * PAL.length) | 0]));
+        put(scene, jar, -RM.hx + 0.55 + (rnd() - 0.5) * 0.3, 2.95 + row * 2.2, -14.5 + j * 1.12);
+      }
+    }
+    /* leaning canvases (east) */
+    for (let i = 0; i < 10; i++) {
+      const c = new T.Group();
+      put(c, new T.Mesh(bx(0.1, 2.8, 2.2), L(0xe9e0d0)), 0, 0, 0);
+      const patch = new T.Mesh(new T.PlaneGeometry(1.7, 2.3), B(PAL[(rnd() * PAL.length) | 0]));
+      patch.rotation.y = -Math.PI / 2; patch.position.x = -0.06; c.add(patch);
+      c.position.set(RM.hx - 0.8, 1.35, -18 + i * 4); c.rotation.z = -0.12; c.rotation.y = (rnd() - 0.5) * 0.2; scene.add(c);
+    }
+  })();
+
+  /* ---------- easels: inner ring of 6, outer ring of 14 ---------- */
+  const PAPER = '#fffdf7';
+  const easels = [];
+  function addEasel(th, R) {
+    const i = easels.length, ox = Math.cos(th), oz = Math.sin(th);
+    const g = new T.Group(); g.position.set(R * ox, 0, R * oz); g.rotation.y = Math.PI / 2 - th; scene.add(g);
+    const wood = L(0xb08a5a), dark = L(0x7b5a36);
+    [-1.1, 1.1].forEach(x => { const l = put(g, new T.Mesh(bx(0.14, 3.6, 0.14), dark), x, 1.8, 0.25); l.rotation.x = -0.08; });
+    const bl = put(g, new T.Mesh(bx(0.14, 3.7, 0.14), dark), 0, 1.8, -0.9); bl.rotation.x = 0.32;
+    put(g, new T.Mesh(bx(2.8, 2.2, 0.1), wood), 0, 2.6, 0.12);
+    put(g, new T.Mesh(bx(2.9, 0.12, 0.55), wood), 0, 1.4, 0.4);
+    const cvs = document.createElement('canvas'); cvs.width = 320; cvs.height = 240;
+    const tex = new T.CanvasTexture(cvs); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
+    put(g, new T.Mesh(new T.PlaneGeometry(2.5, 1.875), new T.MeshBasicMaterial({ map: tex })), 0, 2.6, 0.2);
+    const sit = { x: (R + 2.7) * ox, z: (R + 2.7) * oz };
+    const ring = new T.Mesh(new T.RingGeometry(0.75, 0.95, 28), B(0xf3c431, { transparent: true, opacity: 0.55, side: T.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2; ring.position.set(sit.x, 0.05, sit.z); scene.add(ring);
+    const e = { idx: i, pos: { x: R * ox, z: R * oz }, sit: sit, heading: Math.atan2(-ox, -oz), cvs: cvs, tex: tex, ring: ring };
+    easels.push(e);
+    colliders.push({ x: e.pos.x, z: e.pos.z, r: 1.6 });
+  }
+  for (let i = 0; i < 6; i++) addEasel((30 + i * 60) * Math.PI / 180, 8.5);
+  for (let j = 0; j < 14; j++) addEasel((10 + j * 360 / 14) * Math.PI / 180, 16);
+  function paintStroke(ctx, s, sc) {
+    const p = s.p; if (!p || p.length < 2) return;
+    ctx.save();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const col = s.k === 'e' ? PAPER : s.c;
+    ctx.strokeStyle = col; ctx.fillStyle = col;
+    const w = Math.max(0.5, s.w * (s.k === 'p' ? 1 : 2) * sc);
+    ctx.lineWidth = w; ctx.globalAlpha = s.k === 'b' ? 0.55 : 1;
+    if (p.length < 4) { ctx.beginPath(); ctx.arc(p[0] * sc, p[1] * sc, w / 2, 0, 6.2832); ctx.fill(); }
+    else {
+      ctx.beginPath(); ctx.moveTo(p[0] * sc, p[1] * sc);
+      for (let i = 2; i < p.length - 2; i += 2) {
+        ctx.quadraticCurveTo(p[i] * sc, p[i + 1] * sc, (p[i] + p[i + 2]) / 2 * sc, (p[i + 1] + p[i + 3]) / 2 * sc);
+      }
+      ctx.lineTo(p[p.length - 2] * sc, p[p.length - 1] * sc); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function paintWork(canvas, work, bg) {
+    const ctx = canvas.getContext('2d'), cw = canvas.width, ch = canvas.height;
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, cw, ch);
+    const sc = Math.min(cw / work.w, ch / work.h), ow = work.w * sc, oh = work.h * sc;
+    ctx.save(); ctx.translate((cw - ow) / 2, (ch - oh) / 2);
+    ctx.beginPath(); ctx.rect(0, 0, ow, oh); ctx.clip();
+    ctx.fillStyle = PAPER; ctx.fillRect(0, 0, ow, oh);
+    work.strokes.forEach(s => paintStroke(ctx, s, sc));
+    ctx.restore();
+  }
+  easels.forEach(e => { paintWork(e.cvs, { w: 4, h: 3, strokes: [] }, '#d8d0c0'); e.tex.needsUpdate = true; });
+
+  /* ---------- gallery frames (27 slots, newest first) ---------- */
+  const FONT = '"Gamja Flower", "Noto Sans KR", sans-serif';
+  const slots = [];
+  let galCol = null, exhibits = [];
+  function drawSlot(sl, ex) {
+    const c = sl.cv, x = c.getContext('2d');
+    if (ex) { try { paintWork(c, ex, '#f6f1e6'); } catch (e) { x.fillStyle = '#efe9dc'; x.fillRect(0, 0, 512, 512); } }
+    else { x.fillStyle = '#efe9dc'; x.fillRect(0, 0, 512, 512); x.fillStyle = '#c7bfae'; x.font = '52px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('빈 액자', 256, 256); }
+    sl.tex.needsUpdate = true;
+    const l = sl.lc.getContext('2d'); l.clearRect(0, 0, 512, 128);
+    l.fillStyle = '#fffdf7'; l.fillRect(2, 2, 508, 124); l.strokeStyle = '#25211d'; l.lineWidth = 4; l.strokeRect(2, 2, 508, 124);
+    l.textAlign = 'center'; l.textBaseline = 'middle';
+    if (ex) {
+      l.fillStyle = '#25211d'; l.font = '46px ' + FONT; l.fillText(String(ex.title || '제목 없음').slice(0, 14), 256, 48);
+      l.fillStyle = '#6d655b'; l.font = '32px ' + FONT; l.fillText(String(ex.artist || '화가').slice(0, 10), 256, 94);
+    } else { l.fillStyle = '#b3ab9b'; l.font = '34px ' + FONT; l.fillText('작품을 기다리는 중', 256, 64); }
+    sl.ltex.needsUpdate = true;
+  }
+  function addSlot(x, y, z, ry) {
+    const g = new T.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
+    put(g, new T.Mesh(bx(4.0, 4.0, 0.16), L(0x3a2a1c)), 0, 0, 0);
+    const cv = document.createElement('canvas'); cv.width = cv.height = 512;
+    const tex = new T.CanvasTexture(cv); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
+    put(g, new T.Mesh(new T.PlaneGeometry(3.6, 3.6), new T.MeshBasicMaterial({ map: tex })), 0, 0, 0.09);
+    const lc = document.createElement('canvas'); lc.width = 512; lc.height = 128;
+    const ltex = new T.CanvasTexture(lc); ltex.minFilter = T.LinearFilter; ltex.generateMipmaps = false;
+    put(g, new T.Mesh(new T.PlaneGeometry(3.4, 0.85), new T.MeshBasicMaterial({ map: ltex })), 0, -2.65, 0.05);
+    const sl = { x: x, z: z, cv: cv, tex: tex, lc: lc, ltex: ltex, key: '', ex: null };
+    slots.push(sl); drawSlot(sl, null);
+  }
+  (function () {
+    const SY = 4.6;
+    [0, -5, 5, -10, 10].forEach(x => addSlot(x, SY, GZ1 - 0.1, Math.PI));
+    for (let i = 0; i < 5; i++) {
+      const z = RM.hz + 5.5 + i * 5;
+      addSlot(-GX + 0.1, SY, z, Math.PI / 2); addSlot(GX - 0.1, SY, z, -Math.PI / 2);
+    }
+    [-5, 5].forEach(sx => [-5.5, 0, 5.5].forEach(dz => {
+      addSlot(sx - 0.25, 4.2, RM.hz + 15 + dz, -Math.PI / 2); addSlot(sx + 0.25, 4.2, RM.hz + 15 + dz, Math.PI / 2);
+    }));
+  })();
+  if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '빈액자작품을기다리는중').then(() => slots.forEach(sl => drawSlot(sl, sl.ex))).catch(() => {});
+  function setExhibits(docs) {
+    exhibits = docs;
+    slots.forEach((sl, i) => {
+      const ex = exhibits[i] || null, key = ex ? ex.id + ':' + ex.at : '';
+      if (key !== sl.key) { sl.key = key; sl.ex = ex; drawSlot(sl, ex); }
+    });
+  }
+  function exhibitDoc(w, workId) {
+    return { kind: 'exhibit', owner: uid, workId: workId, artist: myName, title: w.title || '', w: w.w, h: w.h, at: Date.now(), strokes: w.strokes.map(q => ({ k: q.k, c: q.c, w: q.w, p: q.p })) };
+  }
+
+  /* ---------- avatars / name plates ---------- */
+  const COATS = [0xff7a59, 0x4a8fd8, 0x6dbd63, 0xf2c14e, 0xc79bff, 0xff8fb1, 0x4ecdc4, 0xe84b4b];
+  const skin = L(0xffd9b8), legM = L(0x3b3f6b), hatM = L(0x2c47c8), eyeM = B(0x2a2233);
+  const blobGeo = new T.CircleGeometry(0.75, 16), blobMat = B(0x000000, { transparent: true, opacity: 0.22 });
+  function makeAvatar(coatHex) {
+    const g = new T.Group(), coat = L(coatHex);
+    const body = new T.Mesh(new T.SphereGeometry(0.55, 14, 10), coat); body.scale.set(1, 1.15, 0.95); put(g, body, 0, 1.0, 0);
+    put(g, new T.Mesh(new T.SphereGeometry(0.42, 14, 10), skin), 0, 1.85, 0);
+    const beret = put(g, new T.Mesh(new T.SphereGeometry(0.5, 12, 8), hatM), 0.08, 2.17, 0); beret.scale.set(1, 0.4, 1);
+    put(g, new T.Mesh(cyl(0.04, 0.04, 0.14, 5), hatM), 0.08, 2.4, 0);
+    [-0.15, 0.15].forEach(x => put(g, new T.Mesh(new T.SphereGeometry(0.06, 6, 6), eyeM), x, 1.86, 0.39));
+    function limb(x, y, mat, r, h) { const l = new T.Group(); l.position.set(x, y, 0); const m = new T.Mesh(cyl(r, r, h, 6), mat); m.position.y = -h / 2; l.add(m); g.add(l); return l; }
+    return { group: g, legL: limb(-0.2, 0.6, legM, 0.13, 0.55), legR: limb(0.2, 0.6, legM, 0.13, 0.55), armL: limb(-0.58, 1.3, coat, 0.1, 0.5), armR: limb(0.58, 1.3, coat, 0.1, 0.5) };
+  }
+  function swing(av, phase, amp) {
+    const s = Math.sin(phase) * 0.8 * amp;
+    av.legL.rotation.x = s; av.legR.rotation.x = -s; av.armL.rotation.x = -s * 0.9; av.armR.rotation.x = s * 0.9;
+  }
+  function rr(x, px, py, w, h, r) {
+    x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r);
+    x.arcTo(px, py + h, px, py, r); x.arcTo(px, py, px + w, py, r); x.closePath();
+  }
+  function makeNamePlate(name) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+    const x = c.getContext('2d');
+    const tex = new T.CanvasTexture(c); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
+    const sprite = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, fog: false }));
+    sprite.scale.set(3.6, 0.9, 1);
+    const s = { sprite: sprite };
+    s.set = function (n) {
+      x.clearRect(0, 0, 256, 64);
+      x.font = '32px "Gamja Flower", "Noto Sans KR", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      const w = Math.min(244, x.measureText(n).width + 30);
+      x.fillStyle = '#fffdf7'; rr(x, 128 - w / 2, 8, w, 48, 24); x.fill();
+      x.strokeStyle = '#25211d'; x.lineWidth = 3; x.stroke();
+      x.fillStyle = '#25211d'; x.fillText(n, 128, 33);
+      tex.needsUpdate = true;
+    };
+    s.set(name); return s;
+  }
+
+  let myName = (store('hw-name') || '').slice(0, 10) || ('화가' + (10 + ((Math.random() * 90) | 0)));
+  let myCol = parseInt(store('hw-col'), 10);
+  if (!(myCol >= 0 && myCol < COATS.length)) { myCol = (Math.random() * COATS.length) | 0; store('hw-col', String(myCol)); }
+  const me = makeAvatar(COATS[myCol]), player = me.group; scene.add(player);
+  const myPlate = makeNamePlate(myName); myPlate.sprite.position.y = 2.85; player.add(myPlate.sprite);
+  const blob = new T.Mesh(blobGeo, blobMat); blob.rotation.x = -Math.PI / 2; scene.add(blob);
+
+  /* ---------- state & input ---------- */
+  const START = { x: 0, z: 20.5 };
+  const pos = { x: START.x, z: START.z };
+  let heading = Math.PI, camYaw = 0, camPitch = 0.5, camDist = 24, camTx = pos.x, camTz = pos.z;
+  let started = false, walkPhase = 0, walkAmp = 0, tNow = 0, myEasel = -1;
+  const joy = { x: 0, y: 0 }, keys = {};
+  const SPEED = 7.5;
+  const joyEl = $('#joy'), knob = $('#knob'), JR = 46;
+  let joyId = null;
+  function moveJoy(e) {
+    const r = joyEl.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let dx = e.clientX - cx, dy = e.clientY - cy; const d = Math.hypot(dx, dy);
+    if (d > JR) { dx *= JR / d; dy *= JR / d; }
+    knob.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+    joy.x = dx / JR; joy.y = -dy / JR;
+  }
+  function resetJoy() { joyId = null; joy.x = 0; joy.y = 0; knob.style.transform = 'translate(-50%, -50%)'; }
+  joyEl.addEventListener('pointerdown', e => { joyId = e.pointerId; try { joyEl.setPointerCapture(e.pointerId); } catch (x) {} moveJoy(e); e.preventDefault(); });
+  joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) moveJoy(e); });
+  ['pointerup', 'pointercancel'].forEach(ev => joyEl.addEventListener(ev, e => { if (e.pointerId === joyId) resetJoy(); }));
+  let dragId = null, lx = 0, ly = 0;
+  cv.addEventListener('pointerdown', e => { if (dragId === null) { dragId = e.pointerId; lx = e.clientX; ly = e.clientY; try { cv.setPointerCapture(e.pointerId); } catch (x) {} } });
+  cv.addEventListener('pointermove', e => {
+    if (e.pointerId !== dragId) return;
+    camYaw -= (e.clientX - lx) * 0.0065; camPitch = clamp(camPitch + (e.clientY - ly) * 0.004, 0.15, 1.2);
+    lx = e.clientX; ly = e.clientY;
+  });
+  ['pointerup', 'pointercancel'].forEach(ev => cv.addEventListener(ev, e => { if (e.pointerId === dragId) dragId = null; }));
+  window.addEventListener('keydown', e => { if (e.target && e.target.tagName === 'INPUT') return; keys[e.key.toLowerCase()] = true; });
+  window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+  function walkable(x, z) {
+    if (Math.abs(x) <= RM.hx - 1 && Math.abs(z) <= RM.hz - 1) return true;
+    if (Math.abs(x) <= DOOR - 0.5 && z > RM.hz - 1.01 && z <= GZ0 + 1.01) return true;
+    return Math.abs(x) <= GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1;
+  }
+  function tryMove(mx, mz) {
+    const ox = pos.x, oz = pos.z, nx = ox + mx, nz = oz + mz;
+    if (walkable(nx, nz)) { pos.x = nx; pos.z = nz; } else if (walkable(nx, oz)) pos.x = nx; else if (walkable(ox, nz)) pos.z = nz;
+    for (let i = 0; i < colliders.length; i++) {
+      const q = colliders[i], dx = pos.x - q.x, dz = pos.z - q.z, d = Math.hypot(dx, dz), min = q.r + 0.55;
+      if (d < min && d > 1e-4) { pos.x = q.x + dx / d * min; pos.z = q.z + dz / d * min; }
+    }
+    if (!walkable(pos.x, pos.z)) { pos.x = ox; pos.z = oz; }
+  }
+
+  /* ---------- HUD ---------- */
+  let toastTimer = 0;
+  function toast(text, ms) { const t = $('#toast'); t.textContent = text; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms || 5000); }
+  const sitBtn = $('#sitBtn');
+  let nearIdx = -1;
+  const remotes = new Map();
+  function occupied(i) { let o = false; remotes.forEach(r => { if (r.e === i) o = true; }); return o; }
+  function updateSitBtn() {
+    if (!started || pad.open || watch.open) { sitBtn.hidden = true; return; }
+    let best = -1, bd = 3.8;
+    easels.forEach(e => { const d = Math.hypot(pos.x - e.sit.x, pos.z - e.sit.z); if (d < bd) { bd = d; best = e.idx; } });
+    nearIdx = best;
+    if (best < 0) { sitBtn.hidden = true; return; }
+    sitBtn.hidden = false;
+    const occ = occupied(best);
+    sitBtn.disabled = false;
+    sitBtn.dataset.mode = occ ? 'watch' : 'sit';
+    sitBtn.textContent = occ ? (best + 1) + '번 이젤 구경하기' : (best + 1) + '번 이젤에 앉기';
+  }
+  const viewBtn = $('#viewBtn'), viewerEl = $('#viewer');
+  let nearSlot = null;
+  function updateViewBtn() {
+    if (!started || pad.open || watch.open || !viewerEl.hidden) { viewBtn.hidden = true; return; }
+    let best = null, bd = 5.2;
+    slots.forEach(sl => { if (!sl.ex) return; const d = Math.hypot(pos.x - sl.x, pos.z - sl.z); if (d < bd) { bd = d; best = sl; } });
+    nearSlot = best; viewBtn.hidden = !best;
+  }
+  function openViewer(ex) {
+    const c = $('#viewerCanvas'), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const mw = window.innerWidth - 56, mh = window.innerHeight - 170, sc = Math.max(0.1, Math.min(mw / ex.w, mh / ex.h));
+    const cw = Math.round(ex.w * sc), ch = Math.round(ex.h * sc);
+    c.style.width = cw + 'px'; c.style.height = ch + 'px'; c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr);
+    try { paintWork(c, ex, '#fffdf7'); } catch (e) {}
+    $('#viewerCap').textContent = (ex.title || '제목 없음') + ' · ' + (ex.artist || '화가');
+    viewerEl.hidden = false;
+  }
+  viewBtn.addEventListener('click', () => { if (nearSlot && nearSlot.ex) openViewer(nearSlot.ex); });
+  $('#viewerClose').addEventListener('click', () => { viewerEl.hidden = true; });
+  viewerEl.addEventListener('click', e => { if (e.target === viewerEl) viewerEl.hidden = true; });
+  const savedCode = (window.hwasil && window.hwasil.savedCode()) || '';
+  if (savedCode) { $('#codeInput').value = savedCode; $('#codeField').hidden = true; }
+  function codeMsg(t) { const m = $('#codeMsg'); m.textContent = t; m.hidden = !t; }
+  let entering = false;
+  $('#startBtn').addEventListener('click', async () => {
+    if (started || entering) return;
+    if (!window.hwasil) { codeMsg('화실 서버를 불러오지 못했어요. 새로고침해 주세요.'); return; }
+    const code = $('#codeInput').value;
+    if (!code.trim()) { $('#codeField').hidden = false; codeMsg('입장 코드를 넣어 주세요. 초대해 준 사람에게 물어보면 돼요.'); $('#codeInput').focus(); return; }
+    entering = true; $('#startBtn').disabled = true; $('#startBtn').textContent = '확인하는 중…'; codeMsg('');
+    let ok = false;
+    try { ok = await window.hwasil.enter(code); } catch (e) { ok = null; }
+    entering = false; $('#startBtn').disabled = false; $('#startBtn').textContent = '입장하기';
+    if (ok === null) { codeMsg('연결이 안 돼요. 인터넷을 확인하고 다시 눌러 주세요.'); return; }
+    if (!ok) { $('#codeField').hidden = false; codeMsg('코드가 맞지 않아요. 한 번 더 확인해 주세요.'); $('#codeInput').select(); return; }
+    const nm = sanitize($('#nameInput').value).slice(0, 10);
+    if (nm) { myName = nm; store('hw-name', nm); myPlate.set(myName); }
+    started = true; $('#intro').hidden = true;
+    pushPresence(true);
+    toast('이젤 가까이 가면 앉기 버튼이 나와요', 7000);
+  });
+  $('#nameInput').value = myName;
+  sitBtn.addEventListener('click', () => {
+    if (nearIdx < 0) return;
+    if (occupied(nearIdx)) openWatch(nearIdx); else sit(nearIdx);
+  });
+
+  /* ---------- drawing pad ---------- */
+  const pad = { open: false, W: 1000, H: 750, strokes: [], tool: 'p', color: '#1c1a18', size: 6, id: null, easel: -1, dirty: false, saving: false, cur: null, pid: null, raf: 0, confirmClose: false, confirmClear: false, sentOff: 0 };
+  const padEl = $('#pad'), padCv = $('#padCanvas'), padCtx = padCv.getContext('2d');
+  const baseCv = document.createElement('canvas'), baseCtx = baseCv.getContext('2d');
+  const statusEl = $('#padStatus');
+  let closeTimer = 0, clearTimer = 0, sc = 1;
+  const SW = ['#1c1a18', '#8a8782', '#ffffff', '#d9342b', '#f08a24', '#f3c431', '#3f9b4f', '#1fa3a3', '#2c47c8', '#7a3fb0', '#ec7fb0', '#7a4a2a', '#f2c6a0'];
+  SW.forEach((c, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'sw' + (i === 0 ? ' on' : ''); b.style.background = c; b.setAttribute('aria-label', '색 ' + (i + 1));
+    b.addEventListener('click', () => {
+      pad.color = c; document.querySelectorAll('.sw').forEach(x => x.classList.remove('on')); b.classList.add('on');
+      if (pad.tool === 'e') setTool('p');
+    });
+    $('#swatches').appendChild(b);
+  });
+  function setStatus(t, bad) { statusEl.textContent = t || ''; statusEl.className = 'padStatus' + (bad ? ' bad' : ''); }
+  function setTool(t) { pad.tool = t; document.querySelectorAll('#tools button').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); }
+  document.querySelectorAll('#tools button').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+  $('#padSize').addEventListener('input', e => { pad.size = Number(e.target.value) || 6; });
+
+  function rebuildBase() {
+    baseCtx.fillStyle = PAPER; baseCtx.fillRect(0, 0, baseCv.width, baseCv.height);
+    pad.strokes.forEach(s => paintStroke(baseCtx, s, sc));
+  }
+  function present() {
+    padCtx.drawImage(baseCv, 0, 0);
+    if (pad.cur) paintStroke(padCtx, pad.cur, sc);
+  }
+  function schedule() { if (!pad.raf) pad.raf = requestAnimationFrame(() => { pad.raf = 0; present(); }); }
+  function fitPad() {
+    const board = $('#padBoard'), aw = board.clientWidth - 14, ah = board.clientHeight - 14;
+    if (aw < 20 || ah < 20) return;
+    const k = Math.min(aw / pad.W, ah / pad.H), cw = Math.floor(pad.W * k), ch = Math.floor(pad.H * k);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    padCv.style.width = cw + 'px'; padCv.style.height = ch + 'px';
+    padCv.width = Math.round(cw * dpr); padCv.height = Math.round(ch * dpr);
+    baseCv.width = padCv.width; baseCv.height = padCv.height;
+    sc = padCv.width / pad.W;
+    rebuildBase(); present();
+  }
+  function openPad(opts) {
+    resetJoy();
+    const w = opts.work;
+    if (w) { pad.W = w.w; pad.H = w.h; pad.strokes = JSON.parse(JSON.stringify(w.strokes)); pad.id = w.id; $('#padTitle').value = w.title || ''; }
+    else { const portrait = window.innerHeight > window.innerWidth * 1.05; pad.W = portrait ? 750 : 1000; pad.H = portrait ? 1000 : 750; pad.strokes = []; pad.id = null; $('#padTitle').value = ''; }
+    pad.easel = opts.easel; pad.dirty = false; pad.cur = null; pad.pid = null; pad.confirmClose = false; pad.confirmClear = false;
+    $('#padClose').textContent = '닫기'; $('#padClear').textContent = '전체 지우기';
+    pad.open = true; padEl.hidden = false; sitBtn.hidden = true;
+    setStatus(dbNS ? (pad.easel >= 0 ? (pad.easel + 1) + '번 이젤에서 그리는 중' : '') : '이 화면에서는 저장되지 않아요. 로그인한 화면에서 열어 주세요.', !dbNS);
+    requestAnimationFrame(fitPad);
+    pushPresence(true);
+    pad.sentOff = 0;
+    if (pad.easel >= 0) enqueueFull(null);
+  }
+  function finishEasel() {
+    if (pad.easel >= 0 && pad.strokes.length) {
+      const e = easels[pad.easel]; paintWork(e.cvs, { w: pad.W, h: pad.H, strokes: pad.strokes }, '#d8d0c0'); e.tex.needsUpdate = true;
+      boards[pad.easel] = { w: pad.W, h: pad.H, strokes: pad.strokes.slice(), owner: myPeer || 'me', ok: true, dirty: false };
+    }
+  }
+  function closePad() {
+    finishEasel();
+    pad.open = false; padEl.hidden = true; pad.easel = -1; myEasel = -1;
+    clearTimeout(closeTimer); clearTimeout(clearTimer);
+    pushPresence(true);
+  }
+  $('#padClose').addEventListener('click', () => {
+    if (pad.dirty && !pad.confirmClose) {
+      pad.confirmClose = true; $('#padClose').textContent = '저장 안 하고 닫기';
+      setStatus('저장하지 않은 그림이 있어요. 저장 버튼을 먼저 눌러 주세요.', true);
+      closeTimer = setTimeout(() => { pad.confirmClose = false; $('#padClose').textContent = '닫기'; setStatus(''); }, 4500);
+      return;
+    }
+    closePad();
+  });
+  function pt(e) {
+    const r = padCv.getBoundingClientRect();
+    return [Math.round(clamp((e.clientX - r.left) / r.width * pad.W, -20, pad.W + 20)), Math.round(clamp((e.clientY - r.top) / r.height * pad.H, -20, pad.H + 20))];
+  }
+  padCv.addEventListener('pointerdown', e => {
+    if (pad.pid !== null) return;
+    e.preventDefault();
+    pad.pid = e.pointerId; try { padCv.setPointerCapture(e.pointerId); } catch (x) {}
+    const p = pt(e);
+    pad.cur = { k: pad.tool, c: pad.color, w: pad.size, p: [p[0], p[1]] };
+    pad.sentOff = 0;
+    if (pad.confirmClose) { pad.confirmClose = false; $('#padClose').textContent = '닫기'; setStatus(''); }
+    schedule();
+  });
+  padCv.addEventListener('pointermove', e => {
+    if (e.pointerId !== pad.pid || !pad.cur) return;
+    const evs = (e.getCoalescedEvents && e.getCoalescedEvents().length) ? e.getCoalescedEvents() : [e];
+    const arr = pad.cur.p;
+    for (let i = 0; i < evs.length; i++) {
+      if (arr.length > 8000) break;
+      const p = pt(evs[i]), dx = p[0] - arr[arr.length - 2], dy = p[1] - arr[arr.length - 1];
+      if (dx * dx + dy * dy >= 6) arr.push(p[0], p[1]);
+    }
+    schedule(); scheduleStream();
+  });
+  function endStroke(e) {
+    if (e.pointerId !== pad.pid) return;
+    pad.pid = null;
+    if (pad.cur) {
+      const s = pad.cur; pad.cur = null;
+      emitStroke(s, pad.strokes.length); pad.sentOff = 0;
+      pad.strokes.push(s); paintStroke(baseCtx, s, sc); pad.dirty = true; present();
+    }
+  }
+  padCv.addEventListener('pointerup', endStroke);
+  padCv.addEventListener('pointercancel', endStroke);
+  $('#padUndo').addEventListener('click', () => {
+    if (pad.cur || !pad.strokes.length) return;
+    pad.strokes.pop(); pad.dirty = true; rebuildBase(); present(); emitCount();
+  });
+  $('#padClear').addEventListener('click', () => {
+    if (!pad.strokes.length) return;
+    if (!pad.confirmClear) {
+      pad.confirmClear = true; $('#padClear').textContent = '정말 지울까요?';
+      clearTimer = setTimeout(() => { pad.confirmClear = false; $('#padClear').textContent = '전체 지우기'; }, 3000);
+      return;
+    }
+    pad.confirmClear = false; clearTimeout(clearTimer); $('#padClear').textContent = '전체 지우기';
+    pad.strokes = []; pad.dirty = true; rebuildBase(); present(); emitCount();
+  });
+
+  /* ---------- saving & my works (db, private to each person) ---------- */
+  let dbNS = null, uid = null, myCol_ = null, works = [];
+  async function initData() {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      const res = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      if (!res[0] || !res[1]) return;
+      const id = await res[1].id();
+      if (!id) return;
+      dbNS = res[0]; uid = id; myCol_ = dbNS.collection('data/users/' + uid);
+      galCol = dbNS.collection('gallery');
+      galCol.orderBy('at', 'desc').limit(27).onSnapshot(snap => {
+        setExhibits(snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(w => w.kind === 'exhibit' && Array.isArray(w.strokes) && w.strokes.length < 4000 && w.w > 0 && w.h > 0 && w.w <= 2000 && w.h <= 2000));
+      }, () => {});
+      myCol_.orderBy('at', 'desc').limit(30).onSnapshot(snap => {
+        works = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(w => w.kind === 'work' && Array.isArray(w.strokes) && w.w > 0 && w.h > 0);
+        $('#worksCount').textContent = String(works.length);
+        if (!$('#works').hidden) renderWorks();
+      }, () => {});
+    } catch (e) {}
+  }
+  function pointsOf(strokes) { let n = 0; strokes.forEach(s => { n += s.p.length / 2; }); return n; }
+  async function save() {
+    if (pad.saving) return;
+    if (!pad.strokes.length) { setStatus('먼저 그림을 그려 주세요.', true); return; }
+    if (!dbNS || !myCol_) { setStatus('이 화면에서는 저장할 수 없어요.', true); return; }
+    let title = sanitize($('#padTitle').value).slice(0, 24);
+    if (!title) { const d = new Date(); title = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 그림'; $('#padTitle').value = title; }
+    const prev = pad.id ? works.find(q => q.id === pad.id) : null;
+    const doc = { kind: 'work', title: title, w: pad.W, h: pad.H, at: Date.now(), n: pad.strokes.length, strokes: pad.strokes.map(s => ({ k: s.k, c: s.c, w: s.w, p: s.p })) };
+    if (prev && prev.exh) doc.exh = true;
+    const size = new Blob([JSON.stringify(doc)]).size;
+    if (size > 240000) { setStatus('그림이 너무 커서 저장할 수 없어요. 일부를 되돌리거나 지운 뒤 다시 눌러 주세요.', true); return; }
+    pad.saving = true; $('#padSave').disabled = true; setStatus('저장하는 중…');
+    try {
+      const ref = pad.id ? myCol_.doc(pad.id) : myCol_.doc();
+      await ref.set(doc);
+      if (doc.exh && galCol) { try { await galCol.doc(uid + '_' + ref.id).set(exhibitDoc(doc, ref.id)); } catch (e) {} }
+      pad.id = ref.id; pad.dirty = false; pad.confirmClose = false; $('#padClose').textContent = '닫기';
+      setStatus('저장했어요. 내 그림 목록에서 다시 열 수 있어요.');
+      finishEasel();
+    } catch (e) {
+      const c = e && e.code;
+      if (c === 'quota_exceeded') setStatus('저장 공간이 가득 찼어요. 내 그림에서 안 쓰는 그림을 지워 주세요.', true);
+      else if (c === 'invalid_argument') setStatus('저장하지 못했어요. 그림 내용을 확인하고 다시 눌러 주세요.', true);
+      else if (c === 'too_big') setStatus('그림이 너무 커서 저장할 수 없어요. 일부를 되돌리거나 지운 뒤 다시 눌러 주세요.', true);
+      else if (c === 'bad_code') setStatus('입장 코드가 바뀌었어요. 새로고침하고 새 코드로 들어와 주세요.', true);
+      else setStatus('저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.', true);
+    }
+    pad.saving = false; $('#padSave').disabled = false;
+  }
+  $('#padSave').addEventListener('click', save);
+
+  async function exhibit(w, on) {
+    if (!galCol || !myCol_) { toast('이 화면에서는 전시할 수 없어요.'); return; }
+    const gid = uid + '_' + w.id;
+    try {
+      if (on) {
+        const ed = exhibitDoc(w, w.id);
+        if (new Blob([JSON.stringify(ed)]).size > 240000) { toast('그림이 너무 커서 전시할 수 없어요.'); return; }
+        await galCol.doc(gid).set(ed);
+        await myCol_.doc(w.id).update({ exh: true });
+        toast('전시관에 걸었어요! 남쪽 문으로 가 보세요.', 6000);
+      } else {
+        await galCol.doc(gid).delete();
+        await myCol_.doc(w.id).update({ exh: false });
+        toast('전시를 내렸어요.');
+      }
+    } catch (e) { toast(e && e.code === 'quota_exceeded' ? '전시는 한 사람당 10점까지예요. 다른 그림을 먼저 내려 주세요.' : '전시하지 못했어요. 잠시 뒤 다시 해 주세요.', 6000); }
+  }
+  const delArm = {};
+  function renderWorks() {
+    const grid = $('#worksGrid'); grid.textContent = '';
+    $('#worksEmpty').hidden = works.length > 0;
+    works.forEach(w => {
+      const item = document.createElement('div'); item.className = 'work';
+      const c = document.createElement('canvas'); c.width = 240; c.height = Math.max(60, Math.min(320, Math.round(240 * w.h / w.w)));
+      paintWork(c, w, '#ece6d9'); item.appendChild(c);
+      const t = document.createElement('div'); t.className = 't'; t.textContent = w.title || '제목 없음'; item.appendChild(t);
+      const d = document.createElement('div'); d.className = 'd'; d.textContent = new Date(w.at || 0).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }); item.appendChild(d);
+      if (w.exh) { const bg = document.createElement('div'); bg.className = 'badge'; bg.textContent = '전시 중'; item.appendChild(bg); }
+      const acts = document.createElement('div'); acts.className = 'acts';
+      const b1 = document.createElement('button'); b1.type = 'button'; b1.className = 'btn primary'; b1.textContent = '이어 그리기';
+      b1.addEventListener('click', () => {
+        $('#works').hidden = true;
+        const ei = (nearIdx >= 0 && !occupied(nearIdx)) ? nearIdx : -1;
+        if (ei >= 0) { sitAt(ei); }
+        openPad({ work: w, easel: ei });
+      });
+      const b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'btn'; b2.textContent = '삭제';
+      b2.addEventListener('click', async () => {
+        if (!delArm[w.id]) {
+          delArm[w.id] = setTimeout(() => { delete delArm[w.id]; b2.textContent = '삭제'; b2.classList.remove('danger'); }, 3000);
+          b2.textContent = '정말 삭제'; b2.classList.add('danger'); return;
+        }
+        clearTimeout(delArm[w.id]); delete delArm[w.id];
+        try { if (w.exh && galCol) { try { await galCol.doc(uid + '_' + w.id).delete(); } catch (e) {} } await myCol_.doc(w.id).delete(); } catch (e) { b2.textContent = '삭제 실패'; }
+      });
+      const b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'btn'; b3.textContent = w.exh ? '전시 내리기' : '전시하기';
+      b3.addEventListener('click', async () => { b3.disabled = true; await exhibit(w, !w.exh); b3.disabled = false; });
+      acts.appendChild(b1); acts.appendChild(b3); acts.appendChild(b2); item.appendChild(acts); grid.appendChild(item);
+    });
+  }
+  $('#worksBtn').addEventListener('click', () => { renderWorks(); $('#works').hidden = false; });
+  $('#worksClose').addEventListener('click', () => { $('#works').hidden = true; });
+  $('#works').addEventListener('click', e => { if (e.target === $('#works')) $('#works').hidden = true; });
+
+  function sitAt(i) {
+    const e = easels[i]; pos.x = e.sit.x; pos.z = e.sit.z; heading = e.heading; camYaw = heading + Math.PI; walkAmp = 0; myEasel = i;
+  }
+  function sit(i) { sitAt(i); openPad({ easel: i }); }
+
+  /* ---------- live drawing: stream my strokes, watch other people's ---------- */
+  let myPeer = null, pumpT = 0, streamT = 0, boardAcc = 0;
+  const boards = {}, lastWant = {}, sendQ = [];
+  function qEmit(topic, data) {
+    if (!roomNS) return;
+    sendQ.push([topic, data]);
+    if (!pumpT) pumpT = setTimeout(pump, 0);
+  }
+  function pump() {
+    pumpT = 0;
+    const it = sendQ.shift();
+    if (!it || !roomNS) { sendQ.length = 0; return; }
+    roomNS.emit(it[0], it[1]).catch(function () {});
+    if (sendQ.length) pumpT = setTimeout(pump, 40);
+  }
+  function emitStroke(c, idx) {
+    if (pad.easel < 0 || !roomNS) return;
+    let o = pad.sentOff;
+    if (o >= c.p.length) return;
+    while (o < c.p.length) {
+      const part = c.p.slice(o, o + 400);
+      qEmit('ds', { e: pad.easel, s: idx, k: c.k, c: c.c, w: c.w, o: o, p: part });
+      o += part.length;
+    }
+    pad.sentOff = o;
+  }
+  function scheduleStream() {
+    if (streamT || pad.easel < 0 || !roomNS) return;
+    streamT = setTimeout(() => { streamT = 0; if (pad.cur) emitStroke(pad.cur, pad.strokes.length); }, 120);
+  }
+  function emitCount() {
+    if (pad.easel < 0) return;
+    qEmit('dn', { e: pad.easel, n: pad.strokes.length, W: pad.W, H: pad.H });
+  }
+  function enqueueFull(to) {
+    const e = pad.easel;
+    if (e < 0 || !roomNS) return;
+    const extra = to ? { to: to } : {};
+    qEmit('dn', Object.assign({ e: e, n: 0, W: pad.W, H: pad.H }, extra));
+    const all = pad.cur ? pad.strokes.concat([pad.cur]) : pad.strokes;
+    all.forEach((s, i) => {
+      let o = 0;
+      do {
+        const part = s.p.slice(o, o + 400);
+        qEmit('ds', Object.assign({ e: e, s: i, k: s.k, c: s.c, w: s.w, o: o, p: part }, extra));
+        o += part.length;
+      } while (o < s.p.length);
+    });
+  }
+  function requestBoard(e) {
+    const now = performance.now();
+    if (!roomNS || (lastWant[e] && now - lastWant[e] < 3000)) return;
+    lastWant[e] = now;
+    roomNS.emit('dwant', { e: e }).catch(function () {});
+  }
+  function onDraw(msg) {
+    const d = msg.data;
+    if (msg.isMe || !d || typeof d !== 'object') return;
+    if (d.to && d.to !== myPeer) return;
+    const e = d.e;
+    if (!Number.isInteger(e) || e < 0 || e >= easels.length) return;
+    if (msg.topic === 'dwant') {
+      if (pad.open && pad.easel === e) enqueueFull(msg.peer);
+      return;
+    }
+    let b = boards[e];
+    if (msg.topic === 'dn') {
+      const W = Number(d.W), H = Number(d.H), n = Number(d.n);
+      if (!(W >= 100 && W <= 4000 && H >= 100 && H <= 4000 && Number.isInteger(n) && n >= 0)) return;
+      if (!b || b.owner !== msg.peer || b.w !== W || b.h !== H) b = boards[e] = { w: W, h: H, strokes: [], owner: msg.peer, ok: true, dirty: true };
+      if (n <= b.strokes.length) { b.strokes.length = n; b.ok = true; }
+      else { b.ok = false; requestBoard(e); }
+      b.dirty = true;
+      return;
+    }
+    if (msg.topic !== 'ds') return;
+    if (!b || b.owner !== msg.peer || !b.ok) { requestBoard(e); return; }
+    const s = Number(d.s), o = Number(d.o);
+    if (!Number.isInteger(s) || !Number.isInteger(o) || s < 0 || o < 0 || !Array.isArray(d.p) || d.p.length > 800) return;
+    if (s > b.strokes.length || b.strokes.length > 2000) { b.ok = false; requestBoard(e); return; }
+    let st = b.strokes[s];
+    if (!st) {
+      if (o !== 0) { b.ok = false; requestBoard(e); return; }
+      const k = d.k === 'b' || d.k === 'e' ? d.k : 'p';
+      const c = typeof d.c === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.c) ? d.c : '#1c1a18';
+      st = { k: k, c: c, w: clamp(Number(d.w) || 6, 1, 80), p: [] };
+      b.strokes[s] = st;
+    }
+    const len = st.p.length;
+    if (o > len) { b.ok = false; requestBoard(e); return; }
+    const skip = len - o;
+    if (skip < d.p.length) {
+      if (len + d.p.length - skip > 10000) return;
+      for (let i = skip; i < d.p.length; i++) { const v = Number(d.p[i]); st.p.push(isFinite(v) ? clamp(v, -50, 5000) : 0); }
+      b.dirty = true;
+    }
+  }
+
+  /* watching someone draw */
+  const watch = { open: false, e: -1 };
+  let watchInfo = '';
+  function remoteAt(e) { let f = null; remotes.forEach(r => { if (r.e === e) f = r; }); return f; }
+  function openWatch(e) {
+    resetJoy();
+    watch.open = true; watch.e = e; watchInfo = '';
+    $('#watch').hidden = false; sitBtn.hidden = true;
+    updateWatchInfo();
+    requestAnimationFrame(fitWatch);
+    if (!boards[e]) requestBoard(e);
+  }
+  function updateWatchInfo() {
+    const r = remoteAt(watch.e), b = boards[watch.e];
+    const title = r ? r.name + '님이 그리는 중' : (watch.e + 1) + '번 이젤';
+    const status = r ? (b && b.ok ? '실시간으로 보고 있어요' : '그림을 불러오는 중…') : (b ? '그리기를 마쳤어요. 마지막 모습이에요.' : '지금은 아무도 그리고 있지 않아요.');
+    if (title + status === watchInfo) return;
+    watchInfo = title + status;
+    $('#watchTitle').textContent = title; $('#watchStatus').textContent = status;
+  }
+  function fitWatch() {
+    const b = boards[watch.e], W = b ? b.w : 4, H = b ? b.h : 3;
+    const board = $('#watchBoard'), aw = board.clientWidth - 14, ah = board.clientHeight - 14;
+    if (aw < 20 || ah < 20) return;
+    const k = Math.min(aw / W, ah / H), cw = Math.floor(W * k), ch = Math.floor(H * k);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), c = $('#watchCanvas');
+    c.style.width = cw + 'px'; c.style.height = ch + 'px';
+    c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr);
+    paintWork(c, b || { w: 4, h: 3, strokes: [] }, '#ece6d9');
+  }
+  $('#watchClose').addEventListener('click', () => { watch.open = false; watch.e = -1; $('#watch').hidden = true; });
+
+  /* ---------- other people in the room ---------- */
+  let roomNS = null, lastSend = 0, lastSent = '', inRoomCount = 1;
+  function addRemote(p) {
+    const pr = p.presence || {};
+    const col = clamp(Math.floor(Number(pr.c)) || 0, 0, COATS.length - 1);
+    const name = sanitize(typeof pr.n === 'string' ? pr.n : '').slice(0, 10) || '화가';
+    const av = makeAvatar(COATS[col]);
+    const sh = new T.Mesh(blobGeo, blobMat); sh.rotation.x = -Math.PI / 2; sh.position.y = 0.04; av.group.add(sh);
+    const plate = makeNamePlate(name); plate.sprite.position.y = 2.85; av.group.add(plate.sprite);
+    scene.add(av.group);
+    const r = { av: av, plate: plate, name: name, x: 0, z: 0, h: 0, tx: 0, tz: 0, th: 0, w: 0, phase: 0, amp: 0, e: -1, init: false };
+    remotes.set(p.peer, r); return r;
+  }
+  function syncPeers(list) {
+    const seen = new Set(); let others = 0;
+    list.forEach(p => {
+      if (p.isMe && p.sameTab) myPeer = p.peer;
+      if (p.kind !== 'viewer' || p.isMe) return;
+      others++;
+      const pr = p.presence || {};
+      if (typeof pr.x !== 'number' || typeof pr.z !== 'number' || !isFinite(pr.x) || !isFinite(pr.z)) return;
+      seen.add(p.peer);
+      const r = remotes.get(p.peer) || addRemote(p);
+      const nm = sanitize(typeof pr.n === 'string' ? pr.n : '').slice(0, 10) || '화가';
+      if (nm !== r.name) { r.name = nm; r.plate.set(nm); }
+      r.tx = clamp(pr.x, -RM.hx, RM.hx); r.tz = clamp(pr.z, -RM.hz, GZ1);
+      r.th = typeof pr.h === 'number' && isFinite(pr.h) ? pr.h : r.th; r.w = pr.w === 1 ? 1 : 0;
+      r.e = typeof pr.e === 'number' && pr.e >= 0 && pr.e < easels.length ? Math.floor(pr.e) : -1;
+      if (!r.init) { r.x = r.tx; r.z = r.tz; r.h = r.th; r.init = true; }
+    });
+    remotes.forEach((r, k) => { if (!seen.has(k)) { scene.remove(r.av.group); remotes.delete(k); } });
+    remotes.forEach((r, k) => {
+      if (r.e < 0) return;
+      const b = boards[r.e];
+      if (!b || b.owner !== k || !b.ok) requestBoard(r.e);
+    });
+    inRoomCount = others + 1; updateRoomChip();
+  }
+  function pushPresence(force) {
+    if (!roomNS || !started) return;
+    const now = performance.now();
+    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myCol, e: myEasel };
+    const k = patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e;
+    if (!force && (k === lastSent || now - lastSend < 100 + Math.min(200, (inRoomCount - 1) * 12))) return;
+    lastSend = now; lastSent = k;
+    roomNS.presence(patch).catch(function () {});
+  }
+  /* ---------- several studios (named rooms), 20 people each ---------- */
+  const ROOM_CAP = 20, ROOM_MAX = 6;
+  let lobby = null, roomNum = 0, switching = false, lobbyPeers = [];
+  function roomCount(n) {
+    let c = 0;
+    lobbyPeers.forEach(p => { if (p.kind === 'viewer' && p.presence && p.presence.r === n) c++; });
+    return c;
+  }
+  function pickRoom() { for (let n = 1; n <= ROOM_MAX; n++) { if (roomCount(n) < ROOM_CAP) return n; } return 1; }
+  function updateRoomChip() {
+    const el = $('#online');
+    if (!lobby) el.textContent = '나 혼자 있는 중';
+    else if (!roomNum) el.textContent = '연결 중…';
+    else el.textContent = '화실 ' + roomNum + ' · ' + inRoomCount + '/' + ROOM_CAP + '명';
+  }
+  function clearWorld() {
+    remotes.forEach(r => scene.remove(r.av.group)); remotes.clear();
+    for (const k in boards) delete boards[k];
+    for (const k in lastWant) delete lastWant[k];
+    easels.forEach(e => { paintWork(e.cvs, { w: 4, h: 3, strokes: [] }, '#d8d0c0'); e.tex.needsUpdate = true; });
+    inRoomCount = 1; myEasel = -1;
+  }
+  async function enterRoom(n) {
+    if (!lobby || switching) return;
+    switching = true;
+    try {
+      if (roomNS && roomNS !== lobby) { try { await roomNS.leave(); } catch (e) {} }
+      roomNS = null; sendQ.length = 0; clearWorld();
+      let nr = null;
+      try { nr = await lobby.join('studio-' + n); } catch (e) { nr = null; }
+      if (!nr) nr = lobby;
+      roomNS = nr; roomNum = nr === lobby ? 1 : n;
+      ['dn', 'ds', 'dwant'].forEach(t => nr.on(t, onDraw));
+      nr.onPeers(function (ch) { syncPeers(ch.peers); }, function () { if (roomNS === nr) { roomNS = null; syncPeers([]); } });
+      lobby.presence({ r: roomNum }).catch(function () {});
+      pushPresence(true);
+    } finally { switching = false; updateRoomChip(); }
+  }
+  function renderRooms() {
+    const list = $('#roomsList'); list.textContent = '';
+    for (let n = 1; n <= ROOM_MAX; n++) {
+      const c = roomCount(n), row = document.createElement('div'); row.className = 'roomRow';
+      const nm = document.createElement('div'); nm.className = 'n'; nm.textContent = '화실 ' + n;
+      const ct = document.createElement('div'); ct.className = 'c'; ct.textContent = c + '/' + ROOM_CAP + '명';
+      const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn' + (n === roomNum ? '' : ' primary');
+      if (n === roomNum) { bt.textContent = '여기 있어요'; bt.disabled = true; }
+      else if (c >= ROOM_CAP) { bt.textContent = '가득 참'; bt.disabled = true; }
+      else { bt.textContent = '입장'; bt.addEventListener('click', () => { $('#rooms').hidden = true; enterRoom(n); }); }
+      const left = document.createElement('div'); left.className = 'l'; left.appendChild(nm); left.appendChild(ct);
+      row.appendChild(left); row.appendChild(bt); list.appendChild(row);
+    }
+  }
+  $('#online').addEventListener('click', () => { if (!lobby || switching) return; renderRooms(); $('#rooms').hidden = false; });
+  $('#roomsClose').addEventListener('click', () => { $('#rooms').hidden = true; });
+  $('#rooms').addEventListener('click', e => { if (e.target === $('#rooms')) $('#rooms').hidden = true; });
+  (async function () {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      const r = await window.claude.use('room');
+      if (!r) return;
+      lobby = r;
+      lobby.onPeers(function (ch) {
+        lobbyPeers = ch.peers; updateRoomChip();
+        if (!$('#rooms').hidden) renderRooms();
+        if (roomNS === lobby) syncPeers(ch.peers);
+      }, function () {});
+      updateRoomChip();
+      await new Promise(res => setTimeout(res, 1400));
+      await enterRoom(pickRoom());
+    } catch (e) {}
+  })();
+  initData();
+
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load('32px "Gamja Flower"', '화가이름').then(() => { myPlate.set(myName); remotes.forEach(r => r.plate.set(r.name)); }).catch(() => {});
+  }
+
+  /* ---------- loop ---------- */
+  function update(dt) {
+    tNow += dt;
+    let ix = joy.x + ((keys['d'] || keys['arrowright']) ? 1 : 0) - ((keys['a'] || keys['arrowleft']) ? 1 : 0);
+    let iy = joy.y + ((keys['w'] || keys['arrowup']) ? 1 : 0) - ((keys['s'] || keys['arrowdown']) ? 1 : 0);
+    const len = Math.hypot(ix, iy); if (len > 1) { ix /= len; iy /= len; }
+    const m = Math.min(1, len);
+    if (started && !pad.open && !watch.open && m > 0.08) {
+      const sy = Math.sin(camYaw), cy = Math.cos(camYaw);
+      const dx = cy * ix - sy * iy, dz = -sy * ix - cy * iy, dl = Math.hypot(dx, dz) || 1, sp = SPEED * m;
+      tryMove(dx / dl * sp * dt, dz / dl * sp * dt);
+      heading += angDiff(heading, Math.atan2(dx, dz)) * Math.min(1, dt * 12);
+      walkAmp = lerp(walkAmp, 1, Math.min(1, dt * 10)); walkPhase += dt * (6 + sp * 0.9);
+    } else walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10));
+    swing(me, walkPhase, walkAmp);
+    player.position.set(pos.x, 0.0 + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp, pos.z);
+    player.rotation.y = heading;
+    blob.position.set(pos.x, 0.05, pos.z);
+    pushPresence(false);
+    remotes.forEach(r => {
+      const f2 = 1 - Math.exp(-dt * 10), dx = r.tx - r.x, dz = r.tz - r.z;
+      const moving = Math.hypot(dx, dz) > 0.05 || r.w === 1;
+      r.x += dx * f2; r.z += dz * f2; r.h += angDiff(r.h, r.th) * Math.min(1, dt * 12);
+      r.amp = lerp(r.amp, moving ? 1 : 0, Math.min(1, dt * 10)); if (r.amp > 0.05) r.phase += dt * 10;
+      r.av.group.position.set(r.x, Math.abs(Math.sin(r.phase)) * 0.09 * r.amp, r.z); r.av.group.rotation.y = r.h;
+      swing(r.av, r.phase, r.amp);
+      r.plate.sprite.visible = Math.hypot(r.x - pos.x, r.z - pos.z) < 28;
+    });
+    updateSitBtn(); updateViewBtn();
+    easels.forEach(e => {
+      e.ring.material.opacity = (e.idx === nearIdx ? 0.9 : 0.4) + 0.12 * Math.sin(tNow * 3 + e.idx);
+      e.ring.material.color.set(occupied(e.idx) ? 0xd9342b : 0xf3c431);
+    });
+    boardAcc += dt;
+    if (boardAcc > 0.15) {
+      boardAcc = 0;
+      for (const k in boards) {
+        const b = boards[k];
+        if (!b.dirty) continue;
+        b.dirty = false;
+        const e = easels[Number(k)]; paintWork(e.cvs, b, '#d8d0c0'); e.tex.needsUpdate = true;
+        if (watch.open && watch.e === Number(k)) fitWatch();
+      }
+      if (watch.open) updateWatchInfo();
+    }
+    if (!started) { camYaw += dt * 0.1; camPitch = 0.4; }
+    const f = 1 - Math.exp(-dt * 8);
+    camTx += (pos.x - camTx) * f; camTz += (pos.z - camTz) * f;
+    camDist += ((started ? 17 : 26) - camDist) * Math.min(1, dt * 2);
+    const cp = Math.cos(camPitch);
+    const inG = camTz > RM.hz - 0.5;
+    const dx = clamp(camTx + Math.sin(camYaw) * cp * camDist, inG ? -GX + 1 : -RM.hx + 1, inG ? GX - 1 : RM.hx - 1);
+    const dy = Math.min(RM.h - 1, 2.4 + Math.sin(camPitch) * camDist);
+    const dz = clamp(camTz + Math.cos(camYaw) * cp * camDist, inG ? GZ0 + 1 : -RM.hz + 1, inG ? GZ1 - 1 : RM.hz - 1);
+    if (!camInit) { camPos.set(dx, dy, dz); camInit = true; } else camPos.lerp(_v.set(dx, dy, dz), 1 - Math.exp(-dt * 10));
+    camera.position.copy(camPos);
+    camera.lookAt(camTx, 2.0, camTz);
+  }
+  const camPos = new T.Vector3(), _v = new T.Vector3(); let camInit = false;
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    update(dt);
+    if (!pad.open && !watch.open) renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  onResize();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
