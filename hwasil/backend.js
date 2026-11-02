@@ -47,6 +47,12 @@
         });
       });
     },
+    getKey: function () { return token; },
+    setKey: function (k) {
+      k = String(k || '').toLowerCase().replace(/[^0-9a-f]/g, '');
+      if (!/^[0-9a-f]{32}$/.test(k)) return false;
+      try { localStorage.setItem('hw-key', k); return localStorage.getItem('hw-key') === k; } catch (e) { return false; }
+    },
     inviteLink: function () { return code ? location.origin + location.pathname + '#c=' + encodeURIComponent(code) : ''; }
   };
 

@@ -245,6 +245,13 @@ button.chip { pointer-events: auto; cursor: pointer; }
 .work .acts .btn { padding: 7px 6px; font-size: 16px; flex: 1 1 40%; white-space: nowrap; }
 .work .badge { font-size: 12px; color: var(--blue); font-weight: 700; }
 .empty { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+#keyBox { flex: 0 0 auto; border-top: 2px dashed var(--ink); padding-top: 10px; }
+#keyBox[open] { max-height: 48vh; overflow-y: auto; }
+#keyBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
+#keyBox .field { margin: 10px 0 8px; }
+#keyBox .btn { width: 100%; margin-top: 8px; }
+#keyMsg { margin-top: 8px; font-weight: 500; }
+#keyMsg.bad { color: var(--danger); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -298,6 +305,17 @@ button.chip { pointer-events: auto; cursor: pointer; }
     <div class="sheetHead"><h2>내 그림</h2><button class="btn" id="worksClose" type="button">닫기</button></div>
     <p class="empty" id="worksEmpty" hidden>아직 저장한 그림이 없어요. 이젤 앞에 앉아서 첫 그림을 그려 보세요.</p>
     <div id="worksGrid"></div>
+    <details id="keyBox">
+      <summary>다른 기기로 옮기기</summary>
+      <p class="empty">내 그림은 이 기기의 '열쇠'로 찾아요. 열쇠를 복사해 두었다가 다른 기기에서 붙여넣으면 같은 그림 목록이 열려요. 열쇠를 아는 사람은 내 그림을 지울 수도 있으니 아무에게나 보여 주지 마세요.</p>
+      <button class="btn" id="keyCopy" type="button">내 열쇠 복사</button>
+      <input id="keyShow" type="text" readonly hidden aria-label="내 열쇠">
+      <label class="field" for="keyInput">다른 기기의 열쇠 붙여넣기
+        <input id="keyInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="xxxx-xxxx-xxxx-…">
+      </label>
+      <button class="btn primary" id="keyApply" type="button">이 열쇠로 바꾸기</button>
+      <p class="empty" id="keyMsg" hidden></p>
+    </details>
   </div>
 </div>
 
@@ -320,7 +338,8 @@ button.chip { pointer-events: auto; cursor: pointer; }
     <p>이젤 앞에 앉으면 그림판이 열려요. 그린 그림은 내 그림 목록에 저장돼요.</p>
     <ul>
       <li>왼쪽 아래 조이스틱으로 걷기</li>
-      <li>이젤 가까이 가면 앉기 버튼이 나와요</li>
+      <li>이젤을 누르면 걸어가서 앉아요. 누가 그리는 중이면 바로 구경해요</li>
+      <li>이젤 가까이 가면 앉기 버튼도 나와요</li>
       <li>화실 하나에 20명까지 들어와요. 위쪽 화실 칩을 눌러 다른 화실로 옮길 수 있어요</li>
       <li>누가 그리는 이젤에 가까이 가면 구경할 수 있어요</li>
       <li>내 그림에서 '전시하기'를 누르면 남쪽 문 너머 전시관에 걸려요</li>
@@ -443,6 +462,8 @@ button.chip { pointer-events: auto; cursor: pointer; }
   const seam = [];
   /* things hung on an outer wall: shown only while the camera is on the inside of that wall */
   const onWall = [];
+  const hitList = [];  /* tappable things: easels and gallery frames */
+  const hitMat = new T.MeshBasicMaterial({ visible: false });
   function hang(obj, ax, lim, inside) { onWall.push({ o: obj, ax: ax, lim: lim, inside: inside }); return obj; }
   wall(RM.hx * 2, 0, -RM.hz, 0);
   seam.push(wall(RM.hx - DOOR, -(RM.hx + DOOR) / 2, RM.hz, Math.PI));
@@ -612,6 +633,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
     const cvs = document.createElement('canvas'); cvs.width = 320; cvs.height = 240;
     const tex = new T.CanvasTexture(cvs); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
     put(g, new T.Mesh(new T.PlaneGeometry(2.5, 1.875), new T.MeshBasicMaterial({ map: tex })), 0, 2.6, 0.2);
+    const hit = put(g, new T.Mesh(bx(3.8, 4.4, 2.6), hitMat), 0, 2.1, 0); hit.userData.easel = i; hitList.push(hit);
     const sit = { x: (R + 2.7) * ox, z: (R + 2.7) * oz };
     const ring = new T.Mesh(new T.RingGeometry(0.75, 0.95, 28), B(0xf3c431, { transparent: true, opacity: 0.55, side: T.DoubleSide }));
     ring.rotation.x = -Math.PI / 2; ring.position.set(sit.x, 0.05, sit.z); scene.add(ring);
@@ -674,11 +696,12 @@ button.chip { pointer-events: auto; cursor: pointer; }
     put(g, new T.Mesh(bx(4.0, 4.0, 0.16), L(0x3a2a1c)), 0, 0, 0);
     const cv = document.createElement('canvas'); cv.width = cv.height = 512;
     const tex = new T.CanvasTexture(cv); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
-    put(g, new T.Mesh(new T.PlaneGeometry(3.6, 3.6), new T.MeshBasicMaterial({ map: tex })), 0, 0, 0.09);
+    const plane = put(g, new T.Mesh(new T.PlaneGeometry(3.6, 3.6), new T.MeshBasicMaterial({ map: tex })), 0, 0, 0.09);
     const lc = document.createElement('canvas'); lc.width = 512; lc.height = 128;
     const ltex = new T.CanvasTexture(lc); ltex.minFilter = T.LinearFilter; ltex.generateMipmaps = false;
     put(g, new T.Mesh(new T.PlaneGeometry(3.4, 0.85), new T.MeshBasicMaterial({ map: ltex })), 0, -2.65, 0.05);
     const sl = { x: x, z: z, cv: cv, tex: tex, lc: lc, ltex: ltex, key: '', ex: null };
+    plane.userData.slot = sl; hitList.push(plane);
     slots.push(sl); drawSlot(sl, null);
     return g;
   }
@@ -857,13 +880,54 @@ button.chip { pointer-events: auto; cursor: pointer; }
     if (nm) { myName = nm; store('hw-name', nm); myPlate.set(myName); }
     started = true; $('#intro').hidden = true;
     pushPresence(true);
-    toast('이젤 가까이 가면 앉기 버튼이 나와요', 7000);
+    toast('이젤을 눌러 보세요. 비어 있으면 앉아서 그리고, 누가 그리는 중이면 구경해요', 7000);
   });
   $('#nameInput').value = myName;
   sitBtn.addEventListener('click', () => {
     if (nearIdx < 0) return;
     if (occupied(nearIdx)) openWatch(nearIdx); else sit(nearIdx);
   });
+
+  /* ---------- tap an easel or a frame ---------- */
+  let goal = null;                       /* { x, z, idx, stuck } : auto-walk to an easel, then sit */
+  const ray = new T.Raycaster();
+  let tap = null;
+  function shown(o) { for (; o; o = o.parent) if (!o.visible) return false; return true; }
+  function onTap(cx, cy) {
+    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden) return;
+    const r = cv.getBoundingClientRect();
+    ray.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -((cy - r.top) / r.height) * 2 + 1 }, camera);
+    const hits = ray.intersectObjects(hitList, false);
+    for (let i = 0; i < hits.length; i++) {
+      const o = hits[i].object;
+      if (!shown(o)) continue;
+      if (o.userData.easel !== undefined) {
+        const idx = o.userData.easel;
+        if (occupied(idx)) { goal = null; openWatch(idx); return; }
+        const e = easels[idx]; goal = { x: e.sit.x, z: e.sit.z, idx: idx, stuck: 0 };
+        toast((idx + 1) + '번 이젤로 걸어가요', 2500);
+        return;
+      }
+      const sl = o.userData.slot;
+      if (sl) { if (sl.ex) openViewer(sl.ex); else toast('아직 비어 있는 액자예요', 2500); return; }
+    }
+  }
+  cv.addEventListener('pointerdown', e => { tap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() }; });
+  cv.addEventListener('pointerup', e => {
+    if (!tap || tap.id !== e.pointerId) return;
+    const t = tap; tap = null;
+    if (Math.hypot(e.clientX - t.x, e.clientY - t.y) > 10 || performance.now() - t.t > 600) return;
+    onTap(e.clientX, e.clientY);
+  });
+  cv.addEventListener('pointercancel', () => { tap = null; });
+  /* next point to walk to: out through the doorway first if I am in the gallery */
+  function walkTarget() {
+    if (pos.z > RM.hz - 1) {
+      if (Math.abs(pos.x) > 1.2 && pos.z > RM.hz + 1.2) return { x: 0, z: RM.hz + 1.6, way: true };
+      return { x: 0, z: RM.hz - 2.5, way: true };
+    }
+    return { x: goal.x, z: goal.z, way: false };
+  }
 
   /* ---------- drawing pad ---------- */
   const pad = { open: false, W: 1000, H: 750, strokes: [], tool: 'p', color: '#1c1a18', size: 6, id: null, easel: -1, dirty: false, saving: false, cur: null, pid: null, raf: 0, confirmClose: false, confirmClear: false, sentOff: 0 };
@@ -1097,6 +1161,35 @@ button.chip { pointer-events: auto; cursor: pointer; }
   $('#worksBtn').addEventListener('click', () => { renderWorks(); $('#works').hidden = false; });
   $('#worksClose').addEventListener('click', () => { $('#works').hidden = true; });
   $('#works').addEventListener('click', e => { if (e.target === $('#works')) $('#works').hidden = true; });
+
+  /* ---------- move my key to another device ---------- */
+  const keyMsg = $('#keyMsg'), keyApply = $('#keyApply');
+  function say(t, bad) { keyMsg.textContent = t; keyMsg.className = 'empty' + (bad ? ' bad' : ''); keyMsg.hidden = !t; }
+  function fmtKey(k) { return (k.match(/.{1,4}/g) || []).join('-'); }
+  $('#keyCopy').addEventListener('click', async () => {
+    const k = window.hwasil && window.hwasil.getKey ? fmtKey(window.hwasil.getKey()) : '';
+    if (!k) { say('열쇠를 찾지 못했어요. 새로고침해 주세요.', true); return; }
+    let ok = false;
+    try { await navigator.clipboard.writeText(k); ok = true; } catch (e) {}
+    const box = $('#keyShow'); box.value = k; box.hidden = false;
+    if (ok) say('복사했어요. 다른 기기에서 아래 칸에 붙여넣으면 돼요. (메모장이나 나에게 보내기 같은 곳에 두면 편해요)');
+    else { box.focus(); box.select(); say('자동 복사가 안 돼요. 위 칸을 길게 눌러 직접 복사해 주세요.', true); }
+  });
+  let keyArm = 0;
+  function keyDisarm() { clearTimeout(keyArm); keyArm = 0; keyApply.textContent = '이 열쇠로 바꾸기'; keyApply.classList.remove('danger'); }
+  $('#keyInput').addEventListener('input', () => { keyDisarm(); say(''); });
+  keyApply.addEventListener('click', () => {
+    const raw = $('#keyInput').value.toLowerCase().replace(/[^0-9a-f]/g, '');
+    if (raw.length !== 32) { say('열쇠가 맞지 않아요. 복사한 열쇠를 그대로 붙여넣어 주세요.', true); return; }
+    if (window.hwasil.getKey() === raw) { say('이미 이 기기에서 쓰는 열쇠예요.'); return; }
+    if (!keyArm) {
+      keyApply.textContent = '정말 바꿀까요? 지금 열쇠는 먼저 복사해 두세요'; keyApply.classList.add('danger');
+      keyArm = setTimeout(keyDisarm, 6000); return;
+    }
+    keyDisarm();
+    if (!window.hwasil.setKey(raw)) { say('열쇠를 바꾸지 못했어요. 브라우저 저장이 막혀 있는지 확인해 주세요.', true); return; }
+    say('바꿨어요. 다시 불러오는 중…'); setTimeout(() => location.reload(), 400);
+  });
 
   function sitAt(i) {
     const e = easels[i]; pos.x = e.sit.x; pos.z = e.sit.z; heading = e.heading; camYaw = heading + Math.PI; walkAmp = 0; myEasel = i;
@@ -1364,12 +1457,32 @@ button.chip { pointer-events: auto; cursor: pointer; }
     let iy = joy.y + ((keys['w'] || keys['arrowup']) ? 1 : 0) - ((keys['s'] || keys['arrowdown']) ? 1 : 0);
     const len = Math.hypot(ix, iy); if (len > 1) { ix /= len; iy /= len; }
     const m = Math.min(1, len);
+    if (goal && m > 0.08) goal = null;
     if (started && !pad.open && !watch.open && m > 0.08) {
       const sy = Math.sin(camYaw), cy = Math.cos(camYaw);
       const dx = cy * ix - sy * iy, dz = -sy * ix - cy * iy, dl = Math.hypot(dx, dz) || 1, sp = SPEED * m;
       tryMove(dx / dl * sp * dt, dz / dl * sp * dt);
       heading += angDiff(heading, Math.atan2(dx, dz)) * Math.min(1, dt * 12);
       walkAmp = lerp(walkAmp, 1, Math.min(1, dt * 10)); walkPhase += dt * (6 + sp * 0.9);
+    } else if (goal && started && !pad.open && !watch.open) {
+      const tg = walkTarget(), gx = tg.x - pos.x, gz = tg.z - pos.z, gd = Math.hypot(gx, gz);
+      const g0 = goal;
+      if (!tg.way && gd < 0.5) {
+        goal = null; walkAmp = lerp(walkAmp, 0, 0.5);
+        if (occupied(g0.idx)) openWatch(g0.idx); else sit(g0.idx);
+      } else {
+        const ox = pos.x, oz = pos.z, sp = SPEED * 0.9;
+        tryMove(gx / (gd || 1) * sp * dt, gz / (gd || 1) * sp * dt);
+        heading += angDiff(heading, Math.atan2(gx, gz)) * Math.min(1, dt * 12);
+        walkAmp = lerp(walkAmp, 1, Math.min(1, dt * 10)); walkPhase += dt * (6 + sp * 0.9);
+        g0.stuck = Math.hypot(pos.x - ox, pos.z - oz) < sp * dt * 0.3 ? g0.stuck + dt : 0;
+        if (g0.stuck > 0.8) {
+          const near = Math.hypot(g0.x - pos.x, g0.z - pos.z) < 4;
+          goal = null;
+          if (near) { if (occupied(g0.idx)) openWatch(g0.idx); else sit(g0.idx); }
+          else toast('길이 막혔어요. 조이스틱으로 가까이 가 주세요', 4000);
+        }
+      }
     } else walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10));
     swing(me, walkPhase, walkAmp);
     player.position.set(pos.x, 0.0 + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp, pos.z);
