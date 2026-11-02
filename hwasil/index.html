@@ -217,7 +217,12 @@ body.padOpen #hud { visibility: hidden; }
 .padTop input { flex: 1; min-width: 0; }
 .padStatus { min-height: 18px; font-size: 13px; color: var(--muted); text-align: center; }
 .padStatus.bad { color: var(--danger); font-weight: 700; }
-.padBoard { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.sizeMini { display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border: 2px solid var(--ink); border-radius: 50%; background: #fffdf7; overflow: hidden; flex: 0 0 auto; }
+.sizeMini i { display: block; border-radius: 50%; background: #1c1a18; }
+.sizeFloat { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: none; z-index: 3; }
+.sizeFloat i { display: block; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 3.5px rgba(36, 32, 28, 0.75); }
+.sizeFloat b { font: 400 22px/1 var(--font-display); background: rgba(36, 32, 28, 0.8); color: #fffdf7; padding: 5px 14px; border-radius: 999px; }
+.padBoard { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .watchTitle { flex: 1; min-width: 0; text-align: center; font: 400 26px/1.2 var(--font-display); overflow-wrap: anywhere; }
 #padCanvas, #watchCanvas {
   display: block;
@@ -322,7 +327,7 @@ body.padOpen #hud { visibility: hidden; }
   <div class="padView" id="padView" aria-label="풍경 둘러보기"><span class="lookHint" id="lookHint">끌어서 둘러보기 · 두 번 누르면 처음 방향</span></div>
   <div class="padMain" id="padMain">
   <div class="padStatus" id="padStatus" role="status" aria-live="polite"></div>
-  <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas></div>
+  <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas><div class="sizeFloat" id="sizeFloat" hidden aria-hidden="true"><i></i><b></b></div></div>
   <div class="padTools">
     <div class="seg" id="viewSeg" role="group" aria-label="풍경 보기" hidden>
       <button type="button" data-view="off">풍경 끔</button>
@@ -335,7 +340,7 @@ body.padOpen #hud { visibility: hidden; }
       <button type="button" data-tool="b">붓</button>
       <button type="button" data-tool="e">지우개</button>
     </div>
-    <label class="size" for="padSize">굵기 <input id="padSize" type="range" min="2" max="40" value="6"></label>
+    <label class="size" for="padSize">굵기 <span class="sizeMini" aria-hidden="true"><i id="sizeMini"></i></span> <input id="padSize" type="range" min="2" max="60" value="6"></label>
     <button class="btn" id="padUndo" type="button">되돌리기</button>
     <button class="btn" id="padClear" type="button">전체 지우기</button>
   </div>
@@ -1252,15 +1257,30 @@ body.padOpen #hud { visibility: hidden; }
   SW.forEach((c, i) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'sw' + (i === 0 ? ' on' : ''); b.style.background = c; b.setAttribute('aria-label', '색 ' + (i + 1));
     b.addEventListener('click', () => {
-      pad.color = c; document.querySelectorAll('.sw').forEach(x => x.classList.remove('on')); b.classList.add('on');
+      pad.color = c; document.querySelectorAll('.sw').forEach(x => x.classList.remove('on')); b.classList.add('on'); paintPreview(pad.open);
       if (pad.tool === 'e') setTool('p');
     });
     $('#swatches').appendChild(b);
   });
   function setStatus(t, bad) { statusEl.textContent = t || ''; statusEl.className = 'padStatus' + (bad ? ' bad' : ''); }
-  function setTool(t) { pad.tool = t; document.querySelectorAll('#tools button').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); }
+  /* live brush preview: a dot with the exact on-canvas size (shown while the slider moves, and when the tool or colour changes) */
+  let sizeT = 0;
+  const TOOL_NAME = { p: '연필', b: '붓', e: '지우개' };
+  function brushPx() { const k = (parseFloat(padCv.style.width) || padCv.clientWidth || 300) / pad.W; return Math.max(2, Math.round(pad.size * (pad.tool === 'p' ? 1 : 2) * k)); }
+  function paintPreview(flash) {
+    const d = brushPx(), col = pad.tool === 'e' ? '#fffdf7' : pad.color, a = pad.tool === 'b' ? 0.55 : 1;
+    const mini = $('#sizeMini'), md = Math.min(d, 30);
+    mini.style.width = md + 'px'; mini.style.height = md + 'px'; mini.style.background = col; mini.style.opacity = String(a);
+    mini.style.outline = pad.tool === 'e' ? '1px dashed #6d655b' : '';
+    if (!flash) return;
+    const f = $('#sizeFloat'), dot = f.firstElementChild;
+    dot.style.width = d + 'px'; dot.style.height = d + 'px'; dot.style.background = col; dot.style.opacity = String(a);
+    f.lastElementChild.textContent = TOOL_NAME[pad.tool] + ' · 굵기 ' + pad.size; f.hidden = false;
+    clearTimeout(sizeT); sizeT = setTimeout(() => { f.hidden = true; }, 1000);
+  }
+  function setTool(t) { pad.tool = t; document.querySelectorAll('#tools button').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); paintPreview(pad.open); }
   document.querySelectorAll('#tools button').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
-  $('#padSize').addEventListener('input', e => { pad.size = Number(e.target.value) || 6; });
+  $('#padSize').addEventListener('input', e => { pad.size = Number(e.target.value) || 6; paintPreview(true); });
 
   function rebuildBase() {
     baseCtx.fillStyle = PAPER; baseCtx.fillRect(0, 0, baseCv.width, baseCv.height);
@@ -1280,7 +1300,7 @@ body.padOpen #hud { visibility: hidden; }
     padCv.width = Math.round(cw * dpr); padCv.height = Math.round(ch * dpr);
     baseCv.width = padCv.width; baseCv.height = padCv.height;
     sc = padCv.width / pad.W;
-    rebuildBase(); present();
+    rebuildBase(); present(); paintPreview(false);
   }
   /* views: 'off' = full sheet, 'split' = scenery on top, 'ghost' = scenery behind a see-through sheet */
   function viewFor(easel) {
