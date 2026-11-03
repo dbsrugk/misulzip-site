@@ -199,6 +199,11 @@ const { start, vis, until, check, done } = require('./lib');
   check(await p.evaluate(() => !document.querySelector('#exAsk').hidden && /모나리자/.test(document.querySelector('#exAskText').textContent) && /레오나르도/.test(document.querySelector('#exAskNote').textContent)), 'tapping a masterpiece opens the docent card');
   await p.click('#dcClose'); await p.waitForTimeout(200);
   check(await p.evaluate(i => { const s = window.__hw.slots[i]; return !!s.ex && s.reserved && !!s.cat; }, mi), 'a masterpiece frame is not an empty frame to hang on');
+  /* people in the museum */
+  check(await until(p, () => window.__hw.npcs() === 7, null, 20), 'a docent and six visitors are in the museum');
+  await p.evaluate(() => window.__hw.talk()); await p.waitForTimeout(300);
+  check(await p.evaluate(() => !document.querySelector('#exAsk').hidden && /도슨트/.test(document.querySelector('#exAskText').textContent + document.querySelector('#exAskNote').textContent)), 'the docent talks');
+  await p.click('#dtClose'); await p.waitForTimeout(200);
   /* when the catalogue gets a picture it is drawn into the frame */
   const imgData = await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 80; c.height = 120; const x = c.getContext('2d'); x.fillStyle = '#2244ee'; x.fillRect(0, 0, 80, 120); return c.toDataURL('image/png'); });
   await p.evaluate(([i, u]) => { const s = window.__hw.slots[i]; s.cat.img = u; s.live = false; }, [mi, imgData]);
