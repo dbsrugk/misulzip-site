@@ -572,8 +572,8 @@ body.padOpen #hud { visibility: hidden; }
   const bx = (w, h, d) => new T.BoxGeometry(w, h, d);
 
   /* ---------- the studio room ---------- */
-  const RM = { hx: 32, hz: 24, h: 18 };                  /* a tall hall */
-  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, DOOR = 5.2, DSH = 7.6;   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
+  const RM = { hx: 32, hz: 24, h: 26 };                  /* a very tall hall: pictures hang low, chandeliers and beams far above */
+  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, DOOR = 5.2, DSH = 10;   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
   const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 };
   const colliders = [];
@@ -685,7 +685,7 @@ body.padOpen #hud { visibility: hidden; }
     const g = new T.Group(); g.position.set(0, 0, -RM.hz + 0.04); scene.add(g); hang(g, 'z', -RM.hz, 1);
     const f = L(0xf8f5ee);
     [-18, -9, 0, 9, 18].forEach(x => {
-      const wy = 4.2, wr = 3.5, wh = 7.4;                                  /* arched window: straight part wh, arch of radius wr on top */
+      const wy = 4.2, wr = 3.5, wh = 13;                                  /* arched window: straight part wh, arch of radius wr on top */
       const glass = new T.Mesh(new T.ShapeGeometry(archShape(wr, wh), 18), B(0xfff3c8)); put(g, glass, x, wy, 0);
       const fs = archShape(wr + 0.3, wh); fs.holes.push(archShape(wr, wh));
       const fg = new T.ExtrudeGeometry(fs, { depth: 0.5, bevelEnabled: false, curveSegments: 18 }); put(g, new T.Mesh(fg, f), x, wy, -0.05);
@@ -731,7 +731,7 @@ body.padOpen #hud { visibility: hidden; }
       tex.needsUpdate = true;
     }
     draw();
-    const sg = new T.Mesh(new T.PlaneGeometry(6.4, 2.0), new T.MeshBasicMaterial({ map: tex })); sg.position.set(0, 15.0, RM.hz - 0.1); sg.rotation.y = Math.PI; scene.add(sg); seam.push(sg);
+    const sg = new T.Mesh(new T.PlaneGeometry(6.4, 2.0), new T.MeshBasicMaterial({ map: tex })); sg.position.set(0, 19.6, RM.hz - 0.1); sg.rotation.y = Math.PI; scene.add(sg); seam.push(sg);
     if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '전시관함께그린그림이걸려있어요').then(draw).catch(() => {});
     [-5, 5].forEach(sx => {
       const pg = new T.Group(); scene.add(pg); partGroups[sx] = pg; addOccluder(pg, sx - 0.9, 0, RM.hz + 15 - 8.8, sx + 0.9, 9.2, RM.hz + 15 + 8.8);
@@ -761,7 +761,7 @@ body.padOpen #hud { visibility: hidden; }
     const beam = (w, d, x, z) => quiet(put(scene, new T.Mesh(bx(w, 1.1, d), beamM), x, RM.h - 1.6, z));
     [-16, -8, 0, 8, 16].forEach(z => beam(RM.hx * 2 - 0.8, 0.9, 0, z)); [-24, -8, 8, 24].forEach(x => beam(0.9, RM.hz * 2 - 0.8, x, 0));
     /* ceilings: they face down, so from above (the zoomed-out camera) they are invisible, from inside you see them */
-    const ceil = (w, d, x, z) => { const m = new T.Mesh(new T.PlaneGeometry(w, d), B(0xf3ead6)); m.rotation.x = Math.PI / 2; m.position.set(x, RM.h, z); m.userData.noShadow = true; scene.add(m); return m; };
+    const ceil = (w, d, x, z) => { const m = new T.Mesh(new T.PlaneGeometry(w, d), B(0xe9dfc8)); m.rotation.x = Math.PI / 2; m.position.set(x, RM.h, z); m.userData.noShadow = true; scene.add(m); return m; };
     ceil(RM.hx * 2, RM.hz * 2, 0, 0); ceil(GX * 2, GL, 0, RM.hz + GL / 2);
     [RM.hz + 7, RM.hz + 15, RM.hz + 23].forEach(z => beam(GX * 2 - 0.6, 0.9, 0, z)); [-7, 7].forEach(x => beam(0.9, GL - 0.6, x, RM.hz + GL / 2));
     const gc = document.createElement('canvas'); gc.width = gc.height = 128; const gx = gc.getContext('2d'), gr = gx.createRadialGradient(64, 64, 4, 64, 64, 62);
@@ -769,12 +769,12 @@ body.padOpen #hud { visibility: hidden; }
     const glowTex = new T.CanvasTexture(gc);
     [[-18, 0], [0, 0], [18, 0], [0, RM.hz + 10], [0, RM.hz + 22]].forEach(c => {
       const g = new T.Group(); g.position.set(c[0], 0, c[1]); scene.add(g); g.userData.noShadow = true;
-      put(g, new T.Mesh(cyl(0.05, 0.05, 4.2, 5), gold), 0, RM.h - 1.6 - 2.1, 0);
-      const ring = new T.Group(); ring.position.y = RM.h - 5.8; g.add(ring);
+      put(g, new T.Mesh(cyl(0.05, 0.05, 6.6, 5), gold), 0, RM.h - 1.6 - 3.3, 0);
+      const ring = new T.Group(); ring.position.y = RM.h - 8.4; g.add(ring);
       put(ring, new T.Mesh(new T.TorusGeometry(2.3, 0.14, 8, 30), gold), 0, 0, 0).rotation.x = Math.PI / 2;
       put(ring, new T.Mesh(new T.TorusGeometry(1.2, 0.1, 8, 24), gold), 0, 0.5, 0).rotation.x = Math.PI / 2;
       for (let k = 0; k < 8; k++) { const a = k / 8 * 6.2832; put(ring, new T.Mesh(new T.SphereGeometry(0.24, 8, 6), B(0xfff2b0)), Math.cos(a) * 2.3, 0.3, Math.sin(a) * 2.3); }
-      const glow = new T.Sprite(new T.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); glow.scale.set(11, 11, 1); glow.position.y = 0.2; ring.add(glow);
+      const glow = new T.Sprite(new T.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); glow.scale.set(6.5, 6.5, 1); glow.material.opacity = 0.55; glow.position.y = 0.2; ring.add(glow);
       chandeliers.push({ g: g, ring: ring });
     });
   })();
