@@ -10,14 +10,15 @@ const { start, vis, until, check, done } = require('./lib');
   check(await B.evaluate(l => Array.from(window.__hw.remotes.values()).some(r => r.look === l), lookA), "B sees A's new look: " + lookA);
   await A.click('#emoteBtn'); await A.click('#emoteBar .emo[data-e=wave]'); await B.waitForTimeout(900);
   check(await B.evaluate(() => Array.from(window.__hw.remotes.values()).some(r => r.av.emote && r.av.emote.id === 'wave')), "B sees A's wave emote");
-  let tapped = false;                                          /* both start at the same spot, so the same screen point hits the same easel */
-  for (let y = 60; y < 700 && !tapped; y += 30) for (let x = 20; x < 380 && !tapped; x += 25) { await A.mouse.click(x, y); await A.waitForTimeout(60); tapped = await A.evaluate(() => { const e = document.querySelector('#toast'); return !!(e && !e.hidden && /걸어가요/.test(e.textContent)); }); }
+  let tapped = false;                                          /* both start at the same spot, so the same easel is in view for both */
+  const eIdx = await A.evaluate(() => { for (let i = 0; i < 6; i++) { const p = window.__hw.easelXY(i); if (p.ok && p.x > 20 && p.x < 370 && p.y > 100 && p.y < 620) return i; } return -1; });
+  if (eIdx >= 0) { const xy = await A.evaluate(i => window.__hw.easelXY(i), eIdx); await A.mouse.click(xy.x, xy.y); await A.waitForTimeout(300); tapped = await A.evaluate(() => { const e = document.querySelector('#toast'); return !!(e && !e.hidden && /걸어가요/.test(e.textContent)); }); }
   check(tapped, 'A taps an easel');
   check(await until(A, () => !document.querySelector('#pad').hidden, null, 90), 'A sits and the pad opens');
   const box = await A.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   await A.mouse.move(box.x + box.w * 0.2, box.y + box.h * 0.3); await A.mouse.down(); await A.mouse.move(box.x + box.w * 0.8, box.y + box.h * 0.7, { steps: 12 }); await A.mouse.up(); await A.waitForTimeout(1200);
   let w = false;
-  for (let y = 60; y < 700 && !w; y += 30) for (let x = 20; x < 380 && !w; x += 25) { await B.mouse.click(x, y); await B.waitForTimeout(40); w = await vis(B, '#watch'); }
+  { const xy = await B.evaluate(i => window.__hw.easelXY(i), eIdx); await B.mouse.click(xy.x, xy.y); await B.waitForTimeout(400); w = await vis(B, '#watch'); }
   check(w, 'B taps the occupied easel and the watch view opens');
   await B.waitForTimeout(1500);
   const ink = w ? await B.evaluate(() => { const c = document.querySelector('#watchCanvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 90 && d[i + 1] < 90 && d[i + 2] < 90) n++; return n; }) : 0;

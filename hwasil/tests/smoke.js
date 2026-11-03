@@ -210,6 +210,7 @@ const { start, vis, until, check, done } = require('./lib');
   check(await until(p, i => { const s = window.__hw.slots[i]; if (!s.live || !s.cv) return false; const d = s.cv.getContext('2d').getImageData(Math.floor(s.cv.width / 2), Math.floor(s.cv.height / 2), 1, 1).data; return d[2] > 200 && d[0] < 90; }, mi, 30), 'the picture from the catalogue is drawn into its frame');
   /* light loading: the list carries only summaries, the lines of a work are fetched when I come close */
   check(await p.evaluate(() => { const r = window.__rpcs || []; return r.includes('hwasil_gallery_index') && !r.includes('hwasil_gallery_list'); }), 'the gallery list is the light index (no lines)');
+  await place(9, 'west2.png'); await p.waitForTimeout(1500);                        /* far from the garden */
   check(await p.evaluate(gi => { const s = window.__hw.slots[gi]; return !!s.ex && !s.live && !s.cv; }, gi), 'a far frame holds its work as a summary only (no private picture)');
   await place(7, 'garden.png');
   check(await until(p, gi => window.__hw.slots[gi].live && !!window.__hw.slots[gi].cv, gi, 30), 'coming close loads the picture of that frame');
