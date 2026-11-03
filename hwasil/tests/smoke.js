@@ -166,6 +166,15 @@ const { start, vis, until, check, done } = require('./lib');
   check((await p.locator('#viewerAct .btn').count()) === 1, 'admin sees a take-down button on another painter\'s frame');
   await p.locator('#viewerAct .btn').click(); await p.waitForTimeout(200); await p.locator('#viewerAct .btn').click(); await p.waitForTimeout(1500);
   check(await p.evaluate(j => !window.__hw.slots[j].ex && !window.__db.gallery['zz_other'], gj), 'the admin takes the frame down');
+  /* sky: night and rain can be chosen in the settings and the scene follows (and nothing breaks: shader errors fail the run) */
+  await p.click('#worksBtn'); await p.waitForTimeout(300); await p.evaluate(() => { document.querySelector('#tBox').open = true; });
+  await p.click('#tSeg button[data-t=night]'); await p.click('#wSeg button[data-w=rain]'); await p.click('#worksClose'); await p.waitForTimeout(300);
+  await place(3, 'night_beach.png');
+  await p.waitForTimeout(2500);
+  check(await p.evaluate(() => { const a = window.__hw.atm(); return a.night > 0.9 && a.rain > 0.3 && a.weather === 'rain'; }), 'the sky follows the settings: night and rain');
+  await place(0, 'night_studio.png');
+  await p.click('#worksBtn'); await p.waitForTimeout(300); await p.click('#tSeg button[data-t=auto]'); await p.click('#wSeg button[data-w=auto]'); await p.click('#worksClose'); await p.waitForTimeout(300);
+  check(await p.evaluate(() => localStorage.getItem('hw-time') === 'auto' && localStorage.getItem('hw-wx') === 'auto'), 'time and weather go back to automatic (follow the clock) and are remembered');
   /* light loading: the list carries only summaries, the lines of a work are fetched when I come close */
   check(await p.evaluate(() => { const r = window.__rpcs || []; return r.includes('hwasil_gallery_index') && !r.includes('hwasil_gallery_list'); }), 'the gallery list is the light index (no lines)');
   check(await p.evaluate(gi => { const s = window.__hw.slots[gi]; return !!s.ex && !s.live && !s.cv; }, gi), 'a far frame holds its work as a summary only (no private picture)');

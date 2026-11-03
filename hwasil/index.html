@@ -321,6 +321,8 @@ body.padOpen #hud { visibility: hidden; }
 #hangList button { border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); padding: 6px; font: 400 16px/1.2 var(--font-display); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink); }
 #hangList canvas { max-width: 100%; border-radius: 6px; }
 #adBox .nameRow { margin-top: 8px; }
+#tBox .dressRow { margin-top: 10px; }
+#tBox .seg { flex-wrap: wrap; }
 #hangBanner { background: var(--yellow); }
 #nameBox { flex: 0 0 auto; border-top: 2px dashed var(--ink); padding-top: 10px; }
 #nameBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
@@ -414,6 +416,12 @@ body.padOpen #hud { visibility: hidden; }
       <summary>음악</summary>
       <p class="empty">잔잔한 힐링 음악이 흘러요. 화실, 전시관, 야외마다 분위기가 조금씩 달라요. 소리는 위쪽 🎵 버튼으로 켜고 끌 수 있어요.</p>
       <input id="volRange" type="range" min="0" max="100" step="1" aria-label="음악 크기">
+    </details>
+    <details id="tBox">
+      <summary>시간과 날씨</summary>
+      <p class="empty">하늘은 시계에 맞춰 낮, 노을, 밤으로 돌고(30분에 한 바퀴) 날씨도 바뀌어요. 모두 같은 하늘을 봐요. 직접 고르면 이 화면에서만 바뀌어요.</p>
+      <div class="dressRow"><div class="lab">시간</div><div class="seg" id="tSeg" role="group" aria-label="시간"><button type="button" data-t="auto">자동</button><button type="button" data-t="day">낮</button><button type="button" data-t="sunset">노을</button><button type="button" data-t="night">밤</button></div></div>
+      <div class="dressRow"><div class="lab">날씨</div><div class="seg" id="wSeg" role="group" aria-label="날씨"><button type="button" data-w="auto">자동</button><button type="button" data-w="clear">맑음</button><button type="button" data-w="rain">비</button><button type="button" data-w="snow">눈</button><button type="button" data-w="fog">안개</button></div></div>
     </details>
     <details id="adBox">
       <summary>관리자</summary>
@@ -566,11 +574,30 @@ body.padOpen #hud { visibility: hidden; }
   const SUN = new T.Vector3(-0.5, 0.62, -0.6).normalize();       /* direction towards the sun */
   const sky = new T.Mesh(new T.SphereGeometry(350, 24, 14), new T.ShaderMaterial({
     side: T.BackSide, depthWrite: false, fog: false,
-    uniforms: { top: { value: new T.Color(0x6fb3ea) }, mid: { value: new T.Color(0xc4e4f6) }, bot: { value: new T.Color(0xf8eed8) }, sunDir: { value: SUN } },
+    uniforms: { top: { value: new T.Color(0x6fb3ea) }, mid: { value: new T.Color(0xc4e4f6) }, bot: { value: new T.Color(0xf8eed8) }, sunDir: { value: SUN }, glowCol: { value: new T.Color(1.0, 0.88, 0.62) } },
     vertexShader: 'varying vec3 vP; void main() { vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'uniform vec3 top; uniform vec3 mid; uniform vec3 bot; uniform vec3 sunDir; varying vec3 vP; void main() { vec3 d = normalize(vP); float h = d.y; vec3 c = mix(bot, mid, smoothstep(-0.02, 0.14, h)); c = mix(c, top, smoothstep(0.12, 0.7, h)); float s = max(dot(d, normalize(sunDir)), 0.0); c += vec3(1.0, 0.88, 0.62) * (pow(s, 6.0) * 0.28 + pow(s, 80.0) * 0.5); gl_FragColor = vec4(c, 1.0); }'
+    fragmentShader: 'uniform vec3 top; uniform vec3 mid; uniform vec3 bot; uniform vec3 sunDir; uniform vec3 glowCol; varying vec3 vP; void main() { vec3 d = normalize(vP); float h = d.y; vec3 c = mix(bot, mid, smoothstep(-0.02, 0.14, h)); c = mix(c, top, smoothstep(0.12, 0.7, h)); float s = max(dot(d, normalize(sunDir)), 0.0); c += glowCol * (pow(s, 6.0) * 0.28 + pow(s, 80.0) * 0.5); gl_FragColor = vec4(c, 1.0); }'
   }));
   sky.renderOrder = -10; sky.frustumCulled = false; sky.userData.noShadow = true; scene.add(sky);
+  /* time of day and weather are shared state: ATM is updated every frame (see updateAtmosphere); other parts register hooks to follow it */
+  const ATM = { t: 0.27, night: 0, rain: 0, snow: 0, fog: 0, cloud: 0, weather: 'clear' };
+  const atmHooks = [], winMats = []; let beamMat = null;
+  const dotTexEarly = (function () { const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d'), g = x.createRadialGradient(16, 16, 1, 16, 16, 15); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,0.85)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 32, 32); return new T.CanvasTexture(c); })();
+  const starsMesh = (function () {
+    const n = 650, a = new Float32Array(n * 3); let sd = 11;
+    const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < n; i++) { const th = r() * 6.2832, y = 0.06 + r() * 0.94, q = Math.sqrt(1 - y * y); a[i * 3] = Math.cos(th) * q * 330; a[i * 3 + 1] = y * 330; a[i * 3 + 2] = Math.sin(th) * q * 330; }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(a, 3));
+    const m = new T.Points(g, new T.PointsMaterial({ size: 3.2, sizeAttenuation: false, map: dotTexEarly, color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+    m.renderOrder = -9; m.frustumCulled = false; m.userData.noShadow = true; m.visible = false; sky.add(m); return m;
+  })();
+  const moonSprite = (function () {
+    const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 6, 64, 64, 64);
+    g.addColorStop(0, 'rgba(255,255,245,1)'); g.addColorStop(0.28, 'rgba(250,250,235,1)'); g.addColorStop(0.34, 'rgba(220,230,255,0.45)'); g.addColorStop(1, 'rgba(180,200,255,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+    const m = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(c), transparent: true, depthWrite: false, fog: false, opacity: 0 }));
+    m.scale.set(46, 46, 1); m.position.set(0.45, 0.7, 0.5).normalize().multiplyScalar(320); m.renderOrder = -9; m.userData.noShadow = true; m.visible = false; sky.add(m); return m;
+  })();
   const camera = new T.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 1, 400);
   function onResize() {
     const w = window.innerWidth, h = window.innerHeight;
@@ -716,7 +743,7 @@ body.padOpen #hud { visibility: hidden; }
     const f = L(0xf8f5ee);
     [-18, -9, 0, 9, 18].forEach(x => {
       const wy = 4.2, wr = 3.5, wh = 13;                                  /* arched window: straight part wh, arch of radius wr on top */
-      const glass = new T.Mesh(new T.ShapeGeometry(archShape(wr, wh), 18), B(0xfff3c8)); put(g, glass, x, wy, 0);
+      const glass = new T.Mesh(new T.ShapeGeometry(archShape(wr, wh), 18), B(0xfff3c8)); put(g, glass, x, wy, 0); winMats.push(glass.material);
       const fs = archShape(wr + 0.3, wh); fs.holes.push(archShape(wr, wh));
       const fg = new T.ExtrudeGeometry(fs, { depth: 0.5, bevelEnabled: false, curveSegments: 18 }); put(g, new T.Mesh(fg, f), x, wy, -0.05);
       put(g, new T.Mesh(bx(0.2, wh + wr, 0.3), f), x, wy + (wh + wr) / 2, 0.1);
@@ -724,7 +751,7 @@ body.padOpen #hud { visibility: hidden; }
       put(g, new T.Mesh(bx(wr * 2 + 1.2, 0.35, 0.8), f), x, wy - 0.15, 0.25);
     });
     const sh = new T.Shape(); sh.moveTo(-26, 24); sh.lineTo(26, 24); sh.lineTo(34, 6); sh.lineTo(-18, 6); sh.closePath();
-    const m = new T.Mesh(new T.ShapeGeometry(sh), B(0xfff0b8, { transparent: true, opacity: 0.2, depthWrite: false }));
+    const m = new T.Mesh(new T.ShapeGeometry(sh), B(0xfff0b8, { transparent: true, opacity: 0.2, depthWrite: false })); beamMat = m.material;
     m.rotation.x = -Math.PI / 2; m.position.y = 0.04; scene.add(m);
   })();
 
@@ -840,7 +867,7 @@ body.padOpen #hud { visibility: hidden; }
     });
   })();
 
-  scene.add(new T.HemisphereLight(0xeaf3ff, 0x9aa57a, 0.55));
+  const hemi = new T.HemisphereLight(0xeaf3ff, 0x9aa57a, 0.55); scene.add(hemi);
   const key = new T.DirectionalLight(0xffefd0, 0.72); scene.add(key); scene.add(key.target);
   if (HI) {
     key.castShadow = true; key.shadow.mapSize.set(1024, 1024);
@@ -851,6 +878,103 @@ body.padOpen #hud { visibility: hidden; }
     const sx = Math.round(x), sz = Math.round(z);
     key.target.position.set(sx, 0, sz); key.position.set(sx + SUN.x * 50, SUN.y * 50, sz + SUN.z * 50); key.target.updateMatrixWorld();
   }
+
+
+  /* ---------- sky: time of day (follows the clock, 30 minutes per day, the same for everybody) and weather (changes every 12 minutes) ---------- */
+  const CYCLE = 1800, WX_SLOT = 720000;
+  const STOPS = [
+    { t: 0.00, top: 0x7aa0d8, mid: 0xf3c8b0, bot: 0xffd9a8, fog: 0xf0d6c4, hs: 0xffe3d0, hg: 0x9a8f78, hi: 0.5, sc: 0xffc9a0, si: 0.55, dir: [0.85, 0.2, -0.35], glow: 0xffc890, night: 0.1 },        /* sunrise */
+    { t: 0.12, top: 0x6fb3ea, mid: 0xc4e4f6, bot: 0xf8eed8, fog: 0xdfe9ec, hs: 0xeaf3ff, hg: 0x9aa57a, hi: 0.55, sc: 0xffefd0, si: 0.72, dir: [-0.5, 0.62, -0.6], glow: 0xffe09e, night: 0 },     /* day */
+    { t: 0.42, top: 0x6fb3ea, mid: 0xc4e4f6, bot: 0xf8eed8, fog: 0xdfe9ec, hs: 0xeaf3ff, hg: 0x9aa57a, hi: 0.55, sc: 0xffefd0, si: 0.72, dir: [-0.6, 0.5, -0.45], glow: 0xffe09e, night: 0 },
+    { t: 0.55, top: 0x4a5fa8, mid: 0xf09a6a, bot: 0xffc27a, fog: 0xe8b79a, hs: 0xffd0b0, hg: 0x8a7060, hi: 0.5, sc: 0xff9a55, si: 0.6, dir: [-0.85, 0.16, -0.3], glow: 0xff9a55, night: 0.15 },       /* sunset */
+    { t: 0.65, top: 0x23306a, mid: 0x6a5a9a, bot: 0xd88a8a, fog: 0x7a6a8a, hs: 0x9a9ad0, hg: 0x4a4a60, hi: 0.42, sc: 0x8a8ad0, si: 0.25, dir: [-0.9, 0.06, -0.2], glow: 0xc88aa0, night: 0.55 },       /* dusk */
+    { t: 0.78, top: 0x070d2a, mid: 0x14224a, bot: 0x2a3a66, fog: 0x1d2a4c, hs: 0x6f86c8, hg: 0x2c3350, hi: 0.42, sc: 0xaabbee, si: 0.3, dir: [0.45, 0.7, 0.5], glow: 0x6f86c8, night: 1 },         /* night */
+    { t: 0.92, top: 0x070d2a, mid: 0x14224a, bot: 0x2a3a66, fog: 0x1d2a4c, hs: 0x6f86c8, hg: 0x2c3350, hi: 0.42, sc: 0xaabbee, si: 0.3, dir: [0.55, 0.6, 0.4], glow: 0x6f86c8, night: 1 },
+    { t: 0.97, top: 0x1a2858, mid: 0x4a5a92, bot: 0xb08a9a, fog: 0x5a5c80, hs: 0xb0a0c8, hg: 0x4a4a60, hi: 0.44, sc: 0xb0a0c8, si: 0.3, dir: [0.7, 0.35, -0.1], glow: 0xb08a9a, night: 0.6 },    /* before dawn */
+    { t: 1.00, top: 0x7aa0d8, mid: 0xf3c8b0, bot: 0xffd9a8, fog: 0xf0d6c4, hs: 0xffe3d0, hg: 0x9a8f78, hi: 0.5, sc: 0xffc9a0, si: 0.55, dir: [0.85, 0.2, -0.35], glow: 0xffc890, night: 0.1 }
+  ].map(o => ({ t: o.t, top: new T.Color(o.top), mid: new T.Color(o.mid), bot: new T.Color(o.bot), fog: new T.Color(o.fog), hs: new T.Color(o.hs), hg: new T.Color(o.hg), hi: o.hi, sc: new T.Color(o.sc), si: o.si, dir: new T.Vector3(o.dir[0], o.dir[1], o.dir[2]), glow: new T.Color(o.glow), night: o.night }));
+  const cur = { top: new T.Color(), mid: new T.Color(), bot: new T.Color(), fog: new T.Color(), hs: new T.Color(), hg: new T.Color(), hi: 0, sc: new T.Color(), si: 0, dir: new T.Vector3(), glow: new T.Color(), night: 0 };
+  const atmMode = { time: store('hw-time') || 'auto', wx: store('hw-wx') || 'auto' };
+  const WARM = new T.Color(0xffe2bd), WIN_DAY = new T.Color(0xfff3c8), WIN_NIGHT = new T.Color(0x24335f), BEAM_DAY = new T.Color(0xfff0b8), BEAM_NIGHT = new T.Color(0x8fa6e8);
+  const dotTex = dotTexEarly;
+  const WHITE = new T.Color(0xffffff), FIREFLY = new T.Color(0xc9ff6a), FLY_DAY = new T.Color(0xfff3c0), tTop = new T.Color(), tMid = new T.Color(), tBot = new T.Color(), tFog = new T.Color();
+  let indoorK = 0, outK = 0;
+  const fr = x => x - Math.floor(x);
+  function weatherNow() { const r = fr(Math.sin(Math.floor(Date.now() / WX_SLOT) * 12.9898 + 4.1) * 43758.5453); return r < 0.5 ? 'clear' : r < 0.68 ? 'cloudy' : r < 0.82 ? 'rain' : r < 0.9 ? 'snow' : 'fog'; }
+  function stopsAt(t) {
+    let i = 0; while (i < STOPS.length - 2 && t >= STOPS[i + 1].t) i++;
+    const a = STOPS[i], b = STOPS[i + 1], f0 = clamp((t - a.t) / (b.t - a.t), 0, 1), f = f0 * f0 * (3 - 2 * f0);
+    ['top', 'mid', 'bot', 'fog', 'hs', 'hg', 'sc', 'glow'].forEach(k => cur[k].copy(a[k]).lerp(b[k], f));
+    cur.hi = lerp(a.hi, b.hi, f); cur.si = lerp(a.si, b.si, f); cur.night = lerp(a.night, b.night, f); cur.dir.copy(a.dir).lerp(b.dir, f).normalize();
+  }
+  function desat(c, k) { const l = c.r * 0.3 + c.g * 0.59 + c.b * 0.11; c.r += (l - c.r) * k; c.g += (l - c.g) * k; c.b += (l - c.b) * k; return c.multiplyScalar(1 - k * 0.18); }
+  /* weather particles around the player: rain streaks and snow flakes, only seen outdoors */
+  const WXB = 28, WXH = 22;
+  const rain = (function () {
+    const n = HI ? 1000 : 420, a = new Float32Array(n * 6), rx = new Float32Array(n), ry = new Float32Array(n), rz = new Float32Array(n);
+    for (let i = 0; i < n; i++) { rx[i] = (Math.random() - 0.5) * 2 * WXB; ry[i] = Math.random() * WXH; rz[i] = (Math.random() - 0.5) * 2 * WXB; }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(a, 3));
+    const m = new T.LineSegments(g, new T.LineBasicMaterial({ color: 0xc4d6ee, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+    m.frustumCulled = false; m.visible = false; m.userData.noShadow = true; scene.add(m); return { n: n, a: a, rx: rx, ry: ry, rz: rz, m: m, g: g };
+  })();
+  const snow = (function () {
+    const n = HI ? 520 : 220, a = new Float32Array(n * 3), rx = new Float32Array(n), ry = new Float32Array(n), rz = new Float32Array(n);
+    for (let i = 0; i < n; i++) { rx[i] = (Math.random() - 0.5) * 2 * WXB; ry[i] = Math.random() * WXH; rz[i] = (Math.random() - 0.5) * 2 * WXB; }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(a, 3));
+    const m = new T.Points(g, new T.PointsMaterial({ size: 0.42, map: dotTex, color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+    m.frustumCulled = false; m.visible = false; m.userData.noShadow = true; scene.add(m); return { n: n, a: a, rx: rx, ry: ry, rz: rz, m: m, g: g };
+  })();
+  function updateAtmosphere(dt, now) {
+    const tm = atmMode.time, t = tm === 'day' ? 0.27 : tm === 'sunset' ? 0.55 : tm === 'night' ? 0.85 : ((Date.now() / 1000) % CYCLE) / CYCLE;
+    const w = atmMode.wx === 'auto' ? weatherNow() : atmMode.wx;
+    const tc = w === 'rain' ? 0.85 : w === 'snow' ? 0.7 : w === 'cloudy' ? 0.8 : w === 'fog' ? 0.5 : 0, tr = w === 'rain' ? 1 : 0, ts = w === 'snow' ? 1 : 0, tf = w === 'fog' ? 1 : w === 'snow' ? 0.25 : w === 'rain' ? 0.15 : 0;
+    const f = 1 - Math.exp(-dt * 0.35);
+    ATM.cloud += (tc - ATM.cloud) * f; ATM.rain += (tr - ATM.rain) * f; ATM.snow += (ts - ATM.snow) * f; ATM.fog += (tf - ATM.fog) * f;
+    ATM.t = t; ATM.weather = w; stopsAt(t); ATM.night = cur.night;
+    const ck = ATM.cloud, fk = ATM.fog;
+    const top = desat(tTop.copy(cur.top), ck * 0.6), mid = desat(tMid.copy(cur.mid), ck * 0.6), bot = desat(tBot.copy(cur.bot), ck * 0.5), fog = desat(tFog.copy(cur.fog), ck * 0.5);
+    const u = sky.material.uniforms; u.top.value.copy(top); u.mid.value.copy(mid); u.bot.value.copy(bot); u.glowCol.value.copy(cur.glow).multiplyScalar(1 - ck * 0.75);
+    scene.background.copy(fog); scene.fog.color.copy(fog);
+    scene.fog.near = 95 - 70 * Math.min(1, fk + ATM.rain * 0.2); scene.fog.far = 330 - 220 * Math.min(1, fk) - 70 * ATM.rain;
+    SUN.copy(cur.dir);
+    key.color.copy(cur.sc); key.intensity = cur.si * (1 - ck * 0.5);
+    indoorK += ((pos.x < RM.hx - 0.5 ? 1 : 0) - indoorK) * Math.min(1, dt * 3); outK += ((pos.x > RM.hx - 3 ? 1 : 0) - outK) * Math.min(1, dt * 3);
+    hemi.color.copy(cur.hs).lerp(WARM, ATM.night * indoorK * 0.65); hemi.groundColor.copy(cur.hg);
+    hemi.intensity = cur.hi * (1 + ck * 0.08) + ATM.night * 0.38 * indoorK;                 /* at night the halls stay bright enough to look at the pictures */
+    const nk = ATM.night, sk = nk * nk * (1 - ck * 0.8);
+    starsMesh.material.opacity = sk; starsMesh.visible = sk > 0.02;
+    moonSprite.material.opacity = clamp((nk - 0.5) * 2, 0, 1) * (1 - ck * 0.75); moonSprite.visible = moonSprite.material.opacity > 0.02;
+    winMats.forEach(m => m.color.copy(WIN_DAY).lerp(WIN_NIGHT, nk));
+    if (beamMat) { beamMat.color.copy(BEAM_DAY).lerp(BEAM_NIGHT, nk); beamMat.opacity = 0.2 * (1 - nk) * (1 - ck * 0.6) + 0.07 * nk; }
+    for (let i = 0; i < atmHooks.length; i++) atmHooks[i](ATM, fog);
+    /* rain and snow */
+    const showR = ATM.rain * outK > 0.03, showS = ATM.snow * outK > 0.03;
+    rain.m.visible = showR; snow.m.visible = showS;
+    if (showR) {
+      rain.m.material.opacity = 0.9 * ATM.rain * outK; rain.m.position.set(pos.x, 0, pos.z);
+      for (let i = 0; i < rain.n; i++) {
+        rain.ry[i] -= 28 * dt; if (rain.ry[i] < 0) { rain.ry[i] += WXH; rain.rx[i] = (Math.random() - 0.5) * 2 * WXB; rain.rz[i] = (Math.random() - 0.5) * 2 * WXB; }
+        const o = i * 6; rain.a[o] = rain.rx[i]; rain.a[o + 1] = rain.ry[i]; rain.a[o + 2] = rain.rz[i]; rain.a[o + 3] = rain.rx[i] + 0.14; rain.a[o + 4] = rain.ry[i] + 1.5; rain.a[o + 5] = rain.rz[i] + 0.05;
+      }
+      rain.g.attributes.position.needsUpdate = true;
+    }
+    if (showS) {
+      snow.m.material.opacity = 0.9 * ATM.snow * outK; snow.m.position.set(pos.x, 0, pos.z);
+      for (let i = 0; i < snow.n; i++) {
+        snow.ry[i] -= 1.7 * dt; snow.rx[i] += Math.sin(now * 0.8 + i) * 0.5 * dt; snow.rz[i] += Math.cos(now * 0.6 + i * 1.3) * 0.4 * dt;
+        if (snow.ry[i] < 0) { snow.ry[i] += WXH; snow.rx[i] = (Math.random() - 0.5) * 2 * WXB; snow.rz[i] = (Math.random() - 0.5) * 2 * WXB; }
+        snow.a[i * 3] = snow.rx[i]; snow.a[i * 3 + 1] = snow.ry[i]; snow.a[i * 3 + 2] = snow.rz[i];
+      }
+      snow.g.attributes.position.needsUpdate = true;
+    }
+  }
+  function paintAtmUi() {
+    document.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === atmMode.time));
+    document.querySelectorAll('#wSeg button').forEach(b => b.classList.toggle('on', b.dataset.w === atmMode.wx));
+  }
+  document.querySelectorAll('#tSeg button').forEach(b => b.addEventListener('click', () => { atmMode.time = b.dataset.t; store('hw-time', atmMode.time); paintAtmUi(); }));
+  document.querySelectorAll('#wSeg button').forEach(b => b.addEventListener('click', () => { atmMode.wx = b.dataset.w; store('hw-wx', atmMode.wx); paintAtmUi(); }));
+  paintAtmUi();
 
   /* props: rug, paint splatters, shelves, sculptures */
   const PAL = [0xd9342b, 0xf08a24, 0xf3c431, 0x3f9b4f, 0x1fa3a3, 0x2c47c8, 0x7a3fb0, 0xec7fb0];
@@ -1426,7 +1550,7 @@ body.padOpen #hud { visibility: hidden; }
     const flat = (geo, mat, x, y, z) => { const m = new T.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; m.receiveShadow = true; return at(m, x, y, z); };
     /* animated water: depth colour, drifting ripples, sparkles, foam lines at the shore (one shader for the sea and the lake) */
     function waterMat(o) {
-      return new T.ShaderMaterial({
+      const wmt = new T.ShaderMaterial({
         fog: false,
         uniforms: { uTime: swayT, cA: { value: new T.Color(o.shallow) }, cB: { value: new T.Color(o.deep) }, cFog: { value: new T.Color(FOG_COL) }, uMode: { value: o.mode }, uShore: { value: o.shore || 0 }, uCenter: { value: new T.Vector2(o.cx || 0, o.cz || 0) }, uRadius: { value: o.radius || 1 }, uDepth: { value: o.depth }, uAmp: { value: o.amp } },
         vertexShader: 'uniform float uTime; uniform float uAmp; uniform float uMode; uniform float uShore; uniform float uRadius; uniform vec2 uCenter; varying vec3 vW; varying float vD;\n' +
@@ -1444,6 +1568,9 @@ body.padOpen #hud { visibility: hidden; }
           'float band = sin(d * 1.3 - uTime * 1.5) * 0.5 + 0.5; float foam = smoothstep(0.82, 1.0, band) * (1.0 - smoothstep(0.0, 7.0, d)) * (uMode > 0.5 ? 0.0 : 1.0); foam += 1.0 - smoothstep(0.0, 0.7, d);\n' +
           'col = mix(col, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.8); gl_FragColor = vec4(mix(col, cFog, smoothstep(95.0, 330.0, vD)), 1.0); }'
       });
+      const wa = new T.Color(o.shallow), wb = new T.Color(o.deep);
+      atmHooks.push((A, fog) => { wmt.uniforms.cFog.value.copy(fog); const k = 1 - A.night * 0.62 - A.cloud * 0.12; wmt.uniforms.cA.value.copy(wa).multiplyScalar(k); wmt.uniforms.cB.value.copy(wb).multiplyScalar(k); });
+      return wmt;
     }
     const wood = L(0xb89a6a), woodD2 = L(0x7b5a36);
 
@@ -1504,6 +1631,7 @@ body.padOpen #hud { visibility: hidden; }
     }
     /* clouds */
     const cloudM = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.92, fog: false });
+    atmHooks.push((A, fog) => { cloudM.color.copy(fog).lerp(WHITE, 0.55 * (1 - A.night)).multiplyScalar(1 - A.night * 0.55 - A.cloud * 0.12); cloudM.opacity = 0.92 + A.cloud * 0.07; });
     for (let i = 0; i < 9; i++) {
       const g = new T.Group();
       for (let k = 0; k < 4; k++) { const b = new T.Mesh(new T.SphereGeometry(4 + rnd() * 3, 10, 8), cloudM); b.position.set(k * 5 - 7, rnd() * 2, (rnd() - 0.5) * 3); b.scale.set(1.3, 0.7, 1); g.add(b); }
@@ -1750,7 +1878,8 @@ body.padOpen #hud { visibility: hidden; }
       for (let i = 0; i < PC; i++) { parr[i * 3] = 85 + (rnd() - 0.5) * 56; parr[i * 3 + 1] = rnd() * 9; parr[i * 3 + 2] = (rnd() - 0.5) * 56; }
       pg.setAttribute('position', new T.BufferAttribute(parr, 3));
       const pts = new T.Points(pg, new T.PointsMaterial({ size: 0.17, color: 0xfff3c0, transparent: true, opacity: 0.75, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
-      pts.frustumCulled = false; scene.add(pts);
+      pts.frustumCulled = false; scene.add(pts); pts.material.map = dotTex;
+      atmHooks.push(A => { pts.material.color.copy(FLY_DAY).lerp(FIREFLY, A.night); pts.material.size = 0.17 + A.night * 0.16; pts.material.opacity = (0.75 + A.night * 0.25) * (1 - A.rain * 0.8 - A.snow * 0.5); });
       anim.push((dt, t) => {
         for (let i = 0; i < PC; i++) {
           parr[i * 3] += (0.5 + Math.sin(t * 0.5 + i) * 0.4) * dt; parr[i * 3 + 1] += Math.sin(t * 0.9 + i * 1.7) * 0.35 * dt; parr[i * 3 + 2] += Math.cos(t * 0.4 + i * 0.9) * 0.3 * dt;
@@ -2888,7 +3017,7 @@ body.padOpen #hud { visibility: hidden; }
   const music = (function () {
     const AC = window.AudioContext || window.webkitAudioContext;
     const CHORDS = [[48, 55, 59, 64], [45, 55, 60, 64], [41, 53, 57, 64], [43, 55, 59, 62]], PENT = [0, 2, 4, 7, 9], CL = 9;
-    let ctx = null, master = null, verbIn = null, dryIn = null, windG = null, waterG = null;
+    let ctx = null, master = null, verbIn = null, dryIn = null, windG = null, waterG = null, rainG = null;
     let on = store('hw-music') !== '0', vol = parseFloat(store('hw-vol')); vol = isNaN(vol) ? 0.7 : clamp(vol, 0, 1);
     let timer = 0, chordAt = 0, ci = 0, noteAt = 0, pi = 4, birdAt = 0, zone = 'studio', lake = 0, sea = 0;
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12), rr = () => Math.random();
@@ -2904,7 +3033,7 @@ body.padOpen #hud { visibility: hidden; }
       const nl = ctx.sampleRate * 2, nb = ctx.createBuffer(1, nl, ctx.sampleRate), nd = nb.getChannelData(0); let b0 = 0;
       for (let i = 0; i < nl; i++) { b0 = 0.97 * b0 + 0.03 * (rr() * 2 - 1); nd[i] = b0 * 6; }      /* soft, low noise: wind and water */
       const loop = (type, freq, q) => { const sr = ctx.createBufferSource(); sr.buffer = nb; sr.loop = true; const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q; const g = ctx.createGain(); g.gain.value = 0; sr.connect(f); f.connect(g); g.connect(master); sr.start(); return g; };
-      windG = loop('lowpass', 520, 0.6); waterG = loop('bandpass', 1100, 0.5);
+      windG = loop('lowpass', 520, 0.6); waterG = loop('bandpass', 1100, 0.5); rainG = loop('highpass', 2600, 0.4);
       return true;
     }
     function out(g) { g.connect(dryIn); g.connect(verbIn); }
@@ -2941,20 +3070,21 @@ body.padOpen #hud { visibility: hidden; }
       if (!ctx || ctx.state !== 'running') return;
       const now = ctx.currentTime; where();
       master.gain.setTargetAtTime(level(), now, 0.5);
-      windG.gain.setTargetAtTime(zone === 'out' ? 0.04 + 0.02 * Math.sin(now * 0.3) : 0, now, 0.8);
+      windG.gain.setTargetAtTime(zone === 'out' ? 0.04 + 0.02 * Math.sin(now * 0.3) + ATM.rain * 0.03 : 0, now, 0.8);
+      rainG.gain.setTargetAtTime(ATM.rain * (zone === 'out' ? 0.05 : 0.018), now, 1.0);
       waterG.gain.setTargetAtTime(lake * 0.07 * (0.75 + 0.25 * Math.sin(now * 0.8)) + sea * 0.11 * (0.45 + 0.55 * Math.abs(Math.sin(now * 0.33))), now, 0.8);
       if (level() <= 0) return;
       if (!chordAt || chordAt < now - 1) { chordAt = now + 0.1; noteAt = chordAt + 0.8; }
       while (chordAt < now + 1.5) { const amp = zone === 'hall' ? 0.045 : 0.035; CHORDS[ci].forEach((m, k) => pad(m, chordAt + k * 0.3, CL + 3, amp)); ci = (ci + 1) % CHORDS.length; chordAt += CL; }
       while (noteAt < now + 1.2) {
-        const hall = zone === 'hall';
+        const hall = zone === 'hall' || ATM.night > 0.7;                 /* at night the piece turns lower and calmer */
         pi = clamp(pi + (rr() < 0.5 ? -1 : 1) * (rr() < 0.3 ? 2 : 1), 0, 9);
         const midi = (hall ? 60 : 72) + PENT[pi % 5] + 12 * Math.floor(pi / 5), f = mtof(midi);
         tone(f, noteAt, hall ? 3.4 : 2.6, hall ? 'sine' : 'triangle', hall ? 0.05 : 0.06, !hall);
         if (rr() < 0.25) tone(f, noteAt + 0.75, 2, 'sine', 0.02, false);
         noteAt += (hall ? 2.2 + rr() * 2.4 : zone === 'out' ? 1.1 + rr() * 1.6 : 1.5 + rr() * 2.2) + (rr() < 0.2 ? 2 : 0);
       }
-      if (zone === 'out' && sea < 0.5 && now > birdAt) { chirp(now + 0.05); birdAt = now + 2.5 + rr() * 5; }
+      if (zone === 'out' && sea < 0.5 && ATM.night < 0.5 && ATM.rain < 0.3 && now > birdAt) { chirp(now + 0.05); birdAt = now + 2.5 + rr() * 5; }
     }
     function apply() { if (!ctx) return; if (on) { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); } else if (ctx.state === 'running') ctx.suspend().catch(() => {}); if (master) master.gain.setTargetAtTime(level(), ctx.currentTime, 0.3); }
     function start() { if (!init()) return; if (!timer) tick(); apply(); }
@@ -3082,7 +3212,7 @@ body.padOpen #hud { visibility: hidden; }
     player.rotation.y = heading; player.rotation.x = 0.11 * walkAmp;
     if (walkAmp > 0.6 && !player.userData.hidden) { puffT -= dt; if (puffT <= 0) { puffT = 0.17; puff(pos.x - Math.sin(heading) * 0.2, pos.z - Math.cos(heading) * 0.2); } }
     blob.position.set(pos.x, 0.05, pos.z);
-    sunFollow(pos.x, pos.z); swayT.value = tNow;
+    updateAtmosphere(dt, tNow); sunFollow(pos.x, pos.z); swayT.value = tNow;
     pushPresence(false);
     remotes.forEach(r => {
       const age = Math.min((performance.now() - (r.lt || 0)) / 1000, 0.35), f2 = 1 - Math.exp(-dt * 9);   /* keep gliding along the last known speed until the next update arrives */
