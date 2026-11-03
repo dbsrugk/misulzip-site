@@ -1,102 +1,56 @@
-# 도토리 미술관 (옛 이름: 작은 화실, 폴더 hwasil) — 이어서 작업하기 (v6)
+# 도토리 미술관 (옛 이름: 작은 화실, 폴더 hwasil) — 이어서 작업하기 (v8)
 
 ## 한 줄 요약
-산사 스타일 멀티플레이 3D 가상 화실. 폰 우선, 지인 초대 전용, 학원 색 없음. 한국어 / 친근한 남자 선생님 말투 / 예시 중심.
+"작은 도토리가 되어 걸어 다니며 명화를 구경하는 3D 온라인 미술관 + 친구들과 함께 그리는 곳". 폰 우선, 지인 초대 전용.
+한국어 / 친근한 선생님 말투 / 예시 중심. 방향: **그림 그리기는 줄이고 명화 박물관(루브르풍 대회랑)을 크게, 천천히 퀄리티를 올린다.**
 
-## 지금 어디서 돌아가나
-- 주소: https://jakeun-hwasil.vercel.app/  (초대 링크 = 주소 + `#c=입장코드`)
-- 입장 코드: 입장 화면에서는 안 물어봄. `backend.js`의 `OPEN_CODE`가 자동으로 들어감(= 주소를 아는 사람은 누구나 입장). 코드를 바꾸면 `OPEN_CODE`도 같이 바꿔서 재배포해야 함. 코드가 안 맞으면 입력 칸이 다시 나타남.
-- Vercel 프로젝트: `jakeun-hwasil` (팀 dbsrugks-projects, team_1lA40DV0lR9QYGgUsIEKJgj3, prj_vUVwnB7Vda5wtwolaTvjkshDa7Sj)
-  - Git 자동 배포 **안 걸려 있음**. 고친 뒤에는 수동 배포:
-    create_deployment(project=jakeun-hwasil, target=production,
-    gitSource={github, dbsrugk/misulzip-site, ref=claude/unclear-request-hkm49q, sha=<커밋>},
-    projectSettings.rootDirectory="hwasil")
-- 코드 위치: 저장소 `dbsrugk/misulzip-site`, 브랜치 `claude/unclear-request-hkm49q`, 폴더 `hwasil/`
-  - `main`에 합치지 않음 (합치면 misulzip.vercel.app/hwasil 로 노출됨). 일부러 브랜치에만 둠.
+## 사용자 선호 (꼭 지킬 것)
+- 한국어만. 큰 변경은 접근 방식을 먼저 말하고 확인. 추천은 ⭐. 사용자가 "ㄱㄱ" = 추천안 진행. 끝나면 결과 링크(https://jakeun-hwasil.vercel.app/)로 마무리.
+- "대기 타이머 알림은 이제 울리지 않게" → 배포 기다릴 때 Monitor/타이머를 쓰지 말고 상태만 직접 확인(get_deployment).
+- 서버(Supabase) 변경은 승인 창이 **PC에서만** 뜸(폰 앱에선 안 보임). 승인 못 받으면 멈추고 사용자에게 "PC에서 허용 후 '다시'" 라고 안내.
+- 저작권: 작가 사망 후 오래된(퍼블릭 도메인) 작품만 걸기. 남의 글·영상은 그대로 옮기지 말고 새로 쓰기. 실제 박물관 이름·로고 사용 금지(루브르풍 분위기만).
 
-## 파일
-- `index.html` — v5 화실(Three.js r128) + 입장 코드 화면 + 카메라 개선. 그림/3D 로직은 v5 그대로.
-- `backend.js` — `window.claude.use('room'|'db'|'user')`를 흉내 내는 Supabase 연결 부품. 화실 코드는 이걸 그대로 호출.
-- `sql/001_init.sql` — DB 스키마 (이미 적용됨). `.vercelignore`로 배포에서 빠짐.
+## 어디서 돌아가나
+- 주소: https://jakeun-hwasil.vercel.app/ (접속 주소 이름 변경은 사용자 결정 대기: 새 주소를 하나 더 추가할지)
+- 코드: 저장소 `dbsrugk/misulzip-site`, 브랜치 `claude/unclear-request-hkm49q`, 폴더 `hwasil/`. `main`에는 합치지 않음(합치면 misulzip 사이트에 노출).
+- **배포는 수동**: Vercel MCP `create_deployment`:
+  `name/project=jakeun-hwasil, target=production, slug=dbsrugks-projects, gitSource={type:github, org:dbsrugk, repo:misulzip-site, ref:claude/unclear-request-hkm49q, sha:<커밋>}, projectSettings={rootDirectory:"hwasil", framework:null, buildCommand:null, outputDirectory:null, installCommand:null}`
+  ⚠ **rootDirectory "hwasil"을 빼먹으면 미술집 메인 사이트가 올라감**(한 번 사고 났음). 배포 뒤 주소를 열어 `<title>`이 "도토리 미술관"인지 확인.
+- 입장 코드: 화면에서 안 물어봄. `backend.js`의 `OPEN_CODE`가 자동 입장. 코드를 바꾸면 `hwasil.config.code_hash`도 같이 바꿔야 함.
+- Supabase: 프로젝트 `design-part-archive` (id `ldmsoceblbyvcoddquvn`), 스키마 `hwasil`(API에 노출 안 됨), 바깥에선 `public.hwasil_*` RPC만 사용. 모든 RPC가 입장 코드 확인.
+- 사람 구분: 기기마다 localStorage `hw-key`; 서버는 sha256 앞 16자를 owner로 씀. 관리자: `hw-admin`(관리자 비밀번호는 이 기기 localStorage에만, 서버엔 `config.admin_hash`만. **비밀번호를 저장소·문서에 쓰지 말 것**).
 
-## DB (Supabase `design-part-archive`, ldmsoceblbyvcoddquvn)
-- 별도 스키마 `hwasil` (API에 노출 안 됨): `config`(code_hash), `works`(owner,id,at,doc), `gallery`(id,owner,at,doc)
-- 바깥에서는 `public.hwasil_*` RPC로만 접근. 모든 RPC가 입장 코드를 먼저 확인.
-  - hwasil_check / works_list / work_set / work_patch / work_del / gallery_list / gallery_set / gallery_del
-- 기존 학원 테이블·권한은 건드리지 않음. anon이 hwasil 스키마 직접 접근 불가 확인함.
-- 한도: 1인 그림 60점, 전시 10점, 문서 260KB.
-- 입장 코드 바꾸기 (SQL Editor):
-  `update hwasil.config set v = encode(sha256(convert_to('새코드','UTF8')),'hex') where k='code_hash';`
-  → 기존 초대 링크 전부 막힘. 새 링크 다시 돌리기.
+## 서버 마이그레이션 상태 (`hwasil/sql/`)
+- 001 기본 스키마 ✔ 적용됨 / 002 선착순 액자(slot) + 관리자(admin_check/admin_del) ✔ / 003 전시 목록 가볍게(gallery_index/gallery_get) ✔
+- **004 (활동 기록 + 관리자 보관/재등록 차단) ❌ 아직 적용 안 됨** — PC에서 승인해야 함. 내용: 표 `events`(전시/내림 기록, 트리거), `visits`(하루 방문자, `hwasil_ping`), `removed`(관리자가 내린 작품 통째 보관), `_banned`(같은 작품/같은 그림 다시 걸면 `removed_banned`), 관리자 `hwasil_admin_removed/removed_get/unban`.
+  적용 후 할 일: ① 클라이언트에서 `hwasil_ping`을 입장 시와 4분마다 호출(`backend.js`+`index.html`), ② 관리자 설정 칸에 "내린 작품 보관함"(목록·보기·다시 허용), ③ 매일 아침 보고(아래), ④ 테스트용 가짜 서버(`tests/lib.js`)에 새 RPC 추가.
 
-## 사람 구분 (가입 없음)
-- 기기마다 localStorage `hw-key`(랜덤 32hex) = 비밀 열쇠. 서버는 sha256 앞 16자를 owner(공개 id)로 씀.
-- 브라우저 데이터를 지우면 목록이 안 보임 (전시된 건 남음). 기기 옮기기·복구는 '내 열쇠 복사'로 미리 복사해 두면 됨.
-- 입장 코드는 `hw-code`에 저장 → 다음부터 코드 칸 숨김.
+## 지금 있는 기능 (요약)
+- 월드: 로비(옛 화실 홀, 천장 26) — 가운데 이젤 6개 + 조각, 정면 큰 아치문 = **대회랑**(북쪽으로 192, 6개 전시구역 × 4점 = 명화 24점 자리, 벽 색 구역별, 구역 간판, 대리석 바닥+붉은 카펫, 샹들리에). 남쪽 = 신진 작가관(전시관→별관, 서쪽 전시관 1·2). 동쪽 문 = 야외(산·바다·호숫가·풍차들판·전시 정원·꽃길 정원).
+- 명화: `hwasil/catalog.js`(`MUSEUM_WINGS`, `MUSEUM_CATALOG` 24점: id·제목·작가·연도·소장처·가로세로 비율·size·blurb[내가 새로 쓴 소개]·**img(비어 있음)**). 액자는 `room:'museum'`, `reserved=true`(아무도 못 걸음). 작품 앞 '작품 이야기 듣기' → 도슨트 카드(`showDocent`). 그림 파일이 생기면 `img`에 주소만 넣으면 가까이 갈 때 액자에 그려짐(`drawCat`/`catImage`).
+- 사람들이 거는 작품: 선착순 액자 클레임(서버 유니크 slot), 주인만 수정, 관리자 비밀번호로 내리기, 알아서 걸기/직접 고르기/액자 앞 "여기에 걸기" 버튼, 저장 직후 전시 질문.
+- 그리기: 연필·붓·지우개·페인트통·스포이트, 풍경 보며 그리기, 하트 보내기(구경 화면), **따라 그리기 가이드**(내 사진 반투명 겹치기·윤곽선·투명도·크기·옮기기·색 집기).
+- 하늘: 30분 주기 일출/낮/노을/밤(별·달·반딧불) + 12분마다 날씨(맑음/흐림/비/눈/안개), 설정 '시간과 날씨'. 음악: 브라우저가 만드는 힐링 음악(장소·밤·비에 맞춰 변함).
+- 이동: '장소 이동'은 걸어서 감(문을 하나씩 지남, 조이스틱 움직이면 멈춤). 대회랑·서쪽 전시관·별관 경로 포함(`walkTarget`).
+- 성능: 액자 텍스처는 가까이 갈 때만(`slotLOD`), 전시 목록은 요약만 받고 그림 선은 가까이 가면 받음, 그래픽 품질 hi/lo.
 
-## 실시간 (Supabase Realtime, 공개 채널)
-- 채널 이름: `hw-<sha256('hwasil-room:'+코드) 앞16>-lobby` / `-studio-1..6`
-- 로비 presence `{r}` 로 방 인원 세기, 방 presence `{n,c,e,x,z,h,w}` (느리게, 2.5초), 위치 `_pos` 브로드캐스트(약 4.5Hz)
-- 그림 프로토콜 그대로: `_m` 브로드캐스트 안에 {t: 'dn'|'ds'|'dwant', d}
-- 전시 바뀌면 로비에 `_gal` → 다들 전시관 새로고침. 그 외 60초마다 새로고침.
-- 무료 한도 월 200만 메시지 — 위치 전송을 줄여 둔 이유.
+## 다음 할 일 (우선순위)
+1. **명화 이미지 채우기** — 사용자가 GPT(크롬)로 위키미디어 커먼즈에서 퍼블릭 도메인 이미지를 id 이름으로(예: monalisa.jpg, 가로 1400px) 받아 zip으로 이 채팅에 올리면: 확인(작품이 맞는지 눈으로) → 크기 줄이기 → `hwasil/art/`에 넣기 → `catalog.js`의 `img`에 상대 주소 → 출처/라이선스 목록 정리 → 테스트 → 배포. (클라우드 세션은 commons.wikimedia.org 등에 접속 불가: 환경 설정 '네트워크 접근'에서 허용하면 직접 받을 수 있음.)
+2. **서버 004 적용** + 위 후속(방문 기록, 관리자 보관함, 매일 아침 보고 예약 작업 `create_trigger`: 어제 방문자 수/이름, 전시 올림·내림·관리자 삭제 목록, 총 작품 수).
+3. **도슨트 투어**: 작품 누르면 전체 화면에서 디테일 4~5곳을 천천히 확대·이동하며 한 줄 자막(참고한 형식: 인스타 도슨트 릴스. 내용은 새로 쓸 것), 끝에 '더 알아보기', '따라 그리기'(= 따라 그리기 가이드에 그 작품 깔기).
+4. 박물관 퀄리티: 시대별 전시관 분위기(조명·바닥·음악), 스포트라이트, 석고상/동상 다듬기(또는 3D 모델 파일을 받아 쓰기), 도슨트·관람객·그림 그리는 NPC, 지도/추천 관람 코스.
+5. 로비 한쪽 "아틀리에" 정리(그리는 곳 축소 완료 단계), 접속 주소/이름/링크 미리보기 썸네일 새로 만들기(`NODE_PATH=$(npm root -g) node hwasil/tests/og.js`).
+6. 이전 후보: 붓 종류 늘리기, 동시접속 최적화(무료 Realtime 한도 약 100 msg/s), '내 그림' 목록 가볍게(서버 RPC 필요), 관리자 비밀번호 더 길게 바꾸기.
+- 사용자가 "크로키는 됐고"라고 함 → 크로키 모드는 안 함.
 
-## v6에서 바뀐 것
-- Claude 아티팩트 → Supabase + Vercel 이사 완료.
-- 카메라: 벽에 끼워 당기던 것 제거, 항상 거리 17 유지. 화실↔전시관 경계 벽·벽걸이 물건은 카메라가 바깥이면 숨김. 바깥 바닥 추가.
+## 시험
+- `export NODE_PATH=$(npm root -g); bash hwasil/tests/run.sh` (약 12분: smoke.js + two.js, 가짜 Supabase+메모리 DB, 소프트웨어 렌더링이라 걷기 시험이 오래 걸림). **시험 도중에 index.html을 고치지 말 것**(결과가 섞여 가짜 실패가 남).
+- 테스트 훅 `window.__hw`(tests/lib.js의 HOOK): pos, easels, slots, emote, look, music(), atm(), info(), tapSlot(i), admin(), walking(), go(i). `window.__hwInstant=true`면 장소 이동이 순간이동(테스트 기본값).
+- 새 기능은 `tests/smoke.js`에 확인 추가, WebGL 콘솔 오류도 실패로 침.
 
-## v6.1에서 추가
-- 이젤/액자 누르기: 3D 화면을 짧게 탭하면 레이캐스트로 판정. 빈 이젤 → 자동으로 걸어가서(전시관에 있으면 문을 거쳐) 앉음,
-  누가 앉은 이젤 → 바로 구경 화면, 채워진 액자 → 크게 보기. 조이스틱/키보드를 쓰면 자동 걷기 취소. 막히면 안내 문구.
-- 내 열쇠 옮기기: 내 그림 창 아래 '다른 기기로 옮기기'. 열쇠 복사(32자리, 4자씩 하이픈) / 붙여넣어 바꾸기(두 번 눌러 확인 후 새로고침).
-  `window.hwasil.getKey()/setKey()` (backend.js). 열쇠를 아는 사람은 그 그림을 지울 수도 있음.
-
-## v6.2 야외 세상 (진행 중)
-- 화실 동쪽 벽에 문(z=0)이 있고, 밖은 들판(x 33~146, z -56~56). 그 너머 x>150은 바다. 하늘색 배경 + 안개.
-- 만든 곳: 산 전망대(85,-46, 북쪽 산을 봄, 이젤 20~23번), 바닷가(141, z -10~10, 동쪽 바다를 봄, 이젤 24~27번).
-  장식: 산·눈 덮인 봉우리·언덕·구름·나무(인스턴싱)·등대 섬·돛단배·파도 거품·모래사장·판자길·난간·파라솔·간판.
-- 이젤 추가 방법: `addEaselAt(x, z, th)` (th = 이젤에서 앉는 사람 쪽 방향 각도). 이젤 번호는 만든 순서(화실 0~19, 그 뒤 야외).
-- 장소 이동: `PLACES` 배열(이름·설명·좌표·방향·pitch) → '장소 이동' 시트. 새 장소는 PLACES에 한 줄 + 야외 블록에 장식 추가.
-- 걷기: `walkable()`에 동쪽 문과 들판 추가, 이젤 눌러 걷기는 `walkTarget()`이 문을 거쳐 감. 원격 아바타 좌표 제한도 넓혔음.
-- 호숫가(LAKE 72,40 r13; 이젤 28~31번, 북쪽 물가에서 남쪽을 봄): 물, 모래 둘레, 수련, 갈대, 노 젓는 배, 호수를 둘러싼 나무. 호수 안은 `walkable()`에서 막힘.
-- 풍차 들판(MILL 112,45; 이젤 32~35번, z=29에서 남쪽을 봄): 돌아가는 풍차, 꽃 420송이(인스턴싱), 건초더미.
-- 인스턴싱 메시는 `frustumCulled=false` 필수(기본값이면 원점이 화면 밖일 때 통째로 사라짐).
-- 문: 화실↔전시관, 화실↔야외 모두 아치형(폭 7.6 = 2*DOOR, 직선 4.7 + 반원). `archWallGeo()/archFrameGeo()`. 전시관 간판은 아치 위로 올림.
-- 다음 후보: 숲길. 필요하면 눈 덮인 산, 벚꽃길, 밤하늘.
-
-## v6.3 풍경 보며 그리기
-- 그림판에 '풍경 끔 / 풍경 위 / 겹쳐 보기'. 야외 이젤은 기본 '풍경 위'(위 30%에 앉은 자리에서 본 풍경, 아래에서 그림), 선택은 localStorage `hw-view`.
-- 겹쳐 보기: 풍경이 전체 화면 뒤에 깔리고 종이가 반투명(슬라이더 `--ghost`).
-- 구현: `pad.view`, `applyView()`, `viewFor()`; update()에서 'artist' 카메라(앉은 자리 눈높이, 내 이젤·아바타 숨김); frame()에서 scissor/viewport로 위쪽만 그림.
-- 땅 평면은 해안(x=150)에서 끝남(바다와 z-fighting 방지), 카메라 near=1.
-
-## v6.4 둘러보기·미리보기
-- 그림판 위쪽 풍경 칸을 끌어서 둘러보기(좌우 ±150°, 위아래), 두 손가락/휠로 확대, 두 번 누르면 처음 방향. 상태는 `look {yaw,pitch,zoom}`, 앉을 때마다 초기화.
-- '풍경 위'가 모든 이젤의 기본값(저장된 선택 `hw-view`가 있으면 그걸 씀). 카메라는 앉은 자리 눈높이(내 이젤·아바타 숨김).
-- 링크 미리보기: `<head>`의 og:* / twitter:* 태그 + `hwasil/og.jpg`(1200x630, 풍차 들판). 다시 만들 땐 `NODE_PATH=$(npm root -g) node hwasil/tests/og.js`. 카카오톡은 미리보기를 캐시하므로, 이미 보낸 링크는 안 바뀔 수 있음(새 링크는 주소 끝에 `?v=2` 같은 걸 붙이면 새로 읽음).
-- 파비콘은 🎨 이모지(데이터 URL).
-
-## v7 (큰 개편)
-- 캐릭터: 둥근 툰 캐릭터. `makeAvatar(look)`, look = 7자리(피부,머리,머리색,모자,옷색,소품,얼굴) = `hw-look`. 꾸미기 시트(#dress)는 미리보기를 메인 렌더러로 작은 렌더타깃에 그림. 프레즌스 필드 `a`(look), `m`/`mt`(표현 id/카운터).
-- 표현(EMOTES: 손 흔들기, 박수, 하트, 춤, 깜짝) `startEmote()`, 머리 위 이모지 `fxList`, 걷는 먼지 `puff()`(고품질만). 멈출 때 미끄러지듯 감속(`curSp`), 걸을 때 앞으로 기울기.
-- 배경: 툰 재질(`L()`), 해 방향 `SUN` + 플레이어를 따라다니는 그림자(`sunFollow`), 하늘 돔 셰이더, 안개, 풀 질감, 바람(`sway()`), 바다/호수 셰이더(`waterMat`), 둥근 나무·덤불·바위, 나비·꽃가루·새, 화분. 그래픽 품질 `hw-q` hi/lo(낮음=그림자·풀·나비 줄임, 느린 폰은 자동 하향. 자동화 테스트는 `navigator.webdriver`로 제외).
-- 음악: `music` IIFE(index.html), 오디오 파일 없음. 첫 터치 후 재생(브라우저 규칙). `window.__hw.music()`으로 상태 확인.
-- 방: gallery(전시관)·annex(별관)·garden(야외 정원)·studio. 전시관 칸막이는 없음.
-- 건물: 천장 26(`RM.h`), 문 `DOOR=5.2, DSH=10`(아치), 들보·기둥·몰딩·샹들리에·아치 창.
-- 액자: 42칸 `addSlot(room,size,...)` (화실 15 + 전시관 27), 크기 s/m/l(`FD`), 작품 비율대로 액자 모양(`applyAspect`). 전시 문서에 `room`('gallery'|'studio')·`size`, 작품 문서에 `er`·`es`. 걸기 창 #hang. 한 번에 최대 60점 불러옴.
-- 시험(`hwasil/tests`): 가짜 Supabase에 메모리 DB 포함, WebGL 콘솔 오류도 실패로 침. `window.__hw` 훅(테스트 전용: pos, easels, remotes, slots, emote, look, go).
-
-## v7.1 시점
-- 월드 카메라: 드래그=돌리기·기울이기(위로 끌면 올려다봄: pitch<0.08이면 카메라는 안 내려가고 시선만 올라감, 범위 -0.75~1.5), 두 손가락/휠=확대·축소(`camWant` 5~34).
-- 가리는 물체 투명화: `occluders`(전시관 칸막이+그 위 액자). 카메라-캐릭터 선분이 상자와 만나면 불투명도 0.13. 새로 가리는 큰 물체를 만들면 `addOccluder(group, 상자)`로 등록.
-- 천장: 아래를 보는 평면(위에서 보면 안 보임, 안에서는 보임). 그림자 안 드리움.
-
-## 아직 못 한 것 / 다음 할 일
-1. ⭐ 실제 폰 2대 시험 (서로 보임 / 그리기 구경 / 저장 / 전시). 혼자만 보이면 Realtime 공개 채널 설정 확인.
-2. 시험 결과 고치기 → 수동 재배포.
-3. (선택) 사용량 확인.
-- 방 배정은 동시 입장 시 20명을 1~2명 넘을 수 있음 (v5와 같음).
-
-## 사용자 선호
-한국어만 / 접근 방식 먼저 확인 / 추천은 ⭐ / "ㄱㄱ" = 추천안 진행 / 끝나면 결과 링크.
-- Supabase 마이그레이션은 승인 창이 폰 앱에선 안 뜸 → PC에서 진행해야 함.
+## 구조 메모
+- 파일: `index.html`(앱 전체 한 파일, Three.js r128), `backend.js`(Supabase 연결/브로드캐스트 방), `catalog.js`(명화 목록), `og.jpg`, `sql/`, `tests/`, `AUTOPILOT.md`(1시간마다 도는 자동 점검 규칙: 미리보기 배포만, 운영 배포·DB 쓰기 금지), `CHANGELOG.md`.
+- 방(액자 room): gallery, annex, westa, westb, garden, orchard, studio, **museum(예약)**. 슬롯 id = `방:x,y,z`(소수 1자리) — 액자 위치를 바꾸면 선점 기록이 풀리니 조심.
+- 실시간: 위치·표현은 브로드캐스트 `_st`(인원 적으면 빠르게), 그림 `dn/ds/dwant`, 하트 `dl`. Presence는 한도 때문에 안 씀.
+- 하늘/날씨: `updateAtmosphere`, `ATM`, `atmHooks`. 장소 이동: `PLACES`, `goPlace`, `walkTarget`, `areaOf`.
+- 새 큰 물체는 `hang(obj, 축, 한계, 안쪽)`으로 카메라 쪽에 따라 보이기/숨기기, 가리는 물체는 `addOccluder`.
