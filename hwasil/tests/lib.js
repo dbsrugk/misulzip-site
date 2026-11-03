@@ -29,7 +29,7 @@ const STUB = `window.supabase={createClient(){return{
   send(m){window.__busSend(n,m.event,m.payload);return Promise.resolve('ok');}};return c;},
  removeChannel(){return Promise.resolve();}};}};
 window.__busRecv=(n,e,p)=>{const h=(window.__h||{})[n];if(h&&h[e])h[e].forEach(f=>f({payload:p}));};`;
-const HOOK = "const ray = new T.Raycaster(); window.__hw = { pos: pos, easels: easels, remotes: remotes, slots: slots, cam: () => ({ pitch: camPitch, want: camWant }), occ: () => occluders.map(o => o.k), emote: () => (me.emote ? me.emote.id : ''), look: () => myLook.join(''), music: () => music.state(), info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, tex: renderer.info.memory.textures, objs: (() => { let n = 0; scene.traverse(() => n++); return n; })() }), tapSlot: (i) => frameTap(slots[i]), admin: () => adminOn, go: (idx) => { const e = easels[idx]; goal = { x: e.sit.x, z: e.sit.z, idx: idx, stuck: 0 }; } };";
+const HOOK = "const ray = new T.Raycaster(); window.__hw = { pos: pos, easels: easels, remotes: remotes, slots: slots, cam: () => ({ pitch: camPitch, want: camWant }), occ: () => occluders.map(o => o.k), emote: () => (me.emote ? me.emote.id : ''), look: () => myLook.join(''), music: () => music.state(), info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, tex: renderer.info.memory.textures, objs: (() => { let n = 0; scene.traverse(() => n++); return n; })() }), tapSlot: (i) => frameTap(slots[i]), admin: () => adminOn, walking: () => !!goal, go: (idx) => { const e = easels[idx]; goal = { x: e.sit.x, z: e.sit.z, idx: idx, stuck: 0 }; } };";
 
 async function start(opts) {
   opts = opts || {};
@@ -38,6 +38,7 @@ async function start(opts) {
   async function client(name, query, vp) {
     const i = pages.length, ctx = await browser.newContext({ viewport: vp || { width: 390, height: 800 } });
     const p = await ctx.newPage(); pages.push(p); p.name = name || ('p' + i);
+    await p.addInitScript(() => { window.__hwInstant = true; });          /* tests jump between places; the walking test turns this off */
     p.on('pageerror', e => errors.push(p.name + ': ' + e));
     p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(p.name + ' console: ' + m.text().slice(0, 240)); });   /* WebGL shader errors show up here */
     await p.exposeFunction('__busSend', (n, e, pl) => { pages.forEach((q, j) => { if (j !== i) q.evaluate(([a, b, c]) => window.__busRecv(a, b, c), [n, e, pl]).catch(() => {}); }); });

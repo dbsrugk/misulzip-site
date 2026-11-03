@@ -50,6 +50,17 @@ const { start, vis, until, check, done } = require('./lib');
   await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 8, 'eight places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
   /* the gallery has no partitions any more; the annex and the garden can be visited */
   await place(6, 'annex.png'); await place(7, 'garden.png');
+  /* a place is reached on foot now: from the studio to the annex through both doors, then out to the garden through the east door */
+  await place(0, 'studio.png');
+  await p.evaluate(() => { window.__hwInstant = false; });
+  const walkTo = async idx => { await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(idx).click(); await p.waitForTimeout(400); const w0 = await p.evaluate(() => window.__hw.walking()); const ok = await until(p, () => !window.__hw.walking(), null, 240); return { w0, ok }; };
+  let wk = await walkTo(6);
+  const near = (x, z) => p.evaluate(([x, z]) => Math.hypot(window.__hw.pos.x - x, window.__hw.pos.z - z) < 2.5, [x, z]);
+  check(wk.w0 && wk.ok && await near(0, 58), 'a place is walked to (studio -> gallery -> annex), not jumped to');
+  wk = await walkTo(7);
+  check(wk.ok && await near(58, -20), 'and back out through the doors to the garden');
+  await p.evaluate(() => { window.__hwInstant = true; });
+  await place(0, 'studio.png');
   check(await p.evaluate(() => window.__hw.occ().length) === 0, 'no see-through partitions are left');
   await p.evaluate(() => window.__hw.go(25));                /* studio -> beach easel: through the east door */
   check(await until(p, () => !document.querySelector('#pad').hidden, null, 200), 'walks out the east door and sits at a beach easel');

@@ -1780,7 +1780,7 @@ body.padOpen #hud { visibility: hidden; }
   joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) moveJoy(e); });
   ['pointerup', 'pointercancel'].forEach(ev => joyEl.addEventListener(ev, e => { if (e.pointerId === joyId) resetJoy(); }));
   /* world camera: drag = turn and tilt (drag up = look up at the ceiling), two fingers or the wheel = zoom */
-  const cptr = new Map(); let camWant = 17;
+  const cptr = new Map(); let camWant = 17, camAim = null;
   cv.addEventListener('pointerdown', e => { cptr.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
   cv.addEventListener('pointermove', e => {
     const q = cptr.get(e.pointerId); if (!q) return;
@@ -1788,7 +1788,7 @@ body.padOpen #hud { visibility: hidden; }
       const a = Array.from(cptr.values()), other = a.find(v => v !== q) || a[0];
       const nd = Math.hypot(e.clientX - other.x, e.clientY - other.y), od = Math.hypot(q.x - other.x, q.y - other.y);
       if (od > 10 && nd > 10) camWant = clamp(camWant * od / nd, 5, 34);
-    } else { camYaw -= (e.clientX - q.x) * 0.0065; camPitch = clamp(camPitch + (e.clientY - q.y) * 0.004, -0.75, 1.5); }
+    } else { camAim = null; camYaw -= (e.clientX - q.x) * 0.0065; camPitch = clamp(camPitch + (e.clientY - q.y) * 0.004, -0.75, 1.5); }
     q.x = e.clientX; q.y = e.clientY;
   });
   ['pointerup', 'pointercancel'].forEach(ev => cv.addEventListener(ev, e => { cptr.delete(e.pointerId); }));
@@ -1935,22 +1935,33 @@ body.padOpen #hud { visibility: hidden; }
     onTap(e.clientX, e.clientY);
   });
   cv.addEventListener('pointercancel', () => { tap = null; });
-  /* next point to walk to: out through the doorway first if I am in the gallery */
+  /* next point to walk to: the building is studio -> (south door) gallery -> (far door) annex, and the studio opens east to the field,
+     so a goal in another region is reached by walking through the doors one after the other */
+  function areaOf(x, z) { return x > RM.hx - 0.5 ? 'out' : z > RM.hz - 1 ? 'hall' : 'studio'; }
   function walkTarget() {
-    const inOut = pos.x > RM.hx - 0.5, gOut = goal.x > RM.hx;
-    if (!inOut && pos.z > RM.hz - 1) {
-      if (Math.abs(pos.x) > 1.2 && pos.z > RM.hz + 1.2) return { x: 0, z: RM.hz + 1.6, way: true };
+    const rp = areaOf(pos.x, pos.z), rg = areaOf(goal.x, goal.z);
+    if (rp === 'hall') {
+      const pa = pos.z > GZ1 + 0.5 ? 1 : 0, ga = goal.z > GZ1 + 0.5 ? 1 : 0, want = rg === 'hall' ? ga : 0;
+      if (pa !== want) {                                     /* through the annex door first */
+        if (Math.abs(pos.x) > 1.2 && Math.abs(pos.z - GZ1) > 1.2) return { x: 0, z: pos.z < GZ1 ? GZ1 - 2.4 : GZ1 + 2.4, way: true };
+        return { x: 0, z: want ? GZ1 + 2.4 : GZ1 - 2.4, way: true };
+      }
+      if (rg === 'hall') return { x: goal.x, z: goal.z, way: false };
+      if (Math.abs(pos.x) > 1.2 && pos.z > RM.hz + 1.2) return { x: 0, z: RM.hz + 1.6, way: true };       /* out through the south door */
       return { x: 0, z: RM.hz - 2.5, way: true };
     }
-    if (!inOut && gOut) {                                 /* studio -> field: line up with the east door, go through */
-      if (pos.x < RM.hx - 2 && Math.abs(pos.z) > 1.2) return { x: RM.hx - 4, z: 0, way: true };
-      return { x: RM.hx + 3, z: 0, way: true };
+    if (rp === 'studio') {
+      if (rg === 'studio') return { x: goal.x, z: goal.z, way: false };
+      if (rg === 'out') {                                    /* studio -> field: line up with the east door, go through */
+        if (pos.x < RM.hx - 2 && Math.abs(pos.z) > 1.2) return { x: RM.hx - 4, z: 0, way: true };
+        return { x: RM.hx + 3, z: 0, way: true };
+      }
+      if (Math.abs(pos.x) > 1.2 && pos.z < RM.hz - 1.2) return { x: 0, z: RM.hz - 2.5, way: true };      /* studio -> gallery: line up with the south door */
+      return { x: 0, z: RM.hz + 1.8, way: true };
     }
-    if (inOut && !gOut) {                                 /* field -> studio */
-      if (pos.x > OUT.x0 + 2 && Math.abs(pos.z) > 1.2) return { x: OUT.x0 + 3, z: 0, way: true };
-      return { x: RM.hx - 3, z: 0, way: true };
-    }
-    return { x: goal.x, z: goal.z, way: false };
+    if (rg === 'out') return { x: goal.x, z: goal.z, way: false };
+    if (Math.abs(pos.z) > 1.2 && pos.x > OUT.x0 + 2) return { x: OUT.x0 + 3, z: 0, way: true };          /* field -> studio */
+    return { x: RM.hx - 3, z: 0, way: true };
   }
 
   /* ---------- drawing pad ---------- */
@@ -2759,11 +2770,22 @@ body.padOpen #hud { visibility: hidden; }
   })();
 
   /* ---------- fast travel ---------- */
+  function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
+    pos.x = pl.x; pos.z = pl.z; heading = pl.h; camYaw = pl.h + Math.PI; camPitch = pl.pitch || 0.5; camTx = pos.x; camTz = pos.z; camInit = false; myEasel = -1; camAim = null;
+    pushPresence(true);
+  }
+  function arrivePlace(pl) {                               /* arrived on foot: turn to face the view and glide the camera behind me */
+    heading = pl.h; camAim = { yaw: pl.h + Math.PI, pitch: pl.pitch || 0.5, t: 1.6 };
+    pushPresence(true); toast(pl.name + '에 왔어요', 3000);
+  }
   function goPlace(pl) {
     if (!started || pad.open || watch.open) return;
     $('#places').hidden = true; goal = null;
-    pos.x = pl.x; pos.z = pl.z; heading = pl.h; camYaw = pl.h + Math.PI; camPitch = pl.pitch || 0.5; camTx = pos.x; camTz = pos.z; camInit = false; myEasel = -1;
-    pushPresence(true); toast(pl.name + '에 왔어요', 3000);
+    if (window.__hwInstant) { snapTo(pl); toast(pl.name + '에 왔어요', 3000); return; }
+    myEasel = -1;
+    if (Math.hypot(pl.x - pos.x, pl.z - pos.z) < 1) { arrivePlace(pl); return; }
+    goal = { x: pl.x, z: pl.z, place: pl, stuck: 0 };
+    toast(pl.name + '(으)로 걸어가요. 조이스틱을 움직이면 멈춰요', 4000);
   }
   function renderPlaces() {
     const list = $('#placesList'); list.textContent = '';
@@ -2813,6 +2835,7 @@ body.padOpen #hud { visibility: hidden; }
     const len = Math.hypot(ix, iy); if (len > 1) { ix /= len; iy /= len; }
     const m = Math.min(1, len);
     if (goal && m > 0.08) goal = null;
+    if (camAim) { camYaw += angDiff(camYaw, camAim.yaw) * Math.min(1, dt * 3); camPitch += (camAim.pitch - camPitch) * Math.min(1, dt * 3); camAim.t -= dt; if (camAim.t <= 0) camAim = null; }
     if (started && !pad.open && !watch.open && m > 0.08) {
       const sy = Math.sin(camYaw), cy = Math.cos(camYaw);
       const dx = cy * ix - sy * iy, dz = -sy * ix - cy * iy, dl = Math.hypot(dx, dz) || 1, sp = SPEED * m;
@@ -2823,16 +2846,18 @@ body.padOpen #hud { visibility: hidden; }
     } else if (goal && started && !pad.open && !watch.open) {
       const tg = walkTarget(), gx = tg.x - pos.x, gz = tg.z - pos.z, gd = Math.hypot(gx, gz);
       const g0 = goal;
-      if (!tg.way && gd < 0.5) {
+      if (!tg.way && gd < (g0.place ? 0.7 : 0.5)) {
         goal = null; walkAmp = lerp(walkAmp, 0, 0.5);
-        if (occupied(g0.idx)) openWatch(g0.idx); else sit(g0.idx);
+        if (g0.place) arrivePlace(g0.place);
+        else if (occupied(g0.idx)) openWatch(g0.idx); else sit(g0.idx);
       } else {
-        const ox = pos.x, oz = pos.z, sp = SPEED * 0.9;
+        const ox = pos.x, oz = pos.z, sp = SPEED * (g0.place ? 1.5 : 0.9);
         tryMove(gx / (gd || 1) * sp * dt, gz / (gd || 1) * sp * dt);
         heading += angDiff(heading, Math.atan2(gx, gz)) * Math.min(1, dt * 12);
         walkAmp = lerp(walkAmp, 1, Math.min(1, dt * 10)); walkPhase += dt * (6 + sp * 0.9);
         g0.stuck = Math.hypot(pos.x - ox, pos.z - oz) < sp * dt * 0.3 ? g0.stuck + dt : 0;
-        if (g0.stuck > 0.8) {
+        if (g0.stuck > 0.8 && g0.place) { goal = null; snapTo(g0.place); toast(g0.place.name + '에 왔어요', 3000); }       /* blocked on the way: take the shortcut */
+        else if (g0.stuck > 0.8) {
           const near = Math.hypot(g0.x - pos.x, g0.z - pos.z) < 4;
           goal = null;
           if (near) { if (occupied(g0.idx)) openWatch(g0.idx); else sit(g0.idx); }
