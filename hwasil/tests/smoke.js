@@ -119,7 +119,11 @@ const { start, vis, until, check, done } = require('./lib');
   const bq = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   await p.mouse.move(bq.x + bq.w * 0.2, bq.y + bq.h * 0.3); await p.mouse.down(); await p.mouse.move(bq.x + bq.w * 0.8, bq.y + bq.h * 0.7, { steps: 8 }); await p.mouse.up();
   await p.fill('#padTitle', '큰 그림'); await p.click('#padSave'); await p.waitForTimeout(1500);
-  await p.click('#padClose'); await p.waitForTimeout(500);
+  check(await vis(p, '#exAsk'), 'after saving, it asks whether to put the work on show');
+  await p.click('#exYes'); await p.waitForTimeout(600);
+  check(!(await vis(p, '#pad')) && await vis(p, '#hangBanner') && await vis(p, '#places'), 'yes leaves the easel, starts hang mode and shows the places to walk to');
+  await p.click('#placesClose'); await p.click('#hangBanner'); await p.waitForTimeout(300);
+  check(!(await vis(p, '#hangBanner')), 'the banner cancels hang mode');
   await p.click('#worksBtn'); await p.waitForTimeout(500);
   /* first come, first served: pick a frame, hang a work there; others cannot take that frame; an admin can take anything down */
   check(await p.evaluate(() => new Set(window.__hw.slots.map(s => s.id)).size === window.__hw.slots.length), 'every frame has its own id');

@@ -313,6 +313,9 @@ body.padOpen #hud { visibility: hidden; }
 #qBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
 #qBox .seg { margin-top: 10px; }
 #mBox input[type=range] { width: 100%; margin-top: 10px; }
+#exAsk { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(28, 24, 20, 0.55); padding: 16px; }
+#exAsk .card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: 18px; max-width: 340px; text-align: center; display: flex; flex-direction: column; gap: 10px; font: 400 24px/1.3 var(--font-display); box-shadow: 5px 6px 0 rgba(0,0,0,0.35); }
+#exAsk .row2 { display: flex; gap: 10px; justify-content: center; }
 #viewerAct { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 #hangList { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin: 10px 0 4px; }
 #hangList button { border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); padding: 6px; font: 400 16px/1.2 var(--font-display); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink); }
@@ -430,6 +433,14 @@ body.padOpen #hud { visibility: hidden; }
       <button class="btn primary" id="keyApply" type="button">이 열쇠로 바꾸기</button>
       <p class="empty" id="keyMsg" hidden></p>
     </details>
+  </div>
+</div>
+
+<div id="exAsk" hidden role="dialog" aria-label="전시하기">
+  <div class="card">
+    <div id="exAskText">저장했어요! 이 그림을 전시하시겠습니까?</div>
+    <p class="empty">전시하면 전시관, 별관, 서쪽 전시관, 야외 정원의 빈 액자에 걸 수 있어요. 먼저 건 사람이 그 액자의 주인이에요.</p>
+    <div class="row2"><button class="btn primary" id="exYes" type="button">전시하기</button><button class="btn" id="exNo" type="button">나중에</button></div>
   </div>
 </div>
 
@@ -2379,6 +2390,14 @@ body.padOpen #hud { visibility: hidden; }
     return null;
   }
   function pointsOf(strokes) { let n = 0; strokes.forEach(s => { n += s.p.length / 2; }); return n; }
+  let askWork = null;
+  function askExhibit(w) { askWork = w; $('#exAsk').hidden = false; }
+  $('#exNo').addEventListener('click', () => { $('#exAsk').hidden = true; askWork = null; });
+  $('#exYes').addEventListener('click', () => {
+    const w = askWork; $('#exAsk').hidden = true; askWork = null; if (!w) return;
+    closePad(); startHang(w);                                    /* leave the easel, then pick an empty frame (the places list helps to walk there) */
+    renderPlaces(); $('#places').hidden = false;
+  });
   async function save() {
     if (pad.saving) return;
     if (!pad.strokes.length) { setStatus('먼저 그림을 그려 주세요.', true); return; }
@@ -2399,6 +2418,7 @@ body.padOpen #hud { visibility: hidden; }
       pad.id = ref.id; pad.dirty = false; pad.confirmClose = false; $('#padClose').textContent = '닫기';
       setStatus(thinned ? '저장했어요. 그림이 커서 선을 조금 단순하게 줄였어요. 내 그림 목록에서 다시 열 수 있어요.' : '저장했어요. 내 그림 목록에서 다시 열 수 있어요.');
       finishEasel();
+      if (!doc.exh && galCol) askExhibit(Object.assign({ id: ref.id }, doc));            /* just saved a work that is not on a wall yet: offer to hang it */
     } catch (e) {
       const c = e && e.code;
       if (c === 'quota_exceeded') setStatus('저장 공간이 가득 찼어요. 내 그림에서 안 쓰는 그림을 지워 주세요.', true);
