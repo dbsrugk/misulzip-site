@@ -26,7 +26,7 @@ const STUB = `window.supabase={createClient(){return{
   send(m){window.__busSend(n,m.event,m.payload);return Promise.resolve('ok');}};return c;},
  removeChannel(){return Promise.resolve();}};}};
 window.__busRecv=(n,e,p)=>{const h=(window.__h||{})[n];if(h&&h[e])h[e].forEach(f=>f({payload:p}));};`;
-const HOOK = "const ray = new T.Raycaster(); window.__hw = { pos: pos, easels: easels, remotes: remotes, slots: slots, cam: () => ({ pitch: camPitch, want: camWant }), occ: () => occluders.map(o => o.k), emote: () => (me.emote ? me.emote.id : ''), look: () => myLook.join(''), music: () => music.state(), go: (idx) => { const e = easels[idx]; goal = { x: e.sit.x, z: e.sit.z, idx: idx, stuck: 0 }; } };";
+const HOOK = "const ray = new T.Raycaster(); window.__hw = { pos: pos, easels: easels, remotes: remotes, slots: slots, cam: () => ({ pitch: camPitch, want: camWant }), occ: () => occluders.map(o => o.k), emote: () => (me.emote ? me.emote.id : ''), look: () => myLook.join(''), music: () => music.state(), info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, tex: renderer.info.memory.textures, objs: (() => { let n = 0; scene.traverse(() => n++); return n; })() }), go: (idx) => { const e = easels[idx]; goal = { x: e.sit.x, z: e.sit.z, idx: idx, stuck: 0 }; } };";
 
 async function start(opts) {
   opts = opts || {};

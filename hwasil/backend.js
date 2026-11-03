@@ -92,7 +92,7 @@
   };
 
   /* ---------- room (broadcast only; no Supabase Presence, it is rate-limited on the free plan) ----------
-     Every client sends its own state ("_st") whenever it changes (at most ~3/s) and at least every 2.5 s.
+     Every client sends its own state ("_st") whenever it changes (at most ~5/s with up to 3 people, ~3/s with many) and at least every 2.5 s.
      A joiner says "_hello" and everyone answers with their state. Peers that go quiet for 7 s are dropped. */
   var FAST = { x: 1, z: 1, h: 1, w: 1 };
   var STEP = 330, BEAT = 2500, EXPIRE = 7000;
@@ -112,9 +112,10 @@
       sendT = 0; dirty = false; if (!joined || !alive) return;
       lastSend = Date.now(); tx('_st', { k: peerId, p: mine });
     }
+    function step() { var n = Object.keys(peers).length + 1; return n <= 3 ? 200 : n <= 4 ? 250 : n <= 5 ? 300 : STEP; }   /* few people: send faster (smoother), many: stay under the message limit */
     function queueState(urgent) {
       dirty = true; if (sendT || !joined) return;
-      sendT = setTimeout(sendState, urgent ? 60 : Math.max(0, STEP - (Date.now() - lastSend)));
+      sendT = setTimeout(sendState, urgent ? 60 : Math.max(0, step() - (Date.now() - lastSend)));
     }
     /* (re)build the channel; phones freeze pages and drop the socket when the app is in the background */
     function open() {

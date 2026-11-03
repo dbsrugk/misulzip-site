@@ -2508,7 +2508,14 @@ body.padOpen #hud { visibility: hidden; }
       const lc = lookOf(pr).join(''); if (lc !== r.look) rebuildRemote(r, lc);
       const mt = Number(pr.mt) || 0;                                         /* a new emote counter = play it (but not the old one when I just arrived) */
       if (r.mt === undefined) r.mt = mt; else if (mt !== r.mt) { r.mt = mt; const em = EMOTES.find(q => q.id === pr.m); if (em) startEmote(r.av, em); }
-      r.tx = clamp(pr.x, -RM.hx, OUT.x1 + 2); r.tz = clamp(pr.z, OUT.z0 - 2, Math.max(GZ1, OUT.z1));
+      const nx = clamp(pr.x, -RM.hx, OUT.x1 + 2), nz = clamp(pr.z, OUT.z0 - 2, Math.max(GZ2, OUT.z1)), nt = performance.now();
+      if (r.init && (nx !== r.tx || nz !== r.tz)) {                           /* a new position: estimate the walking speed so the avatar glides on between updates */
+        const dtp = (nt - r.lt) / 1000, jump = Math.hypot(nx - r.tx, nz - r.tz);
+        if (dtp > 0.05 && dtp < 1.2 && pr.w === 1 && jump < 6) { r.vx = clamp((nx - r.tx) / dtp, -9, 9); r.vz = clamp((nz - r.tz) / dtp, -9, 9); } else { r.vx = 0; r.vz = 0; }
+        r.lt = nt;
+      } else if (pr.w !== 1) { r.vx = 0; r.vz = 0; }
+      if (!r.init) r.lt = nt;
+      r.tx = nx; r.tz = nz;
       r.th = typeof pr.h === 'number' && isFinite(pr.h) ? pr.h : r.th; r.w = pr.w === 1 ? 1 : 0;
       r.e = typeof pr.e === 'number' && pr.e >= 0 && pr.e < easels.length ? Math.floor(pr.e) : -1;
       if (!r.init) { r.x = r.tx; r.z = r.tz; r.h = r.th; r.init = true; }
@@ -2772,7 +2779,8 @@ body.padOpen #hud { visibility: hidden; }
     sunFollow(pos.x, pos.z); swayT.value = tNow;
     pushPresence(false);
     remotes.forEach(r => {
-      const f2 = 1 - Math.exp(-dt * 10), dx = r.tx - r.x, dz = r.tz - r.z;
+      const age = Math.min((performance.now() - (r.lt || 0)) / 1000, 0.35), f2 = 1 - Math.exp(-dt * 9);   /* keep gliding along the last known speed until the next update arrives */
+      const dx = r.tx + (r.vx || 0) * age - r.x, dz = r.tz + (r.vz || 0) * age - r.z;
       const moving = Math.hypot(dx, dz) > 0.05 || r.w === 1;
       r.x += dx * f2; r.z += dz * f2; r.h += angDiff(r.h, r.th) * Math.min(1, dt * 12);
       r.amp = lerp(r.amp, moving ? 1 : 0, Math.min(1, dt * 10)); if (r.amp > 0.05) r.phase += dt * 10;
