@@ -28,6 +28,7 @@ async function start(opts) {
     const i = pages.length, ctx = await browser.newContext({ viewport: vp || { width: 390, height: 800 } });
     const p = await ctx.newPage(); pages.push(p); p.name = name || ('p' + i);
     p.on('pageerror', e => errors.push(p.name + ': ' + e));
+    p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(p.name + ' console: ' + m.text().slice(0, 240)); });   /* WebGL shader errors show up here */
     await p.exposeFunction('__busSend', (n, e, pl) => { pages.forEach((q, j) => { if (j !== i) q.evaluate(([a, b, c]) => window.__busRecv(a, b, c), [n, e, pl]).catch(() => {}); }); });
     await p.route('**/*', r => {
       const u = new URL(r.request().url());

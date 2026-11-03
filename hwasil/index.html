@@ -307,6 +307,9 @@ body.padOpen #hud { visibility: hidden; }
 .nameRow { display: flex; gap: 8px; align-items: stretch; }
 .nameRow input { flex: 1; min-width: 0; }
 .nameRow .btn { padding: 4px 12px; font-size: 22px; line-height: 1; }
+#qBox { flex: 0 0 auto; border-top: 2px dashed var(--ink); padding-top: 10px; }
+#qBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
+#qBox .seg { margin-top: 10px; }
 #nameBox { flex: 0 0 auto; border-top: 2px dashed var(--ink); padding-top: 10px; }
 #nameBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
 #nameBox .field { margin: 10px 0 8px; }
@@ -385,6 +388,11 @@ body.padOpen #hud { visibility: hidden; }
       </label>
       <button class="btn primary" id="renameBtn" type="button">이름 바꾸기</button>
       <p class="empty" id="renameMsg" hidden></p>
+    </details>
+    <details id="qBox">
+      <summary>그래픽 품질</summary>
+      <p class="empty">화면이 느리거나 폰이 뜨거워지면 '낮음'으로 바꿔 보세요. 그림자와 장식(풀, 나비, 꽃가루)이 줄어들어요. 바꾸면 화면을 다시 불러와요.</p>
+      <div class="seg" id="qSeg" role="group" aria-label="그래픽 품질"><button type="button" data-q="hi">높음</button><button type="button" data-q="lo">낮음</button></div>
     </details>
     <details id="keyBox">
       <summary>다른 기기로 옮기기</summary>
@@ -499,14 +507,25 @@ body.padOpen #hud { visibility: hidden; }
     $('#intro').innerHTML = '<div class="card"><h1>3D를 켜지 못했어요</h1><p>이 기기의 브라우저가 WebGL을 지원하지 않는 것 같아요.</p></div>';
     return;
   }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const HI = store('hw-q') !== 'lo';                     /* graphics quality: high (shadows, more grass, butterflies...) or low */
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, HI ? 2 : 1.5));
+  renderer.shadowMap.enabled = HI; renderer.shadowMap.type = T.PCFSoftShadowMap;
   renderer.setSize(window.innerWidth, window.innerHeight);
   $('#stage').appendChild(renderer.domElement);
   const cv = renderer.domElement;
   const scene = new T.Scene();
-  scene.background = new T.Color(0xcfe6f2);
-  scene.fog = new T.Fog(0xcfe6f2, 95, 330);
-  const camera = new T.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 1, 380);
+  const FOG_COL = 0xdfe9ec;
+  scene.background = new T.Color(FOG_COL);
+  scene.fog = new T.Fog(FOG_COL, 95, 330);
+  const SUN = new T.Vector3(-0.5, 0.62, -0.6).normalize();       /* direction towards the sun */
+  const sky = new T.Mesh(new T.SphereGeometry(350, 24, 14), new T.ShaderMaterial({
+    side: T.BackSide, depthWrite: false, fog: false,
+    uniforms: { top: { value: new T.Color(0x6fb3ea) }, mid: { value: new T.Color(0xc4e4f6) }, bot: { value: new T.Color(0xf8eed8) }, sunDir: { value: SUN } },
+    vertexShader: 'varying vec3 vP; void main() { vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform vec3 top; uniform vec3 mid; uniform vec3 bot; uniform vec3 sunDir; varying vec3 vP; void main() { vec3 d = normalize(vP); float h = d.y; vec3 c = mix(bot, mid, smoothstep(-0.02, 0.14, h)); c = mix(c, top, smoothstep(0.12, 0.7, h)); float s = max(dot(d, normalize(sunDir)), 0.0); c += vec3(1.0, 0.88, 0.62) * (pow(s, 6.0) * 0.28 + pow(s, 80.0) * 0.5); gl_FragColor = vec4(c, 1.0); }'
+  }));
+  sky.renderOrder = -10; sky.frustumCulled = false; sky.userData.noShadow = true; scene.add(sky);
+  const camera = new T.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 1, 400);
   function onResize() {
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h);
@@ -517,7 +536,20 @@ body.padOpen #hud { visibility: hidden; }
   window.addEventListener('resize', onResize);
   window.addEventListener('orientationchange', onResize);
 
-  const L = (c, o) => new T.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
+  const toonGrad = new T.DataTexture(new Uint8Array([120, 195, 255]), 3, 1, T.LuminanceFormat);
+  toonGrad.minFilter = toonGrad.magFilter = T.NearestFilter; toonGrad.generateMipmaps = false; toonGrad.needsUpdate = true;
+  const L = (c, o) => new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: toonGrad }, o || {}));
+  /* wind: bends vertices with their height. mode 'local' uses the vertex height (+base), 'inst' the instance's own height */
+  const swayT = { value: 0 };
+  function sway(mat, amp, base, mode) {
+    mat.onBeforeCompile = sh => {
+      sh.uniforms.uTime = swayT;
+      sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>',
+        'vec3 transformed = vec3(position);\n#ifdef USE_INSTANCING\nfloat ph = instanceMatrix[3].x * 0.31 + instanceMatrix[3].z * 0.23;\nfloat hg = ' + (mode === 'inst' ? 'instanceMatrix[3].y' : 'max(position.y + ' + (base || 0).toFixed(2) + ', 0.0)') + ';\n#else\nfloat ph = 0.0; float hg = max(position.y + ' + (base || 0).toFixed(2) + ', 0.0);\n#endif\nfloat sw = sin(uTime * 1.7 + ph) * ' + amp.toFixed(3) + ' * hg;\ntransformed.x += sw; transformed.z += sw * 0.6;');
+    };
+    mat.customProgramCacheKey = () => 'sway' + amp + (mode || '') + (base || 0);
+    return mat;
+  }
   const B = (c, o) => new T.MeshBasicMaterial(Object.assign({ color: c }, o || {}));
   function put(g, mesh, x, y, z) { mesh.position.set(x, y, z); g.add(mesh); return mesh; }
   const cyl = (a, b, h, s) => new T.CylinderGeometry(a, b, h, s || 10);
@@ -549,9 +581,22 @@ body.padOpen #hud { visibility: hidden; }
     return t;
   }
   const floor = new T.Mesh(new T.PlaneGeometry(RM.hx * 2, RM.hz * 2), new T.MeshLambertMaterial({ map: plankTexture() }));
-  floor.rotation.x = -Math.PI / 2; scene.add(floor);
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
   /* ground outside the building, seen when the far camera looks in over a wall */
-  const ground = new T.Mesh(new T.PlaneGeometry(650, 1000), new T.MeshLambertMaterial({ color: 0x93bd6a }));
+  function grassTexture() {
+    const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'), r = mulberry32(31);
+    x.fillStyle = '#93bd6a'; x.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 280; i++) {
+      const px = r() * 256, py = r() * 256, rad = 8 + r() * 26; x.fillStyle = r() < 0.5 ? 'rgba(170,208,112,0.22)' : 'rgba(110,158,84,0.2)';
+      for (let dx = -256; dx <= 256; dx += 256) for (let dy = -256; dy <= 256; dy += 256) { x.beginPath(); x.arc(px + dx, py + dy, rad, 0, 6.2832); x.fill(); }
+    }
+    x.strokeStyle = 'rgba(78,128,58,0.35)'; x.lineWidth = 1.4;
+    for (let i = 0; i < 520; i++) { const px = r() * 256, py = r() * 256; x.beginPath(); x.moveTo(px, py); x.lineTo(px + (r() - 0.5) * 4, py - 3 - r() * 4); x.stroke(); }
+    const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(650 / 16, 1000 / 16); t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    return t;
+  }
+  const ground = new T.Mesh(new T.PlaneGeometry(650, 1000), new T.MeshLambertMaterial({ map: grassTexture() }));
+  ground.receiveShadow = true;
   ground.rotation.x = -Math.PI / 2; ground.position.set(SEA_X - 325, -0.05, 0); scene.add(ground);   /* ends at the shore so it never z-fights with the sea */
 
   const wallMat = L(0xefe8da), baseMat = L(0x8d6b45);
@@ -654,8 +699,17 @@ body.padOpen #hud { visibility: hidden; }
     });
   })();
 
-  scene.add(new T.HemisphereLight(0xfff6e8, 0x8a7a66, 0.95));
-  const key = new T.DirectionalLight(0xfff0d0, 0.55); key.position.set(6, 12, -8); scene.add(key);
+  scene.add(new T.HemisphereLight(0xeaf3ff, 0x9aa57a, 0.55));
+  const key = new T.DirectionalLight(0xffefd0, 0.72); scene.add(key); scene.add(key.target);
+  if (HI) {
+    key.castShadow = true; key.shadow.mapSize.set(1024, 1024);
+    Object.assign(key.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 120 });
+    key.shadow.bias = -0.0007; key.shadow.normalBias = 0.05; key.shadow.radius = 2.5;
+  }
+  function sunFollow(x, z) {                                     /* the shadow box travels with the player, snapped to whole units so it does not shimmer */
+    const sx = Math.round(x), sz = Math.round(z);
+    key.target.position.set(sx, 0, sz); key.position.set(sx + SUN.x * 50, SUN.y * 50, sz + SUN.z * 50); key.target.updateMatrixWorld();
+  }
 
   /* props: rug, paint splatters, shelves, sculptures */
   const PAL = [0xd9342b, 0xf08a24, 0xf3c431, 0x3f9b4f, 0x1fa3a3, 0x2c47c8, 0x7a3fb0, 0xec7fb0];
@@ -722,6 +776,17 @@ body.padOpen #hud { visibility: hidden; }
       put(scene, new T.Mesh(bx(2.2, 0.9, 2.2), woodD), x, 0.45, z);
       const s = put(scene, i % 2 ? makeRing(1.6) : makeTwist(1.0), x, 0.9, z); s.rotation.y = i;
       colliders.push({ x: x, z: z, r: 1.7 });
+    });
+    /* potted plants along the north wall (between the windows) */
+    [-22.5, -13.5, -4.5, 4.5, 13.5, 22.5].forEach(px => {
+      const pg = new T.Group(); pg.position.set(px, 0, -RM.hz + 1.5); scene.add(pg);
+      put(pg, new T.Mesh(cyl(0.55, 0.42, 0.9, 10), L(0xc77a4a)), 0, 0.45, 0);
+      put(pg, new T.Mesh(cyl(0.5, 0.5, 0.1, 10), L(0x5a3a28)), 0, 0.9, 0);
+      for (let k = 0; k < 7; k++) {
+        const a = k / 7 * 6.28 + px, lf = new T.Mesh(new T.ConeGeometry(0.24, 1.6, 5), sway(L(k % 2 ? 0x4fa45a : 0x68b866), 0.05, 0.8));
+        lf.position.set(Math.sin(a) * 0.3, 1.7, Math.cos(a) * 0.3); lf.rotation.set(Math.cos(a) * 0.45, 0, -Math.sin(a) * 0.45); pg.add(lf);
+      }
+      colliders.push({ x: px, z: -RM.hz + 1.5, r: 0.8 });
     });
     /* shelves with paint jars (west) */
     for (let row = 0; row < 2; row++) {
@@ -940,8 +1005,6 @@ body.padOpen #hud { visibility: hidden; }
   const LOOK_MAX = [6, 7, 8, 6, 10, 5, 4];            /* options per slot: skin, hair, hair colour, hat, coat, accessory, face */
   function parseLook(s) { if (typeof s !== 'string' || !/^\d{7}$/.test(s)) return null; const a = s.split('').map(Number); for (let i = 0; i < 7; i++) if (a[i] >= LOOK_MAX[i]) return null; return a; }
   function randomLook() { return LOOK_MAX.map(n => (Math.random() * n) | 0); }
-  const toonGrad = new T.DataTexture(new Uint8Array([120, 195, 255]), 3, 1, T.LuminanceFormat);
-  toonGrad.minFilter = toonGrad.magFilter = T.NearestFilter; toonGrad.generateMipmaps = false; toonGrad.needsUpdate = true;
   const toonCache = {};
   const TN = (c, o) => { const k = c + (o ? JSON.stringify(o) : ''); return toonCache[k] || (toonCache[k] = new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: toonGrad }, o || {}))); };
   const inkM = new T.MeshBasicMaterial({ color: 0x2a2233, side: T.BackSide });
@@ -1018,6 +1081,7 @@ body.padOpen #hud { visibility: hidden; }
     if (accI === 2) { const pal = new T.Group(); pal.position.set(0, -0.58, 0.16); pal.rotation.set(0.5, 0, 0); const base = new T.Mesh(cyl(0.34, 0.34, 0.04, 16), wood); base.scale.set(1, 1, 0.75); pal.add(base); [0xd9342b, 0xf3c431, 0x2c47c8, 0x3f9b4f].forEach((c, i) => { const d = new T.Mesh(cyl(0.05, 0.05, 0.06, 8), TN(c)); d.position.set(-0.18 + i * 0.12, 0.03, -0.06 + (i % 2) * 0.1); pal.add(d); }); av.armL.add(pal); }
     if (accI === 3) { const bp = new T.Mesh(new T.BoxGeometry(0.56, 0.66, 0.26), TN(new T.Color(coatC).multiplyScalar(0.75).getHex())); bp.position.set(0, 1.0, -0.52); g.add(bp); const rl = new T.Mesh(cyl(0.09, 0.09, 0.62, 8), TN(0xf3ead8)); rl.rotation.z = Math.PI / 2; rl.position.set(0, 1.42, -0.52); g.add(rl); }
     if (accI === 4) { const gm = TN(0x2a2233); [-1, 1].forEach(sd => { const rg = new T.Mesh(new T.TorusGeometry(0.15, 0.025, 6, 16), gm); rg.position.set(sd * 0.21, 0.04, 0.585); headG.add(rg); }); const br = new T.Mesh(cyl(0.015, 0.015, 0.14, 4), gm); br.rotation.z = Math.PI / 2; br.position.set(0, 0.07, 0.6); headG.add(br); }
+    if (HI) g.traverse(o => { if (o.isMesh && o.material !== inkM && o.material !== av.faceMat) o.castShadow = true; });
     return av;
   }
   function disposeAvatar(av) { av.group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); if (av.faceMat) av.faceMat.dispose(); }
@@ -1070,7 +1134,28 @@ body.padOpen #hud { visibility: hidden; }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
-    const flat = (geo, mat, x, y, z) => { const m = new T.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; return at(m, x, y, z); };
+    const flat = (geo, mat, x, y, z) => { const m = new T.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; m.receiveShadow = true; return at(m, x, y, z); };
+    /* animated water: depth colour, drifting ripples, sparkles, foam lines at the shore (one shader for the sea and the lake) */
+    function waterMat(o) {
+      return new T.ShaderMaterial({
+        fog: false,
+        uniforms: { uTime: swayT, cA: { value: new T.Color(o.shallow) }, cB: { value: new T.Color(o.deep) }, cFog: { value: new T.Color(FOG_COL) }, uMode: { value: o.mode }, uShore: { value: o.shore || 0 }, uCenter: { value: new T.Vector2(o.cx || 0, o.cz || 0) }, uRadius: { value: o.radius || 1 }, uDepth: { value: o.depth }, uAmp: { value: o.amp } },
+        vertexShader: 'uniform float uTime; uniform float uAmp; uniform float uMode; uniform float uShore; uniform float uRadius; uniform vec2 uCenter; varying vec3 vW; varying float vD;\n' +
+          'void main() { vec4 wp = modelMatrix * vec4(position, 1.0); float d = uMode > 0.5 ? uRadius - length(wp.xz - uCenter) : wp.x - uShore;\n' +
+          'float fade = uMode > 0.5 ? 1.0 : 1.0 - smoothstep(20.0, 100.0, max(d, 0.0));\n' +
+          'wp.y += (sin(wp.x * 0.22 + uTime * 1.1) + sin(wp.z * 0.31 - uTime * 0.9) * 0.7) * uAmp * fade * smoothstep(0.0, 3.0, d);\n' +
+          'vW = wp.xyz; vD = length(wp.xyz - cameraPosition); gl_Position = projectionMatrix * viewMatrix * wp; }',
+        fragmentShader: 'uniform vec3 cA; uniform vec3 cB; uniform vec3 cFog; uniform float uTime; uniform float uMode; uniform float uShore; uniform float uRadius; uniform float uDepth; uniform vec2 uCenter; varying vec3 vW; varying float vD;\n' +
+          'float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\n' +
+          'float n(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y); }\n' +
+          'void main() { float r = length(vW.xz - uCenter); if (uMode > 0.5 && r > uRadius) discard;\n' +
+          'float d = uMode > 0.5 ? uRadius - r : vW.x - uShore; vec3 col = mix(cA, cB, smoothstep(0.0, uDepth, d));\n' +
+          'col += (n(vW.xz * 0.4 + vec2(uTime * 0.22, uTime * 0.1)) - 0.5) * 0.10 + (n(vW.xz * 0.9 - vec2(uTime * 0.18, uTime * 0.3)) - 0.5) * 0.06;\n' +
+          'col += smoothstep(0.88, 0.97, n(vW.xz * 3.0 + vec2(uTime * 0.7, -uTime * 0.5))) * 0.4;\n' +
+          'float band = sin(d * 1.3 - uTime * 1.5) * 0.5 + 0.5; float foam = smoothstep(0.82, 1.0, band) * (1.0 - smoothstep(0.0, 7.0, d)) * (uMode > 0.5 ? 0.0 : 1.0); foam += 1.0 - smoothstep(0.0, 0.7, d);\n' +
+          'col = mix(col, vec3(1.0), clamp(foam, 0.0, 1.0) * 0.8); gl_FragColor = vec4(mix(col, cFog, smoothstep(95.0, 330.0, vD)), 1.0); }'
+      });
+    }
     const wood = L(0xb89a6a), woodD2 = L(0x7b5a36);
 
     /* paths */
@@ -1084,15 +1169,9 @@ body.padOpen #hud { visibility: hidden; }
     flat(new T.CircleGeometry(6.5, 32), pathM, 40, 0.031, 0);
 
     /* sea, beach, foam */
-    flat(new T.PlaneGeometry(40, 400), L(0x74cdea), SEA_X + 20, -0.01, 0);
-    flat(new T.PlaneGeometry(700, 400), L(0x3b97d6), SEA_X + 40 + 350, -0.02, 0);
+    const sea = flat(new T.PlaneGeometry(700, 400, HI ? 140 : 70, HI ? 60 : 30), waterMat({ mode: 0, shore: SEA_X, depth: 80, shallow: 0x7fd8ee, deep: 0x2f7fc4, amp: 0.1 }), SEA_X + 350, -0.01, 0);
+    sea.receiveShadow = false; sea.userData.noShadow = true;
     flat(new T.PlaneGeometry(16, 200), L(0xf1e3b4), 142, 0.01, 0);
-    const foam = [];
-    for (let i = 0; i < 3; i++) {
-      const f = flat(new T.PlaneGeometry(1.2, 200), B(0xffffff, { transparent: true, opacity: 0.4, depthWrite: false }), SEA_X + 2, 0.0, 0);
-      foam.push(f);
-    }
-    anim.push((dt, t) => foam.forEach((f, i) => { const k = t * 0.9 + i * 2.1; f.position.x = SEA_X + 1.5 + i * 5 + 1.6 * Math.sin(k); f.material.opacity = 0.18 + 0.22 * (1 + Math.sin(k + 1)) / 2; }));
 
     /* boardwalk + railing at the beach spot */
     at(new T.Mesh(bx(7.5, 0.25, 40), wood), 140, 0.13, 0);
@@ -1161,20 +1240,79 @@ body.padOpen #hud { visibility: hidden; }
     }
     for (let a = 0; a < 6.28; a += 0.42) {              /* trees ringing the lake, leaving the north shore (the easels) open */
       if (Math.sin(a) < -0.5) continue;
-      const rr2 = LAKE.r + 4 + rnd() * 3; treePts.push({ x: LAKE.x + Math.cos(a) * rr2, z: LAKE.z + Math.sin(a) * rr2, s: 0.9 + rnd() * 0.6 });
+      const rr2 = LAKE.r + 4 + rnd() * 3; treePts.push({ x: LAKE.x + Math.cos(a) * rr2, z: LAKE.z + Math.sin(a) * rr2, s: 0.9 + rnd() * 0.6, round: true });
     }
-    const N = treePts.length, trunkIM = new T.InstancedMesh(cyl(0.35, 0.45, 2.2, 6), L(0x7b5a36), N);
-    const cone1 = new T.InstancedMesh(new T.ConeGeometry(2.3, 4.2, 7), L(0xffffff), N), cone2 = new T.InstancedMesh(new T.ConeGeometry(1.7, 3.4, 7), L(0xffffff), N);
-    const dm = new T.Object3D(), gc = new T.Color();
-    treePts.forEach((q, i) => {
+    const dm = new T.Object3D(), gc = new T.Color(), pine = [], round = [];
+    treePts.forEach(q => { (q.round || rnd() < 0.4 ? round : pine).push(q); colliders.push({ x: q.x, z: q.z, r: 0.9 }); });
+    const instMesh = (geo, mat, n) => { const m = new T.InstancedMesh(geo, mat, n); m.frustumCulled = false; if (HI) m.castShadow = true; scene.add(m); return m; };   /* instanced meshes are culled by the origin otherwise */
+    /* pines */
+    const PN = pine.length, pTrunk = instMesh(cyl(0.35, 0.45, 2.2, 6), L(0x7b5a36), PN);
+    const pineM = sway(L(0xffffff), 0.012, 0, 'inst'), cone1 = instMesh(new T.ConeGeometry(2.3, 4.2, 7), pineM, PN), cone2 = instMesh(new T.ConeGeometry(1.7, 3.4, 7), pineM, PN);
+    pine.forEach((q, i) => {
       dm.rotation.set(0, rnd() * 6, 0); dm.scale.setScalar(q.s);
-      dm.position.set(q.x, 1.1 * q.s, q.z); dm.updateMatrix(); trunkIM.setMatrixAt(i, dm.matrix);
+      dm.position.set(q.x, 1.1 * q.s, q.z); dm.updateMatrix(); pTrunk.setMatrixAt(i, dm.matrix);
       dm.position.set(q.x, 3.8 * q.s, q.z); dm.updateMatrix(); cone1.setMatrixAt(i, dm.matrix);
       dm.position.set(q.x, 5.3 * q.s, q.z); dm.updateMatrix(); cone2.setMatrixAt(i, dm.matrix);
       gc.setHex(0x3f9a4a).offsetHSL((rnd() - 0.5) * 0.06, 0, (rnd() - 0.5) * 0.12); cone1.setColorAt(i, gc); cone2.setColorAt(i, gc);
-      colliders.push({ x: q.x, z: q.z, r: 0.9 });
     });
-    [trunkIM, cone1, cone2].forEach(m => { m.frustumCulled = false; scene.add(m); });   /* instanced meshes are culled by the origin otherwise */
+    /* round trees: three blobs on a trunk, some pink (cherry) or golden (autumn) */
+    const RN = round.length, rTrunk = instMesh(cyl(0.4, 0.5, 2.8, 7), L(0x7b5a36), RN), crownM = sway(L(0xffffff), 0.012, 0, 'inst');
+    const crowns = [instMesh(new T.IcosahedronGeometry(2.1, 1), crownM, RN), instMesh(new T.IcosahedronGeometry(1.5, 1), crownM, RN), instMesh(new T.IcosahedronGeometry(1.35, 1), crownM, RN)];
+    const BLOBS = [[0, 4.0, 0, 1], [1.1, 4.9, 0.4, 0.95], [-1.0, 3.5, -0.7, 0.9]];
+    round.forEach((q, i) => {
+      const yaw = rnd() * 6.28, cs = Math.cos(yaw), sn = Math.sin(yaw), pick = rnd();
+      dm.rotation.set(0, yaw, 0); dm.scale.setScalar(q.s); dm.position.set(q.x, 1.4 * q.s, q.z); dm.updateMatrix(); rTrunk.setMatrixAt(i, dm.matrix);
+      gc.setHex(pick < 0.45 ? 0x58b04e : pick < 0.7 ? 0x3f9a4a : pick < 0.82 ? 0x8fcf4e : pick < 0.92 ? 0xf2a6c0 : 0xe8a23a).offsetHSL((rnd() - 0.5) * 0.04, 0, (rnd() - 0.5) * 0.08);
+      crowns.forEach((cm, k) => {
+        const bo = BLOBS[k]; dm.rotation.set(rnd() * 3, rnd() * 3, 0); dm.scale.setScalar(q.s * bo[3]);
+        dm.position.set(q.x + (bo[0] * cs - bo[2] * sn) * q.s, bo[1] * q.s, q.z + (bo[0] * sn + bo[2] * cs) * q.s); dm.updateMatrix(); cm.setMatrixAt(i, dm.matrix); cm.setColorAt(i, gc);
+      });
+    });
+
+    /* wind-blown grass, bushes and rocks */
+    function offPaths(x, z) {
+      if (Math.abs(z) < 2.6 && x < 139) return false;
+      if (Math.abs(x - 85) < 2.6 && z < 1 && z > -47) return false;
+      if (Math.abs(x - LAKE.x) < 2.6 && z > -1 && z < 22) return false;
+      if (Math.abs(x - MILL.x) < 2.6 && z > -1 && z < 26) return false;
+      if (Math.hypot(x - 40, z) < 7) return false;
+      return Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 2.4;
+    }
+    function bladeClump() {                              /* four thin blades leaning outwards, merged into one geometry */
+      const parts = [];
+      for (let k = 0; k < 4; k++) {
+        const hgt = 0.62 + k * 0.07, g = new T.ConeGeometry(0.07, hgt, 3); g.translate(0, hgt / 2, 0);
+        const a = k / 4 * 6.28; g.applyMatrix4(new T.Matrix4().makeRotationFromEuler(new T.Euler(Math.cos(a) * 0.3, 0, Math.sin(a) * 0.3))); g.translate(Math.sin(a) * 0.09, 0, Math.cos(a) * 0.09); parts.push(g);
+      }
+      let vc = 0, ic = 0; parts.forEach(g => { vc += g.attributes.position.count; ic += g.index.count; });
+      const pos = new Float32Array(vc * 3), nor = new Float32Array(vc * 3), idx = new Uint16Array(ic); let vo = 0, io = 0;
+      parts.forEach(g => { pos.set(g.attributes.position.array, vo * 3); nor.set(g.attributes.normal.array, vo * 3); const ia = g.index.array; for (let i = 0; i < ia.length; i++) idx[io + i] = ia[i] + vo; vo += g.attributes.position.count; io += ia.length; });
+      const m = new T.BufferGeometry(); m.setAttribute('position', new T.BufferAttribute(pos, 3)); m.setAttribute('normal', new T.BufferAttribute(nor, 3)); m.setIndex(new T.BufferAttribute(idx, 1)); return m;
+    }
+    const GN = HI ? 2200 : 700, tuftG = bladeClump();
+    const tufts = instMesh(tuftG, sway(L(0xffffff), 0.16, 0), GN); tufts.castShadow = false;
+    for (let i = 0, n = 0; n < GN && i < GN * 6; i++) {
+      const x = OUT.x0 + 0.5 + rnd() * (133 - OUT.x0), z = OUT.z0 + 0.5 + rnd() * (OUT.z1 - OUT.z0 - 1);
+      if (!offPaths(x, z)) continue;
+      dm.rotation.set(0, rnd() * 6.28, 0); dm.scale.set(0.9 + rnd() * 0.9, 0.8 + rnd() * 0.9, 0.9 + rnd() * 0.9); dm.position.set(x, 0, z); dm.updateMatrix(); tufts.setMatrixAt(n, dm.matrix);
+      gc.setHex(0x78ba50).offsetHSL((rnd() - 0.5) * 0.05, 0, (rnd() - 0.5) * 0.18); tufts.setColorAt(n, gc); n++; if (n === GN) break;
+    }
+    const BN = HI ? 70 : 30, bushes = instMesh(new T.IcosahedronGeometry(0.9, 1), sway(L(0xffffff), 0.02, 0, 'inst'), BN);
+    for (let i = 0, n = 0; n < BN && i < BN * 12; i++) {
+      const x = OUT.x0 + 2 + rnd() * (128 - OUT.x0), z = OUT.z0 + 2 + rnd() * (OUT.z1 - OUT.z0 - 4);
+      if (!offPaths(x, z) || !free(x, z)) continue;
+      const sc = 0.8 + rnd() * 0.9; dm.rotation.set(0, rnd() * 6, 0); dm.scale.set(sc * 1.25, sc * 0.8, sc * 1.25); dm.position.set(x, 0.55 * sc, z); dm.updateMatrix(); bushes.setMatrixAt(n, dm.matrix);
+      gc.setHex(rnd() < 0.2 ? 0xe58aa6 : 0x4aa64f).offsetHSL((rnd() - 0.5) * 0.05, 0, (rnd() - 0.5) * 0.12); bushes.setColorAt(n, gc); n++;
+    }
+    bushes.count = Math.min(BN, bushes.count);
+    const RK = 44, rocks = instMesh(new T.IcosahedronGeometry(1, 0), L(0xffffff), RK);
+    for (let i = 0, n = 0; n < RK && i < RK * 20; i++) {
+      const beach = n < 16, x = beach ? 127 + rnd() * 9 : OUT.x0 + 4 + rnd() * 100, z = beach ? OUT.z0 + rnd() * (OUT.z1 - OUT.z0) : OUT.z0 + 1 + rnd() * (OUT.z1 - OUT.z0 - 2);
+      if (!offPaths(x, z) || (!beach && !free(x, z))) continue;
+      if (Math.abs(x - 141) < 6 && Math.abs(z) < 22) continue;                          /* the boardwalk */
+      const sx = 0.6 + rnd() * 1.3, sy = 0.4 + rnd() * 0.6; dm.rotation.set(rnd(), rnd() * 6, rnd() * 0.4); dm.scale.set(sx, sy, 0.6 + rnd() * 1.1); dm.position.set(x, 0.2 * sy, z); dm.updateMatrix(); rocks.setMatrixAt(n, dm.matrix);
+      gc.setHex(0x9b978e).offsetHSL(0, 0, (rnd() - 0.5) * 0.16); rocks.setColorAt(n, gc); n++;
+    }
 
     /* signs */
     function sign(text, x, z) {
@@ -1183,7 +1321,7 @@ body.padOpen #hud { visibility: hidden; }
     }
 
     /* spot 1: mountain viewpoint (looking north) */
-    at(new T.Mesh(cyl(15, 15, 0.3, 32), L(0xc4bdb0)), 85, 0.15, -46);
+    at(new T.Mesh(cyl(15, 15, 0.3, 32), L(0xa89f90)), 85, 0.15, -46);
     for (let x = 69; x <= 101.01; x += 4) at(new T.Mesh(cyl(0.18, 0.18, 1.8, 6), woodD2), x, 0.9, -53);
     at(new T.Mesh(bx(32, 0.2, 0.2), woodD2), 85, 1.7, -53);
     for (let i = 0; i < 4; i++) addEaselAt(85 + (i - 1.5) * 7, -48, Math.PI / 2);
@@ -1196,14 +1334,11 @@ body.padOpen #hud { visibility: hidden; }
 
     /* spot 3: lakeside (looking south over the water) */
     flat(new T.RingGeometry(LAKE.r - 0.2, LAKE.r + 1.6, 44), L(0xe9dfb4), LAKE.x, 0.015, LAKE.z);
-    flat(new T.CircleGeometry(LAKE.r, 44), L(0x5db7e8), LAKE.x, 0.02, LAKE.z);
-    const ripples = [];
-    for (let i = 0; i < 3; i++) { const rp = flat(new T.RingGeometry(0.92, 1, 40), B(0xffffff, { transparent: true, opacity: 0.4, depthWrite: false }), LAKE.x + (i - 1) * 3.5, 0.03, LAKE.z + 2 + i * 1.5); ripples.push(rp); }
-    anim.push((dt, t) => ripples.forEach((rp, i) => { const k = ((t * 0.25 + i / 3) % 1); rp.scale.setScalar(0.5 + k * 5); rp.material.opacity = 0.45 * (1 - k); }));
+    flat(new T.PlaneGeometry(LAKE.r * 2 + 2, LAKE.r * 2 + 2, 28, 28), waterMat({ mode: 1, cx: LAKE.x, cz: LAKE.z, radius: LAKE.r, depth: 9, shallow: 0x93e0f0, deep: 0x3f93cf, amp: 0.035 }), LAKE.x, 0.02, LAKE.z).receiveShadow = false;
     for (let i = 0; i < 16; i++) {                        /* lily pads (and a few pink flowers) */
       const a = rnd() * 6.28, d = 2 + rnd() * (LAKE.r - 4), x = LAKE.x + Math.cos(a) * d, z = LAKE.z + Math.sin(a) * d;
-      flat(new T.CircleGeometry(0.5 + rnd() * 0.4, 10), L(0x3f9a4a), x, 0.035, z);
-      if (i % 4 === 0) at(new T.Mesh(new T.SphereGeometry(0.22, 8, 6), L(0xf08fb8)), x, 0.2, z);
+      flat(new T.CircleGeometry(0.5 + rnd() * 0.4, 10), L(0x3f9a4a), x, 0.1, z);
+      if (i % 4 === 0) at(new T.Mesh(new T.SphereGeometry(0.22, 8, 6), L(0xf08fb8)), x, 0.26, z);
     }
     const reedIM = new T.InstancedMesh(cyl(0.05, 0.07, 2.4, 4), L(0x9ab760), 46), rd = new T.Object3D();
     for (let i = 0; i < 46; i++) {
@@ -1234,7 +1369,7 @@ body.padOpen #hud { visibility: hidden; }
     anim.push(dt => { blades.rotation.z -= dt * 0.7; });
     colliders.push({ x: MILL.x, z: MILL.z, r: 3.6 });
     /* flowers (instanced) and hay bales */
-    const FN = 420, stems = new T.InstancedMesh(cyl(0.04, 0.05, 0.9, 4), L(0x4f9a46), FN), heads = new T.InstancedMesh(new T.SphereGeometry(0.3, 6, 5), L(0xffffff), FN), fd = new T.Object3D(), fc = new T.Color();
+    const FN = HI ? 520 : 260, stems = new T.InstancedMesh(cyl(0.04, 0.05, 0.9, 4), sway(L(0x4f9a46), 0.18, 0.45), FN), heads = new T.InstancedMesh(new T.SphereGeometry(0.3, 6, 5), sway(L(0xffffff), 0.2, 0, 'inst'), FN), fd = new T.Object3D(), fc = new T.Color();
     let fi = 0;
     for (let tries = 0; tries < 1200 && fi < FN; tries++) {
       const x = 96 + rnd() * 34, z = 31 + rnd() * 22;
@@ -1251,6 +1386,49 @@ body.padOpen #hud { visibility: hidden; }
     });
     for (let i = 0; i < 4; i++) addEaselAt(MILL.x + (i - 1.5) * 7, 29, -Math.PI / 2);
     sign('풍차 들판', MILL.x - 6.5, 12);
+
+    /* a little life: butterflies, drifting pollen, far-away birds */
+    const BF = HI ? 16 : 6, flies = [], wingGeo = new T.PlaneGeometry(0.42, 0.36); wingGeo.translate(0.21, 0, 0);
+    const FCENTERS = [[112, 44], [72, 28], [62, 10], [100, 12], [45, 6]];
+    for (let i = 0; i < BF; i++) {
+      const g = new T.Group(), wm = new T.MeshBasicMaterial({ color: [0xf3c431, 0xec7fb0, 0x7fb8f0, 0xffffff, 0xf08a24][i % 5], side: T.DoubleSide });
+      const pv = [new T.Group(), new T.Group()];
+      pv.forEach((q, k) => { const w = new T.Mesh(wingGeo, wm); w.rotation.x = -Math.PI / 2; if (k) w.scale.x = -1; q.add(w); g.add(q); });
+      const bd = new T.Mesh(cyl(0.03, 0.03, 0.3, 4), B(0x3a2f35)); bd.rotation.x = Math.PI / 2; g.add(bd);
+      g.userData.noShadow = true; scene.add(g);
+      const c = FCENTERS[i % FCENTERS.length]; flies.push({ g: g, pv: pv, cx: c[0] + (rnd() - 0.5) * 8, cz: c[1] + (rnd() - 0.5) * 8, R: 3 + rnd() * 5, sp: 0.25 + rnd() * 0.25, ph: rnd() * 6.28, px: 0, pz: 0 });
+    }
+    anim.push((dt, t) => flies.forEach(f => {
+      const a = t * f.sp + f.ph, x = f.cx + Math.cos(a) * f.R + Math.sin(a * 2.3) * 1.6, z = f.cz + Math.sin(a * 1.1) * f.R * 0.8;
+      f.g.position.set(x, 1.3 + Math.sin(t * 1.6 + f.ph) * 0.5, z); if (Math.hypot(x - f.px, z - f.pz) > 0.001) f.g.rotation.y = Math.atan2(x - f.px, z - f.pz);
+      f.px = x; f.pz = z; const fl = Math.sin(t * 22 + f.ph) * 0.95; f.pv[0].rotation.z = fl; f.pv[1].rotation.z = -fl;
+    }));
+    if (HI) {
+      const PC = 140, parr = new Float32Array(PC * 3), pg = new T.BufferGeometry();
+      for (let i = 0; i < PC; i++) { parr[i * 3] = 85 + (rnd() - 0.5) * 56; parr[i * 3 + 1] = rnd() * 9; parr[i * 3 + 2] = (rnd() - 0.5) * 56; }
+      pg.setAttribute('position', new T.BufferAttribute(parr, 3));
+      const pts = new T.Points(pg, new T.PointsMaterial({ size: 0.17, color: 0xfff3c0, transparent: true, opacity: 0.75, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
+      pts.frustumCulled = false; scene.add(pts);
+      anim.push((dt, t) => {
+        for (let i = 0; i < PC; i++) {
+          parr[i * 3] += (0.5 + Math.sin(t * 0.5 + i) * 0.4) * dt; parr[i * 3 + 1] += Math.sin(t * 0.9 + i * 1.7) * 0.35 * dt; parr[i * 3 + 2] += Math.cos(t * 0.4 + i * 0.9) * 0.3 * dt;
+          if (parr[i * 3] - pos.x > 28) parr[i * 3] -= 56; else if (parr[i * 3] - pos.x < -28) parr[i * 3] += 56;
+          if (parr[i * 3 + 2] - pos.z > 28) parr[i * 3 + 2] -= 56; else if (parr[i * 3 + 2] - pos.z < -28) parr[i * 3 + 2] += 56;
+          if (parr[i * 3 + 1] > 10) parr[i * 3 + 1] = 0.3; else if (parr[i * 3 + 1] < 0.1) parr[i * 3 + 1] = 9;
+        }
+        pg.attributes.position.needsUpdate = true;
+      });
+    }
+    const birdG = new T.BufferGeometry(); birdG.setAttribute('position', new T.BufferAttribute(new Float32Array([0, 0, 0.3, 1.3, 0.2, 0.1, 0.9, 0, -0.35]), 3));
+    const birdM = new T.MeshBasicMaterial({ color: 0x3d3a4a, side: T.DoubleSide, fog: false }), birds = [];
+    for (let i = 0; i < (HI ? 7 : 3); i++) {
+      const g = new T.Group(), wr = new T.Mesh(birdG, birdM), wl = new T.Mesh(birdG, birdM); wl.scale.x = -1; g.add(wr); g.add(wl); g.scale.setScalar(1.6); g.userData.noShadow = true; scene.add(g);
+      birds.push({ g: g, wr: wr, wl: wl, R: 55 + rnd() * 40, h: 24 + rnd() * 16, sp: 0.05 + rnd() * 0.04, ph: rnd() * 6.28 });
+    }
+    anim.push((dt, t) => birds.forEach(b => {
+      const a = t * b.sp + b.ph; b.g.position.set(85 + Math.cos(a) * b.R, b.h + Math.sin(t * 0.7 + b.ph) * 1.5, 5 + Math.sin(a) * b.R * 0.7); b.g.rotation.y = -a - Math.PI / 2 + 0.2;
+      const fl = Math.sin(t * 5 + b.ph) * 0.55; b.wr.rotation.z = fl; b.wl.rotation.z = -fl;
+    }));
   })();
 
   /* fun random names: famous painters (with a twist), animals, pigment colours */
@@ -1857,6 +2035,7 @@ body.padOpen #hud { visibility: hidden; }
     });
   }
   $('#worksBtn').addEventListener('click', () => { renderWorks(); $('#renameInput').value = myName; $('#works').hidden = false; });
+  document.querySelectorAll('#qSeg button').forEach(b => { b.classList.toggle('on', (b.dataset.q === 'hi') === HI); b.addEventListener('click', () => { if ((b.dataset.q === 'hi') === HI) return; store('hw-q', b.dataset.q); toast('그래픽을 바꾸고 다시 불러와요…', 3000); setTimeout(() => location.reload(), 600); }); });
   $('#nameDice').addEventListener('click', () => { $('#nameInput').value = funName(); });
   $('#renameDice').addEventListener('click', () => { $('#renameInput').value = funName(); $('#renameMsg').hidden = true; });
   $('#renameBtn').addEventListener('click', () => {
@@ -2229,6 +2408,7 @@ body.padOpen #hud { visibility: hidden; }
     player.position.set(pos.x, 0.0 + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp, pos.z);
     player.rotation.y = heading;
     blob.position.set(pos.x, 0.05, pos.z);
+    sunFollow(pos.x, pos.z); swayT.value = tNow;
     pushPresence(false);
     remotes.forEach(r => {
       const f2 = 1 - Math.exp(-dt * 10), dx = r.tx - r.x, dz = r.tz - r.z;
@@ -2287,10 +2467,16 @@ body.padOpen #hud { visibility: hidden; }
     for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax]; w.o.visible = w.inside > 0 ? c > w.lim : c < w.lim; }
   }
   const camPos = new T.Vector3(), _v = new T.Vector3(), _v2 = new T.Vector3(), lookCur = new T.Vector3(0, 2, 0), look = { yaw: 0, pitch: 0, zoom: 1 }; let camInit = false, seamShown = true, hiddenEasel = -1;
-  let last = performance.now();
+  let last = performance.now(), fpsT0 = 0, fpsN = 0, slowWin = 0;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     update(dt);
+    sky.position.copy(camera.position);
+    if (HI && started && !pad.open && !watch.open && !document.hidden && !navigator.webdriver) {          /* a slow phone: drop to low quality by itself (not when automated tests run) */
+      if (!fpsT0) { fpsT0 = now; fpsN = 0; }
+      fpsN++;
+      if (now - fpsT0 > 6000) { const fps = fpsN * 1000 / (now - fpsT0); if (fps < 20 && ++slowWin >= 2) { store('hw-q', 'lo'); toast('화면이 느려서 그래픽을 낮출게요. 설정에서 다시 올릴 수 있어요.', 3500); setTimeout(() => location.reload(), 2500); } else if (fps >= 20) slowWin = 0; fpsT0 = now; fpsN = 0; }
+    } else fpsT0 = 0;
     const artistView = pad.open && pad.view !== 'off' && pad.easel >= 0;
     if (!watch.open && (!pad.open || artistView)) {
       const W = window.innerWidth, H = window.innerHeight, sh = Math.round(H * 0.3), split = artistView && pad.view === 'split';
@@ -2303,6 +2489,12 @@ body.padOpen #hud { visibility: hidden; }
     requestAnimationFrame(frame);
   }
   onResize();
+  function finalizeShadows() {
+    if (!HI) return;
+    const ok = { BoxGeometry: 1, CylinderGeometry: 1, SphereGeometry: 1, ConeGeometry: 1, LatheGeometry: 1, TorusGeometry: 1, IcosahedronGeometry: 1, ExtrudeGeometry: 1 };
+    scene.traverse(o => { if (o.isMesh && !o.isInstancedMesh && o.geometry && ok[o.geometry.type] && !o.userData.noShadow && o.material && !o.material.transparent && o.material.visible !== false && o.material !== inkM) o.castShadow = true; });
+  }
+  finalizeShadows();
   if (store('hw-in') === '1') { $('#intro').hidden = true; toast('다시 들어가는 중…', 4000); setTimeout(() => $('#startBtn').click(), 0); }   /* reload: skip the entry screen */
   requestAnimationFrame(frame);
 })();

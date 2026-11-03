@@ -5,6 +5,9 @@ const { start, vis, until, check, done } = require('./lib');
   const def = await p.inputValue('#nameInput'); check(def.length > 0 && def.length <= 10 && !/^화가\d+$/.test(def), 'fun random default name: ' + def);
   await t.enter(p, '시험');
   check(/화실 1/.test(await p.textContent('#online')), 'enters a studio: ' + await p.textContent('#online'));
+  await p.click('#worksBtn'); await p.waitForTimeout(300);                    /* graphics quality setting is offered */
+  check(await p.evaluate(() => !!document.querySelector('#qBox') && !!document.querySelector('#qSeg button.on')), 'graphics quality setting exists');
+  await p.click('#worksClose'); await p.waitForTimeout(200);
   await p.click('#dressBtn'); await p.waitForTimeout(800);   /* dress-up sheet with a live preview */
   check(await vis(p, '#dress'), 'dress-up sheet opens');
   const look0 = await p.evaluate(() => window.__hw.look());
