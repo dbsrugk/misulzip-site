@@ -47,9 +47,9 @@ const { start, vis, until, check, done } = require('./lib');
   await p.evaluate(() => { const r = document.querySelector('#volRange'); r.value = 25; r.dispatchEvent(new Event('input')); });
   check(await p.evaluate(() => window.__hw.music().vol === 0.25 && localStorage.getItem('hw-vol') === '0.25'), 'volume slider sets and remembers the volume');
   const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 36, 'easels: ' + n);
-  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 8, 'eight places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
+  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 11, 'eleven places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
   /* the gallery has no partitions any more; the annex and the garden can be visited */
-  await place(6, 'annex.png'); await place(7, 'garden.png');
+  await place(6, 'annex.png'); await place(7, 'garden.png'); await place(8, 'west1.png'); await place(9, 'west2.png'); await place(10, 'orchard.png');
   /* a place is reached on foot now: from the studio to the annex through both doors, then out to the garden through the east door */
   await place(0, 'studio.png');
   await p.evaluate(() => { window.__hwInstant = false; });
@@ -57,8 +57,11 @@ const { start, vis, until, check, done } = require('./lib');
   let wk = await walkTo(6);
   const near = (x, z) => p.evaluate(([x, z]) => Math.hypot(window.__hw.pos.x - x, window.__hw.pos.z - z) < 2.5, [x, z]);
   check(wk.w0 && wk.ok && await near(0, 58), 'a place is walked to (studio -> gallery -> annex), not jumped to');
-  wk = await walkTo(7);
-  check(wk.ok && await near(58, -20), 'and back out through the doors to the garden');
+  await p.evaluate(() => { window.__hwInstant = true; });
+  await place(1, 'gallery.png');                                             /* back to the gallery, then on foot through the west doors */
+  await p.evaluate(() => { window.__hwInstant = false; });
+  wk = await walkTo(9);
+  check(wk.ok && await near(-49, 39), 'and on foot from the gallery through both west doors to west hall 2');
   await p.evaluate(() => { window.__hwInstant = true; });
   await place(0, 'studio.png');
   check(await p.evaluate(() => window.__hw.occ().length) === 0, 'no see-through partitions are left');
@@ -112,7 +115,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.waitForTimeout(1500); check(await p.evaluate(() => document.querySelector('#pad').classList.contains('split')), 'studio easels also open the scenery view');
   /* frames: the halls have frames of three sizes in four rooms */
   const frames = await p.evaluate(() => window.__hw.slots.map(s => s.room + ':' + s.size));
-  check(frames.length >= 40 && new Set(frames.map(f => f.split(':')[1])).size === 3 && ['studio', 'gallery', 'annex', 'garden'].every(r => frames.some(f => f.startsWith(r + ':'))), 'frames in four rooms, three sizes (' + frames.length + ')');
+  check(frames.length >= 40 && new Set(frames.map(f => f.split(':')[1])).size === 3 && ['studio', 'gallery', 'annex', 'westa', 'westb', 'garden', 'orchard'].every(r => frames.some(f => f.startsWith(r + ':'))), 'frames in four rooms, three sizes (' + frames.length + ')');
   const bq = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   await p.mouse.move(bq.x + bq.w * 0.2, bq.y + bq.h * 0.3); await p.mouse.down(); await p.mouse.move(bq.x + bq.w * 0.8, bq.y + bq.h * 0.7, { steps: 8 }); await p.mouse.up();
   await p.fill('#padTitle', '큰 그림'); await p.click('#padSave'); await p.waitForTimeout(1500);

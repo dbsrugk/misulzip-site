@@ -592,9 +592,9 @@ body.padOpen #hud { visibility: hidden; }
 
   /* ---------- the studio room ---------- */
   const RM = { hx: 32, hz: 24, h: 26 };                  /* a very tall hall: pictures hang low, chandeliers and beams far above */
-  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, GZ2 = GZ1 + 30, DOOR = 5.2, DSH = 10;   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
+  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, GZ2 = GZ1 + 30, DOOR = 5.2, DSH = 10, WZ = RM.hz + 15, W1X = -GX - 30, W2X = W1X - 30;   /* WZ: z of the doors of the west wing; the west halls span x W1X..-GX and W2X..W1X */   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
-  const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 58, z: -29, r: 19 };   /* GARD: the open-air exhibition garden */
+  const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 58, z: -29, r: 19 }, GARD2 = { x: 112, z: -26, r: 19 };   /* GARD: the open-air exhibition garden */
   const colliders = [];
   function plankTexture() {
     const c = document.createElement('canvas'); c.width = c.height = 512;
@@ -733,7 +733,28 @@ body.padOpen #hud { visibility: hidden; }
     });
     seam.push(wall(GX - DOOR, -(GX + DOOR) / 2, RM.hz + 0.03, 0, gWall));
     seam.push(wall(GX - DOOR, (GX + DOOR) / 2, RM.hz + 0.03, 0, gWall));
-    wall(GL, -GX, RM.hz + GL / 2, Math.PI / 2, gWall);
+    /* the west wall has an arched door into the west wing (two more halls) */
+    const wingA = L(0xe9e3d4), wingB = L(0xe2e7dc);
+    function doorWallX(x, matPlus, matMinus) {            /* a wall along z at x with an arched door at z = WZ; matPlus faces +x, matMinus faces -x */
+      const fr = new T.Mesh(archFrameGeo(), woodDoor); fr.position.set(x, 0, WZ); fr.rotation.y = Math.PI / 2; scene.add(fr);
+      [[x + 0.03, Math.PI / 2, matPlus], [x - 0.03, -Math.PI / 2, matMinus]].forEach(q => {
+        const g = new T.Group(); g.position.set(q[0], 0, WZ); g.rotation.y = q[1]; scene.add(g); put(g, new T.Mesh(archWallGeo(), q[2]), 0, 0, 0);
+        const a = WZ - DOOR - GZ0, b = GZ1 - (WZ + DOOR);
+        wall(a, q[0], GZ0 + a / 2, q[1], q[2]); wall(b, q[0], GZ1 - b / 2, q[1], q[2]);
+      });
+    }
+    doorWallX(-GX, gWall, wingA);
+    doorWallX(W1X, wingA, wingB);
+    [[(-GX + W1X) / 2, wingA], [(W1X + W2X) / 2, wingB]].forEach(q => { wall(30, q[0], GZ0 + 0.03, 0, q[1]); wall(30, q[0], GZ1, Math.PI, q[1]); });
+    wall(GL, W2X, WZ, Math.PI / 2, wingB);
+    function checker(c1, c2, w, d) {
+      const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.fillStyle = c1; x.fillRect(0, 0, 128, 128); x.fillStyle = c2; x.fillRect(0, 0, 64, 64); x.fillRect(64, 64, 64, 64);
+      const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(w / 2, d / 2); return t;
+    }
+    [[(-GX + W1X) / 2, '#ebdfc9', '#d6c7aa', 0x9a6a3a], [(W1X + W2X) / 2, '#e0e8d9', '#c9d6c1', 0x3c6e52]].forEach(q => {
+      const f = new T.Mesh(new T.PlaneGeometry(30, 30), new T.MeshLambertMaterial({ map: checker(q[1], q[2], 30, 30) })); f.rotation.x = -Math.PI / 2; f.position.set(q[0], 0, WZ); scene.add(f);
+      const rn = new T.Mesh(new T.PlaneGeometry(29, 3), L(q[3])); rn.rotation.x = -Math.PI / 2; rn.position.set(q[0], 0.02, WZ); scene.add(rn);
+    });
     wall(GL, GX, RM.hz + GL / 2, -Math.PI / 2, gWall);
     /* the far end of the gallery has an arched door into the annex (별관) */
     put(scene, new T.Mesh(archFrameGeo(), woodDoor), 0, 0, GZ1);
@@ -789,13 +810,14 @@ body.padOpen #hud { visibility: hidden; }
     [-16, -8, 0, 8, 16].forEach(z => beam(RM.hx * 2 - 0.8, 0.9, 0, z)); [-24, -8, 8, 24].forEach(x => beam(0.9, RM.hz * 2 - 0.8, x, 0));
     /* ceilings: they face down, so from above (the zoomed-out camera) they are invisible, from inside you see them */
     const ceil = (w, d, x, z) => { const m = new T.Mesh(new T.PlaneGeometry(w, d), B(0xe9dfc8)); m.rotation.x = Math.PI / 2; m.position.set(x, RM.h, z); m.userData.noShadow = true; scene.add(m); return m; };
-    ceil(RM.hx * 2, RM.hz * 2, 0, 0); ceil(GX * 2, GL, 0, RM.hz + GL / 2); ceil(GX * 2, GZ2 - GZ1, 0, (GZ1 + GZ2) / 2);
+    ceil(RM.hx * 2, RM.hz * 2, 0, 0); ceil(GX * 2, GL, 0, RM.hz + GL / 2); ceil(GX * 2, GZ2 - GZ1, 0, (GZ1 + GZ2) / 2); ceil(30, 30, (-GX + W1X) / 2, WZ); ceil(30, 30, (W1X + W2X) / 2, WZ);
+    [(-GX + W1X) / 2, (W1X + W2X) / 2].forEach(cx => [-7.5, 7.5].forEach(dz => beam(30 - 0.6, 0.9, cx, WZ + dz)));
     [GZ1 + 7, GZ1 + 15, GZ1 + 23].forEach(z => beam(GX * 2 - 0.6, 0.9, 0, z)); [-7, 7].forEach(x => beam(0.9, GZ2 - GZ1 - 0.6, x, (GZ1 + GZ2) / 2));
     [RM.hz + 7, RM.hz + 15, RM.hz + 23].forEach(z => beam(GX * 2 - 0.6, 0.9, 0, z)); [-7, 7].forEach(x => beam(0.9, GL - 0.6, x, RM.hz + GL / 2));
     const gc = document.createElement('canvas'); gc.width = gc.height = 128; const gx = gc.getContext('2d'), gr = gx.createRadialGradient(64, 64, 4, 64, 64, 62);
     gr.addColorStop(0, 'rgba(255,240,190,0.9)'); gr.addColorStop(1, 'rgba(255,240,190,0)'); gx.fillStyle = gr; gx.fillRect(0, 0, 128, 128);
     const glowTex = new T.CanvasTexture(gc);
-    [[-18, 0], [0, 0], [18, 0], [0, RM.hz + 10], [0, RM.hz + 22], [0, GZ1 + 10], [0, GZ1 + 22]].forEach(c => {
+    [[-18, 0], [0, 0], [18, 0], [0, RM.hz + 10], [0, RM.hz + 22], [0, GZ1 + 10], [0, GZ1 + 22], [(-GX + W1X) / 2, WZ], [(W1X + W2X) / 2, WZ]].forEach(c => {
       const g = new T.Group(); g.position.set(c[0], 0, c[1]); scene.add(g); g.userData.noShadow = true;
       put(g, new T.Mesh(cyl(0.05, 0.05, 6.6, 5), gold), 0, RM.h - 1.6 - 3.3, 0);
       const ring = new T.Group(); ring.position.y = RM.h - 8.4; g.add(ring);
@@ -1053,55 +1075,75 @@ body.padOpen #hud { visibility: hidden; }
   let galCol = null, exhibits = [];
   const FD = { s: 2.6, m: 4.0, l: 6.6 };                 /* longest side of the picture area per frame size */
   const FRAME_T = 0.2;
-  const ROOMS = ['gallery', 'annex', 'garden', 'studio'];
+  const ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'studio'];
   function roomOf(r) { return ROOMS.indexOf(r) >= 0 ? r : 'gallery'; }
+  let emptyTex = null, emptyLabelTex = null;
+  function emptyTexs() {                                  /* one shared 'empty frame' picture and label for all the blank frames */
+    if (!emptyTex) {
+      const c = document.createElement('canvas'); c.width = c.height = 256; emptyTex = new T.CanvasTexture(c); emptyTex.minFilter = T.LinearFilter; emptyTex.generateMipmaps = false;
+      const l = document.createElement('canvas'); l.width = 512; l.height = 128; emptyLabelTex = new T.CanvasTexture(l); emptyLabelTex.minFilter = T.LinearFilter; emptyLabelTex.generateMipmaps = false;
+      paintEmpty();
+    }
+  }
+  function paintEmpty() {
+    const c = emptyTex.image, x = c.getContext('2d'); x.fillStyle = '#efe9dc'; x.fillRect(0, 0, 256, 256); x.fillStyle = '#c7bfae'; x.font = '40px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('빈 액자', 128, 128); emptyTex.needsUpdate = true;
+    const l = emptyLabelTex.image.getContext('2d'); l.clearRect(0, 0, 512, 128); l.fillStyle = '#fffdf7'; l.fillRect(2, 2, 508, 124); l.strokeStyle = '#25211d'; l.lineWidth = 4; l.strokeRect(2, 2, 508, 124);
+    l.textAlign = 'center'; l.textBaseline = 'middle'; l.fillStyle = '#b3ab9b'; l.font = '34px ' + FONT; l.fillText('눌러서 걸기', 256, 64); emptyLabelTex.needsUpdate = true;
+  }
   function applyAspect(sl, ex) {                          /* a landscape work gets a wide frame, a portrait work a tall one */
     const a = ex ? clamp(ex.w / ex.h, 0.5, 2) : 1, sx = a >= 1 ? 1 : a, sy = a >= 1 ? 1 / a : 1;
     sl.inner.scale.set(sx, sy, 1);
-    const cw = Math.max(96, Math.round(sl.cs * sx)), ch = Math.max(96, Math.round(sl.cs * sy));
-    if (sl.cv.width !== cw || sl.cv.height !== ch) { sl.cv.width = cw; sl.cv.height = ch; }
+    if (sl.cv) { const cw = Math.max(96, Math.round(sl.cs * sx)), ch = Math.max(96, Math.round(sl.cs * sy)); if (sl.cv.width !== cw || sl.cv.height !== ch) { sl.cv.width = cw; sl.cv.height = ch; } }
     sl.label.position.y = -(sl.D * sy / 2 + FRAME_T + sl.labelH / 2 + 0.15);
   }
   function drawSlot(sl, ex) {
+    emptyTexs();
+    if (!ex) {                                            /* blank: give back the private canvases and use the shared ones */
+      if (sl.cv) { sl.tex.dispose(); sl.ltex.dispose(); sl.cv = sl.tex = sl.lc = sl.ltex = null; }
+      sl.plane.material.map = emptyTex; sl.label.material.map = emptyLabelTex; return;
+    }
+    if (!sl.cv) {
+      sl.cv = document.createElement('canvas'); sl.cv.width = sl.cv.height = sl.cs;
+      sl.tex = new T.CanvasTexture(sl.cv); sl.tex.minFilter = T.LinearFilter; sl.tex.generateMipmaps = false;
+      sl.lc = document.createElement('canvas'); sl.lc.width = 512; sl.lc.height = 128;
+      sl.ltex = new T.CanvasTexture(sl.lc); sl.ltex.minFilter = T.LinearFilter; sl.ltex.generateMipmaps = false;
+      sl.plane.material.map = sl.tex; sl.label.material.map = sl.ltex; applyAspect(sl, ex);
+    }
     const c = sl.cv, x = c.getContext('2d');
-    if (ex) { try { paintWork(c, ex, '#f6f1e6'); } catch (e) { x.fillStyle = '#efe9dc'; x.fillRect(0, 0, c.width, c.height); } }
-    else { x.fillStyle = '#efe9dc'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#c7bfae'; x.font = '52px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('빈 액자', c.width / 2, c.height / 2); }
+    try { paintWork(c, ex, '#f6f1e6'); } catch (e) { x.fillStyle = '#efe9dc'; x.fillRect(0, 0, c.width, c.height); }
     sl.tex.needsUpdate = true;
     const l = sl.lc.getContext('2d'); l.clearRect(0, 0, 512, 128);
     l.fillStyle = '#fffdf7'; l.fillRect(2, 2, 508, 124); l.strokeStyle = '#25211d'; l.lineWidth = 4; l.strokeRect(2, 2, 508, 124);
     l.textAlign = 'center'; l.textBaseline = 'middle';
-    if (ex) {
-      l.fillStyle = '#25211d'; l.font = '46px ' + FONT; l.fillText(String(ex.title || '제목 없음').slice(0, 14), 256, 48);
-      l.fillStyle = '#6d655b'; l.font = '32px ' + FONT; l.fillText(String(ex.artist || '화가').slice(0, 10), 256, 94);
-    } else { l.fillStyle = '#b3ab9b'; l.font = '34px ' + FONT; l.fillText('눌러서 걸기', 256, 64); }
+    l.fillStyle = '#25211d'; l.font = '46px ' + FONT; l.fillText(String(ex.title || '제목 없음').slice(0, 14), 256, 48);
+    l.fillStyle = '#6d655b'; l.font = '32px ' + FONT; l.fillText(String(ex.artist || '화가').slice(0, 10), 256, 94);
     sl.ltex.needsUpdate = true;
   }
   function addSlot(room, size, x, y, z, ry) {
+    emptyTexs();
     const D = FD[size], g = new T.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
     const inner = new T.Group(); g.add(inner);
     put(inner, new T.Mesh(bx(D + FRAME_T * 2, D + FRAME_T * 2, 0.16), L(0x3a2a1c)), 0, 0, 0);
-    const cs = size === 's' ? 288 : size === 'm' ? 416 : 512, cv = document.createElement('canvas'); cv.width = cv.height = cs;
-    const tex = new T.CanvasTexture(cv); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
-    const plane = put(inner, new T.Mesh(new T.PlaneGeometry(D, D), new T.MeshBasicMaterial({ map: tex })), 0, 0, 0.09);
-    const lc = document.createElement('canvas'); lc.width = 512; lc.height = 128;
-    const ltex = new T.CanvasTexture(lc); ltex.minFilter = T.LinearFilter; ltex.generateMipmaps = false;
+    const cs = size === 's' ? 288 : size === 'm' ? 416 : 512;
+    const plane = put(inner, new T.Mesh(new T.PlaneGeometry(D, D), new T.MeshBasicMaterial({ map: emptyTex })), 0, 0, 0.09);
     const lw = size === 's' ? 2.4 : size === 'l' ? 4.6 : 3.4, lh = lw / 4;
-    const label = put(g, new T.Mesh(new T.PlaneGeometry(lw, lh), new T.MeshBasicMaterial({ map: ltex })), 0, 0, 0.05);
-    const sl = { id: room + ':' + x.toFixed(1) + ',' + y.toFixed(1) + ',' + z.toFixed(1), room: room, size: size, D: D, x: x, z: z, g: g, inner: inner, label: label, labelH: lh, cv: cv, tex: tex, lc: lc, ltex: ltex, key: '', ex: null, cs: cs };
+    const label = put(g, new T.Mesh(new T.PlaneGeometry(lw, lh), new T.MeshBasicMaterial({ map: emptyLabelTex })), 0, 0, 0.05);
+    const sl = { id: room + ':' + x.toFixed(1) + ',' + y.toFixed(1) + ',' + z.toFixed(1), room: room, size: size, D: D, x: x, z: z, g: g, inner: inner, plane: plane, label: label, labelH: lh, cv: null, tex: null, lc: null, ltex: null, key: '', ex: null, cs: cs };
     plane.userData.slot = sl; hitList.push(plane);
-    slots.push(sl); applyAspect(sl, null); drawSlot(sl, null);
+    slots.push(sl); applyAspect(sl, null);
     return g;
   }
   (function () {
     /* three rows on the tall walls: small pictures at eye level, the main row above them, big ones near the top.
        Nothing hangs beside the doors, so the entrances stay clean. */
+    const doorFree = (z, D) => Math.abs(z - WZ) > DOOR + 0.8 + D / 2;           /* a frame never hangs beside a doorway */
     const side = (room, z0, off) => {            /* both side walls of a hall; z0 = the hall's first z, off = z0 - 24 */
       const lo = [['s', 5], ['m', 10.5], ['s', 15.5], ['m', 20.5], ['s', 25.5]], YL = { s: 2.5, m: 3.4 };
       const mid = [['m', 7], ['l', 14.5], ['m', 22], ['s', 27.5]], YM = { s: 8.6, m: 9.6, l: 11.4 };
       const up = [['m', 7], ['l', 14.5], ['m', 22]], YU = { m: 18.3, l: 19.9 };
       [[lo, YL], [mid, YM], [up, YU]].forEach(t => t[0].forEach(q => {
         const z = z0 + q[1], y = t[1][q[0]];
-        hang(addSlot(room, q[0], -GX + 0.1, y, z, Math.PI / 2), 'x', -GX, 1); hang(addSlot(room, q[0], GX - 0.1, y, z, -Math.PI / 2), 'x', GX, -1);
+        if (room !== 'gallery' || doorFree(z, FD[q[0]] + 0.4)) hang(addSlot(room, q[0], -GX + 0.1, y, z, Math.PI / 2), 'x', -GX, 1); hang(addSlot(room, q[0], GX - 0.1, y, z, -Math.PI / 2), 'x', GX, -1);
       }));
     };
     const endWall = (room, zw) => {              /* a hall's closed end wall */
@@ -1109,6 +1151,19 @@ body.padOpen #hud { visibility: hidden; }
       rows.forEach(r => r[0].forEach(q => hang(addSlot(room, q[0], q[1], q[2], zw - 0.1, Math.PI), 'z', zw, -1)));
     };
     side('gallery', GZ0, 0);
+    /* the west wing: two square halls, frames on all four walls except beside the doors */
+    const LO = [['s', 5], ['m', 10.5], ['s', 15.5], ['m', 20.5], ['s', 25.5]], MID = [['m', 7], ['l', 14.5], ['m', 22], ['s', 27.5]], UP = [['m', 7], ['l', 14.5], ['m', 22]];
+    const YL = { s: 2.5, m: 3.4 }, YM = { s: 8.6, m: 9.6, l: 11.4 }, YU = { m: 18.3, l: 19.9 };
+    const wing = (room, xa, xb, doorW, doorE) => {
+      [[LO, YL], [MID, YM], [UP, YU]].forEach(t => t[0].forEach(q => {
+        const D = FD[q[0]] + 0.4, y = t[1][q[0]], u = q[1];
+        hang(addSlot(room, q[0], xa + u, y, GZ0 + 0.1, 0), 'z', GZ0, 1);                       /* north wall, faces south */
+        hang(addSlot(room, q[0], xa + u, y, GZ1 - 0.1, Math.PI), 'z', GZ1, -1);               /* south wall, faces north */
+        if (!doorW || doorFree(GZ0 + u, D)) hang(addSlot(room, q[0], xa + 0.1, y, GZ0 + u, Math.PI / 2), 'x', xa, 1);   /* west wall, faces east */
+        if (!doorE || doorFree(GZ0 + u, D)) hang(addSlot(room, q[0], xb - 0.1, y, GZ0 + u, -Math.PI / 2), 'x', xb, -1);  /* east wall, faces west */
+      }));
+    };
+    wing('westa', W1X, -GX, true, true); wing('westb', W2X, W1X, false, true);
     side('annex', GZ1, 0); endWall('annex', GZ2);
     /* studio: the middle row sits above the paint shelves and canvases; a second, higher row above it */
     const studio = (list, ax, lim, face, tall) => list.forEach(q => hang(addSlot('studio', q[0], ax === 'x' ? lim + (lim < 0 ? 0.1 : -0.1) : q[1], q[2], ax === 'x' ? q[1] : lim + (lim < 0 ? 0.1 : -0.1), face), ax, lim, lim < 0 ? 1 : -1));
@@ -1120,7 +1175,7 @@ body.padOpen #hud { visibility: hidden; }
     studio(W, 'x', -RM.hx, Math.PI / 2); studio(E, 'x', RM.hx, -Math.PI / 2); studio(S, 'z', RM.hz, Math.PI);
     studio(up(W), 'x', -RM.hx, Math.PI / 2); studio(up(E), 'x', RM.hx, -Math.PI / 2); studio(up(S), 'z', RM.hz, Math.PI);
   })();
-  if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '빈액자작품을기다리는중').then(() => slots.forEach(sl => drawSlot(sl, sl.ex))).catch(() => {});
+  if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '빈액자눌러서걸기작품제목화가').then(() => { emptyTexs(); paintEmpty(); slots.forEach(sl => { if (sl.ex) drawSlot(sl, sl.ex); }); }).catch(() => {});
   function setExhibits(docs) {
     exhibits = docs;
     const assign = new Map(), used = new Set(), left = [], byId = new Map(slots.map(q => [q.id, q])), rest = [];
@@ -1135,7 +1190,7 @@ body.padOpen #hud { visibility: hidden; }
       });
     });
     left.forEach(ex => {
-      const sl = ['gallery', 'annex', 'garden'].reduce((f, r) => f || slots.find(q => q.room === r && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !used.has(q)), null);
+      const sl = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard'].reduce((f, r) => f || slots.find(q => q.room === r && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !used.has(q)), null);
       if (sl) { used.add(sl); assign.set(sl, ex); }
     });
     slots.forEach(sl => {
@@ -1344,7 +1399,10 @@ body.padOpen #hud { visibility: hidden; }
     { name: '호숫가', note: '잔잔한 물, 수련, 작은 배', x: 72, z: 19.5, h: 0, pitch: 0.22 },
     { name: '풍차 들판', note: '꽃밭 너머로 돌아가는 풍차', x: 112, z: 24, h: 0, pitch: 0.25 },
     { name: '별관 전시관', note: '전시관 끝 큰 문 너머 두 번째 전시장', x: 0, z: GZ1 + 4, h: 0 },
-    { name: '야외 전시 정원', note: '하늘 아래 액자가 둘러선 정원', x: GARD.x, z: GARD.z + 9, h: Math.PI, pitch: 0.3 }
+    { name: '야외 전시 정원', note: '하늘 아래 액자가 둘러선 정원', x: GARD.x, z: GARD.z + 9, h: Math.PI, pitch: 0.3 },
+    { name: '서쪽 전시관 1', note: '전시관 서쪽 큰 문 너머 넓은 방', x: -GX - 5, z: WZ, h: -Math.PI / 2 },
+    { name: '서쪽 전시관 2', note: '서쪽 전시관 1의 끝, 초록빛 방', x: W1X - 5, z: WZ, h: -Math.PI / 2 },
+    { name: '꽃길 정원', note: '양쪽에 액자가 걸린 둥근 꽃길', x: GARD2.x, z: GARD2.z + 9, h: Math.PI, pitch: 0.3 }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
@@ -1445,6 +1503,8 @@ body.padOpen #hud { visibility: hidden; }
       if (Math.abs(x - MILL.x) < 9 && z < 30 && z > 0) return false;
       if (Math.hypot(x - 40, z) < 9) return false;
       if (Math.hypot(x - GARD.x, z - GARD.z) < GARD.r + 1) return false;
+      if (Math.hypot(x - GARD2.x, z - GARD2.z) < GARD2.r + 1) return false;
+      if (Math.abs(x - GARD2.x) < 4 && z > GARD2.z && z < 0) return false;
       if (Math.abs(x - GARD.x) < 4 && z > GARD.z && z < 0) return false;
       for (let i = 0; i < SPOTS.length; i++) if (Math.hypot(x - SPOTS[i].x, z - SPOTS[i].z) < SPOTS[i].r) return false;
       return x > OUT.x0 + 2 && x < 130 && z > OUT.z0 + 2 && z < OUT.z1 - 2;
@@ -1493,6 +1553,7 @@ body.padOpen #hud { visibility: hidden; }
       if (Math.abs(x - MILL.x) < 2.6 && z > -1 && z < 26) return false;
       if (Math.hypot(x - 40, z) < 7) return false;
       if (Math.hypot(x - GARD.x, z - GARD.z) < GARD.r) return false;
+      if (Math.hypot(x - GARD2.x, z - GARD2.z) < GARD2.r) return false;
       return Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 2.4;
     }
     function bladeClump() {                              /* four thin blades leaning outwards, merged into one geometry */
@@ -1570,6 +1631,30 @@ body.padOpen #hud { visibility: hidden; }
         [-hw, hw].forEach(dx => colliders.push({ x: px + Math.cos(ry) * dx, z: pz - Math.sin(ry) * dx, r: 0.35 }));
       });
       sign('야외 전시 정원', GARD.x - 6, -8);
+    })();
+    /* flower-road garden: a ring of posts with a picture on each side (24 frames), open to the south */
+    (function () {
+      const stone = L(0xd8cfba), post = L(0x6b4a2f), C = GARD2;
+      flat(new T.CircleGeometry(C.r - 1.2, 48), stone, C.x, 0.03, C.z);
+      flat(new T.RingGeometry(C.r - 1.2, C.r - 0.6, 48), L(0xa89f90), C.x, 0.035, C.z);
+      flat(new T.PlaneGeometry(4.4, 6), stone, C.x, 0.03, (C.z + C.r - 1.2 - 2.5) / 2 + 0.2 + 1.2);
+      const ped = new T.Group(); ped.position.set(C.x, 0, C.z); scene.add(ped);
+      put(ped, new T.Mesh(cyl(1.5, 1.8, 1.4, 12), plaster2), 0, 0.7, 0); put(ped, new T.Mesh(bx(2.4, 0.3, 2.4), plaster), 0, 1.55, 0);
+      const ring = makeRing(2.1); ring.position.y = 1.7; ped.add(ring); colliders.push({ x: C.x, z: C.z, r: 2 });
+      const SZ = ['m', 's', 'm', 's', 'l', 'm', 'm', 'l', 's', 'm', 's', 'm'], YC = { s: 2.5, m: 3.4, l: 5.2 }, R = 13.6;
+      SZ.forEach((sz, i) => {
+        const a = (-145 + i * 290 / 11) * Math.PI / 180, px = C.x + Math.sin(a) * R, pz = C.z - Math.cos(a) * R, ry = Math.atan2(C.x - px, C.z - pz), y = YC[sz], D = FD[sz];
+        const nx = Math.sin(ry), nz = Math.cos(ry);
+        addSlot('orchard', sz, px + nx * 0.16, y, pz + nz * 0.16, ry);                      /* faces the plaza */
+        addSlot('orchard', sz, px - nx * 0.16, y, pz - nz * 0.16, ry + Math.PI);            /* faces outwards */
+        const pg = new T.Group(); pg.position.set(px, 0, pz); pg.rotation.y = ry; scene.add(pg);
+        const hw = D / 2 + FRAME_T + 0.35, ph = y + D / 2 + 0.7;
+        [-hw, hw].forEach(dx => put(pg, new T.Mesh(cyl(0.13, 0.16, ph, 7), post), dx, ph / 2, 0));
+        put(pg, new T.Mesh(bx(hw * 2 + 0.9, 0.22, 0.5), post), 0, ph, 0);
+        put(pg, new T.Mesh(bx(hw * 2 + 0.3, 0.14, 0.5), post), 0, 0.5, 0);
+        [-hw, hw].forEach(dx => colliders.push({ x: px + Math.cos(ry) * dx, z: pz - Math.sin(ry) * dx, r: 0.35 }));
+      });
+      sign('꽃길 정원', C.x - 6, -8);
     })();
 
     /* spot 3: lakeside (looking south over the water) */
@@ -1802,6 +1887,9 @@ body.padOpen #hud { visibility: hidden; }
     if (Math.abs(x) <= GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;
     if (Math.abs(x) <= DOOR - 0.5 && z > GZ1 - 1.01 && z <= GZ1 + 1.01) return true;
     if (Math.abs(x) <= GX - 1 && z >= GZ1 + 1 && z <= GZ2 - 1) return true;
+    if (Math.abs(z - WZ) <= DOOR - 0.5 && ((x <= -GX + 1.01 && x >= -GX - 1.01) || (x <= W1X + 1.01 && x >= W1X - 1.01))) return true;      /* the west doors */
+    if (x >= W1X + 1 && x <= -GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;                                                         /* west hall 1 */
+    if (x >= W2X + 1 && x <= W1X - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;                                                         /* west hall 2 */
     if (Math.abs(z) <= DOOR - 0.5 && x > RM.hx - 1.01 && x <= OUT.x0 + 0.01) return true;     /* east doorway */
     return x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1 && Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 0.5;   /* the field, minus the lake */
   }
@@ -1941,14 +2029,21 @@ body.padOpen #hud { visibility: hidden; }
   function walkTarget() {
     const rp = areaOf(pos.x, pos.z), rg = areaOf(goal.x, goal.z);
     if (rp === 'hall') {
-      const pa = pos.z > GZ1 + 0.5 ? 1 : 0, ga = goal.z > GZ1 + 0.5 ? 1 : 0, want = rg === 'hall' ? ga : 0;
-      if (pa !== want) {                                     /* through the annex door first */
-        if (Math.abs(pos.x) > 1.2 && Math.abs(pos.z - GZ1) > 1.2) return { x: 0, z: pos.z < GZ1 ? GZ1 - 2.4 : GZ1 + 2.4, way: true };
-        return { x: 0, z: want ? GZ1 + 2.4 : GZ1 - 2.4, way: true };
+      /* the halls form a chain: annex - gallery - west hall 1 - west hall 2; every join is an arched door */
+      const part = (x, z) => x < W1X ? 3 : x < -GX ? 2 : z > GZ1 + 0.5 ? 0 : 1;
+      const ci = part(pos.x, pos.z), ti = rg === 'hall' ? part(goal.x, goal.z) : 1;
+      if (ci === ti) {
+        if (rg === 'hall') return { x: goal.x, z: goal.z, way: false };
+        if (Math.abs(pos.x) > 1.2 && pos.z > RM.hz + 1.2) return { x: 0, z: RM.hz + 1.6, way: true };       /* out through the south door */
+        return { x: 0, z: RM.hz - 2.5, way: true };
       }
-      if (rg === 'hall') return { x: goal.x, z: goal.z, way: false };
-      if (Math.abs(pos.x) > 1.2 && pos.z > RM.hz + 1.2) return { x: 0, z: RM.hz + 1.6, way: true };       /* out through the south door */
-      return { x: 0, z: RM.hz - 2.5, way: true };
+      const d = ti > ci ? 1 : -1, j = d > 0 ? ci : ci - 1;                                              /* the door between part j and part j + 1 */
+      const DR = [{ ax: 'z', c: GZ1, lo: { x: 0, z: GZ1 + 2.4 }, hi: { x: 0, z: GZ1 - 2.4 } },          /* lo = the side of part j, hi = the side of part j + 1 */
+                  { ax: 'x', c: -GX, lo: { x: -GX + 2.4, z: WZ }, hi: { x: -GX - 2.4, z: WZ } },
+                  { ax: 'x', c: W1X, lo: { x: W1X + 2.4, z: WZ }, hi: { x: W1X - 2.4, z: WZ } }][j];
+      const own = d > 0 ? DR.lo : DR.hi, other = d > 0 ? DR.hi : DR.lo;
+      const lined = DR.ax === 'z' ? Math.abs(pos.x) <= 1.2 || Math.abs(pos.z - DR.c) <= 1.2 : Math.abs(pos.z - WZ) <= 1.2 || Math.abs(pos.x - DR.c) <= 1.2;
+      return { x: lined ? other.x : own.x, z: lined ? other.z : own.z, way: true };
     }
     if (rp === 'studio') {
       if (rg === 'studio') return { x: goal.x, z: goal.z, way: false };
@@ -2272,7 +2367,7 @@ body.padOpen #hud { visibility: hidden; }
   }
   $('#padSave').addEventListener('click', save);
 
-  const ROOM_NAME = { gallery: '전시관', annex: '별관', garden: '야외 전시 정원', studio: '화실' };
+  const ROOM_NAME = { gallery: '전시관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', studio: '화실' };
   const SIZE_NAME = { s: '작은', m: '보통', l: '큰' };
   async function takeDown(ex) {                           /* only the owner's own frames: the server checks it too */
     if (!galCol) return;
