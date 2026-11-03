@@ -887,6 +887,7 @@ body.padOpen #hud { visibility: hidden; }
     }
     /* leaning canvases (east) */
     for (let i = 0; i < 10; i++) {
+      if (Math.abs(-18 + i * 4) < 8) continue;               /* the east doorway stays clear */
       const c = new T.Group();
       put(c, new T.Mesh(bx(0.1, 2.8, 2.2), L(0xe9e0d0)), 0, 0, 0);
       const patch = new T.Mesh(new T.PlaneGeometry(1.7, 2.3), B(PAL[(rnd() * PAL.length) | 0]));
@@ -1038,7 +1039,7 @@ body.padOpen #hud { visibility: hidden; }
   function applyAspect(sl, ex) {                          /* a landscape work gets a wide frame, a portrait work a tall one */
     const a = ex ? clamp(ex.w / ex.h, 0.5, 2) : 1, sx = a >= 1 ? 1 : a, sy = a >= 1 ? 1 / a : 1;
     sl.inner.scale.set(sx, sy, 1);
-    const cw = Math.max(96, Math.round(512 * sx)), ch = Math.max(96, Math.round(512 * sy));
+    const cw = Math.max(96, Math.round(sl.cs * sx)), ch = Math.max(96, Math.round(sl.cs * sy));
     if (sl.cv.width !== cw || sl.cv.height !== ch) { sl.cv.width = cw; sl.cv.height = ch; }
     sl.label.position.y = -(sl.D * sy / 2 + FRAME_T + sl.labelH / 2 + 0.15);
   }
@@ -1060,33 +1061,45 @@ body.padOpen #hud { visibility: hidden; }
     const D = FD[size], g = new T.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
     const inner = new T.Group(); g.add(inner);
     put(inner, new T.Mesh(bx(D + FRAME_T * 2, D + FRAME_T * 2, 0.16), L(0x3a2a1c)), 0, 0, 0);
-    const cv = document.createElement('canvas'); cv.width = cv.height = 512;
+    const cs = size === 's' ? 288 : size === 'm' ? 416 : 512, cv = document.createElement('canvas'); cv.width = cv.height = cs;
     const tex = new T.CanvasTexture(cv); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
     const plane = put(inner, new T.Mesh(new T.PlaneGeometry(D, D), new T.MeshBasicMaterial({ map: tex })), 0, 0, 0.09);
     const lc = document.createElement('canvas'); lc.width = 512; lc.height = 128;
     const ltex = new T.CanvasTexture(lc); ltex.minFilter = T.LinearFilter; ltex.generateMipmaps = false;
     const lw = size === 's' ? 2.4 : size === 'l' ? 4.6 : 3.4, lh = lw / 4;
     const label = put(g, new T.Mesh(new T.PlaneGeometry(lw, lh), new T.MeshBasicMaterial({ map: ltex })), 0, 0, 0.05);
-    const sl = { room: room, size: size, D: D, x: x, z: z, g: g, inner: inner, label: label, labelH: lh, cv: cv, tex: tex, lc: lc, ltex: ltex, key: '', ex: null };
+    const sl = { room: room, size: size, D: D, x: x, z: z, g: g, inner: inner, label: label, labelH: lh, cv: cv, tex: tex, lc: lc, ltex: ltex, key: '', ex: null, cs: cs };
     plane.userData.slot = sl; hitList.push(plane);
     slots.push(sl); applyAspect(sl, null); drawSlot(sl, null);
     return g;
   }
   (function () {
-    /* gallery: side walls with mixed sizes, two on the end wall beside the annex door */
-    [['m', -9.7, 6.6], ['m', 9.7, 6.6]].forEach(q => hang(addSlot('gallery', q[0], q[1], q[2], GZ1 - 0.1, Math.PI), 'z', GZ1, -1));
-    [['s', 28.2, 5.6], ['m', 33, 6.6], ['l', 40, 8.4], ['m', 47, 6.6], ['s', 51.6, 5.6]].forEach(q => {
-      hang(addSlot('gallery', q[0], q[2], -GX + 0.1, q[1], Math.PI / 2), 'x', -GX, 1); hang(addSlot('gallery', q[0], q[2], GX - 0.1, q[1], -Math.PI / 2), 'x', GX, -1);
-    });
-    /* annex: a big picture at the far end, mixed sizes along the side walls */
-    [['l', 0, 8.6], ['m', -7.5, 7.0], ['m', 7.5, 7.0], ['s', -12, 6.0], ['s', 12, 6.0]].forEach(q => hang(addSlot('annex', q[0], q[1], q[2], GZ2 - 0.1, Math.PI), 'z', GZ2, -1));
-    [['s', 58.2, 5.6], ['m', 63, 6.6], ['l', 70, 8.4], ['m', 77, 6.6], ['s', 81.6, 5.6]].forEach(q => {
-      hang(addSlot('annex', q[0], q[2], -GX + 0.1, q[1], Math.PI / 2), 'x', -GX, 1); hang(addSlot('annex', q[0], q[2], GX - 0.1, q[1], -Math.PI / 2), 'x', GX, -1);
-    });
-    /* studio: high on the tall walls, above the paint shelves and canvases */
-    [['m', -18, 8.0], ['l', -9, 8.9], ['l', 0, 8.9], ['l', 9, 8.9], ['m', 18, 8.0]].forEach(q => hang(addSlot('studio', q[0], q[2], -RM.hx + 0.1, q[1], Math.PI / 2), 'x', -RM.hx, 1));
-    [['m', -19, 6.8], ['l', -10, 7.6], ['l', 10, 7.6], ['m', 19, 6.8]].forEach(q => hang(addSlot('studio', q[0], q[2], RM.hx - 0.1, q[1], -Math.PI / 2), 'x', RM.hx, -1));
-    [['l', -11, 7.8], ['m', -19.5, 7.0], ['s', -26.5, 6.2], ['l', 11, 7.8], ['m', 19.5, 7.0], ['s', 26.5, 6.2]].forEach(q => hang(addSlot('studio', q[0], q[2], q[1], RM.hz - 0.1, Math.PI), 'z', RM.hz, -1));
+    /* three rows on the tall walls: small pictures at eye level, the main row above them, big ones near the top.
+       Nothing hangs beside the doors, so the entrances stay clean. */
+    const side = (room, z0, off) => {            /* both side walls of a hall; z0 = the hall's first z, off = z0 - 24 */
+      const lo = [['s', 5], ['m', 10.5], ['s', 15.5], ['m', 20.5], ['s', 25.5]], YL = { s: 2.5, m: 3.4 };
+      const mid = [['m', 7], ['l', 14.5], ['m', 22], ['s', 27.5]], YM = { s: 8.6, m: 9.6, l: 11.4 };
+      const up = [['m', 7], ['l', 14.5], ['m', 22]], YU = { m: 18.3, l: 19.9 };
+      [[lo, YL], [mid, YM], [up, YU]].forEach(t => t[0].forEach(q => {
+        const z = z0 + q[1], y = t[1][q[0]];
+        hang(addSlot(room, q[0], -GX + 0.1, y, z, Math.PI / 2), 'x', -GX, 1); hang(addSlot(room, q[0], GX - 0.1, y, z, -Math.PI / 2), 'x', GX, -1);
+      }));
+    };
+    const endWall = (room, zw) => {              /* a hall's closed end wall */
+      const rows = [[[['s', -11, 2.5], ['s', 11, 2.5], ['m', -5.5, 3.4], ['m', 5.5, 3.4]]], [[['l', 0, 11.4], ['m', -8, 9.6], ['m', 8, 9.6], ['s', -12.3, 8.6], ['s', 12.3, 8.6]]], [[['l', 0, 19.9], ['m', -8, 18.3], ['m', 8, 18.3]]]];
+      rows.forEach(r => r[0].forEach(q => hang(addSlot(room, q[0], q[1], q[2], zw - 0.1, Math.PI), 'z', zw, -1)));
+    };
+    side('gallery', GZ0, 0);
+    side('annex', GZ1, 0); endWall('annex', GZ2);
+    /* studio: the middle row sits above the paint shelves and canvases; a second, higher row above it */
+    const studio = (list, ax, lim, face, tall) => list.forEach(q => hang(addSlot('studio', q[0], ax === 'x' ? lim + (lim < 0 ? 0.1 : -0.1) : q[1], q[2], ax === 'x' ? q[1] : lim + (lim < 0 ? 0.1 : -0.1), face), ax, lim, lim < 0 ? 1 : -1));
+    const UPY = { m: 17.5, l: 18.6, s: 16.5 };
+    const W = [['m', -18, 8.0], ['l', -9, 8.9], ['l', 0, 8.9], ['l', 9, 8.9], ['m', 18, 8.0]];
+    const E = [['m', -16.5, 6.8], ['m', -9, 6.8], ['m', 9, 6.8], ['m', 16.5, 6.8]];     /* between the door and the pilasters, never in the doorway */
+    const S = [['l', -15, 7.8], ['m', -23, 7.0], ['s', -28.5, 6.2], ['l', 15, 7.8], ['m', 23, 7.0], ['s', 28.5, 6.2]];
+    const up = l => l.map(q => [q[0], q[1], UPY[q[0]]]);
+    studio(W, 'x', -RM.hx, Math.PI / 2); studio(E, 'x', RM.hx, -Math.PI / 2); studio(S, 'z', RM.hz, Math.PI);
+    studio(up(W), 'x', -RM.hx, Math.PI / 2); studio(up(E), 'x', RM.hx, -Math.PI / 2); studio(up(S), 'z', RM.hz, Math.PI);
   })();
   if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '빈액자작품을기다리는중').then(() => slots.forEach(sl => drawSlot(sl, sl.ex))).catch(() => {});
   function setExhibits(docs) {
