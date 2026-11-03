@@ -62,8 +62,9 @@ const { start, vis, until, check, done } = require('./lib');
   const after = await p.screenshot({ clip }); await p.screenshot({ path: t.out('look.png') });
   check(!before.equals(after), 'dragging the scenery panel turns the view');
   await p.evaluate(() => { const r = document.querySelector('#padSize'); r.value = 30; r.dispatchEvent(new Event('input', { bubbles: true })); });
-  await p.waitForTimeout(300); await p.screenshot({ path: t.out('brush_preview.png') });
+  await p.waitForTimeout(100);                                            /* check first: the preview fades after 1 s and a screenshot can be slow */
   check(await p.evaluate(() => { const f = document.querySelector('#sizeFloat'), d = f.firstElementChild; return !f.hidden && parseFloat(d.style.width) > 8 && /굵기 30/.test(f.lastElementChild.textContent); }), 'brush size preview shows while the slider moves');
+  await p.screenshot({ path: t.out('brush_preview.png') });
   /* paint bucket, custom colour, eyedropper */
   await p.click('#padClear'); await p.click('#padClear');                      /* second tap confirms */
   const bb = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
