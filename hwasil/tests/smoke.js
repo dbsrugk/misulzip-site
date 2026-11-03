@@ -121,15 +121,15 @@ const { start, vis, until, check, done } = require('./lib');
   await p.fill('#padTitle', '큰 그림'); await p.click('#padSave'); await p.waitForTimeout(1500);
   check(await vis(p, '#exAsk'), 'after saving, it asks whether to put the work on show');
   await p.click('#exYes'); await p.waitForTimeout(600);
-  check(!(await vis(p, '#pad')) && await vis(p, '#hangBanner') && await vis(p, '#places'), 'yes leaves the easel, starts hang mode and shows the places to walk to');
+  check(!(await vis(p, '#pad')) && await vis(p, '#hangRow') && await vis(p, '#places'), 'yes leaves the easel, starts hang mode and shows the places to walk to');
   await p.click('#placesClose'); await p.click('#hangBanner'); await p.waitForTimeout(300);
-  check(!(await vis(p, '#hangBanner')), 'the banner cancels hang mode');
+  check(!(await vis(p, '#hangRow')), 'the banner cancels hang mode');
   await p.click('#worksBtn'); await p.waitForTimeout(500);
   /* first come, first served: pick a frame, hang a work there; others cannot take that frame; an admin can take anything down */
   check(await p.evaluate(() => new Set(window.__hw.slots.map(s => s.id)).size === window.__hw.slots.length), 'every frame has its own id');
   const gi = await p.evaluate(() => window.__hw.slots.findIndex(s => s.room === 'garden' && s.size === 'l'));
   await p.locator('.work .btn', { hasText: '전시하기' }).first().click(); await p.waitForTimeout(400);
-  check(await vis(p, '#hangBanner') && !(await vis(p, '#works')), 'hang mode: a banner asks for an empty frame');
+  check(await vis(p, '#hangRow') && !(await vis(p, '#works')), 'hang mode: a banner asks for an empty frame');
   await p.evaluate(i => window.__hw.tapSlot(i), gi); await p.waitForTimeout(1500);
   check(await p.evaluate(i => { const s = window.__hw.slots[i]; return !!s.ex && /큰 그림/.test(s.ex.title); }, gi), 'the work hangs on the frame I chose');
   check(await p.evaluate(i => Object.values(window.__db.gallery).some(g => g.slot === window.__hw.slots[i].id), gi), 'the server row records the frame');
