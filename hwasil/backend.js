@@ -21,7 +21,7 @@
 
   function rpc(fn, args) {
     return sb.rpc(fn, args).then(function (r) {
-      if (r.error) { var m = r.error.message || ''; var e = new Error(m); e.code = /quota_exceeded/.test(m) ? 'quota_exceeded' : /too_big/.test(m) ? 'too_big' : /bad_code/.test(m) ? 'bad_code' : /invalid_argument|bad_token/.test(m) ? 'invalid_argument' : 'error'; throw e; }
+      if (r.error) { var m = r.error.message || ''; var e = new Error(m); e.code = /quota_exceeded/.test(m) ? 'quota_exceeded' : /too_big/.test(m) ? 'too_big' : /bad_code/.test(m) ? 'bad_code' : /slot_taken/.test(m) ? 'slot_taken' : /bad_admin/.test(m) ? 'bad_admin' : /invalid_argument|bad_token/.test(m) ? 'invalid_argument' : 'error'; throw e; }
       return r.data;
     });
   }
@@ -87,6 +87,18 @@
       k = String(k || '').toLowerCase().replace(/[^0-9a-f]/g, '');
       if (!/^[0-9a-f]{32}$/.test(k)) return false;
       try { localStorage.setItem('hw-key', k); return localStorage.getItem('hw-key') === k; } catch (e) { return false; }
+    },
+    /* admin: a password (kept on this device only) lets someone take any frame down */
+    refresh: function (kind) { if (listeners[kind]) listeners[kind].forEach(function (l) { l.load(); }); },
+    admin: {
+      on: function () { return !!store('hw-admin'); },
+      login: function (pw) {
+        pw = String(pw || '').trim(); if (!pw) return Promise.resolve(false);
+        return rpc('hwasil_admin_check', { code: code, pw: pw }).then(function (ok) { if (ok) store('hw-admin', pw); return !!ok; });
+      },
+      check: function () { var pw = store('hw-admin'); if (!pw) return Promise.resolve(false); return rpc('hwasil_admin_check', { code: code, pw: pw }).then(function (ok) { if (!ok) store('hw-admin', null); return !!ok; }, function () { return false; }); },
+      logout: function () { store('hw-admin', null); },
+      del: function (gid) { return rpc('hwasil_admin_del', { code: code, pw: store('hw-admin') || '', gid: gid }).then(function () { galleryChanged(); }); }
     },
     inviteLink: function () { return code ? location.origin + location.pathname + '#c=' + encodeURIComponent(code) : ''; }
   };
@@ -239,6 +251,10 @@
         set: function (d) {
           return (kind === 'mine' ? rpc('hwasil_work_set', { code: code, token: token, wid: id, d: d }) : rpc('hwasil_gallery_set', { code: code, token: token, gid: id, d: d }))
             .then(function () { kind === 'gallery' ? galleryChanged() : refresh('mine'); });
+        },
+        hang: function (sl, d) {                       /* gallery only: put the work on a chosen frame (first come, first served) */
+          if (kind !== 'gallery') return Promise.reject(new Error('unsupported'));
+          return rpc('hwasil_gallery_hang', { code: code, token: token, gid: id, sl: sl, d: d }).then(function () { galleryChanged(); });
         },
         update: function (d) {
           if (kind !== 'mine') return Promise.reject(new Error('unsupported'));

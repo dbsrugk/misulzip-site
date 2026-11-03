@@ -18,6 +18,9 @@ const STUB = `window.supabase={createClient(){return{
   if(fn==='hwasil_work_del'){delete db.works[a.wid];return ok();}
   if(fn==='hwasil_works_list')return ok(Object.values(db.works).sort((x,y)=>y.at-x.at));
   if(fn==='hwasil_gallery_set'){db.gallery[a.gid]=Object.assign({},a.d,{id:a.gid});return ok();}
+  if(fn==='hwasil_gallery_hang'){if(Object.values(db.gallery).some(g=>g.slot===a.sl&&g.id!==a.gid))return Promise.resolve({data:null,error:{message:'slot_taken'}});db.gallery[a.gid]=Object.assign({},a.d,{id:a.gid,slot:a.sl});return ok();}
+  if(fn==='hwasil_admin_check')return ok(a.pw==='adminpw');
+  if(fn==='hwasil_admin_del'){if(a.pw!=='adminpw')return Promise.resolve({data:null,error:{message:'bad_admin'}});const g=db.gallery[a.gid];if(g&&g.workId&&db.works[g.workId])Object.assign(db.works[g.workId],{exh:false,removed:true});delete db.gallery[a.gid];return ok();}
   if(fn==='hwasil_gallery_del'){delete db.gallery[a.gid];return ok();}
   if(fn==='hwasil_gallery_list')return ok(Object.values(db.gallery).sort((x,y)=>y.at-x.at));
   return ok();},
@@ -26,7 +29,7 @@ const STUB = `window.supabase={createClient(){return{
   send(m){window.__busSend(n,m.event,m.payload);return Promise.resolve('ok');}};return c;},
  removeChannel(){return Promise.resolve();}};}};
 window.__busRecv=(n,e,p)=>{const h=(window.__h||{})[n];if(h&&h[e])h[e].forEach(f=>f({payload:p}));};`;
-const HOOK = "const ray = new T.Raycaster(); window.__hw = { pos: pos, easels: easels, remotes: remotes, slots: slots, cam: () => ({ pitch: camPitch, want: camWant }), occ: () => occluders.map(o => o.k), emote: () => (me.emote ? me.emote.id : ''), look: () => myLook.join(''), music: () => music.state(), info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, tex: renderer.info.memory.textures, objs: (() => { let n = 0; scene.traverse(() => n++); return n; })() }), go: (idx) => { const e = easels[idx]; goal = { x: e.sit.x, z: e.sit.z, idx: idx, stuck: 0 }; } };";
+const HOOK = "const ray = new T.Raycaster(); window.__hw = { pos: pos, easels: easels, remotes: remotes, slots: slots, cam: () => ({ pitch: camPitch, want: camWant }), occ: () => occluders.map(o => o.k), emote: () => (me.emote ? me.emote.id : ''), look: () => myLook.join(''), music: () => music.state(), info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, tex: renderer.info.memory.textures, objs: (() => { let n = 0; scene.traverse(() => n++); return n; })() }), tapSlot: (i) => frameTap(slots[i]), admin: () => adminOn, go: (idx) => { const e = easels[idx]; goal = { x: e.sit.x, z: e.sit.z, idx: idx, stuck: 0 }; } };";
 
 async function start(opts) {
   opts = opts || {};

@@ -99,7 +99,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.evaluate(() => window.__hw.go(3));                  /* beach -> studio easel */
   check(await until(p, () => !document.querySelector('#pad').hidden, null, 200), 'walks back in through the door and sits at a studio easel');
   await p.waitForTimeout(1500); check(await p.evaluate(() => document.querySelector('#pad').classList.contains('split')), 'studio easels also open the scenery view');
-  /* frames: the hall has frames of three sizes in two rooms; a saved work can be hung on the studio wall as a big frame */
+  /* frames: the halls have frames of three sizes in four rooms */
   const frames = await p.evaluate(() => window.__hw.slots.map(s => s.room + ':' + s.size));
   check(frames.length >= 40 && new Set(frames.map(f => f.split(':')[1])).size === 3 && ['studio', 'gallery', 'annex', 'garden'].every(r => frames.some(f => f.startsWith(r + ':'))), 'frames in four rooms, three sizes (' + frames.length + ')');
   const bq = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
@@ -107,10 +107,40 @@ const { start, vis, until, check, done } = require('./lib');
   await p.fill('#padTitle', '큰 그림'); await p.click('#padSave'); await p.waitForTimeout(1500);
   await p.click('#padClose'); await p.waitForTimeout(500);
   await p.click('#worksBtn'); await p.waitForTimeout(500);
+  /* first come, first served: pick a frame, hang a work there; others cannot take that frame; an admin can take anything down */
+  check(await p.evaluate(() => new Set(window.__hw.slots.map(s => s.id)).size === window.__hw.slots.length), 'every frame has its own id');
+  const gi = await p.evaluate(() => window.__hw.slots.findIndex(s => s.room === 'garden' && s.size === 'l'));
   await p.locator('.work .btn', { hasText: '전시하기' }).first().click(); await p.waitForTimeout(400);
-  check(await vis(p, '#hang'), 'hang sheet opens (room and frame size)');
-  await p.click('#hangRoom .opt[data-v=garden]'); await p.click('#hangSize .opt[data-v=l]'); await p.screenshot({ path: t.out('hang.png') });
-  await p.click('#hangGo'); await p.waitForTimeout(1800);
-  check(await p.evaluate(() => window.__hw.slots.some(s => s.ex && s.room === 'garden' && s.size === 'l' && /큰 그림/.test(s.ex.title))), 'the work hangs in a big garden frame');
+  check(await vis(p, '#hangBanner') && !(await vis(p, '#works')), 'hang mode: a banner asks for an empty frame');
+  await p.evaluate(i => window.__hw.tapSlot(i), gi); await p.waitForTimeout(1500);
+  check(await p.evaluate(i => { const s = window.__hw.slots[i]; return !!s.ex && /큰 그림/.test(s.ex.title); }, gi), 'the work hangs on the frame I chose');
+  check(await p.evaluate(i => Object.values(window.__db.gallery).some(g => g.slot === window.__hw.slots[i].id), gi), 'the server row records the frame');
+  await p.evaluate(i => window.__hw.tapSlot(i), gi); await p.waitForTimeout(500);
+  check(await vis(p, '#viewer') && (await p.locator('#viewerAct .btn').count()) === 2, 'my own frame offers take down / move');
+  await p.screenshot({ path: t.out('hang.png') });
+  await p.click('#viewerClose'); await p.waitForTimeout(300);
+  /* somebody else gets the next frame at the same moment: the server says taken */
+  const gj = await p.evaluate(() => window.__hw.slots.findIndex(s => s.room === 'garden' && s.size === 'm'));
+  await p.evaluate(j => { const s = window.__hw.slots[j]; window.__db.gallery['zz_other'] = { id: 'zz_other', kind: 'exhibit', owner: 'zz', workId: 'w1', artist: '다른 화가', title: '남의 그림', slot: s.id, room: 'garden', size: 'm', w: 1000, h: 750, at: 5, strokes: [{ k: 'p', c: '#2c47c8', w: 12, p: [100, 100, 700, 600] }] }; }, gj);
+  await p.evaluate(j => window.__hw.tapSlot(j), gj); await p.waitForTimeout(500);
+  check(await vis(p, '#hang'), 'an empty frame opens the picker of my works');
+  await p.locator('#hangList button').first().click(); await p.waitForTimeout(1200);
+  check(/먼저 걸었어요/.test(await p.evaluate(() => document.querySelector('#toast').textContent)), 'a frame someone took a moment ago is refused (first come, first served)');
+  await p.waitForTimeout(800);
+  check(await p.evaluate(j => { const s = window.__hw.slots[j]; return !!s.ex && s.ex.title === '남의 그림'; }, gj), 'that frame now shows the other painter\'s work');
+  await p.evaluate(j => window.__hw.tapSlot(j), gj); await p.waitForTimeout(500);
+  check(await vis(p, '#viewer') && (await p.locator('#viewerAct .btn').count()) === 0, 'someone else\'s frame cannot be changed by me');
+  await p.click('#viewerClose'); await p.waitForTimeout(300);
+  /* admin */
+  await p.click('#worksBtn'); await p.waitForTimeout(300); await p.evaluate(() => { document.querySelector('#adBox').open = true; });
+  await p.fill('#adPw', 'nope'); await p.click('#adGo'); await p.waitForTimeout(500);
+  check(!(await p.evaluate(() => window.__hw.admin())), 'a wrong admin password does nothing');
+  await p.fill('#adPw', 'adminpw'); await p.click('#adGo'); await p.waitForTimeout(500);
+  check(await p.evaluate(() => window.__hw.admin()), 'the admin password turns admin mode on');
+  await p.click('#worksClose'); await p.waitForTimeout(300);
+  await p.evaluate(j => window.__hw.tapSlot(j), gj); await p.waitForTimeout(500);
+  check((await p.locator('#viewerAct .btn').count()) === 1, 'admin sees a take-down button on another painter\'s frame');
+  await p.locator('#viewerAct .btn').click(); await p.waitForTimeout(200); await p.locator('#viewerAct .btn').click(); await p.waitForTimeout(1500);
+  check(await p.evaluate(j => !window.__hw.slots[j].ex && !window.__db.gallery['zz_other'], gj), 'the admin takes the frame down');
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

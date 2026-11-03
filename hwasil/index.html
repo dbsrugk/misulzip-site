@@ -313,6 +313,12 @@ body.padOpen #hud { visibility: hidden; }
 #qBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
 #qBox .seg { margin-top: 10px; }
 #mBox input[type=range] { width: 100%; margin-top: 10px; }
+#viewerAct { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+#hangList { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin: 10px 0 4px; }
+#hangList button { border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); padding: 6px; font: 400 16px/1.2 var(--font-display); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink); }
+#hangList canvas { max-width: 100%; border-radius: 6px; }
+#adBox .nameRow { margin-top: 8px; }
+#hangBanner { background: var(--yellow); }
 #nameBox { flex: 0 0 auto; border-top: 2px dashed var(--ink); padding-top: 10px; }
 #nameBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
 #nameBox .field { margin: 10px 0 8px; }
@@ -335,6 +341,7 @@ body.padOpen #hud { visibility: hidden; }
     <button class="chip" id="emoteBtn" type="button">표현</button>
     <button class="chip" id="musicBtn" type="button" aria-label="음악 켜고 끄기">🎵</button>
   </div>
+  <div class="row" id="hangRow" hidden><button class="chip" id="hangBanner" type="button"></button></div>
   <div class="row" id="emoteBar" hidden></div>
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
@@ -405,6 +412,13 @@ body.padOpen #hud { visibility: hidden; }
       <p class="empty">잔잔한 힐링 음악이 흘러요. 화실, 전시관, 야외마다 분위기가 조금씩 달라요. 소리는 위쪽 🎵 버튼으로 켜고 끌 수 있어요.</p>
       <input id="volRange" type="range" min="0" max="100" step="1" aria-label="음악 크기">
     </details>
+    <details id="adBox">
+      <summary>관리자</summary>
+      <p class="empty" id="adNote">관리자 비밀번호를 넣으면, 이 기기에서 부적절한 작품을 내릴 수 있어요.</p>
+      <span class="nameRow" id="adRow"><input id="adPw" type="password" autocomplete="off" placeholder="관리자 비밀번호"><button class="btn" id="adGo" type="button">켜기</button></span>
+      <p class="empty" id="adMsg" hidden></p>
+      <button class="btn" id="adOff" type="button" hidden>관리자 끄기</button>
+    </details>
     <details id="keyBox">
       <summary>다른 기기로 옮기기</summary>
       <p class="empty">내 그림은 이 기기의 '열쇠'로 찾아요. 열쇠를 복사해 두었다가 다른 기기에서 붙여넣으면 같은 그림 목록이 열려요. 열쇠를 아는 사람은 내 그림을 지울 수도 있으니 아무에게나 보여 주지 마세요.</p>
@@ -422,6 +436,7 @@ body.padOpen #hud { visibility: hidden; }
 <div id="viewer" hidden role="dialog" aria-label="작품 보기">
   <canvas id="viewerCanvas"></canvas>
   <div id="viewerCap"></div>
+  <div id="viewerAct"></div>
   <button class="btn" id="viewerClose" type="button">닫기</button>
 </div>
 
@@ -442,12 +457,9 @@ body.padOpen #hud { visibility: hidden; }
 
 <div id="hang" hidden>
   <div class="sheet" role="dialog" aria-label="작품 걸기">
-    <div class="sheetHead"><h2>작품 걸기</h2><button class="btn" id="hangClose" type="button">닫기</button></div>
+    <div class="sheetHead"><h2>어떤 그림을 걸까요?</h2><button class="btn" id="hangClose" type="button">닫기</button></div>
     <p class="empty" id="hangName"></p>
-    <div class="dressRow"><div class="lab">걸 곳</div><div class="opts" id="hangRoom"><button class="opt" type="button" data-v="gallery">전시관 (남쪽 큰 문 너머)</button><button class="opt" type="button" data-v="annex">별관 (전시관 끝 큰 문)</button><button class="opt" type="button" data-v="garden">야외 전시 정원</button><button class="opt" type="button" data-v="studio">화실 높은 벽</button></div></div>
-    <div class="dressRow"><div class="lab">액자 크기</div><div class="opts" id="hangSize"><button class="opt" type="button" data-v="s">작게</button><button class="opt" type="button" data-v="m">보통</button><button class="opt" type="button" data-v="l">크게</button></div></div>
-    <p class="empty">그림 모양(가로/세로)에 맞춰 액자가 만들어져요. 원하는 크기의 빈자리가 없으면 비슷한 크기 자리에 걸려요.</p>
-    <button class="btn primary" id="hangGo" type="button">걸기</button>
+    <div id="hangList"></div>
   </div>
 </div>
 
@@ -1061,7 +1073,7 @@ body.padOpen #hud { visibility: hidden; }
     if (ex) {
       l.fillStyle = '#25211d'; l.font = '46px ' + FONT; l.fillText(String(ex.title || '제목 없음').slice(0, 14), 256, 48);
       l.fillStyle = '#6d655b'; l.font = '32px ' + FONT; l.fillText(String(ex.artist || '화가').slice(0, 10), 256, 94);
-    } else { l.fillStyle = '#b3ab9b'; l.font = '34px ' + FONT; l.fillText('작품을 기다리는 중', 256, 64); }
+    } else { l.fillStyle = '#b3ab9b'; l.font = '34px ' + FONT; l.fillText('눌러서 걸기', 256, 64); }
     sl.ltex.needsUpdate = true;
   }
   function addSlot(room, size, x, y, z, ry) {
@@ -1075,7 +1087,7 @@ body.padOpen #hud { visibility: hidden; }
     const ltex = new T.CanvasTexture(lc); ltex.minFilter = T.LinearFilter; ltex.generateMipmaps = false;
     const lw = size === 's' ? 2.4 : size === 'l' ? 4.6 : 3.4, lh = lw / 4;
     const label = put(g, new T.Mesh(new T.PlaneGeometry(lw, lh), new T.MeshBasicMaterial({ map: ltex })), 0, 0, 0.05);
-    const sl = { room: room, size: size, D: D, x: x, z: z, g: g, inner: inner, label: label, labelH: lh, cv: cv, tex: tex, lc: lc, ltex: ltex, key: '', ex: null, cs: cs };
+    const sl = { id: room + ':' + x.toFixed(1) + ',' + y.toFixed(1) + ',' + z.toFixed(1), room: room, size: size, D: D, x: x, z: z, g: g, inner: inner, label: label, labelH: lh, cv: cv, tex: tex, lc: lc, ltex: ltex, key: '', ex: null, cs: cs };
     plane.userData.slot = sl; hitList.push(plane);
     slots.push(sl); applyAspect(sl, null); drawSlot(sl, null);
     return g;
@@ -1111,18 +1123,18 @@ body.padOpen #hud { visibility: hidden; }
   if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '빈액자작품을기다리는중').then(() => slots.forEach(sl => drawSlot(sl, sl.ex))).catch(() => {});
   function setExhibits(docs) {
     exhibits = docs;
-    const assign = new Map();
-    const used = new Set(), left = [];
-    ROOMS.forEach(room => {
+    const assign = new Map(), used = new Set(), left = [], byId = new Map(slots.map(q => [q.id, q])), rest = [];
+    docs.forEach(ex => { const sl = ex.slot ? byId.get(ex.slot) : null; if (sl && !used.has(sl)) { used.add(sl); assign.set(sl, ex); } else rest.push(ex); });   /* a claimed frame always shows its owner's work */
+    ROOMS.forEach(room => {                              /* older works that never chose a frame take whatever is still free */
       const mine = slots.filter(q => q.room === room);
-      docs.filter(ex => roomOf(ex.room) === room).forEach(ex => {
+      rest.filter(ex => roomOf(ex.room) === room).forEach(ex => {
         const pref = ex.size === 's' || ex.size === 'l' ? ex.size : 'm', order = pref === 'l' ? ['l', 'm', 's'] : pref === 's' ? ['s', 'm', 'l'] : ['m', 'l', 's'];
         let ok = false;
         for (let i = 0; i < order.length && !ok; i++) { const sl = mine.find(q => q.size === order[i] && !used.has(q)); if (sl) { used.add(sl); assign.set(sl, ex); ok = true; } }
         if (!ok && room !== 'studio') left.push(ex);
       });
     });
-    left.forEach(ex => {                                /* a room is full: the work moves to a free frame in another exhibition room */
+    left.forEach(ex => {
       const sl = ['gallery', 'annex', 'garden'].reduce((f, r) => f || slots.find(q => q.room === r && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !used.has(q)), null);
       if (sl) { used.add(sl); assign.set(sl, ex); }
     });
@@ -1830,7 +1842,25 @@ body.padOpen #hud { visibility: hidden; }
     slots.forEach(sl => { if (!sl.ex) return; const d = Math.hypot(pos.x - sl.x, pos.z - sl.z) / (4.5 + sl.D); if (d < 1 && d < bd) { bd = d; best = sl; } });
     nearSlot = best; viewBtn.hidden = !best;
   }
+  const isMine = ex => !!ex && !!uid && typeof ex.id === 'string' && ex.id.indexOf(uid + '_') === 0;
+  let adminOn = false, pendingHang = null;
+  function viewerActions(ex) {
+    const box = $('#viewerAct'); box.textContent = '';
+    const mk = (t, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (cls ? ' ' + cls : ''); b.textContent = t; b.addEventListener('click', fn); box.appendChild(b); return b; };
+    const sure = (b, label, run) => { let arm = 0; b.addEventListener('click', () => { if (!arm) { b.dataset.t = b.textContent; b.textContent = '정말 ' + label + '?'; b.classList.add('danger'); arm = setTimeout(() => { arm = 0; b.textContent = b.dataset.t; b.classList.remove('danger'); }, 3000); return; } clearTimeout(arm); arm = 0; run(b); }); };
+    if (isMine(ex)) {
+      sure(mk('내리기', '', () => {}), '내릴까요', async b => { b.disabled = true; await takeDown(ex); viewerEl.hidden = true; });
+      mk('다른 자리로 옮기기', '', () => { const w = works.find(q => q.id === ex.workId); viewerEl.hidden = true; if (w) startHang(w); else toast('이 그림은 내 그림 목록에서 찾지 못했어요.', 4000); });
+    } else if (adminOn) {
+      sure(mk('관리자: 내리기', '', () => {}), '내릴까요', async b => {
+        b.disabled = true;
+        try { await window.hwasil.admin.del(ex.id); toast('관리자가 내렸어요.', 3000); } catch (e) { toast(e && e.code === 'bad_admin' ? '관리자 확인이 안 돼요. 비밀번호를 다시 넣어 주세요.' : '내리지 못했어요. 잠시 뒤 다시 해 주세요.', 5000); }
+        viewerEl.hidden = true;
+      });
+    }
+  }
   function openViewer(ex) {
+    viewerActions(ex);
     const c = $('#viewerCanvas'), dpr = Math.min(window.devicePixelRatio || 1, 2);
     const mw = window.innerWidth - 56, mh = window.innerHeight - 170, sc = Math.max(0.1, Math.min(mw / ex.w, mh / ex.h));
     const cw = Math.round(ex.w * sc), ch = Math.round(ex.h * sc);
@@ -1870,6 +1900,10 @@ body.padOpen #hud { visibility: hidden; }
   });
 
   /* ---------- tap an easel or a frame ---------- */
+  function frameTap(sl) {
+    if (pendingHang) { if (sl.ex) { toast('이미 누군가 걸어 둔 액자예요. 빈 액자를 눌러 주세요.', 3000); return; } hangAt(pendingHang, sl); return; }
+    if (sl.ex) openViewer(sl.ex); else openHangPicker(sl);
+  }
   let goal = null;                       /* { x, z, idx, stuck } : auto-walk to an easel, then sit */
   const ray = new T.Raycaster();
   let tap = null;
@@ -1890,7 +1924,7 @@ body.padOpen #hud { visibility: hidden; }
         return;
       }
       const sl = o.userData.slot;
-      if (sl) { if (sl.ex) openViewer(sl.ex); else toast('아직 비어 있는 액자예요', 2500); return; }
+      if (sl) { frameTap(sl); return; }
     }
   }
   cv.addEventListener('pointerdown', e => { tap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() }; });
@@ -2157,9 +2191,10 @@ body.padOpen #hud { visibility: hidden; }
       if (!id) return;
       dbNS = res[0]; uid = id; myCol_ = dbNS.collection('data/users/' + uid);
       galCol = dbNS.collection('gallery');
-      galCol.orderBy('at', 'desc').limit(60).onSnapshot(snap => {
+      galCol.orderBy('at', 'desc').limit(150).onSnapshot(snap => {
         setExhibits(snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(w => w.kind === 'exhibit' && Array.isArray(w.strokes) && w.strokes.length < 4000 && w.w > 0 && w.h > 0 && w.w <= 2000 && w.h <= 2000));
       }, () => {});
+      try { if (window.hwasil.admin) window.hwasil.admin.check().then(ok => { adminOn = ok; paintAdmin(); }); } catch (e) {}
       myCol_.orderBy('at', 'desc').limit(30).onSnapshot(snap => {
         works = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(w => w.kind === 'work' && Array.isArray(w.strokes) && w.w > 0 && w.h > 0);
         $('#worksCount').textContent = String(works.length);
@@ -2202,7 +2237,7 @@ body.padOpen #hud { visibility: hidden; }
     if (!title) { const d = new Date(); title = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 그림'; $('#padTitle').value = title; }
     const prev = pad.id ? works.find(q => q.id === pad.id) : null;
     let doc = { kind: 'work', title: title, w: pad.W, h: pad.H, at: Date.now(), n: pad.strokes.length, strokes: pad.strokes.map(s => ({ k: s.k, c: s.c, w: s.w, p: s.p })) };
-    if (prev && prev.exh) { doc.exh = true; doc.er = prev.er; doc.es = prev.es; }
+    if (prev && prev.exh) { doc.exh = true; doc.er = prev.er; doc.es = prev.es; if (prev.sl) doc.sl = prev.sl; }
     const fit = fitDoc(doc);
     if (!fit) { setStatus('그림이 너무 커서 저장할 수 없어요. 일부를 되돌리거나 지운 뒤 다시 눌러 주세요.', true); return; }
     doc = fit.doc; const thinned = fit.tol > 0;
@@ -2210,7 +2245,7 @@ body.padOpen #hud { visibility: hidden; }
     try {
       const ref = pad.id ? myCol_.doc(pad.id) : myCol_.doc();
       await ref.set(doc);
-      if (doc.exh && galCol) { try { await galCol.doc(uid + '_' + ref.id).set(exhibitDoc(doc, ref.id)); } catch (e) {} }
+      if (doc.exh && galCol) { try { const ed = exhibitDoc(doc, ref.id); if (doc.sl) { ed.slot = doc.sl; await galCol.doc(uid + '_' + ref.id).hang(doc.sl, ed); } else await galCol.doc(uid + '_' + ref.id).set(ed); } catch (e) {} }
       pad.id = ref.id; pad.dirty = false; pad.confirmClose = false; $('#padClose').textContent = '닫기';
       setStatus(thinned ? '저장했어요. 그림이 커서 선을 조금 단순하게 줄였어요. 내 그림 목록에서 다시 열 수 있어요.' : '저장했어요. 내 그림 목록에서 다시 열 수 있어요.');
       finishEasel();
@@ -2226,23 +2261,59 @@ body.padOpen #hud { visibility: hidden; }
   }
   $('#padSave').addEventListener('click', save);
 
-  async function exhibit(w, on, opts) {
-    if (!galCol || !myCol_) { toast('이 화면에서는 전시할 수 없어요.'); return; }
-    const gid = uid + '_' + w.id;
+  const ROOM_NAME = { gallery: '전시관', annex: '별관', garden: '야외 전시 정원', studio: '화실' };
+  const SIZE_NAME = { s: '작은', m: '보통', l: '큰' };
+  async function takeDown(ex) {                           /* only the owner's own frames: the server checks it too */
+    if (!galCol) return;
     try {
-      if (on) {
-        const sel = opts || { room: roomOf(w.er), size: w.es === 's' || w.es === 'l' ? w.es : 'm' };
-        const ed = exhibitDoc(Object.assign({}, w, { er: sel.room, es: sel.size }), w.id);
-        if (jsonbSize(ed) > 258000) { toast('그림이 너무 커서 전시할 수 없어요.'); return; }
-        await galCol.doc(gid).set(ed);
-        await myCol_.doc(w.id).update({ exh: true, er: sel.room, es: sel.size });
-        toast(sel.room === 'studio' ? '화실 벽에 걸었어요! 고개를 들어 높은 벽을 올려다 보세요.' : sel.room === 'annex' ? '별관에 걸었어요! 전시관 끝의 큰 문으로 가 보세요.' : sel.room === 'garden' ? '야외 전시 정원에 걸었어요! 들판 북쪽 길로 가 보세요.' : '전시관에 걸었어요! 남쪽 큰 문으로 가 보세요.', 6000);
-      } else {
-        await galCol.doc(gid).delete();
-        await myCol_.doc(w.id).update({ exh: false });
-        toast('전시를 내렸어요.');
-      }
-    } catch (e) { toast(e && e.code === 'quota_exceeded' ? '전시는 한 사람당 10점까지예요. 다른 그림을 먼저 내려 주세요.' : '전시하지 못했어요. 잠시 뒤 다시 해 주세요.', 6000); }
+      await galCol.doc(ex.id).delete();
+      if (myCol_ && ex.workId) { try { await myCol_.doc(ex.workId).update({ exh: false }); } catch (e) {} }
+      toast('전시를 내렸어요.', 2500);
+    } catch (e) { toast('내리지 못했어요. 잠시 뒤 다시 해 주세요.', 4000); }
+  }
+  async function exhibit(w, on) {                         /* on = false: take my work down */
+    if (!galCol || !myCol_) { toast('이 화면에서는 전시할 수 없어요.'); return; }
+    try { await galCol.doc(uid + '_' + w.id).delete(); await myCol_.doc(w.id).update({ exh: false }); toast('전시를 내렸어요.'); }
+    catch (e) { toast('내리지 못했어요. 잠시 뒤 다시 해 주세요.', 4000); }
+  }
+  /* first come, first served: a frame belongs to whoever hung something there first; only that person can move or take it down */
+  function updateBanner() {
+    const b = $('#hangBanner'); $('#hangRow').hidden = !pendingHang;
+    if (pendingHang) b.textContent = '"' + (pendingHang.title || '제목 없음') + '" 걸 빈 액자를 눌러 주세요  ✕';
+  }
+  function startHang(w) {
+    pendingHang = w; updateBanner(); $('#works').hidden = true; $('#hang').hidden = true;
+    toast('걸고 싶은 빈 액자를 눌러 주세요. 전시관, 별관, 야외 정원, 화실 어디든 좋아요.', 7000);
+  }
+  $('#hangBanner').addEventListener('click', () => { pendingHang = null; updateBanner(); toast('걸기를 취소했어요.', 2000); });
+  async function hangAt(w, sl) {
+    if (!galCol || !myCol_) { toast('이 화면에서는 전시할 수 없어요.'); return; }
+    const ed = exhibitDoc(Object.assign({}, w, { er: sl.room, es: sl.size }), w.id); ed.slot = sl.id;
+    if (jsonbSize(ed) > 258000) { toast('그림이 너무 커서 전시할 수 없어요.'); return; }
+    pendingHang = null; updateBanner();
+    try {
+      await galCol.doc(uid + '_' + w.id).hang(sl.id, ed);
+      try { await myCol_.doc(w.id).update({ exh: true, er: sl.room, es: sl.size, sl: sl.id, removed: false }); } catch (e) {}
+      toast(ROOM_NAME[sl.room] + '에 걸었어요! 내 자리는 다른 사람이 바꿀 수 없어요.', 5000);
+    } catch (e) {
+      const c = e && e.code;
+      toast(c === 'slot_taken' ? '방금 다른 분이 먼저 걸었어요. 다른 빈 액자를 골라 주세요.' : c === 'quota_exceeded' ? '전시는 한 사람당 10점까지예요. 다른 그림을 먼저 내려 주세요.' : '전시하지 못했어요. 잠시 뒤 다시 해 주세요.', 6000);
+      try { if (c === 'slot_taken' && window.hwasil.refresh) window.hwasil.refresh('gallery'); } catch (x) {}
+    }
+  }
+  function openHangPicker(sl) {
+    const list = $('#hangList'); list.textContent = '';
+    $('#hangName').textContent = ROOM_NAME[sl.room] + '의 ' + SIZE_NAME[sl.size] + ' 빈 액자예요. 걸 그림을 골라 주세요.';
+    if (!works.length) { $('#hangName').textContent = '먼저 이젤에서 그림을 그려 저장해 주세요. 저장한 그림을 이 액자에 걸 수 있어요.'; }
+    works.forEach(w => {
+      const b = document.createElement('button'); b.type = 'button';
+      const c = document.createElement('canvas'); c.width = 160; c.height = Math.max(60, Math.min(200, Math.round(160 * w.h / w.w))); try { paintWork(c, w, '#ece6d9'); } catch (e) {}
+      const t = document.createElement('span'); t.textContent = (w.exh ? '(전시 중) ' : '') + (w.title || '제목 없음');
+      b.appendChild(c); b.appendChild(t);
+      b.addEventListener('click', () => { $('#hang').hidden = true; hangAt(w, sl); });
+      list.appendChild(b);
+    });
+    $('#hang').hidden = false;
   }
   const delArm = {};
   function renderWorks() {
@@ -2254,7 +2325,7 @@ body.padOpen #hud { visibility: hidden; }
       paintWork(c, w, '#ece6d9'); item.appendChild(c);
       const t = document.createElement('div'); t.className = 't'; t.textContent = w.title || '제목 없음'; item.appendChild(t);
       const d = document.createElement('div'); d.className = 'd'; d.textContent = new Date(w.at || 0).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }); item.appendChild(d);
-      if (w.exh) { const bg = document.createElement('div'); bg.className = 'badge'; bg.textContent = '전시 중'; item.appendChild(bg); }
+      if (w.exh) { const bg = document.createElement('div'); bg.className = 'badge'; bg.textContent = '전시 중'; item.appendChild(bg); } else if (w.removed) { const bg = document.createElement('div'); bg.className = 'badge'; bg.textContent = '관리자가 내렸어요'; item.appendChild(bg); }
       const acts = document.createElement('div'); acts.className = 'acts';
       const b1 = document.createElement('button'); b1.type = 'button'; b1.className = 'btn primary'; b1.textContent = '이어 그리기';
       b1.addEventListener('click', () => {
@@ -2272,8 +2343,8 @@ body.padOpen #hud { visibility: hidden; }
         clearTimeout(delArm[w.id]); delete delArm[w.id];
         try { if (w.exh && galCol) { try { await galCol.doc(uid + '_' + w.id).delete(); } catch (e) {} } await myCol_.doc(w.id).delete(); } catch (e) { b2.textContent = '삭제 실패'; }
       });
-      const b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'btn'; b3.textContent = w.exh ? '걸 곳 바꾸기' : '전시하기';
-      b3.addEventListener('click', () => openHang(w));
+      const b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'btn'; b3.textContent = w.exh ? '자리 옮기기' : '전시하기';
+      b3.addEventListener('click', () => startHang(w));
       acts.appendChild(b1); acts.appendChild(b3);
       if (w.exh) {
         const b4 = document.createElement('button'); b4.type = 'button'; b4.className = 'btn'; b4.textContent = '전시 내리기';
@@ -2284,17 +2355,7 @@ body.padOpen #hud { visibility: hidden; }
     });
   }
   $('#worksBtn').addEventListener('click', () => { renderWorks(); $('#renameInput').value = myName; $('#works').hidden = false; });
-  /* ---------- hang a work: choose the room and the frame size ---------- */
-  let hangWork = null, hangSel = { room: 'gallery', size: 'm' };
-  function markHang() { document.querySelectorAll('#hangRoom .opt').forEach(b => b.classList.toggle('on', b.dataset.v === hangSel.room)); document.querySelectorAll('#hangSize .opt').forEach(b => b.classList.toggle('on', b.dataset.v === hangSel.size)); }
-  function openHang(w) {
-    hangWork = w; hangSel = { room: roomOf(w.er), size: w.es === 's' || w.es === 'l' ? w.es : 'm' };
-    $('#hangName').textContent = '"' + (w.title || '제목 없음') + '"을(를) 어디에, 어떤 크기로 걸까요?'; markHang(); $('#hang').hidden = false;
-  }
-  document.querySelectorAll('#hangRoom .opt').forEach(b => b.addEventListener('click', () => { hangSel.room = b.dataset.v; markHang(); }));
-  document.querySelectorAll('#hangSize .opt').forEach(b => b.addEventListener('click', () => { hangSel.size = b.dataset.v; markHang(); }));
   $('#hangClose').addEventListener('click', () => { $('#hang').hidden = true; });
-  $('#hangGo').addEventListener('click', async () => { if (!hangWork) return; const w = hangWork; $('#hang').hidden = true; $('#hangGo').disabled = true; await exhibit(w, true, { room: hangSel.room, size: hangSel.size }); $('#hangGo').disabled = false; });
   document.querySelectorAll('#qSeg button').forEach(b => { b.classList.toggle('on', (b.dataset.q === 'hi') === HI); b.addEventListener('click', () => { if ((b.dataset.q === 'hi') === HI) return; store('hw-q', b.dataset.q); toast('그래픽을 바꾸고 다시 불러와요…', 3000); setTimeout(() => location.reload(), 600); }); });
   $('#nameDice').addEventListener('click', () => { $('#nameInput').value = funName(); });
   $('#renameDice').addEventListener('click', () => { $('#renameInput').value = funName(); $('#renameMsg').hidden = true; });
@@ -2304,6 +2365,18 @@ body.padOpen #hud { visibility: hidden; }
     myName = nm; store('hw-name', nm); myPlate.set(myName); pushPresence(true);
     m.textContent = '이제 "' + nm + '"(으)로 불려요.'; m.className = 'empty'; m.hidden = false;
   });
+  function paintAdmin() {
+    $('#adRow').hidden = adminOn; $('#adOff').hidden = !adminOn;
+    $('#adNote').textContent = adminOn ? '관리자 모드가 켜져 있어요. 전시된 그림을 누르면 "관리자: 내리기"가 보여요.' : '관리자 비밀번호를 넣으면, 이 기기에서 부적절한 작품을 내릴 수 있어요.';
+  }
+  $('#adGo').addEventListener('click', async () => {
+    const m = $('#adMsg'); m.hidden = false; m.className = 'empty'; m.textContent = '확인하는 중…';
+    let ok = false; try { ok = await window.hwasil.admin.login($('#adPw').value); } catch (e) {}
+    adminOn = ok; $('#adPw').value = ''; paintAdmin();
+    m.textContent = ok ? '관리자 모드를 켰어요.' : '비밀번호가 맞지 않아요.'; m.className = ok ? 'empty' : 'empty bad';
+  });
+  $('#adOff').addEventListener('click', () => { window.hwasil.admin.logout(); adminOn = false; paintAdmin(); $('#adMsg').hidden = true; });
+  paintAdmin();
   $('#worksClose').addEventListener('click', () => { $('#works').hidden = true; });
   $('#works').addEventListener('click', e => { if (e.target === $('#works')) $('#works').hidden = true; });
 
