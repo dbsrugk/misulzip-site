@@ -2637,7 +2637,7 @@ body.padOpen #hud { visibility: hidden; }
       lake = zone === 'out' ? clamp(1 - Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) / 26, 0, 1) : 0;
       sea = zone === 'out' ? clamp((pos.x - 112) / 30, 0, 1) : 0;
     }
-    function level() { return on && started && !document.hidden ? vol * 1.7 : 0; }
+    function level() { return on && started && !document.hidden ? vol * 3.0 : 0; }
     function tick() {
       timer = setTimeout(tick, 350);
       if (!ctx || ctx.state !== 'running') return;
