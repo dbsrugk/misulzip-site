@@ -1,4 +1,4 @@
-/* 작은 화실 — Supabase backend that mimics the window.claude.use('room'|'db'|'user') surface
+/* 도토리 미술관(옛 이름: 작은 화실) — Supabase backend that mimics the window.claude.use('room'|'db'|'user') surface
    the studio code was written against. Data lives in the private `hwasil` schema and is only
    reachable through hwasil_* RPCs that check the entry code. Realtime uses public broadcast
    channels whose names are derived from the entry code. */
