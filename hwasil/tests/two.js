@@ -35,7 +35,7 @@ const { start, vis, until, check, done } = require('./lib');
     check(red > 300, "B sees A's paint bucket fill (red pixels: " + red + ')');
   }
   /* hearts: B sends one while A is drawing, A sees it */
-  await B.click('#watchLike'); await A.waitForTimeout(2500);
+  await B.click('#watchLike'); await A.waitForTimeout(900);          /* the heart floats for 2.3 s: look while it is up */
   check(await A.evaluate(() => !document.querySelector('#padLikes').hidden && /1/.test(document.querySelector('#padLikes').textContent) && document.querySelector('#padHearts').children.length >= 1), 'A sees the heart B sent while watching');
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

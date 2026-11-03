@@ -321,6 +321,10 @@ body.padOpen #hud { visibility: hidden; }
 .heart small { font-size: 15px; color: #25211d; background: rgba(255, 253, 247, 0.92); border-radius: 999px; padding: 1px 8px; margin-left: 4px; vertical-align: middle; text-shadow: none; }
 @keyframes heartUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 12% { opacity: 1; transform: translateY(-18px) scale(1.15); } 100% { transform: translateY(-250px) scale(1); opacity: 0; } }
 .likeBadge { position: absolute; top: 6px; right: 8px; z-index: 5; background: #fffdf7; border: 2px solid var(--ink); border-radius: 999px; padding: 2px 12px; font: 400 20px/1.2 var(--font-display); color: #e0405a; pointer-events: none; }
+.refCanvas { position: absolute; pointer-events: none; z-index: 2; }
+.refRow, .refCtl { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; }
+#refMove.on { background: var(--ink); color: var(--paper); }
+#refMode button { padding: 6px 10px; font-size: 16px; }
 #viewerAct { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 #hangList { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin: 10px 0 4px; }
 #hangList button { border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); padding: 6px; font: 400 16px/1.2 var(--font-display); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink); }
@@ -368,7 +372,7 @@ body.padOpen #hud { visibility: hidden; }
   <div class="padView" id="padView" aria-label="풍경 둘러보기"><span class="lookHint" id="lookHint">끌어서 둘러보기 · 두 번 누르면 처음 방향</span></div>
   <div class="padMain" id="padMain">
   <div class="padStatus" id="padStatus" role="status" aria-live="polite"></div>
-  <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas><div class="sizeFloat" id="sizeFloat" hidden aria-hidden="true"><i></i><b></b></div><div class="heartLayer" id="padHearts"></div><div class="likeBadge" id="padLikes" hidden>♥ 0</div></div>
+  <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas><canvas id="refCanvas" class="refCanvas" hidden aria-hidden="true"></canvas><div class="sizeFloat" id="sizeFloat" hidden aria-hidden="true"><i></i><b></b></div><div class="heartLayer" id="padHearts"></div><div class="likeBadge" id="padLikes" hidden>♥ 0</div></div>
   <div class="padTools">
     <div class="seg" id="viewSeg" role="group" aria-label="풍경 보기" hidden>
       <button type="button" data-view="off">풍경 끔</button>
@@ -385,6 +389,17 @@ body.padOpen #hud { visibility: hidden; }
     <label class="size" for="padSize">굵기 <span class="sizeMini" aria-hidden="true"><i id="sizeMini"></i></span> <input id="padSize" type="range" min="2" max="60" value="6"></label>
     <button class="btn" id="padUndo" type="button">되돌리기</button>
     <button class="btn" id="padClear" type="button">전체 지우기</button>
+    <div class="refRow" id="refRow">
+      <button class="btn" id="refBtn" type="button">따라 그리기</button>
+      <input id="refFile" type="file" accept="image/*" hidden>
+      <span class="refCtl" id="refCtl" hidden>
+        <span class="seg" id="refMode" role="group" aria-label="참고 그림 모양"><button type="button" data-m="img" class="on">원본</button><button type="button" data-m="edge">윤곽선</button></span>
+        <label class="size" for="refOp">투명도 <input id="refOp" type="range" min="10" max="90" value="40"></label>
+        <label class="size" for="refScale">크기 <input id="refScale" type="range" min="40" max="300" value="100"></label>
+        <button class="btn" id="refMove" type="button">옮기기</button>
+        <button class="btn" id="refOff" type="button">끄기</button>
+      </span>
+    </div>
   </div>
   <div class="swatches" id="swatches" role="group" aria-label="색"></div>
   </div>
@@ -2332,7 +2347,7 @@ body.padOpen #hud { visibility: hidden; }
     padCv.width = Math.round(cw * dpr); padCv.height = Math.round(ch * dpr);
     baseCv.width = padCv.width; baseCv.height = padCv.height;
     sc = padCv.width / pad.W;
-    rebuildBase(); present(); paintPreview(false);
+    rebuildBase(); present(); paintPreview(false); paintRef();
   }
   /* views: 'off' = full sheet, 'split' = scenery on top, 'ghost' = scenery behind a see-through sheet */
   function viewFor(easel) {
@@ -2401,7 +2416,7 @@ body.padOpen #hud { visibility: hidden; }
     }
   }
   function closePad() {
-    finishEasel();
+    finishEasel(); clearRef();
     pad.open = false; padEl.hidden = true; pad.easel = -1; myEasel = -1; applyView();
     clearTimeout(closeTimer); clearTimeout(clearTimer);
     pushPresence(true);
@@ -2415,6 +2430,75 @@ body.padOpen #hud { visibility: hidden; }
     }
     closePad();
   });
+
+  /* ---------- trace guide: a picture laid over the paper (not saved with the drawing) to copy by hand ---------- */
+  const refCv = $('#refCanvas'), refCtx = refCv.getContext('2d');
+  const ref = { img: null, edge: null, mode: 'img', op: 0.4, sc: 1, ox: 0, oy: 0, move: false };
+  let refDrag = null;
+  function refRect() {                                    /* where the picture is drawn, in canvas pixels */
+    const W = refCv.width, H = refCv.height, src = ref.mode === 'edge' && ref.edge ? ref.edge : ref.img;
+    const k = Math.min(W / src.width, H / src.height) * ref.sc, dw = src.width * k, dh = src.height * k;
+    return { src: src, x: (W - dw) / 2 + ref.ox * W, y: (H - dh) / 2 + ref.oy * H, w: dw, h: dh };
+  }
+  function paintRef() {
+    refCv.hidden = !ref.img; if (!ref.img) return;
+    refCv.style.left = padCv.offsetLeft + 'px'; refCv.style.top = padCv.offsetTop + 'px'; refCv.style.width = padCv.style.width; refCv.style.height = padCv.style.height;
+    if (refCv.width !== padCv.width || refCv.height !== padCv.height) { refCv.width = padCv.width; refCv.height = padCv.height; }
+    const r = refRect(); refCtx.clearRect(0, 0, refCv.width, refCv.height);
+    refCtx.globalAlpha = ref.op; refCtx.imageSmoothingQuality = 'high'; refCtx.drawImage(r.src, r.x, r.y, r.w, r.h); refCtx.globalAlpha = 1;
+  }
+  function makeEdges(img) {                               /* only the outlines of the picture (Sobel), drawn in blue: easy to trace */
+    const k = Math.min(1, 800 / Math.max(img.width, img.height)), w = Math.max(8, Math.round(img.width * k)), h = Math.max(8, Math.round(img.height * k));
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data, g = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) g[i] = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11;
+    const out = x.createImageData(w, h), o = out.data;
+    for (let y = 1; y < h - 1; y++) for (let xx = 1; xx < w - 1; xx++) {
+      const i = y * w + xx, gx = -g[i - w - 1] - 2 * g[i - 1] - g[i + w - 1] + g[i - w + 1] + 2 * g[i + 1] + g[i + w + 1], gy = -g[i - w - 1] - 2 * g[i - w] - g[i - w + 1] + g[i + w - 1] + 2 * g[i + w] + g[i + w + 1];
+      const a = clamp((Math.sqrt(gx * gx + gy * gy) - 24) * 4, 0, 255), j = i * 4; o[j] = 31; o[j + 1] = 79; o[j + 2] = 216; o[j + 3] = a;
+    }
+    x.putImageData(out, 0, 0); return c;
+  }
+  function paintRefUi() {
+    $('#refCtl').hidden = !ref.img; $('#refBtn').textContent = ref.img ? '다른 사진' : '따라 그리기';
+    document.querySelectorAll('#refMode button').forEach(b => b.classList.toggle('on', b.dataset.m === ref.mode));
+    $('#refMove').classList.toggle('on', ref.move); $('#refMove').textContent = ref.move ? '옮기는 중…' : '옮기기';
+    $('#refOp').value = Math.round(ref.op * 100); $('#refScale').value = Math.round(ref.sc * 100);
+  }
+  function clearRef() { ref.img = ref.edge = null; ref.move = false; refDrag = null; paintRef(); paintRefUi(); }
+  function setRefImage(img) {
+    const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    ref.img = c; ref.edge = makeEdges(c); ref.mode = 'img'; ref.op = 0.4; ref.sc = 1; ref.ox = ref.oy = 0; ref.move = false;
+    paintRef(); paintRefUi(); setStatus('참고 그림을 깔았어요. 투명도를 맞추고 그 위에 따라 그려 보세요. 내 그림에는 저장되지 않아요.');
+  }
+  $('#refBtn').addEventListener('click', () => { $('#refFile').value = ''; $('#refFile').click(); });
+  $('#refFile').addEventListener('change', () => {
+    const f = $('#refFile').files && $('#refFile').files[0]; if (!f) return;
+    if (!/^image\//.test(f.type) || f.size > 30 * 1024 * 1024) { setStatus('사진(30MB 이하)만 불러올 수 있어요.', true); return; }
+    const url = URL.createObjectURL(f), img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); try { setRefImage(img); } catch (e) { setStatus('사진을 불러오지 못했어요.', true); } };
+    img.onerror = () => { URL.revokeObjectURL(url); setStatus('사진을 불러오지 못했어요.', true); };
+    img.src = url;
+  });
+  document.querySelectorAll('#refMode button').forEach(b => b.addEventListener('click', () => { ref.mode = b.dataset.m; if (ref.mode === 'edge') ref.op = Math.max(ref.op, 0.7); paintRef(); paintRefUi(); }));
+  $('#refOp').addEventListener('input', () => { ref.op = clamp($('#refOp').value / 100, 0.1, 0.9); paintRef(); });
+  $('#refScale').addEventListener('input', () => { ref.sc = clamp($('#refScale').value / 100, 0.4, 3); paintRef(); });
+  $('#refMove').addEventListener('click', () => { ref.move = !ref.move; paintRefUi(); if (ref.move) setStatus('그림판을 끌어서 참고 그림을 옮겨요. 다 옮기면 "옮기는 중"을 다시 눌러요.'); else setStatus(''); });
+  $('#refOff').addEventListener('click', () => { clearRef(); setStatus('참고 그림을 껐어요.'); });
+  padCv.addEventListener('pointermove', e => {
+    if (!refDrag || e.pointerId !== refDrag.id) return;
+    const r = padCv.getBoundingClientRect(); ref.ox = refDrag.ox + (e.clientX - refDrag.x) / r.width; ref.oy = refDrag.oy + (e.clientY - refDrag.y) / r.height; paintRef();
+  });
+  ['pointerup', 'pointercancel'].forEach(ev => padCv.addEventListener(ev, e => { if (refDrag && e.pointerId === refDrag.id) refDrag = null; }));
+  function refColorAt(e) {                                /* colour of the guide picture under the finger (null when the guide is off or the spot is empty) */
+    if (!ref.img || ref.mode !== 'img') return null;
+    const r = padCv.getBoundingClientRect(), x = clamp(Math.floor((e.clientX - r.left) / r.width * padCv.width), 0, padCv.width - 1), y = clamp(Math.floor((e.clientY - r.top) / r.height * padCv.height), 0, padCv.height - 1);
+    const q = refRect(), t = document.createElement('canvas'); t.width = padCv.width; t.height = padCv.height; const tx = t.getContext('2d', { willReadFrequently: true });
+    tx.drawImage(q.src, q.x, q.y, q.w, q.h); const d = tx.getImageData(x, y, 1, 1).data;
+    return d[3] < 200 ? null : '#' + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+
   function pt(e) {
     const r = padCv.getBoundingClientRect();
     return [Math.round(clamp((e.clientX - r.left) / r.width * pad.W, -20, pad.W + 20)), Math.round(clamp((e.clientY - r.top) / r.height * pad.H, -20, pad.H + 20))];
@@ -2423,6 +2507,7 @@ body.padOpen #hud { visibility: hidden; }
     if (pad.pid !== null) return;
     e.preventDefault();
     $('#sizeFloat').hidden = true;                      /* the size/tool hint must never cover what I am about to draw */
+    if (ref.move && ref.img) { refDrag = { id: e.pointerId, x: e.clientX, y: e.clientY, ox: ref.ox, oy: ref.oy }; try { padCv.setPointerCapture(e.pointerId); } catch (x) {} return; }
     if (pad.tool === 'f') { doFill(pt(e)); return; }
     if (pad.tool === 'i') { doPick(e); return; }
     pad.pid = e.pointerId; try { padCv.setPointerCapture(e.pointerId); } catch (x) {}
@@ -2454,8 +2539,8 @@ body.padOpen #hud { visibility: hidden; }
   function doPick(e) {
     const r = padCv.getBoundingClientRect();
     const x = clamp(Math.floor((e.clientX - r.left) / r.width * padCv.width), 0, padCv.width - 1), y = clamp(Math.floor((e.clientY - r.top) / r.height * padCv.height), 0, padCv.height - 1);
-    const d = padCtx.getImageData(x, y, 1, 1).data, hex = '#' + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, '0')).join('');
-    setColor(hex); remember(hex); setTool(pad.prevTool || 'p'); setStatus('색을 집었어요.');
+    const fromRef = refColorAt(e), d = padCtx.getImageData(x, y, 1, 1).data, hex = fromRef || '#' + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+    setColor(hex); remember(hex); setTool(pad.prevTool || 'p'); setStatus(fromRef ? '참고 그림의 색을 집었어요.' : '색을 집었어요.');
   }
   function endStroke(e) {
     if (e.pointerId !== pad.pid) return;
