@@ -75,5 +75,18 @@ const { start, vis, until, check, done } = require('./lib');
   await p.evaluate(() => window.__hw.go(3));                  /* beach -> studio easel */
   check(await until(p, () => !document.querySelector('#pad').hidden, null, 200), 'walks back in through the door and sits at a studio easel');
   await p.waitForTimeout(1500); check(await p.evaluate(() => document.querySelector('#pad').classList.contains('split')), 'studio easels also open the scenery view');
+  /* frames: the hall has frames of three sizes in two rooms; a saved work can be hung on the studio wall as a big frame */
+  const frames = await p.evaluate(() => window.__hw.slots.map(s => s.room + ':' + s.size));
+  check(frames.length >= 40 && new Set(frames.map(f => f.split(':')[1])).size === 3 && frames.some(f => f.startsWith('studio')) && frames.some(f => f.startsWith('gallery')), 'frames in both rooms, three sizes (' + frames.length + ')');
+  const bq = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+  await p.mouse.move(bq.x + bq.w * 0.2, bq.y + bq.h * 0.3); await p.mouse.down(); await p.mouse.move(bq.x + bq.w * 0.8, bq.y + bq.h * 0.7, { steps: 8 }); await p.mouse.up();
+  await p.fill('#padTitle', '큰 그림'); await p.click('#padSave'); await p.waitForTimeout(1500);
+  await p.click('#padClose'); await p.waitForTimeout(500);
+  await p.click('#worksBtn'); await p.waitForTimeout(500);
+  await p.locator('.work .btn', { hasText: '전시하기' }).first().click(); await p.waitForTimeout(400);
+  check(await vis(p, '#hang'), 'hang sheet opens (room and frame size)');
+  await p.click('#hangRoom .opt[data-v=studio]'); await p.click('#hangSize .opt[data-v=l]'); await p.screenshot({ path: t.out('hang.png') });
+  await p.click('#hangGo'); await p.waitForTimeout(1800);
+  check(await p.evaluate(() => window.__hw.slots.some(s => s.ex && s.room === 'studio' && s.size === 'l' && /큰 그림/.test(s.ex.title))), 'the work hangs in a big studio frame');
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

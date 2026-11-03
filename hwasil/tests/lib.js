@@ -12,13 +12,21 @@ function threeFile() {                                      /* three r128 comes 
 }
 const STUB = `window.supabase={createClient(){return{
  rpc(fn,a){window.__rpcs=(window.__rpcs||[]).concat([fn]);if(fn==='hwasil_check')return Promise.resolve({data:a.code==='6nk9z69j',error:null});
-  if(/list/.test(fn))return Promise.resolve({data:[],error:null});return Promise.resolve({data:null,error:null});},
+  const db=(window.__db=window.__db||{works:{},gallery:{}}),ok=d=>Promise.resolve({data:d===undefined?null:d,error:null});
+  if(fn==='hwasil_work_set'){db.works[a.wid]=Object.assign({},a.d,{id:a.wid});return ok();}
+  if(fn==='hwasil_work_patch'){Object.assign(db.works[a.wid]||{},a.d);return ok();}
+  if(fn==='hwasil_work_del'){delete db.works[a.wid];return ok();}
+  if(fn==='hwasil_works_list')return ok(Object.values(db.works).sort((x,y)=>y.at-x.at));
+  if(fn==='hwasil_gallery_set'){db.gallery[a.gid]=Object.assign({},a.d,{id:a.gid});return ok();}
+  if(fn==='hwasil_gallery_del'){delete db.gallery[a.gid];return ok();}
+  if(fn==='hwasil_gallery_list')return ok(Object.values(db.gallery).sort((x,y)=>y.at-x.at));
+  return ok();},
  channel(n,o){const h={};const c={on(t,f,cb){(h[f.event]=h[f.event]||[]).push(cb);return c;},
   subscribe(cb){window.__h=window.__h||{};window.__h[n]=h;window.__cb=window.__cb||{};window.__cb[n]=cb;window.__subs=window.__subs||{};window.__subs[n]=(window.__subs[n]||0)+1;setTimeout(()=>cb('SUBSCRIBED'),30);return c;},
   send(m){window.__busSend(n,m.event,m.payload);return Promise.resolve('ok');}};return c;},
  removeChannel(){return Promise.resolve();}};}};
 window.__busRecv=(n,e,p)=>{const h=(window.__h||{})[n];if(h&&h[e])h[e].forEach(f=>f({payload:p}));};`;
-const HOOK = "const ray = new T.Raycaster(); window.__hw = { pos: pos, easels: easels, remotes: remotes, look: () => myLook.join(''), go: (idx) => { const e = easels[idx]; goal = { x: e.sit.x, z: e.sit.z, idx: idx, stuck: 0 }; } };";
+const HOOK = "const ray = new T.Raycaster(); window.__hw = { pos: pos, easels: easels, remotes: remotes, slots: slots, look: () => myLook.join(''), go: (idx) => { const e = easels[idx]; goal = { x: e.sit.x, z: e.sit.z, idx: idx, stuck: 0 }; } };";
 
 async function start(opts) {
   opts = opts || {};
