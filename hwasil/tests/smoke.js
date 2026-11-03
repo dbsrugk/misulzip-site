@@ -5,6 +5,14 @@ const { start, vis, until, check, done } = require('./lib');
   const def = await p.inputValue('#nameInput'); check(def.length > 0 && def.length <= 10 && !/^화가\d+$/.test(def), 'fun random default name: ' + def);
   await t.enter(p, '시험');
   check(/화실 1/.test(await p.textContent('#online')), 'enters a studio: ' + await p.textContent('#online'));
+  /* camera: drag up looks up at the ceiling, the wheel zooms */
+  await p.mouse.move(200, 500); await p.mouse.down(); await p.mouse.move(200, 100, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(600);
+  const c1 = await p.evaluate(() => window.__hw.cam());
+  check(c1.pitch < 0, 'dragging up tilts the camera to look up (pitch ' + c1.pitch.toFixed(2) + ')');
+  await p.mouse.move(200, 400); await p.mouse.wheel(0, -600); await p.waitForTimeout(400);
+  const c2 = await p.evaluate(() => window.__hw.cam());
+  check(c2.want < c1.want, 'the wheel zooms the camera in (' + c1.want.toFixed(1) + ' -> ' + c2.want.toFixed(1) + ')');
+  await p.mouse.move(200, 400); await p.mouse.wheel(0, 900); await p.waitForTimeout(300);
   await p.click('#emoteBtn'); await p.waitForTimeout(200);                    /* emotes */
   check(await vis(p, '#emoteBar') && (await p.locator('#emoteBar .emo').count()) === 5, 'emote bar with five emotes opens');
   await p.click('#emoteBar .emo[data-e=heart]'); await p.waitForTimeout(500);
@@ -32,6 +40,11 @@ const { start, vis, until, check, done } = require('./lib');
   await place(2, 'mountain.png'); await place(3, 'beach.png'); await place(4, 'lake.png'); await place(5, 'field.png'); await place(0, 'studio.png');
   const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 36, 'easels: ' + n);
   await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 6, 'six places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
+  /* gallery partitions that block the camera fade out while they are in the way */
+  await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(1).click(); await p.waitForTimeout(1500);
+  let minK = 1;
+  for (let i = 0; i < 14; i++) { await p.mouse.move(100, 450); await p.mouse.down(); await p.mouse.move(221, 450, { steps: 5 }); await p.mouse.up(); await p.waitForTimeout(700); const ks = await p.evaluate(() => window.__hw.occ()); minK = Math.min(minK, ...ks); }
+  check(minK < 0.5, 'a partition between the camera and me turns see-through (lowest opacity ' + minK.toFixed(2) + ')');
   await p.evaluate(() => window.__hw.go(25));                /* studio -> beach easel: through the east door */
   check(await until(p, () => !document.querySelector('#pad').hidden, null, 200), 'walks out the east door and sits at a beach easel');
   await p.waitForTimeout(2500);

@@ -462,6 +462,7 @@ body.padOpen #hud { visibility: hidden; }
     <ul>
       <li>왼쪽 아래 조이스틱으로 걷기</li>
       <li>화실 옆문으로 나가면 산, 바다 같은 야외 그림 자리가 있어요. 위쪽 '장소 이동'으로 바로 갈 수도 있어요</li>
+      <li>화면을 끌어서 돌려 보세요. 위로 끌면 천장과 높은 벽도 올려다볼 수 있고, 두 손가락으로 확대/축소해요</li>
       <li>이젤을 누르면 걸어가서 앉아요. 누가 그리는 중이면 바로 구경해요</li>
       <li>이젤 가까이 가면 앉기 버튼도 나와요</li>
       <li>화실 하나에 20명까지 들어와요. 위쪽 화실 칩을 눌러 다른 화실로 옮길 수 있어요</li>
@@ -625,6 +626,31 @@ body.padOpen #hud { visibility: hidden; }
   /* everything on the room/gallery boundary (z = RM.hz); hidden when the camera is on the other side,
      so the camera can always stay far away instead of being squeezed against the wall */
   const seam = [];
+  /* things that may stand between the camera and the player fade out while they do */
+  const occluders = [], partGroups = {};
+  function addOccluder(group, x0, y0, z0, x1, y1, z1) { const o = { g: group, box: new T.Box3(new T.Vector3(x0, y0, z0), new T.Vector3(x1, y1, z1)), k: 1, tr: false }; occluders.push(o); return o; }
+  function segHitsBox(a, b, box) {
+    let t0 = 0, t1 = 1;
+    for (const ax of ['x', 'y', 'z']) {
+      const d = b[ax] - a[ax], lo = box.min[ax], hi = box.max[ax];
+      if (Math.abs(d) < 1e-9) { if (a[ax] < lo || a[ax] > hi) return false; continue; }
+      let ta = (lo - a[ax]) / d, tb = (hi - a[ax]) / d; if (ta > tb) { const tmp = ta; ta = tb; tb = tmp; }
+      t0 = Math.max(t0, ta); t1 = Math.min(t1, tb); if (t0 > t1) return false;
+    }
+    return true;
+  }
+  function setFade(o, k) {
+    const tr = k < 0.995;
+    o.g.traverse(m => { if (!m.isMesh || !m.material) return; (Array.isArray(m.material) ? m.material : [m.material]).forEach(mt => { mt.opacity = k; if (o.tr !== tr) { mt.transparent = tr || mt.userData.wasTransparent === true; mt.depthWrite = !tr; mt.needsUpdate = true; } }); });
+    o.tr = tr;
+  }
+  function updateOccluders(dt, camP, head) {
+    for (const o of occluders) {
+      const target = !o.box.containsPoint(head) && segHitsBox(camP, head, o.box) ? 0.13 : 1;
+      const nk = o.k + (target - o.k) * Math.min(1, dt * 9);
+      if (Math.abs(nk - o.k) > 0.004 || (o.k !== target && Math.abs(target - nk) < 0.004)) { o.k = Math.abs(target - nk) < 0.004 ? target : nk; setFade(o, o.k); }
+    }
+  }
   /* arched doorway = a wall piece with an arch-shaped hole + a wooden arch frame (the band between two arches) */
   function archShape(r, hs) { hs = hs === undefined ? DSH : hs; const sh = new T.Shape(); sh.moveTo(-r, 0); sh.lineTo(-r, hs); sh.absarc(0, hs, r, Math.PI, 0, true); sh.lineTo(r, 0); sh.lineTo(-r, 0); return sh; }
   function archWallGeo() {
@@ -708,8 +734,9 @@ body.padOpen #hud { visibility: hidden; }
     const sg = new T.Mesh(new T.PlaneGeometry(6.4, 2.0), new T.MeshBasicMaterial({ map: tex })); sg.position.set(0, 15.0, RM.hz - 0.1); sg.rotation.y = Math.PI; scene.add(sg); seam.push(sg);
     if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '전시관함께그린그림이걸려있어요').then(draw).catch(() => {});
     [-5, 5].forEach(sx => {
-      put(scene, new T.Mesh(bx(0.3, 9, 17), L(0xf2eee6)), sx, 4.5, RM.hz + 15);
-      put(scene, new T.Mesh(bx(0.5, 0.35, 17.4), L(0x7b5a36)), sx, 0.18, RM.hz + 15);
+      const pg = new T.Group(); scene.add(pg); partGroups[sx] = pg; addOccluder(pg, sx - 0.9, 0, RM.hz + 15 - 8.8, sx + 0.9, 9.2, RM.hz + 15 + 8.8);
+      put(pg, new T.Mesh(bx(0.3, 9, 17), L(0xf2eee6)), sx, 4.5, RM.hz + 15);
+      put(pg, new T.Mesh(bx(0.5, 0.35, 17.4), L(0x7b5a36)), sx, 0.18, RM.hz + 15);
       for (let zz = RM.hz + 15 - 8; zz <= RM.hz + 15 + 8.01; zz += 1.6) colliders.push({ x: sx, z: zz, r: 0.5 });
     });
   })();
@@ -733,6 +760,9 @@ body.padOpen #hud { visibility: hidden; }
     [-21, 21].forEach(z => pilaster(-RM.hx + 0.5, z, Math.PI / 2, 'x', -RM.hx, 1));
     const beam = (w, d, x, z) => quiet(put(scene, new T.Mesh(bx(w, 1.1, d), beamM), x, RM.h - 1.6, z));
     [-16, -8, 0, 8, 16].forEach(z => beam(RM.hx * 2 - 0.8, 0.9, 0, z)); [-24, -8, 8, 24].forEach(x => beam(0.9, RM.hz * 2 - 0.8, x, 0));
+    /* ceilings: they face down, so from above (the zoomed-out camera) they are invisible, from inside you see them */
+    const ceil = (w, d, x, z) => { const m = new T.Mesh(new T.PlaneGeometry(w, d), B(0xf3ead6)); m.rotation.x = Math.PI / 2; m.position.set(x, RM.h, z); m.userData.noShadow = true; scene.add(m); return m; };
+    ceil(RM.hx * 2, RM.hz * 2, 0, 0); ceil(GX * 2, GL, 0, RM.hz + GL / 2);
     [RM.hz + 7, RM.hz + 15, RM.hz + 23].forEach(z => beam(GX * 2 - 0.6, 0.9, 0, z)); [-7, 7].forEach(x => beam(0.9, GL - 0.6, x, RM.hz + GL / 2));
     const gc = document.createElement('canvas'); gc.width = gc.height = 128; const gx = gc.getContext('2d'), gr = gx.createRadialGradient(64, 64, 4, 64, 64, 62);
     gr.addColorStop(0, 'rgba(255,240,190,0.9)'); gr.addColorStop(1, 'rgba(255,240,190,0)'); gx.fillStyle = gr; gx.fillRect(0, 0, 128, 128);
@@ -1038,7 +1068,7 @@ body.padOpen #hud { visibility: hidden; }
       hang(addSlot('gallery', q[0], q[2], -GX + 0.1, q[1], Math.PI / 2), 'x', -GX, 1); hang(addSlot('gallery', q[0], q[2], GX - 0.1, q[1], -Math.PI / 2), 'x', GX, -1);
     });
     [-5, 5].forEach(sx => [['s', -6, 5.2], ['m', 0, 4.6], ['s', 6, 5.2]].forEach(q => {
-      addSlot('gallery', q[0], q[2], sx - 0.25, RM.hz + 15 + q[1], -Math.PI / 2); addSlot('gallery', q[0], q[2], sx + 0.25, RM.hz + 15 + q[1], Math.PI / 2);
+      partGroups[sx].add(addSlot('gallery', q[0], q[2], sx - 0.25, RM.hz + 15 + q[1], -Math.PI / 2)); partGroups[sx].add(addSlot('gallery', q[0], q[2], sx + 0.25, RM.hz + 15 + q[1], Math.PI / 2));
     }));
     /* studio: high on the tall walls, above the paint shelves and canvases */
     [['m', -18, 8.0], ['l', -9, 8.9], ['l', 0, 8.9], ['l', 9, 8.9], ['m', 18, 8.0]].forEach(q => hang(addSlot('studio', q[0], q[2], -RM.hx + 0.1, q[1], Math.PI / 2), 'x', -RM.hx, 1));
@@ -1669,14 +1699,20 @@ body.padOpen #hud { visibility: hidden; }
   joyEl.addEventListener('pointerdown', e => { joyId = e.pointerId; try { joyEl.setPointerCapture(e.pointerId); } catch (x) {} moveJoy(e); e.preventDefault(); });
   joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) moveJoy(e); });
   ['pointerup', 'pointercancel'].forEach(ev => joyEl.addEventListener(ev, e => { if (e.pointerId === joyId) resetJoy(); }));
-  let dragId = null, lx = 0, ly = 0;
-  cv.addEventListener('pointerdown', e => { if (dragId === null) { dragId = e.pointerId; lx = e.clientX; ly = e.clientY; try { cv.setPointerCapture(e.pointerId); } catch (x) {} } });
+  /* world camera: drag = turn and tilt (drag up = look up at the ceiling), two fingers or the wheel = zoom */
+  const cptr = new Map(); let camWant = 17;
+  cv.addEventListener('pointerdown', e => { cptr.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
   cv.addEventListener('pointermove', e => {
-    if (e.pointerId !== dragId) return;
-    camYaw -= (e.clientX - lx) * 0.0065; camPitch = clamp(camPitch + (e.clientY - ly) * 0.004, 0.15, 1.2);
-    lx = e.clientX; ly = e.clientY;
+    const q = cptr.get(e.pointerId); if (!q) return;
+    if (cptr.size >= 2) {
+      const a = Array.from(cptr.values()), other = a.find(v => v !== q) || a[0];
+      const nd = Math.hypot(e.clientX - other.x, e.clientY - other.y), od = Math.hypot(q.x - other.x, q.y - other.y);
+      if (od > 10 && nd > 10) camWant = clamp(camWant * od / nd, 5, 34);
+    } else { camYaw -= (e.clientX - q.x) * 0.0065; camPitch = clamp(camPitch + (e.clientY - q.y) * 0.004, -0.75, 1.5); }
+    q.x = e.clientX; q.y = e.clientY;
   });
-  ['pointerup', 'pointercancel'].forEach(ev => cv.addEventListener(ev, e => { if (e.pointerId === dragId) dragId = null; }));
+  ['pointerup', 'pointercancel'].forEach(ev => cv.addEventListener(ev, e => { cptr.delete(e.pointerId); }));
+  cv.addEventListener('wheel', e => { camWant = clamp(camWant * (e.deltaY > 0 ? 1.1 : 0.91), 5, 34); e.preventDefault(); }, { passive: false });
   window.addEventListener('keydown', e => { if (e.target && e.target.tagName === 'INPUT') return; keys[e.key.toLowerCase()] = true; });
   window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
@@ -2604,11 +2640,11 @@ body.padOpen #hud { visibility: hidden; }
     if (!started) { camYaw += dt * 0.1; camPitch = 0.4; }
     const f = 1 - Math.exp(-dt * 8);
     camTx += (pos.x - camTx) * f; camTz += (pos.z - camTz) * f;
-    camDist += ((started ? 17 : 26) - camDist) * Math.min(1, dt * 2);
-    const cp = Math.cos(camPitch);
+    camDist += ((started ? camWant : 26) - camDist) * Math.min(1, dt * 3);
+    const pe = Math.max(camPitch, 0.08), cp = Math.cos(pe);      /* below 0.08 the camera stops sinking and starts looking up instead */
     /* no clamping to the walls: walls are one-sided, so from outside they vanish and the view stays wide */
     const dx = camTx + Math.sin(camYaw) * cp * camDist;
-    const dy = 2.4 + Math.sin(camPitch) * camDist;
+    const dy = 2.4 + Math.sin(pe) * camDist, lookY = 2.0 + Math.max(0, 0.08 - camPitch) * 32;
     const dz = camTz + Math.cos(camYaw) * cp * camDist;
     const artist = pad.open && pad.view !== 'off' && pad.easel >= 0;
     player.visible = !artist; blob.visible = !artist; player.userData.hidden = artist;
@@ -2625,8 +2661,9 @@ body.padOpen #hud { visibility: hidden; }
     }
     if (!camInit) { camPos.set(dx, dy, dz); camInit = true; } else camPos.lerp(_v.set(dx, dy, dz), 1 - Math.exp(-dt * 10));
     camera.position.copy(camPos);
-    camera.lookAt(camTx, 2.0, camTz);
-    lookCur.set(camTx, 2.0, camTz);
+    camera.lookAt(camTx, lookY, camTz);
+    lookCur.set(camTx, lookY, camTz);
+    updateOccluders(dt, camPos, _v2.set(pos.x, 2.0, pos.z));
     const seamOn = (camPos.z > RM.hz) === (camTz > RM.hz);
     if (seamOn !== seamShown) { seamShown = seamOn; seam.forEach(m => { m.visible = seamOn; }); }
     for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax]; w.o.visible = w.inside > 0 ? c > w.lim : c < w.lim; }
