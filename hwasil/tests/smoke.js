@@ -46,8 +46,8 @@ const { start, vis, until, check, done } = require('./lib');
   check(await p.evaluate(() => window.__hw.music().on === true && window.__hw.music().ctx !== 'none'), 'music turns on again and the audio engine starts');
   await p.evaluate(() => { const r = document.querySelector('#volRange'); r.value = 25; r.dispatchEvent(new Event('input')); });
   check(await p.evaluate(() => window.__hw.music().vol === 0.25 && localStorage.getItem('hw-vol') === '0.25'), 'volume slider sets and remembers the volume');
-  const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 36, 'easels: ' + n);
-  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 11, 'eleven places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
+  const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 22, 'easels: ' + n);                    /* the lobby keeps six easels (an atelier corner); the outdoor spots keep theirs */
+  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 12, 'twelve places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
   /* the gallery has no partitions any more; the annex and the garden can be visited */
   await place(6, 'annex.png'); await place(7, 'garden.png'); await place(8, 'west1.png'); await place(9, 'west2.png'); await place(10, 'orchard.png');
   /* a place is reached on foot now: from the studio to the annex through both doors, then out to the garden through the east door */
@@ -65,7 +65,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.evaluate(() => { window.__hwInstant = true; });
   await place(0, 'studio.png');
   check(await p.evaluate(() => window.__hw.occ().length) === 0, 'no see-through partitions are left');
-  await p.evaluate(() => window.__hw.go(25));                /* studio -> beach easel: through the east door */
+  await p.evaluate(() => window.__hw.go(11));                /* lobby -> beach easel: through the east door */
   check(await until(p, () => !document.querySelector('#pad').hidden, null, 200), 'walks out the east door and sits at a beach easel');
   await p.waitForTimeout(2500);
   check(await p.evaluate(() => document.querySelector('#pad').classList.contains('split')), 'outdoor easel opens scenery split view');
@@ -189,6 +189,20 @@ const { start, vis, until, check, done } = require('./lib');
   await place(0, 'night_studio.png');
   await p.click('#worksBtn'); await p.waitForTimeout(300); await p.click('#tSeg button[data-t=auto]'); await p.click('#wSeg button[data-w=auto]'); await p.click('#worksClose'); await p.waitForTimeout(300);
   check(await p.evaluate(() => localStorage.getItem('hw-time') === 'auto' && localStorage.getItem('hw-wx') === 'auto'), 'time and weather go back to automatic (follow the clock) and are remembered');
+  /* the grand gallery: reserved masterpiece frames with a docent card; nobody can hang a drawing on them */
+  check(await p.evaluate(() => { const m = window.__hw.slots.filter(q => q.room === 'museum'); return m.length === 24 && m.every(q => q.reserved && q.cat); }), 'the grand gallery has 24 reserved masterpiece frames');
+  await place(11, 'grand.png');
+  check(await p.evaluate(() => window.__hw.pos.z < -30 && window.__hw.pos.z > -60), 'the grand gallery place is north of the lobby door');
+  const mi = await p.evaluate(() => window.__hw.slots.findIndex(q => q.room === 'museum' && q.cat.id === 'monalisa'));
+  check(await until(p, i => window.__hw.slots[i].live && !!window.__hw.slots[i].cv, mi, 30), 'a masterpiece frame near me is drawn (card with title)');
+  await p.evaluate(i => window.__hw.tapSlot(i), mi); await p.waitForTimeout(400);
+  check(await p.evaluate(() => !document.querySelector('#exAsk').hidden && /모나리자/.test(document.querySelector('#exAskText').textContent) && /레오나르도/.test(document.querySelector('#exAskNote').textContent)), 'tapping a masterpiece opens the docent card');
+  await p.click('#dcClose'); await p.waitForTimeout(200);
+  check(await p.evaluate(i => { const s = window.__hw.slots[i]; return !!s.ex && s.reserved && !!s.cat; }, mi), 'a masterpiece frame is not an empty frame to hang on');
+  /* when the catalogue gets a picture it is drawn into the frame */
+  const imgData = await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 80; c.height = 120; const x = c.getContext('2d'); x.fillStyle = '#2244ee'; x.fillRect(0, 0, 80, 120); return c.toDataURL('image/png'); });
+  await p.evaluate(([i, u]) => { const s = window.__hw.slots[i]; s.cat.img = u; s.live = false; }, [mi, imgData]);
+  check(await until(p, i => { const s = window.__hw.slots[i]; if (!s.live || !s.cv) return false; const d = s.cv.getContext('2d').getImageData(Math.floor(s.cv.width / 2), Math.floor(s.cv.height / 2), 1, 1).data; return d[2] > 200 && d[0] < 90; }, mi, 30), 'the picture from the catalogue is drawn into its frame');
   /* light loading: the list carries only summaries, the lines of a work are fetched when I come close */
   check(await p.evaluate(() => { const r = window.__rpcs || []; return r.includes('hwasil_gallery_index') && !r.includes('hwasil_gallery_list'); }), 'the gallery list is the light index (no lines)');
   check(await p.evaluate(gi => { const s = window.__hw.slots[gi]; return !!s.ex && !s.live && !s.cv; }, gi), 'a far frame holds its work as a summary only (no private picture)');

@@ -315,6 +315,8 @@ body.padOpen #hud { visibility: hidden; }
 #mBox input[type=range] { width: 100%; margin-top: 10px; }
 #exAsk { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(28, 24, 20, 0.55); padding: 16px; }
 #exAsk .card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: 18px; max-width: 340px; text-align: center; display: flex; flex-direction: column; gap: 10px; font: 400 24px/1.3 var(--font-display); box-shadow: 5px 6px 0 rgba(0,0,0,0.35); }
+#exAsk .card { max-height: 82vh; overflow: auto; }
+#exAskNote { white-space: pre-line; text-align: left; font: 400 19px/1.45 var(--font-display); }
 #exAsk .row2 { display: flex; gap: 10px; justify-content: center; }
 .heartLayer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 4; }
 .heart { position: absolute; bottom: 6%; font: 400 36px/1 var(--font-display); color: #e0405a; text-shadow: 0 2px 0 #fff, 0 0 8px rgba(255, 255, 255, 0.9); animation: heartUp 2.2s ease-out forwards; white-space: nowrap; }
@@ -517,16 +519,17 @@ body.padOpen #hud { visibility: hidden; }
 <div id="intro">
   <div class="card">
     <h1>🌰 도토리 미술관</h1>
-    <p>이젤 앞에 앉으면 그림판이 열려요. 그린 그림은 내 그림 목록에 저장돼요.</p>
+    <p>작은 도토리가 되어 걸어 다니며 명화를 구경하는 미술관이에요. 정면의 큰 문으로 가면 명화가 걸린 대회랑이 나와요.</p>
     <ul>
       <li>왼쪽 아래 조이스틱으로 걷기</li>
-      <li>화실 옆문으로 나가면 산, 바다 같은 야외 그림 자리가 있어요. 위쪽 '장소 이동'으로 바로 갈 수도 있어요</li>
+      <li>대회랑에서 작품 앞에 서면 '작품 이야기 듣기' 버튼이 나와요. 로비 옆문으로 나가면 정원과 바다도 있어요. 위쪽 '장소 이동'으로 걸어서 갈 수도 있어요</li>
+      <li>로비 한쪽에는 그림을 그릴 수 있는 이젤이 있어요. 이젤 앞에 앉으면 그림판이 열려요</li>
       <li>화면을 끌어서 돌려 보세요. 위로 끌면 천장과 높은 벽도 올려다볼 수 있고, 두 손가락으로 확대/축소해요</li>
       <li>이젤을 누르면 걸어가서 앉아요. 누가 그리는 중이면 바로 구경해요</li>
       <li>이젤 가까이 가면 앉기 버튼도 나와요</li>
       <li>화실 하나에 20명까지 들어와요. 위쪽 화실 칩을 눌러 다른 화실로 옮길 수 있어요</li>
       <li>누가 그리는 이젤에 가까이 가면 구경할 수 있어요</li>
-      <li>내 그림에서 '전시하기'를 누르면 남쪽 문 너머 전시관에 걸려요</li>
+      <li>내가 그린 그림은 '전시하기'로 남쪽 문 너머 신진 작가관에 걸 수 있어요</li>
     </ul>
     <label class="field" for="codeInput" id="codeField">입장 코드
       <input id="codeInput" type="text" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="초대받은 코드">
@@ -542,6 +545,7 @@ body.padOpen #hud { visibility: hidden; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="backend.js"></script>
+<script src="catalog.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function () {
@@ -651,7 +655,7 @@ body.padOpen #hud { visibility: hidden; }
 
   /* ---------- the studio room ---------- */
   const RM = { hx: 32, hz: 24, h: 26 };                  /* a very tall hall: pictures hang low, chandeliers and beams far above */
-  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, GZ2 = GZ1 + 30, DOOR = 5.2, DSH = 10, WZ = RM.hz + 15, W1X = -GX - 30, W2X = W1X - 30;   /* WZ: z of the doors of the west wing; the west halls span x W1X..-GX and W2X..W1X */   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
+  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, GZ2 = GZ1 + 30, DOOR = 5.2, DSH = 10, WZ = RM.hz + 15, W1X = -GX - 30, W2X = W1X - 30, GG = { hw: 12, bays: 12, bay: 16 }, GGL = GG.bays * GG.bay, GGZ = -RM.hz - GGL;   /* GG: the grand gallery (대회랑) runs north from the lobby's big door: 12 bays of 16 */   /* WZ: z of the doors of the west wing; the west halls span x W1X..-GX and W2X..W1X */   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
   const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 58, z: -29, r: 19 }, GARD2 = { x: 112, z: -26, r: 19 };   /* GARD: the open-air exhibition garden */
   const colliders = [];
@@ -745,7 +749,12 @@ body.padOpen #hud { visibility: hidden; }
   const hitList = [];  /* tappable things: easels and gallery frames */
   const hitMat = new T.MeshBasicMaterial({ visible: false });
   function hang(obj, ax, lim, inside) { onWall.push({ o: obj, ax: ax, lim: lim, inside: inside }); return obj; }
-  wall(RM.hx * 2, 0, -RM.hz, 0);
+  (function () {                                   /* north wall with the grand door to the grand gallery */
+    const woodDoor = L(0x6b4a2f), a = RM.hx - DOOR;
+    const fr = new T.Mesh(archFrameGeo(), woodDoor); fr.position.set(0, 0, -RM.hz); scene.add(fr);
+    const g = new T.Group(); g.position.set(0, 0, -RM.hz + 0.03); scene.add(g); put(g, new T.Mesh(archWallGeo(), wallMat), 0, 0, 0);
+    wall(a, -(RM.hx + DOOR) / 2, -RM.hz, 0); wall(a, (RM.hx + DOOR) / 2, -RM.hz, 0);
+  })();
   seam.push(wall(RM.hx - DOOR, -(RM.hx + DOOR) / 2, RM.hz, Math.PI));
   seam.push(wall(RM.hx - DOOR, (RM.hx + DOOR) / 2, RM.hz, Math.PI));
   wall(RM.hz * 2, -RM.hx, 0, Math.PI / 2);
@@ -762,7 +771,7 @@ body.padOpen #hud { visibility: hidden; }
   (function () {
     const g = new T.Group(); g.position.set(0, 0, -RM.hz + 0.04); scene.add(g); hang(g, 'z', -RM.hz, 1);
     const f = L(0xf8f5ee);
-    [-18, -9, 0, 9, 18].forEach(x => {
+    [-18, -9, 9, 18].forEach(x => {
       const wy = 4.2, wr = 3.5, wh = 13;                                  /* arched window: straight part wh, arch of radius wr on top */
       const glass = new T.Mesh(new T.ShapeGeometry(archShape(wr, wh), 18), B(0xfff3c8)); put(g, glass, x, wy, 0); winMats.push(glass.material);
       const fs = archShape(wr + 0.3, wh); fs.holes.push(archShape(wr, wh));
@@ -839,13 +848,67 @@ body.padOpen #hud { visibility: hidden; }
       x.clearRect(0, 0, 512, 160); x.fillStyle = '#fffdf7'; x.fillRect(4, 4, 504, 152);
       x.strokeStyle = '#25211d'; x.lineWidth = 6; x.strokeRect(4, 4, 504, 152);
       x.fillStyle = '#25211d'; x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.font = '70px "Gamja Flower", "Noto Sans KR", sans-serif'; x.fillText('전시관', 256, 66);
+      x.font = '58px "Gamja Flower", "Noto Sans KR", sans-serif'; x.fillText('신진 작가관', 256, 66);
       x.font = '34px "Gamja Flower", "Noto Sans KR", sans-serif'; x.fillStyle = '#6d655b'; x.fillText('함께 그린 그림이 걸려 있어요', 256, 121);
       tex.needsUpdate = true;
     }
     draw();
     const sg = new T.Mesh(new T.PlaneGeometry(6.4, 2.0), new T.MeshBasicMaterial({ map: tex })); sg.position.set(0, 19.6, RM.hz - 0.1); sg.rotation.y = Math.PI; scene.add(sg); seam.push(sg);
-    if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '전시관함께그린그림이걸려있어요').then(draw).catch(() => {});
+    if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '신진작가관함께그린그림이걸려있어요').then(draw).catch(() => {});
+  })();
+
+  /* ---------- the grand gallery (대회랑): a very long hall north of the lobby, six wings of two bays, a masterpiece on every wall bay ---------- */
+  (function () {
+    const hw = GG.hw, z0 = -RM.hz, woodDoor = L(0x6b4a2f), W = window.MUSEUM_WINGS || [], wingMat = k => L((W[k] || W[W.length - 1] || { wall: 0x8c7a5a }).wall);
+    /* the corridor side of the lobby door */
+    put(scene, new T.Mesh(archFrameGeo(), woodDoor), 0, 0, z0);
+    const dg = new T.Group(); dg.position.set(0, 0, z0 - 0.03); dg.rotation.y = Math.PI; scene.add(dg); put(dg, new T.Mesh(archWallGeo(), wingMat(0)), 0, 0, 0);
+    wall(hw - DOOR, -(hw + DOOR) / 2, z0 - 0.03, Math.PI, wingMat(0)); wall(hw - DOOR, (hw + DOOR) / 2, z0 - 0.03, Math.PI, wingMat(0));
+    /* side walls: each wing has its own colour */
+    for (let k = 0; k < 6; k++) { const zc = z0 - 32 * k - 16, m = wingMat(k); wall(32, -hw, zc, Math.PI / 2, m); wall(32, hw, zc, -Math.PI / 2, m); }
+    wall(hw * 2, 0, GGZ, 0, wingMat(5));
+    /* marble floor with a red runner */
+    const fc = document.createElement('canvas'); fc.width = fc.height = 128; const fx = fc.getContext('2d'); fx.fillStyle = '#ece6da'; fx.fillRect(0, 0, 128, 128); fx.fillStyle = '#d5ccb9'; fx.fillRect(0, 0, 64, 64); fx.fillRect(64, 64, 64, 64);
+    const ft = new T.CanvasTexture(fc); ft.wrapS = ft.wrapT = T.RepeatWrapping; ft.repeat.set(hw, GGL / 2);
+    const fl = new T.Mesh(new T.PlaneGeometry(hw * 2, GGL), new T.MeshLambertMaterial({ map: ft })); fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0, z0 - GGL / 2); scene.add(fl);
+    const run = new T.Mesh(new T.PlaneGeometry(5, GGL - 2), L(0x7a2323)); run.rotation.x = -Math.PI / 2; run.position.set(0, 0.02, z0 - GGL / 2); scene.add(run);
+    [-2.7, 2.7].forEach(x => { const e = new T.Mesh(new T.PlaneGeometry(0.25, GGL - 2), L(0xd9b35a)); e.rotation.x = -Math.PI / 2; e.position.set(x, 0.03, z0 - GGL / 2); scene.add(e); });
+    /* ceiling, beams, pilasters */
+    const ce = new T.Mesh(new T.PlaneGeometry(hw * 2, GGL), B(0xe9dfc8)); ce.rotation.x = Math.PI / 2; ce.position.set(0, RM.h, z0 - GGL / 2); ce.userData.noShadow = true; scene.add(ce);
+    const cream = L(0xf8f5ee), beamM = L(0x6b4a2f);
+    for (let k = 0; k <= GG.bays; k++) {
+      const z = z0 - GG.bay * k;
+      const bm = new T.Mesh(bx(hw * 2 - 0.4, 1.1, 0.9), beamM); bm.position.set(0, RM.h - 1.6, z); bm.userData.noShadow = true; scene.add(bm);
+      [-1, 1].forEach(sd => {
+        const g = new T.Group(); g.position.set(sd * (hw - 0.55), 0, z); scene.add(g); g.userData.noShadow = true;
+        put(g, new T.Mesh(bx(1.1, 0.8, 1.7), cream), 0, 0.4, 0); put(g, new T.Mesh(bx(0.9, RM.h - 2.3, 1.4), cream), 0, 0.8 + (RM.h - 2.3) / 2, 0); put(g, new T.Mesh(bx(1.1, 0.7, 1.7), cream), 0, RM.h - 1.35, 0);
+      });
+    }
+    /* wing banners hang across the corridor; the door sign hangs inside the lobby */
+    function banner(w, h, y, x, z, draw) {
+      const c = document.createElement('canvas'); c.width = 1024; c.height = Math.round(1024 * h / w); const g = c.getContext('2d');
+      g.fillStyle = '#fffdf7'; g.fillRect(0, 0, c.width, c.height); g.strokeStyle = '#b9923f'; g.lineWidth = 14; g.strokeRect(12, 12, c.width - 24, c.height - 24); g.strokeStyle = '#25211d'; g.lineWidth = 4; g.strokeRect(30, 30, c.width - 60, c.height - 60);
+      g.textAlign = 'center'; g.textBaseline = 'middle'; draw(g, c.width, c.height);
+      const t = new T.CanvasTexture(c); t.minFilter = T.LinearFilter; t.generateMipmaps = false;
+      const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: t, side: T.DoubleSide })); m.position.set(x, y, z); m.userData.noShadow = true; scene.add(m);
+      const redraw = () => { g.fillStyle = '#fffdf7'; g.fillRect(0, 0, c.width, c.height); g.strokeStyle = '#b9923f'; g.lineWidth = 14; g.strokeRect(12, 12, c.width - 24, c.height - 24); g.strokeStyle = '#25211d'; g.lineWidth = 4; g.strokeRect(30, 30, c.width - 60, c.height - 60); g.textAlign = 'center'; g.textBaseline = 'middle'; draw(g, c.width, c.height); t.needsUpdate = true; };
+      if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '대회랑르네상스바로크낭만과사실인상주의근대의눈동양의붓명화를만나러가요').then(redraw).catch(() => {});
+      return m;
+    }
+    W.forEach((wg, k) => banner(9, 2.4, 20, 0, z0 - 32 * k - 2.5, (g, cw, ch) => {
+      g.fillStyle = '#25211d'; g.font = '112px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText(wg.name, cw / 2, ch * 0.42);
+      g.fillStyle = '#6d655b'; g.font = '56px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText(wg.note, cw / 2, ch * 0.74);
+    }));
+    banner(7.2, 2.2, 21, 0, z0 + 0.3, (g, cw, ch) => {
+      g.fillStyle = '#25211d'; g.font = '110px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('대회랑', cw / 2, ch * 0.42);
+      g.fillStyle = '#6d655b'; g.font = '52px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('명화를 만나러 가요', cw / 2, ch * 0.74);
+    }).rotation.y = Math.PI;
+    /* the far end: a tall window and a note that more is coming */
+    const eg = new T.Mesh(new T.ShapeGeometry(archShape(6, 12), 18), B(0xfff3c8)); eg.position.set(0, 3, GGZ + 0.05); scene.add(eg); winMats.push(eg.material);
+    banner(8, 2, 8, 0, GGZ + 0.2, (g, cw, ch) => {
+      g.fillStyle = '#25211d'; g.font = '84px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('다음 전시를 준비하고 있어요', cw / 2, ch * 0.45);
+      g.fillStyle = '#6d655b'; g.font = '46px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('새 작품이 계속 걸려요', cw / 2, ch * 0.76);
+    }).rotation.y = 0;
   })();
 
   /* ---------- hall dressing: crown moulding, pilasters, ceiling beams and chandeliers (studio and gallery) ---------- */
@@ -862,7 +925,7 @@ body.padOpen #hud { visibility: hidden; }
       put(g, new T.Mesh(bx(1.5, 0.8, 1.1), cream), 0, 0.4, 0); put(g, new T.Mesh(bx(1.05, RM.h - 2.3, 0.85), cream), 0, 0.8 + (RM.h - 2.3) / 2, 0); put(g, new T.Mesh(bx(1.5, 0.7, 1.1), cream), 0, RM.h - 1.35, 0);
       g.userData.noShadow = true; hang(g, ax, lim, inside);
     }
-    [-22.5, -13.5, -4.5, 4.5, 13.5, 22.5].forEach(x => pilaster(x, -RM.hz + 0.5, 0, 'z', -RM.hz, 1));
+    [-22.5, -13.5, 13.5, 22.5].forEach(x => pilaster(x, -RM.hz + 0.5, 0, 'z', -RM.hz, 1));
     [-20, -13, 13, 20].forEach(z => pilaster(RM.hx - 0.5, z, Math.PI / 2, 'x', RM.hx, -1));
     [-21, 21].forEach(z => pilaster(-RM.hx + 0.5, z, Math.PI / 2, 'x', -RM.hx, 1));
     const beam = (w, d, x, z) => quiet(put(scene, new T.Mesh(bx(w, 1.1, d), beamM), x, RM.h - 1.6, z));
@@ -876,7 +939,7 @@ body.padOpen #hud { visibility: hidden; }
     const gc = document.createElement('canvas'); gc.width = gc.height = 128; const gx = gc.getContext('2d'), gr = gx.createRadialGradient(64, 64, 4, 64, 64, 62);
     gr.addColorStop(0, 'rgba(255,240,190,0.9)'); gr.addColorStop(1, 'rgba(255,240,190,0)'); gx.fillStyle = gr; gx.fillRect(0, 0, 128, 128);
     const glowTex = new T.CanvasTexture(gc);
-    [[-18, 0], [0, 0], [18, 0], [0, RM.hz + 10], [0, RM.hz + 22], [0, GZ1 + 10], [0, GZ1 + 22], [(-GX + W1X) / 2, WZ], [(W1X + W2X) / 2, WZ]].forEach(c => {
+    [[-18, 0], [0, 0], [18, 0], [0, RM.hz + 10], [0, RM.hz + 22], [0, GZ1 + 10], [0, GZ1 + 22], [(-GX + W1X) / 2, WZ], [(W1X + W2X) / 2, WZ]].concat([0, 1, 2, 3, 4, 5].map(k => [0, -RM.hz - 16 - 32 * k])).forEach(c => {
       const g = new T.Group(); g.position.set(c[0], 0, c[1]); scene.add(g); g.userData.noShadow = true;
       put(g, new T.Mesh(cyl(0.05, 0.05, 6.6, 5), gold), 0, RM.h - 1.6 - 3.3, 0);
       const ring = new T.Group(); ring.position.y = RM.h - 8.4; g.add(ring);
@@ -1064,7 +1127,7 @@ body.padOpen #hud { visibility: hidden; }
       colliders.push({ x: x, z: z, r: 1.7 });
     });
     /* potted plants along the north wall (between the windows) */
-    [-22.5, -13.5, -4.5, 4.5, 13.5, 22.5].forEach(px => {
+    [-22.5, -13.5, 13.5, 22.5].forEach(px => {
       const pg = new T.Group(); pg.position.set(px, 0, -RM.hz + 1.5); scene.add(pg);
       put(pg, new T.Mesh(cyl(0.55, 0.42, 0.9, 10), L(0xc77a4a)), 0, 0.45, 0);
       put(pg, new T.Mesh(cyl(0.5, 0.5, 0.1, 10), L(0x5a3a28)), 0, 0.9, 0);
@@ -1118,7 +1181,6 @@ body.padOpen #hud { visibility: hidden; }
     colliders.push({ x: e.pos.x, z: e.pos.z, r: 1.6 });
   }
   for (let i = 0; i < 6; i++) addEasel((30 + i * 60) * Math.PI / 180, 8.5);
-  for (let j = 0; j < 14; j++) addEasel((10 + j * 360 / 14) * Math.PI / 180, 16);
   /* ---- paint bucket: a fill is stored as one tiny stroke {k:'f', c, p:[x,y]} and replayed in order on whatever canvas is drawn.
      It floods the colour under the seed, treats nearly-closed gaps (radius gap px) as walls, then grows back to the lines. ---- */
   function dilate(src, W, H, r) {
@@ -1326,6 +1388,16 @@ body.padOpen #hud { visibility: hidden; }
       }));
     };
     wing('westa', W1X, -GX, true, true); wing('westb', W2X, W1X, false, true);
+    /* the masterpieces of the grand gallery: reserved frames (nobody can hang a drawing there), a small brass picture light above each */
+    const brass = L(0xd9b35a);
+    (window.MUSEUM_CATALOG || []).forEach((c, i) => {
+      const bay = Math.floor(i / 2), left = i % 2 === 0, zc = -RM.hz - GG.bay * (bay + 0.5), y = c.size === 'l' ? 6.8 : c.size === 'm' ? 5.4 : 4.4;
+      const g = left ? addSlot('museum', c.size, -GG.hw + 0.1, y, zc, Math.PI / 2) : addSlot('museum', c.size, GG.hw - 0.1, y, zc, -Math.PI / 2);
+      hang(g, 'x', left ? -GG.hw : GG.hw, left ? 1 : -1);
+      const sl = slots[slots.length - 1]; sl.reserved = true; sl.cat = c;
+      sl.ex = { id: 'cat_' + c.id, title: c.title, artist: c.artist + ' · ' + c.year, w: c.w, h: c.h, at: 0, strokes: [] }; sl.key = 'cat'; applyAspect(sl, sl.ex); releaseSlot(sl, true);
+      const D = sl.D; put(g, new T.Mesh(bx(D * 0.45, 0.12, 0.3), brass), 0, D / 2 + FRAME_T + 0.7, 0.4); put(g, new T.Mesh(bx(0.08, 0.5, 0.08), brass), 0, D / 2 + FRAME_T + 0.45, 0.2);
+    });
     side('annex', GZ1, 0); endWall('annex', GZ2);
     /* studio: the middle row sits above the paint shelves and canvases; a second, higher row above it */
     const studio = (list, ax, lim, face, tall) => list.forEach(q => hang(addSlot('studio', q[0], ax === 'x' ? lim + (lim < 0 ? 0.1 : -0.1) : q[1], q[2], ax === 'x' ? q[1] : lim + (lim < 0 ? 0.1 : -0.1), face), ax, lim, lim < 0 ? 1 : -1));
@@ -1341,7 +1413,7 @@ body.padOpen #hud { visibility: hidden; }
   function setExhibits(docs) {
     exhibits = docs;
     const assign = new Map(), used = new Set(), left = [], byId = new Map(slots.map(q => [q.id, q])), rest = [];
-    docs.forEach(ex => { const sl = ex.slot ? byId.get(ex.slot) : null; if (sl && !used.has(sl)) { used.add(sl); assign.set(sl, ex); } else rest.push(ex); });   /* a claimed frame always shows its owner's work */
+    docs.forEach(ex => { const sl = ex.slot ? byId.get(ex.slot) : null; if (sl && !sl.reserved && !used.has(sl)) { used.add(sl); assign.set(sl, ex); } else rest.push(ex); });   /* a claimed frame always shows its owner's work */
     ROOMS.forEach(room => {                              /* older works that never chose a frame take whatever is still free */
       const mine = slots.filter(q => q.room === room);
       rest.filter(ex => roomOf(ex.room) === room).forEach(ex => {
@@ -1356,6 +1428,7 @@ body.padOpen #hud { visibility: hidden; }
       if (sl) { used.add(sl); assign.set(sl, ex); }
     });
     slots.forEach(sl => {
+      if (sl.reserved) return;
       const ex = assign.get(sl) || null, key = ex ? ex.id + ':' + ex.at + ':' + (ex.size || '') + (ex.room || '') : '';
       if (key !== sl.key) { sl.key = key; sl.ex = ex; sl.exFull = null; sl.live = false; applyAspect(sl, ex); releaseSlot(sl, !!ex); }
     });
@@ -1554,8 +1627,8 @@ body.padOpen #hud { visibility: hidden; }
   const anim = [];                       /* per-frame animations: fn(dt, t) */
   anim.push((dt, t) => chandeliers.forEach((c, i) => { c.ring.rotation.y = t * 0.08 * (i % 2 ? 1 : -1); }));
   const PLACES = [
-    { name: '화실', note: '이젤이 모여 있는 곳', x: 0, z: 14, h: Math.PI },
-    { name: '전시관', note: '함께 그린 그림이 걸린 곳', x: 0, z: 31, h: 0 },
+    { name: '로비', note: '입구 홀. 가운데 큰 문이 대회랑이에요', x: 0, z: 14, h: Math.PI },
+    { name: '신진 작가관', note: '친구들이 그린 그림이 걸린 곳', x: 0, z: 31, h: 0 },
     { name: '산 전망대', note: '눈 덮인 봉우리를 바라보며', x: 85, z: -41, h: Math.PI, pitch: 0.22 },
     { name: '바닷가', note: '모래사장과 수평선, 등대', x: 134, z: 0, h: Math.PI / 2, pitch: 0.22 },
     { name: '호숫가', note: '잔잔한 물, 수련, 작은 배', x: 72, z: 19.5, h: 0, pitch: 0.22 },
@@ -1564,7 +1637,8 @@ body.padOpen #hud { visibility: hidden; }
     { name: '야외 전시 정원', note: '하늘 아래 액자가 둘러선 정원', x: GARD.x, z: GARD.z + 9, h: Math.PI, pitch: 0.3 },
     { name: '서쪽 전시관 1', note: '전시관 서쪽 큰 문 너머 넓은 방', x: -GX - 5, z: WZ, h: -Math.PI / 2 },
     { name: '서쪽 전시관 2', note: '서쪽 전시관 1의 끝, 초록빛 방', x: W1X - 5, z: WZ, h: -Math.PI / 2 },
-    { name: '꽃길 정원', note: '양쪽에 액자가 걸린 둥근 꽃길', x: GARD2.x, z: GARD2.z + 9, h: Math.PI, pitch: 0.3 }
+    { name: '꽃길 정원', note: '양쪽에 액자가 걸린 둥근 꽃길', x: GARD2.x, z: GARD2.z + 9, h: Math.PI, pitch: 0.3 },
+    { name: '대회랑', note: '명화를 만나는 아주 긴 복도', x: 0, z: -RM.hz - 14, h: Math.PI, pitch: 0.2 }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
@@ -1638,7 +1712,7 @@ body.padOpen #hud { visibility: hidden; }
 
     /* mountains (far, fading in the fog), snow caps, green foothills */
     const near = new T.Color(0x6f9c8a), far = new T.Color(0xa7bdd2);
-    for (let i = -3; i < 15; i++) {
+    for (let i = 2; i < 15; i++) {
       const x = 20 + i * 17 + (rnd() - 0.5) * 8, z = -100 - rnd() * 45, h = 24 + rnd() * 22, r = 15 + rnd() * 9;
       const col = near.clone().lerp(far, (-z - 100) / 45);
       at(new T.Mesh(new T.ConeGeometry(r, h, 7), L(col.getHex())), x, h / 2, z);
@@ -1646,7 +1720,7 @@ body.padOpen #hud { visibility: hidden; }
       const cap = at(new T.Mesh(new T.ConeGeometry(r * 0.4 * 1.05, h * 0.4 * 1.02, 7), L(0xffffff, { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })), x, h * 0.8 + 0.1, z);
       cap.rotation.y = 0;
     }
-    for (let i = 0; i < 9; i++) {
+    for (let i = 2; i < 9; i++) {
       const hill = new T.Mesh(new T.SphereGeometry(16, 14, 8), L(0x7fb35d)); hill.scale.set(1.7 + rnd() * 0.6, 0.65, 1);
       at(hill, 20 + i * 18 + rnd() * 6, -3, -78 - rnd() * 8);
     }
@@ -2054,6 +2128,8 @@ body.padOpen #hud { visibility: hidden; }
     if (Math.abs(x) <= GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;
     if (Math.abs(x) <= DOOR - 0.5 && z > GZ1 - 1.01 && z <= GZ1 + 1.01) return true;
     if (Math.abs(x) <= GX - 1 && z >= GZ1 + 1 && z <= GZ2 - 1) return true;
+    if (Math.abs(x) <= DOOR - 0.5 && z <= -RM.hz + 1.01 && z >= -RM.hz - 1.01) return true;                                                 /* the grand door */
+    if (Math.abs(x) <= GG.hw - 1 && z <= -RM.hz - 1 && z >= GGZ + 1) return true;                                                          /* the grand gallery */
     if (Math.abs(z - WZ) <= DOOR - 0.5 && ((x <= -GX + 1.01 && x >= -GX - 1.01) || (x <= W1X + 1.01 && x >= W1X - 1.01))) return true;      /* the west doors */
     if (x >= W1X + 1 && x <= -GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;                                                         /* west hall 1 */
     if (x >= W2X + 1 && x <= W1X - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;                                                         /* west hall 2 */
@@ -2101,7 +2177,7 @@ body.padOpen #hud { visibility: hidden; }
       if (d < 1 && d < bd) { bd = d; best = sl; }
     });
     nearSlot = best; viewBtn.hidden = !best;
-    if (best) viewBtn.textContent = best.ex ? '작품 크게 보기' : (pendingHang ? '여기에 걸기' : '내 그림을 여기에 걸기');
+    if (best) viewBtn.textContent = best.reserved ? '작품 이야기 듣기' : best.ex ? '작품 크게 보기' : (pendingHang ? '여기에 걸기' : '내 그림을 여기에 걸기');
   }
   /* the gallery list only carries summaries; the lines of a work are fetched when I come close (or open it), then kept for a while */
   const strokeCache = new Map(), loadingEx = new Map();
@@ -2121,7 +2197,13 @@ body.padOpen #hud { visibility: hidden; }
   }
   let lodT = 0;
   function slotLOD() {
-    if (!started || !galCol) return;
+    if (!started) return;
+    slots.forEach(sl => {
+      if (!sl.reserved) return;
+      const d = Math.hypot(pos.x - sl.x, pos.z - sl.z);
+      if (!sl.live && d < 70) drawCat(sl); else if (sl.live && d > 110) { sl.live = false; releaseSlot(sl, true); }
+    });
+    if (!galCol) return;
     const want = [];
     slots.forEach(sl => {
       if (!sl.ex) return;
@@ -2135,6 +2217,39 @@ body.padOpen #hud { visibility: hidden; }
       ensureStrokes(ex).then(st => { sl.busy = false; if (sl.key !== key) return; sl.exFull = Object.assign({}, ex, { strokes: st }); sl.live = true; drawSlot(sl, sl.exFull); },
         () => { sl.busy = false; sl.retryAt = performance.now() + 8000; });
     }
+  }
+  /* the masterpieces: a card with the docent's story, and a placeholder (or the picture, when the catalogue has one) on the frame */
+  function wrapLines(x, text, maxW) {
+    const out = []; let line = '';
+    Array.from(String(text)).forEach(ch => { const t = line + ch; if (x.measureText(t).width > maxW && line) { out.push(line); line = ch.trim() ? ch : ''; } else line = t; });
+    if (line) out.push(line); return out;
+  }
+  function catImage(c, cb) {
+    if (!c.img) return;
+    if (c._im && c._im.complete && c._im.naturalWidth) { cb(c._im); return; }
+    if (!c._im) { c._im = new Image(); c._im.crossOrigin = 'anonymous'; c._im.src = c.img; }
+    c._im.addEventListener('load', () => cb(c._im), { once: true });
+  }
+  function drawCat(sl) {
+    const c = sl.cat; drawSlot(sl, sl.ex);                  /* canvases + label (title and artist) */
+    const cv = sl.cv, x = cv.getContext('2d'), W = cv.width, H = cv.height;
+    x.fillStyle = '#f3ecdb'; x.fillRect(0, 0, W, H); x.strokeStyle = '#cbbf9f'; x.lineWidth = Math.max(3, W / 80); x.strokeRect(W * 0.05, H * 0.05, W * 0.9, H * 0.9);
+    x.fillStyle = '#5a4b36'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    const fs = Math.max(16, Math.round(W / 11)); x.font = fs + 'px ' + FONT;
+    const lines = wrapLines(x, c.title, W * 0.78), top = H * 0.46 - (lines.length * fs * 1.2) / 2;
+    lines.forEach((ln, i) => x.fillText(ln, W / 2, top + (i + 0.5) * fs * 1.2));
+    x.fillStyle = '#8f8368'; x.font = Math.round(fs * 0.55) + 'px ' + FONT; x.fillText(c.artist, W / 2, H * 0.80); x.fillText('작품 사진을 준비하고 있어요', W / 2, H * 0.88);
+    sl.tex.needsUpdate = true; sl.live = true;
+    catImage(c, im => {                                     /* the picture itself, fitted into the frame */
+      if (!sl.cv || sl.cat !== c) return;
+      const ctx = sl.cv.getContext('2d'); ctx.fillStyle = '#f6f1e6'; ctx.fillRect(0, 0, sl.cv.width, sl.cv.height);
+      const k = Math.min(sl.cv.width / im.naturalWidth, sl.cv.height / im.naturalHeight), dw = im.naturalWidth * k, dh = im.naturalHeight * k;
+      ctx.drawImage(im, (sl.cv.width - dw) / 2, (sl.cv.height - dh) / 2, dw, dh); sl.tex.needsUpdate = true;
+    });
+  }
+  function showDocent(sl) {
+    const c = sl.cat; if (!c) return;
+    showCard(c.title, c.artist + ' · ' + c.year + '\n' + c.place + '\n\n' + c.blurb + (c.img ? '' : '\n\n(작품 사진은 곧 걸려요)'), [['dcClose', '닫기', true, () => {}]]);
   }
   function showWork(ex) {                                 /* open the big view; fetch the lines first when they are not here yet */
     if (Array.isArray(ex.strokes)) { openViewer(ex); return; }
@@ -2168,7 +2283,7 @@ body.padOpen #hud { visibility: hidden; }
     $('#viewerCap').textContent = (ex.title || '제목 없음') + ' · ' + (ex.artist || '화가');
     viewerEl.hidden = false;
   }
-  viewBtn.addEventListener('click', () => { if (!nearSlot) return; if (nearSlot.ex) showWork(nearSlot.ex); else frameTap(nearSlot); });
+  viewBtn.addEventListener('click', () => { if (!nearSlot) return; if (nearSlot.reserved) showDocent(nearSlot); else if (nearSlot.ex) showWork(nearSlot.ex); else frameTap(nearSlot); });
   $('#viewerClose').addEventListener('click', () => { viewerEl.hidden = true; });
   viewerEl.addEventListener('click', e => { if (e.target === viewerEl) viewerEl.hidden = true; });
   const savedCode = (window.hwasil && window.hwasil.savedCode()) || '';
@@ -2200,6 +2315,7 @@ body.padOpen #hud { visibility: hidden; }
 
   /* ---------- tap an easel or a frame ---------- */
   function frameTap(sl) {
+    if (sl.reserved) { showDocent(sl); return; }
     if (pendingHang) { if (sl.ex) { toast('이미 누군가 걸어 둔 액자예요. 빈 액자를 눌러 주세요.', 3000); return; } hangAt(pendingHang, sl); return; }
     if (sl.ex) showWork(sl.ex); else openHangPicker(sl);
   }
@@ -2236,9 +2352,14 @@ body.padOpen #hud { visibility: hidden; }
   cv.addEventListener('pointercancel', () => { tap = null; });
   /* next point to walk to: the building is studio -> (south door) gallery -> (far door) annex, and the studio opens east to the field,
      so a goal in another region is reached by walking through the doors one after the other */
-  function areaOf(x, z) { return x > RM.hx - 0.5 ? 'out' : z > RM.hz - 1 ? 'hall' : 'studio'; }
+  function areaOf(x, z) { return x > RM.hx - 0.5 ? 'out' : z > RM.hz - 1 ? 'hall' : (z < -RM.hz + 0.5 && Math.abs(x) <= GG.hw + 0.5) ? 'grand' : 'studio'; }
   function walkTarget() {
     const rp = areaOf(pos.x, pos.z), rg = areaOf(goal.x, goal.z);
+    if (rp === 'grand') {                                    /* the grand gallery: straight on, or back out through the big door */
+      if (rg === 'grand') return { x: goal.x, z: goal.z, way: false };
+      if (Math.abs(pos.x) > 1.2 && pos.z < -RM.hz - 1.2) return { x: 0, z: -RM.hz - 1.6, way: true };
+      return { x: 0, z: -RM.hz + 2.5, way: true };
+    }
     if (rp === 'hall') {
       /* the halls form a chain: annex - gallery - west hall 1 - west hall 2; every join is an arched door */
       const part = (x, z) => x < W1X ? 3 : x < -GX ? 2 : z > GZ1 + 0.5 ? 0 : 1;
@@ -2258,6 +2379,10 @@ body.padOpen #hud { visibility: hidden; }
     }
     if (rp === 'studio') {
       if (rg === 'studio') return { x: goal.x, z: goal.z, way: false };
+      if (rg === 'grand') {                                  /* lobby -> grand gallery: line up with the big north door, go through */
+        if (Math.abs(pos.x) > 1.2 && pos.z > -RM.hz + 1.2) return { x: 0, z: -RM.hz + 2.5, way: true };
+        return { x: 0, z: -RM.hz - 1.8, way: true };
+      }
       if (rg === 'out') {                                    /* studio -> field: line up with the east door, go through */
         if (pos.x < RM.hx - 2 && Math.abs(pos.z) > 1.2) return { x: RM.hx - 4, z: 0, way: true };
         return { x: RM.hx + 3, z: 0, way: true };
@@ -2696,7 +2821,7 @@ body.padOpen #hud { visibility: hidden; }
   }
   $('#padSave').addEventListener('click', save);
 
-  const ROOM_NAME = { gallery: '전시관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', studio: '화실' };
+  const ROOM_NAME = { museum: '대회랑', gallery: '신진 작가관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', studio: '화실' };
   const SIZE_NAME = { s: '작은', m: '보통', l: '큰' };
   async function takeDown(ex) {                           /* only the owner's own frames: the server checks it too */
     if (!galCol) return;
@@ -3172,7 +3297,7 @@ body.padOpen #hud { visibility: hidden; }
       }
     }
     function where() {
-      if (pos.x > RM.hx) zone = 'out'; else zone = pos.z > GZ0 ? 'hall' : 'studio';
+      if (pos.x > RM.hx) zone = 'out'; else zone = (pos.z > GZ0 || (pos.z < -RM.hz && Math.abs(pos.x) < 14)) ? 'hall' : 'studio';
       lake = zone === 'out' ? clamp(1 - Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) / 26, 0, 1) : 0;
       sea = zone === 'out' ? clamp((pos.x - 112) / 30, 0, 1) : 0;
     }
