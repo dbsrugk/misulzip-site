@@ -312,6 +312,7 @@ body.padOpen #hud { visibility: hidden; }
 #qBox { flex: 0 0 auto; border-top: 2px dashed var(--ink); padding-top: 10px; }
 #qBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
 #qBox .seg { margin-top: 10px; }
+#mBox input[type=range] { width: 100%; margin-top: 10px; }
 #nameBox { flex: 0 0 auto; border-top: 2px dashed var(--ink); padding-top: 10px; }
 #nameBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
 #nameBox .field { margin: 10px 0 8px; }
@@ -332,6 +333,7 @@ body.padOpen #hud { visibility: hidden; }
     <button class="chip" id="placesBtn" type="button">장소 이동</button>
     <button class="chip" id="dressBtn" type="button">꾸미기</button>
     <button class="chip" id="emoteBtn" type="button">표현</button>
+    <button class="chip" id="musicBtn" type="button" aria-label="음악 켜고 끄기">🎵</button>
   </div>
   <div class="row" id="emoteBar" hidden></div>
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
@@ -397,6 +399,11 @@ body.padOpen #hud { visibility: hidden; }
       <summary>그래픽 품질</summary>
       <p class="empty">화면이 느리거나 폰이 뜨거워지면 '낮음'으로 바꿔 보세요. 그림자와 장식(풀, 나비, 꽃가루)이 줄어들어요. 바꾸면 화면을 다시 불러와요.</p>
       <div class="seg" id="qSeg" role="group" aria-label="그래픽 품질"><button type="button" data-q="hi">높음</button><button type="button" data-q="lo">낮음</button></div>
+    </details>
+    <details id="mBox">
+      <summary>음악</summary>
+      <p class="empty">잔잔한 힐링 음악이 흘러요. 화실, 전시관, 야외마다 분위기가 조금씩 달라요. 소리는 위쪽 🎵 버튼으로 켜고 끌 수 있어요.</p>
+      <input id="volRange" type="range" min="0" max="100" step="1" aria-label="음악 크기">
     </details>
     <details id="keyBox">
       <summary>다른 기기로 옮기기</summary>
@@ -2579,6 +2586,97 @@ body.padOpen #hud { visibility: hidden; }
   }
   $('#online').addEventListener('click', () => { if (lobbyFailed) { location.reload(); return; } if (!lobby || switching) return; renderRooms(); $('#rooms').hidden = false; });
   $('#roomsClose').addEventListener('click', () => { $('#rooms').hidden = true; });
+  /* ---------- healing music: a gentle piece the browser plays by itself (no audio files), changing with where you stand ---------- */
+  const music = (function () {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const CHORDS = [[48, 55, 59, 64], [45, 55, 60, 64], [41, 53, 57, 64], [43, 55, 59, 62]], PENT = [0, 2, 4, 7, 9], CL = 9;
+    let ctx = null, master = null, verbIn = null, dryIn = null, windG = null, waterG = null;
+    let on = store('hw-music') !== '0', vol = parseFloat(store('hw-vol')); vol = isNaN(vol) ? 0.6 : clamp(vol, 0, 1);
+    let timer = 0, chordAt = 0, ci = 0, noteAt = 0, pi = 4, birdAt = 0, zone = 'studio', lake = 0, sea = 0;
+    const mtof = m => 440 * Math.pow(2, (m - 69) / 12), rr = () => Math.random();
+    function init() {
+      if (ctx) return true; if (!AC) return false;
+      try { ctx = new AC(); } catch (e) { ctx = null; return false; }
+      master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+      const len = Math.floor(ctx.sampleRate * 2.6), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (rr() * 2 - 1) * Math.pow(1 - i / len, 2.8); }
+      const cv = ctx.createConvolver(); cv.buffer = ir; const vg = ctx.createGain(); vg.gain.value = 0.7; cv.connect(vg); vg.connect(master);
+      verbIn = ctx.createGain(); verbIn.connect(cv); dryIn = ctx.createGain(); dryIn.gain.value = 0.75; dryIn.connect(master);
+      const nl = ctx.sampleRate * 2, nb = ctx.createBuffer(1, nl, ctx.sampleRate), nd = nb.getChannelData(0); let b0 = 0;
+      for (let i = 0; i < nl; i++) { b0 = 0.97 * b0 + 0.03 * (rr() * 2 - 1); nd[i] = b0 * 6; }      /* soft, low noise: wind and water */
+      const loop = (type, freq, q) => { const sr = ctx.createBufferSource(); sr.buffer = nb; sr.loop = true; const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q; const g = ctx.createGain(); g.gain.value = 0; sr.connect(f); f.connect(g); g.connect(master); sr.start(); return g; };
+      windG = loop('lowpass', 520, 0.6); waterG = loop('bandpass', 1100, 0.5);
+      return true;
+    }
+    function out(g) { g.connect(dryIn); g.connect(verbIn); }
+    function tone(freq, t, dur, type, amp, bell) {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(amp, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); out(g); o.start(t); o.stop(t + dur + 0.1);
+      if (bell) { const o2 = ctx.createOscillator(), g2 = ctx.createGain(); o2.type = 'sine'; o2.frequency.value = freq * 3.99; g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(amp * 0.2, t + 0.006); g2.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.22); o2.connect(g2); out(g2); o2.start(t); o2.stop(t + dur * 0.3); }
+    }
+    function pad(midi, t, dur, amp) {
+      [-5, 5].forEach(dt => {
+        const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(); o.type = dt < 0 ? 'triangle' : 'sine'; o.frequency.value = mtof(midi); o.detune.value = dt;
+        f.type = 'lowpass'; f.frequency.value = 700; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + 3); g.gain.setValueAtTime(amp, t + dur - 3.2); g.gain.linearRampToValueAtTime(0, t + dur);
+        o.connect(f); f.connect(g); out(g); o.start(t); o.stop(t + dur + 0.1);
+      });
+    }
+    function chirp(t) {
+      const n = 2 + Math.floor(rr() * 3), f0 = 2300 + rr() * 1300;
+      for (let k = 0; k < n; k++) {
+        const o = ctx.createOscillator(), g = ctx.createGain(), s = t + k * 0.15; o.type = 'sine';
+        o.frequency.setValueAtTime(f0, s); o.frequency.exponentialRampToValueAtTime(f0 * 1.4, s + 0.08);
+        g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.03, s + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.11);
+        o.connect(g); out(g); o.start(s); o.stop(s + 0.14);
+      }
+    }
+    function where() {
+      if (pos.x > RM.hx) zone = 'out'; else zone = pos.z > GZ0 ? 'hall' : 'studio';
+      lake = zone === 'out' ? clamp(1 - Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) / 26, 0, 1) : 0;
+      sea = zone === 'out' ? clamp((pos.x - 112) / 30, 0, 1) : 0;
+    }
+    function level() { return on && started && !document.hidden ? vol * 0.55 : 0; }
+    function tick() {
+      timer = setTimeout(tick, 350);
+      if (!ctx || ctx.state !== 'running') return;
+      const now = ctx.currentTime; where();
+      master.gain.setTargetAtTime(level(), now, 0.5);
+      windG.gain.setTargetAtTime(zone === 'out' ? 0.04 + 0.02 * Math.sin(now * 0.3) : 0, now, 0.8);
+      waterG.gain.setTargetAtTime(lake * 0.07 * (0.75 + 0.25 * Math.sin(now * 0.8)) + sea * 0.11 * (0.45 + 0.55 * Math.abs(Math.sin(now * 0.33))), now, 0.8);
+      if (level() <= 0) return;
+      if (!chordAt || chordAt < now - 1) { chordAt = now + 0.1; noteAt = chordAt + 0.8; }
+      while (chordAt < now + 1.5) { const amp = zone === 'hall' ? 0.045 : 0.035; CHORDS[ci].forEach((m, k) => pad(m, chordAt + k * 0.3, CL + 3, amp)); ci = (ci + 1) % CHORDS.length; chordAt += CL; }
+      while (noteAt < now + 1.2) {
+        const hall = zone === 'hall';
+        pi = clamp(pi + (rr() < 0.5 ? -1 : 1) * (rr() < 0.3 ? 2 : 1), 0, 9);
+        const midi = (hall ? 60 : 72) + PENT[pi % 5] + 12 * Math.floor(pi / 5), f = mtof(midi);
+        tone(f, noteAt, hall ? 3.4 : 2.6, hall ? 'sine' : 'triangle', hall ? 0.05 : 0.06, !hall);
+        if (rr() < 0.25) tone(f, noteAt + 0.75, 2, 'sine', 0.02, false);
+        noteAt += (hall ? 2.2 + rr() * 2.4 : zone === 'out' ? 1.1 + rr() * 1.6 : 1.5 + rr() * 2.2) + (rr() < 0.2 ? 2 : 0);
+      }
+      if (zone === 'out' && sea < 0.5 && now > birdAt) { chirp(now + 0.05); birdAt = now + 2.5 + rr() * 5; }
+    }
+    function apply() { if (!ctx) return; if (on) { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); } else if (ctx.state === 'running') ctx.suspend().catch(() => {}); if (master) master.gain.setTargetAtTime(level(), ctx.currentTime, 0.3); }
+    function start() { if (!init()) return; if (!timer) tick(); apply(); }
+    document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend().catch(() => {}); else if (on) ctx.resume().catch(() => {}); });
+    return {
+      unlock() { if (on) start(); },                                   /* browsers only allow sound after a tap */
+      toggle() { on = !on; store('hw-music', on ? '1' : '0'); if (on) start(); else apply(); return on; },
+      setVol(v) { vol = clamp(v, 0, 1); store('hw-vol', String(vol)); apply(); },
+      get on() { return on; }, get vol() { return vol; },
+      state() { return { on: on, vol: vol, ctx: ctx ? ctx.state : 'none', zone: zone }; }
+    };
+  })();
+  ['pointerdown', 'keydown', 'touchend'].forEach(ev => window.addEventListener(ev, () => music.unlock(), { passive: true }));
+  (function () {
+    const b = $('#musicBtn'), r = $('#volRange');
+    const paint = () => { b.textContent = music.on ? '🎵' : '🔇'; b.setAttribute('aria-pressed', music.on ? 'true' : 'false'); };
+    paint(); r.value = Math.round(music.vol * 100);
+    b.addEventListener('click', () => { const o = music.toggle(); paint(); toast(o ? '음악을 켰어요 🎵' : '음악을 껐어요', 2000); });
+    r.addEventListener('input', () => { music.setVol(r.value / 100); if (!music.on && r.value > 0) { music.toggle(); paint(); } });
+  })();
+
   /* ---------- fast travel ---------- */
   function goPlace(pl) {
     if (!started || pad.open || watch.open) return;

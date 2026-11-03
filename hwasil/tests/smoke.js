@@ -38,6 +38,14 @@ const { start, vis, until, check, done } = require('./lib');
   check((await p.evaluate(() => localStorage.getItem('hw-name'))) === '시험', 'name is remembered across the reload');
   async function place(i, shot) { await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(i).click(); await p.waitForTimeout(1800); await p.screenshot({ path: t.out(shot) }); }
   await place(2, 'mountain.png'); await place(3, 'beach.png'); await place(4, 'lake.png'); await place(5, 'field.png'); await place(0, 'studio.png');
+  /* music: a button turns it off and on, the volume is remembered */
+  check(await p.evaluate(() => window.__hw.music().on === true && document.querySelector('#musicBtn').textContent === '🎵'), 'music is on by default');
+  await p.click('#musicBtn'); await p.waitForTimeout(300);
+  check(await p.evaluate(() => window.__hw.music().on === false && document.querySelector('#musicBtn').textContent === '🔇' && localStorage.getItem('hw-music') === '0'), 'music button turns it off (and remembers)');
+  await p.click('#musicBtn'); await p.waitForTimeout(300);
+  check(await p.evaluate(() => window.__hw.music().on === true && window.__hw.music().ctx !== 'none'), 'music turns on again and the audio engine starts');
+  await p.evaluate(() => { const r = document.querySelector('#volRange'); r.value = 25; r.dispatchEvent(new Event('input')); });
+  check(await p.evaluate(() => window.__hw.music().vol === 0.25 && localStorage.getItem('hw-vol') === '0.25'), 'volume slider sets and remembers the volume');
   const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 36, 'easels: ' + n);
   await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 8, 'eight places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
   /* the gallery has no partitions any more; the annex and the garden can be visited */
