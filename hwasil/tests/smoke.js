@@ -39,12 +39,10 @@ const { start, vis, until, check, done } = require('./lib');
   async function place(i, shot) { await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(i).click(); await p.waitForTimeout(1800); await p.screenshot({ path: t.out(shot) }); }
   await place(2, 'mountain.png'); await place(3, 'beach.png'); await place(4, 'lake.png'); await place(5, 'field.png'); await place(0, 'studio.png');
   const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 36, 'easels: ' + n);
-  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 6, 'six places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
-  /* gallery partitions that block the camera fade out while they are in the way */
-  await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(1).click(); await p.waitForTimeout(1500);
-  let minK = 1;
-  for (let i = 0; i < 14; i++) { await p.mouse.move(100, 450); await p.mouse.down(); await p.mouse.move(221, 450, { steps: 5 }); await p.mouse.up(); await p.waitForTimeout(700); const ks = await p.evaluate(() => window.__hw.occ()); minK = Math.min(minK, ...ks); }
-  check(minK < 0.5, 'a partition between the camera and me turns see-through (lowest opacity ' + minK.toFixed(2) + ')');
+  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 8, 'eight places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
+  /* the gallery has no partitions any more; the annex and the garden can be visited */
+  await place(6, 'annex.png'); await place(7, 'garden.png');
+  check(await p.evaluate(() => window.__hw.occ().length) === 0, 'no see-through partitions are left');
   await p.evaluate(() => window.__hw.go(25));                /* studio -> beach easel: through the east door */
   check(await until(p, () => !document.querySelector('#pad').hidden, null, 200), 'walks out the east door and sits at a beach easel');
   await p.waitForTimeout(2500);
@@ -94,7 +92,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.waitForTimeout(1500); check(await p.evaluate(() => document.querySelector('#pad').classList.contains('split')), 'studio easels also open the scenery view');
   /* frames: the hall has frames of three sizes in two rooms; a saved work can be hung on the studio wall as a big frame */
   const frames = await p.evaluate(() => window.__hw.slots.map(s => s.room + ':' + s.size));
-  check(frames.length >= 40 && new Set(frames.map(f => f.split(':')[1])).size === 3 && frames.some(f => f.startsWith('studio')) && frames.some(f => f.startsWith('gallery')), 'frames in both rooms, three sizes (' + frames.length + ')');
+  check(frames.length >= 40 && new Set(frames.map(f => f.split(':')[1])).size === 3 && ['studio', 'gallery', 'annex', 'garden'].every(r => frames.some(f => f.startsWith(r + ':'))), 'frames in four rooms, three sizes (' + frames.length + ')');
   const bq = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   await p.mouse.move(bq.x + bq.w * 0.2, bq.y + bq.h * 0.3); await p.mouse.down(); await p.mouse.move(bq.x + bq.w * 0.8, bq.y + bq.h * 0.7, { steps: 8 }); await p.mouse.up();
   await p.fill('#padTitle', '큰 그림'); await p.click('#padSave'); await p.waitForTimeout(1500);
@@ -102,8 +100,8 @@ const { start, vis, until, check, done } = require('./lib');
   await p.click('#worksBtn'); await p.waitForTimeout(500);
   await p.locator('.work .btn', { hasText: '전시하기' }).first().click(); await p.waitForTimeout(400);
   check(await vis(p, '#hang'), 'hang sheet opens (room and frame size)');
-  await p.click('#hangRoom .opt[data-v=studio]'); await p.click('#hangSize .opt[data-v=l]'); await p.screenshot({ path: t.out('hang.png') });
+  await p.click('#hangRoom .opt[data-v=garden]'); await p.click('#hangSize .opt[data-v=l]'); await p.screenshot({ path: t.out('hang.png') });
   await p.click('#hangGo'); await p.waitForTimeout(1800);
-  check(await p.evaluate(() => window.__hw.slots.some(s => s.ex && s.room === 'studio' && s.size === 'l' && /큰 그림/.test(s.ex.title))), 'the work hangs in a big studio frame');
+  check(await p.evaluate(() => window.__hw.slots.some(s => s.ex && s.room === 'garden' && s.size === 'l' && /큰 그림/.test(s.ex.title))), 'the work hangs in a big garden frame');
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
