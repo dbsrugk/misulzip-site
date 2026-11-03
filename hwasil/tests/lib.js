@@ -22,6 +22,8 @@ const STUB = `window.supabase={createClient(){return{
   if(fn==='hwasil_admin_check')return ok(a.pw==='adminpw');
   if(fn==='hwasil_admin_del'){if(a.pw!=='adminpw')return Promise.resolve({data:null,error:{message:'bad_admin'}});const g=db.gallery[a.gid];if(g&&g.workId&&db.works[g.workId])Object.assign(db.works[g.workId],{exh:false,removed:true});delete db.gallery[a.gid];return ok();}
   if(fn==='hwasil_gallery_del'){delete db.gallery[a.gid];return ok();}
+  if(fn==='hwasil_gallery_index')return ok(Object.values(db.gallery).sort((x,y)=>y.at-x.at).map(g=>{const c=Object.assign({},g);delete c.strokes;return c;}));
+  if(fn==='hwasil_gallery_get')return ok(db.gallery[a.gid]||null);
   if(fn==='hwasil_gallery_list')return ok(Object.values(db.gallery).sort((x,y)=>y.at-x.at));
   return ok();},
  channel(n,o){const h={};const c={on(t,f,cb){(h[f.event]=h[f.event]||[]).push(cb);return c;},

@@ -252,6 +252,10 @@
           return (kind === 'mine' ? rpc('hwasil_work_set', { code: code, token: token, wid: id, d: d }) : rpc('hwasil_gallery_set', { code: code, token: token, gid: id, d: d }))
             .then(function () { kind === 'gallery' ? galleryChanged() : refresh('mine'); });
         },
+        get: function () {                             /* gallery only: the whole work (with its lines); the list only carries summaries */
+          if (kind !== 'gallery') return Promise.reject(new Error('unsupported'));
+          return rpc('hwasil_gallery_get', { code: code, gid: id });
+        },
         hang: function (sl, d) {                       /* gallery only: put the work on a chosen frame (first come, first served) */
           if (kind !== 'gallery') return Promise.reject(new Error('unsupported'));
           return rpc('hwasil_gallery_hang', { code: code, token: token, gid: id, sl: sl, d: d }).then(function () { galleryChanged(); });
@@ -274,7 +278,7 @@
           var seq = 0, l = {
             load: function () {
               var my = ++seq;
-              (kind === 'mine' ? rpc('hwasil_works_list', { code: code, token: token, lim: lim || 30 }) : rpc('hwasil_gallery_list', { code: code, lim: lim || 27 }))
+              (kind === 'mine' ? rpc('hwasil_works_list', { code: code, token: token, lim: lim || 30 }) : rpc('hwasil_gallery_index', { code: code, lim: lim || 150 }))
                 .then(function (rows) {
                   if (my !== seq) return;
                   cb({ docs: (rows || []).map(function (r) { var id = r.id; var d = Object.assign({}, r); delete d.id; return { id: id, data: function () { return d; } }; }) });

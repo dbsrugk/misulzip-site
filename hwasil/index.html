@@ -1077,11 +1077,13 @@ body.padOpen #hud { visibility: hidden; }
   const FRAME_T = 0.2;
   const ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'studio'];
   function roomOf(r) { return ROOMS.indexOf(r) >= 0 ? r : 'gallery'; }
-  let emptyTex = null, emptyLabelTex = null;
+  let emptyTex = null, emptyLabelTex = null, farTex = null, farLabelTex = null;
   function emptyTexs() {                                  /* one shared 'empty frame' picture and label for all the blank frames */
     if (!emptyTex) {
       const c = document.createElement('canvas'); c.width = c.height = 256; emptyTex = new T.CanvasTexture(c); emptyTex.minFilter = T.LinearFilter; emptyTex.generateMipmaps = false;
       const l = document.createElement('canvas'); l.width = 512; l.height = 128; emptyLabelTex = new T.CanvasTexture(l); emptyLabelTex.minFilter = T.LinearFilter; emptyLabelTex.generateMipmaps = false;
+      const f = document.createElement('canvas'); f.width = f.height = 64; farTex = new T.CanvasTexture(f); farTex.minFilter = T.LinearFilter; farTex.generateMipmaps = false;
+      const fl = document.createElement('canvas'); fl.width = 64; fl.height = 16; farLabelTex = new T.CanvasTexture(fl); farLabelTex.minFilter = T.LinearFilter; farLabelTex.generateMipmaps = false;
       paintEmpty();
     }
   }
@@ -1089,6 +1091,8 @@ body.padOpen #hud { visibility: hidden; }
     const c = emptyTex.image, x = c.getContext('2d'); x.fillStyle = '#efe9dc'; x.fillRect(0, 0, 256, 256); x.fillStyle = '#c7bfae'; x.font = '40px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('빈 액자', 128, 128); emptyTex.needsUpdate = true;
     const l = emptyLabelTex.image.getContext('2d'); l.clearRect(0, 0, 512, 128); l.fillStyle = '#fffdf7'; l.fillRect(2, 2, 508, 124); l.strokeStyle = '#25211d'; l.lineWidth = 4; l.strokeRect(2, 2, 508, 124);
     l.textAlign = 'center'; l.textBaseline = 'middle'; l.fillStyle = '#b3ab9b'; l.font = '34px ' + FONT; l.fillText('눌러서 걸기', 256, 64); emptyLabelTex.needsUpdate = true;
+    const f = farTex.image.getContext('2d'); f.fillStyle = '#f1ebdd'; f.fillRect(0, 0, 64, 64); f.fillStyle = '#ddd3bf'; f.fillRect(10, 18, 44, 4); f.fillRect(10, 30, 30, 4); f.fillRect(10, 42, 38, 4); farTex.needsUpdate = true;
+    const fl = farLabelTex.image.getContext('2d'); fl.fillStyle = '#fffdf7'; fl.fillRect(0, 0, 64, 16); fl.fillStyle = '#25211d'; fl.fillRect(0, 0, 64, 1); fl.fillRect(0, 15, 64, 1); farLabelTex.needsUpdate = true;
   }
   function applyAspect(sl, ex) {                          /* a landscape work gets a wide frame, a portrait work a tall one */
     const a = ex ? clamp(ex.w / ex.h, 0.5, 2) : 1, sx = a >= 1 ? 1 : a, sy = a >= 1 ? 1 / a : 1;
@@ -1096,12 +1100,14 @@ body.padOpen #hud { visibility: hidden; }
     if (sl.cv) { const cw = Math.max(96, Math.round(sl.cs * sx)), ch = Math.max(96, Math.round(sl.cs * sy)); if (sl.cv.width !== cw || sl.cv.height !== ch) { sl.cv.width = cw; sl.cv.height = ch; } }
     sl.label.position.y = -(sl.D * sy / 2 + FRAME_T + sl.labelH / 2 + 0.15);
   }
+  function releaseSlot(sl, hasWork) {                     /* give back the private canvases: a blank frame, or a work that is far away, uses shared pictures */
+    emptyTexs();
+    if (sl.cv) { sl.tex.dispose(); sl.ltex.dispose(); sl.cv = sl.tex = sl.lc = sl.ltex = null; }
+    sl.plane.material.map = hasWork ? farTex : emptyTex; sl.label.material.map = hasWork ? farLabelTex : emptyLabelTex;
+  }
   function drawSlot(sl, ex) {
     emptyTexs();
-    if (!ex) {                                            /* blank: give back the private canvases and use the shared ones */
-      if (sl.cv) { sl.tex.dispose(); sl.ltex.dispose(); sl.cv = sl.tex = sl.lc = sl.ltex = null; }
-      sl.plane.material.map = emptyTex; sl.label.material.map = emptyLabelTex; return;
-    }
+    if (!ex) { releaseSlot(sl, false); return; }
     if (!sl.cv) {
       sl.cv = document.createElement('canvas'); sl.cv.width = sl.cv.height = sl.cs;
       sl.tex = new T.CanvasTexture(sl.cv); sl.tex.minFilter = T.LinearFilter; sl.tex.generateMipmaps = false;
@@ -1175,7 +1181,7 @@ body.padOpen #hud { visibility: hidden; }
     studio(W, 'x', -RM.hx, Math.PI / 2); studio(E, 'x', RM.hx, -Math.PI / 2); studio(S, 'z', RM.hz, Math.PI);
     studio(up(W), 'x', -RM.hx, Math.PI / 2); studio(up(E), 'x', RM.hx, -Math.PI / 2); studio(up(S), 'z', RM.hz, Math.PI);
   })();
-  if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '빈액자눌러서걸기작품제목화가').then(() => { emptyTexs(); paintEmpty(); slots.forEach(sl => { if (sl.ex) drawSlot(sl, sl.ex); }); }).catch(() => {});
+  if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '빈액자눌러서걸기작품제목화가').then(() => { emptyTexs(); paintEmpty(); slots.forEach(sl => { if (sl.live && sl.exFull) drawSlot(sl, sl.exFull); }); }).catch(() => {});
   function setExhibits(docs) {
     exhibits = docs;
     const assign = new Map(), used = new Set(), left = [], byId = new Map(slots.map(q => [q.id, q])), rest = [];
@@ -1195,7 +1201,7 @@ body.padOpen #hud { visibility: hidden; }
     });
     slots.forEach(sl => {
       const ex = assign.get(sl) || null, key = ex ? ex.id + ':' + ex.at + ':' + (ex.size || '') + (ex.room || '') : '';
-      if (key !== sl.key) { sl.key = key; sl.ex = ex; applyAspect(sl, ex); drawSlot(sl, ex); }
+      if (key !== sl.key) { sl.key = key; sl.ex = ex; sl.exFull = null; sl.live = false; applyAspect(sl, ex); releaseSlot(sl, !!ex); }
     });
   }
 
@@ -1930,6 +1936,44 @@ body.padOpen #hud { visibility: hidden; }
     slots.forEach(sl => { if (!sl.ex) return; const d = Math.hypot(pos.x - sl.x, pos.z - sl.z) / (4.5 + sl.D); if (d < 1 && d < bd) { bd = d; best = sl; } });
     nearSlot = best; viewBtn.hidden = !best;
   }
+  /* the gallery list only carries summaries; the lines of a work are fetched when I come close (or open it), then kept for a while */
+  const strokeCache = new Map(), loadingEx = new Map();
+  const exKey = ex => ex.id + ':' + ex.at;
+  function ensureStrokes(ex) {
+    const k = exKey(ex);
+    if (Array.isArray(ex.strokes)) { strokeCache.set(k, ex.strokes); return Promise.resolve(ex.strokes); }
+    if (strokeCache.has(k)) { const v = strokeCache.get(k); strokeCache.delete(k); strokeCache.set(k, v); return Promise.resolve(v); }
+    if (loadingEx.has(k)) return loadingEx.get(k);
+    if (!galCol) return Promise.reject(new Error('no db'));
+    const pr = galCol.doc(ex.id).get().then(d => {
+      const st = d && Array.isArray(d.strokes) ? d.strokes : null; if (!st) throw new Error('empty');
+      strokeCache.set(k, st); while (strokeCache.size > 80) strokeCache.delete(strokeCache.keys().next().value);
+      return st;
+    }).finally(() => loadingEx.delete(k));
+    loadingEx.set(k, pr); return pr;
+  }
+  let lodT = 0;
+  function slotLOD() {
+    if (!started || !galCol) return;
+    const want = [];
+    slots.forEach(sl => {
+      if (!sl.ex) return;
+      const d = Math.hypot(pos.x - sl.x, pos.z - sl.z);
+      if (sl.live && d > 80) { sl.live = false; sl.exFull = null; releaseSlot(sl, true); }
+      else if (!sl.live && !sl.busy && d < 55 && (sl.retryAt || 0) < performance.now()) want.push([d, sl]);
+    });
+    want.sort((a, b) => a[0] - b[0]);
+    for (let i = 0; i < want.length && loadingEx.size + i < 3; i++) {
+      const sl = want[i][1], ex = sl.ex, key = sl.key; sl.busy = true;
+      ensureStrokes(ex).then(st => { sl.busy = false; if (sl.key !== key) return; sl.exFull = Object.assign({}, ex, { strokes: st }); sl.live = true; drawSlot(sl, sl.exFull); },
+        () => { sl.busy = false; sl.retryAt = performance.now() + 8000; });
+    }
+  }
+  function showWork(ex) {                                 /* open the big view; fetch the lines first when they are not here yet */
+    if (Array.isArray(ex.strokes)) { openViewer(ex); return; }
+    toast('그림을 불러오는 중…', 1500);
+    ensureStrokes(ex).then(st => openViewer(Object.assign({}, ex, { strokes: st })), () => toast('그림을 불러오지 못했어요. 잠시 뒤 다시 눌러 주세요.', 3000));
+  }
   const isMine = ex => !!ex && !!uid && typeof ex.id === 'string' && ex.id.indexOf(uid + '_') === 0;
   let adminOn = false, pendingHang = null;
   function viewerActions(ex) {
@@ -1957,7 +2001,7 @@ body.padOpen #hud { visibility: hidden; }
     $('#viewerCap').textContent = (ex.title || '제목 없음') + ' · ' + (ex.artist || '화가');
     viewerEl.hidden = false;
   }
-  viewBtn.addEventListener('click', () => { if (nearSlot && nearSlot.ex) openViewer(nearSlot.ex); });
+  viewBtn.addEventListener('click', () => { if (nearSlot && nearSlot.ex) showWork(nearSlot.ex); });
   $('#viewerClose').addEventListener('click', () => { viewerEl.hidden = true; });
   viewerEl.addEventListener('click', e => { if (e.target === viewerEl) viewerEl.hidden = true; });
   const savedCode = (window.hwasil && window.hwasil.savedCode()) || '';
@@ -1990,7 +2034,7 @@ body.padOpen #hud { visibility: hidden; }
   /* ---------- tap an easel or a frame ---------- */
   function frameTap(sl) {
     if (pendingHang) { if (sl.ex) { toast('이미 누군가 걸어 둔 액자예요. 빈 액자를 눌러 주세요.', 3000); return; } hangAt(pendingHang, sl); return; }
-    if (sl.ex) openViewer(sl.ex); else openHangPicker(sl);
+    if (sl.ex) showWork(sl.ex); else openHangPicker(sl);
   }
   let goal = null;                       /* { x, z, idx, stuck } : auto-walk to an easel, then sit */
   const ray = new T.Raycaster();
@@ -2298,7 +2342,7 @@ body.padOpen #hud { visibility: hidden; }
       dbNS = res[0]; uid = id; myCol_ = dbNS.collection('data/users/' + uid);
       galCol = dbNS.collection('gallery');
       galCol.orderBy('at', 'desc').limit(150).onSnapshot(snap => {
-        setExhibits(snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(w => w.kind === 'exhibit' && Array.isArray(w.strokes) && w.strokes.length < 4000 && w.w > 0 && w.h > 0 && w.w <= 2000 && w.h <= 2000));
+        setExhibits(snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(w => w.kind === 'exhibit' && w.w > 0 && w.h > 0 && w.w <= 2000 && w.h <= 2000));
       }, () => {});
       try { if (window.hwasil.admin) window.hwasil.admin.check().then(ok => { adminOn = ok; paintAdmin(); }); } catch (e) {}
       myCol_.orderBy('at', 'desc').limit(30).onSnapshot(snap => {
@@ -2351,7 +2395,7 @@ body.padOpen #hud { visibility: hidden; }
     try {
       const ref = pad.id ? myCol_.doc(pad.id) : myCol_.doc();
       await ref.set(doc);
-      if (doc.exh && galCol) { try { const ed = exhibitDoc(doc, ref.id); if (doc.sl) { ed.slot = doc.sl; await galCol.doc(uid + '_' + ref.id).hang(doc.sl, ed); } else await galCol.doc(uid + '_' + ref.id).set(ed); } catch (e) {} }
+      if (doc.exh && galCol) { try { const ed = exhibitDoc(doc, ref.id); if (doc.sl) { ed.slot = doc.sl; await galCol.doc(uid + '_' + ref.id).hang(doc.sl, ed); strokeCache.set(uid + '_' + ref.id + ':' + ed.at, ed.strokes); } else await galCol.doc(uid + '_' + ref.id).set(ed); } catch (e) {} }
       pad.id = ref.id; pad.dirty = false; pad.confirmClose = false; $('#padClose').textContent = '닫기';
       setStatus(thinned ? '저장했어요. 그림이 커서 선을 조금 단순하게 줄였어요. 내 그림 목록에서 다시 열 수 있어요.' : '저장했어요. 내 그림 목록에서 다시 열 수 있어요.');
       finishEasel();
@@ -2399,6 +2443,7 @@ body.padOpen #hud { visibility: hidden; }
     pendingHang = null; updateBanner();
     try {
       await galCol.doc(uid + '_' + w.id).hang(sl.id, ed);
+      strokeCache.set(uid + '_' + w.id + ':' + ed.at, ed.strokes);
       try { await myCol_.doc(w.id).update({ exh: true, er: sl.room, es: sl.size, sl: sl.id, removed: false }); } catch (e) {}
       toast(ROOM_NAME[sl.room] + '에 걸었어요! 내 자리는 다른 사람이 바꿀 수 없어요.', 5000);
     } catch (e) {
@@ -2929,6 +2974,7 @@ body.padOpen #hud { visibility: hidden; }
     let iy = joy.y + ((keys['w'] || keys['arrowup']) ? 1 : 0) - ((keys['s'] || keys['arrowdown']) ? 1 : 0);
     const len = Math.hypot(ix, iy); if (len > 1) { ix /= len; iy /= len; }
     const m = Math.min(1, len);
+    lodT -= dt; if (lodT <= 0) { lodT = 0.5; slotLOD(); }
     if (goal && m > 0.08) goal = null;
     if (camAim) { camYaw += angDiff(camYaw, camAim.yaw) * Math.min(1, dt * 3); camPitch += (camAim.pitch - camPitch) * Math.min(1, dt * 3); camAim.t -= dt; if (camAim.t <= 0) camAim = null; }
     if (started && !pad.open && !watch.open && m > 0.08) {
