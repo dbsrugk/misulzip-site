@@ -438,9 +438,9 @@ body.padOpen #hud { visibility: hidden; }
 
 <div id="exAsk" hidden role="dialog" aria-label="전시하기">
   <div class="card">
-    <div id="exAskText">저장했어요! 이 그림을 전시하시겠습니까?</div>
-    <p class="empty">전시하면 전시관, 별관, 서쪽 전시관, 야외 정원의 빈 액자에 걸 수 있어요. 먼저 건 사람이 그 액자의 주인이에요.</p>
-    <div class="row2"><button class="btn primary" id="exYes" type="button">전시하기</button><button class="btn" id="exNo" type="button">나중에</button></div>
+    <div id="exAskText"></div>
+    <p class="empty" id="exAskNote"></p>
+    <div class="row2" id="exAskBtns"></div>
   </div>
 </div>
 
@@ -1145,7 +1145,7 @@ body.padOpen #hud { visibility: hidden; }
     const plane = put(inner, new T.Mesh(new T.PlaneGeometry(D, D), new T.MeshBasicMaterial({ map: emptyTex })), 0, 0, 0.09);
     const lw = size === 's' ? 2.4 : size === 'l' ? 4.6 : 3.4, lh = lw / 4;
     const label = put(g, new T.Mesh(new T.PlaneGeometry(lw, lh), new T.MeshBasicMaterial({ map: emptyLabelTex })), 0, 0, 0.05);
-    const sl = { id: room + ':' + x.toFixed(1) + ',' + y.toFixed(1) + ',' + z.toFixed(1), room: room, size: size, D: D, x: x, z: z, g: g, inner: inner, plane: plane, label: label, labelH: lh, cv: null, tex: null, lc: null, ltex: null, key: '', ex: null, cs: cs };
+    const sl = { id: room + ':' + x.toFixed(1) + ',' + y.toFixed(1) + ',' + z.toFixed(1), room: room, size: size, D: D, x: x, y: y, z: z, ry: ry, g: g, inner: inner, plane: plane, label: label, labelH: lh, cv: null, tex: null, lc: null, ltex: null, key: '', ex: null, cs: cs };
     plane.userData.slot = sl; hitList.push(plane);
     slots.push(sl); applyAspect(sl, null);
     return g;
@@ -1942,10 +1942,16 @@ body.padOpen #hud { visibility: hidden; }
   const viewBtn = $('#viewBtn'), viewerEl = $('#viewer');
   let nearSlot = null;
   function updateViewBtn() {
-    if (!started || pad.open || watch.open || !viewerEl.hidden) { viewBtn.hidden = true; return; }
+    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#exAsk').hidden) { viewBtn.hidden = true; return; }
+    const canHang = !!pendingHang || works.some(w => !w.exh);
     let best = null, bd = 1e9;
-    slots.forEach(sl => { if (!sl.ex) return; const d = Math.hypot(pos.x - sl.x, pos.z - sl.z) / (4.5 + sl.D); if (d < 1 && d < bd) { bd = d; best = sl; } });
+    slots.forEach(sl => {
+      if (!sl.ex && !canHang) return;
+      const d = Math.hypot(pos.x - sl.x, pos.z - sl.z, (sl.ex ? 0 : (sl.y || 4) - 2) * 0.35) / (4.5 + sl.D);       /* an empty frame: the lower (eye-level) one wins */
+      if (d < 1 && d < bd) { bd = d; best = sl; }
+    });
     nearSlot = best; viewBtn.hidden = !best;
+    if (best) viewBtn.textContent = best.ex ? '작품 크게 보기' : (pendingHang ? '여기에 걸기' : '내 그림을 여기에 걸기');
   }
   /* the gallery list only carries summaries; the lines of a work are fetched when I come close (or open it), then kept for a while */
   const strokeCache = new Map(), loadingEx = new Map();
@@ -2012,7 +2018,7 @@ body.padOpen #hud { visibility: hidden; }
     $('#viewerCap').textContent = (ex.title || '제목 없음') + ' · ' + (ex.artist || '화가');
     viewerEl.hidden = false;
   }
-  viewBtn.addEventListener('click', () => { if (nearSlot && nearSlot.ex) showWork(nearSlot.ex); });
+  viewBtn.addEventListener('click', () => { if (!nearSlot) return; if (nearSlot.ex) showWork(nearSlot.ex); else frameTap(nearSlot); });
   $('#viewerClose').addEventListener('click', () => { viewerEl.hidden = true; });
   viewerEl.addEventListener('click', e => { if (e.target === viewerEl) viewerEl.hidden = true; });
   const savedCode = (window.hwasil && window.hwasil.savedCode()) || '';
@@ -2390,14 +2396,52 @@ body.padOpen #hud { visibility: hidden; }
     return null;
   }
   function pointsOf(strokes) { let n = 0; strokes.forEach(s => { n += s.p.length / 2; }); return n; }
-  let askWork = null;
-  function askExhibit(w) { askWork = w; $('#exAsk').hidden = false; }
-  $('#exNo').addEventListener('click', () => { $('#exAsk').hidden = true; askWork = null; });
-  $('#exYes').addEventListener('click', () => {
-    const w = askWork; $('#exAsk').hidden = true; askWork = null; if (!w) return;
-    closePad(); startHang(w);                                    /* leave the easel, then pick an empty frame (the places list helps to walk there) */
-    renderPlaces(); $('#places').hidden = false;
-  });
+  /* a small question card: showCard(text, note, [[id, label, primary, fn], ...]) */
+  function showCard(text, note, buttons) {
+    $('#exAskText').textContent = text; $('#exAskNote').textContent = note || ''; $('#exAskNote').hidden = !note;
+    const box = $('#exAskBtns'); box.textContent = '';
+    buttons.forEach(b => { const e = document.createElement('button'); e.type = 'button'; e.id = b[0]; e.className = 'btn' + (b[2] ? ' primary' : ''); e.textContent = b[1]; e.addEventListener('click', () => { $('#exAsk').hidden = true; b[3](); }); box.appendChild(e); });
+    $('#exAsk').hidden = false;
+  }
+  /* "hang it" has two ways: let the studio choose an empty frame, or walk there and choose it myself */
+  function askExhibit(w) {
+    showCard('이 그림을 전시하시겠습니까?', '알아서 걸기는 가까운 전시관의 빈 액자에 바로 걸어요. 직접 고르면 원하는 방과 액자를 정할 수 있어요. 먼저 건 사람이 그 액자의 주인이에요.', [
+      ['exAuto', '알아서 걸기', true, () => autoHang(w)],
+      ['exManual', '직접 고르기', false, () => { closePad(); startHang(w); renderPlaces(); $('#places').hidden = false; }],   /* leave the easel, then pick a frame (the places list helps to walk there) */
+      ['exNo', '나중에', false, () => {}]]);
+  }
+  const AUTO_ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'studio'];
+  function autoCandidates() {
+    const SR = { m: 0, l: 1, s: 2 };
+    return slots.filter(q => !q.ex).sort((a, b) =>
+      AUTO_ROOMS.indexOf(a.room) - AUTO_ROOMS.indexOf(b.room) || SR[a.size] - SR[b.size] || a.y - b.y ||
+      Math.hypot(pos.x - a.x, pos.z - a.z) - Math.hypot(pos.x - b.x, pos.z - b.z));
+  }
+  async function autoHang(w) {
+    if (!galCol || !myCol_) { toast('이 화면에서는 전시할 수 없어요.'); return; }
+    closePadIfOpen();
+    toast('걸 자리를 찾는 중…', 2000);
+    const list = autoCandidates();
+    for (let i = 0; i < Math.min(5, list.length); i++) {
+      const r = await hangAt(w, list[i], { quiet: true });
+      if (r === 'ok') {
+        const sl = list[i];
+        showCard(ROOM_NAME[sl.room] + '에 걸었어요!', '지금 가서 볼까요? 내 자리는 다른 사람이 바꿀 수 없어요.', [
+          ['exGo', '보러 가기', true, () => walkToSlot(sl)], ['exStay', '괜찮아요', false, () => {}]]);
+        return;
+      }
+      if (r !== 'taken') return;                          /* any other problem was already explained */
+    }
+    toast('빈 액자를 찾지 못했어요. 직접 골라서 걸어 보세요.', 5000);
+  }
+  function closePadIfOpen() { if (pad.open) closePad(); }
+  function walkToSlot(sl) {                               /* stand four steps in front of the frame, facing it */
+    const nx = Math.sin(sl.ry), nz = Math.cos(sl.ry), h = Math.atan2(-nx, -nz);
+    const pl = { name: ROOM_NAME[sl.room], x: sl.x + nx * 4, z: sl.z + nz * 4, h: h, pitch: 0.2 };
+    if (window.__hwInstant) { snapTo(pl); return; }
+    myEasel = -1; goal = { x: pl.x, z: pl.z, place: pl, stuck: 0 };
+    toast('액자 앞으로 걸어가요. 조이스틱을 움직이면 멈춰요', 3000);
+  }
   async function save() {
     if (pad.saving) return;
     if (!pad.strokes.length) { setStatus('먼저 그림을 그려 주세요.', true); return; }
@@ -2456,20 +2500,23 @@ body.padOpen #hud { visibility: hidden; }
     toast('걸고 싶은 빈 액자를 눌러 주세요. 전시관, 별관, 야외 정원, 화실 어디든 좋아요.', 7000);
   }
   $('#hangBanner').addEventListener('click', () => { pendingHang = null; updateBanner(); toast('걸기를 취소했어요.', 2000); });
-  async function hangAt(w, sl) {
-    if (!galCol || !myCol_) { toast('이 화면에서는 전시할 수 없어요.'); return; }
+  async function hangAt(w, sl, opts) {                    /* returns 'ok', 'taken' (somebody was first) or 'fail' */
+    const quiet = !!(opts && opts.quiet);
+    if (!galCol || !myCol_) { toast('이 화면에서는 전시할 수 없어요.'); return 'fail'; }
     const ed = exhibitDoc(Object.assign({}, w, { er: sl.room, es: sl.size }), w.id); ed.slot = sl.id;
-    if (jsonbSize(ed) > 258000) { toast('그림이 너무 커서 전시할 수 없어요.'); return; }
+    if (jsonbSize(ed) > 258000) { toast('그림이 너무 커서 전시할 수 없어요.'); return 'fail'; }
     pendingHang = null; updateBanner();
     try {
       await galCol.doc(uid + '_' + w.id).hang(sl.id, ed);
       strokeCache.set(uid + '_' + w.id + ':' + ed.at, ed.strokes);
       try { await myCol_.doc(w.id).update({ exh: true, er: sl.room, es: sl.size, sl: sl.id, removed: false }); } catch (e) {}
-      toast(ROOM_NAME[sl.room] + '에 걸었어요! 내 자리는 다른 사람이 바꿀 수 없어요.', 5000);
+      if (!quiet) toast(ROOM_NAME[sl.room] + '에 걸었어요! 내 자리는 다른 사람이 바꿀 수 없어요.', 5000);
+      return 'ok';
     } catch (e) {
       const c = e && e.code;
-      toast(c === 'slot_taken' ? '방금 다른 분이 먼저 걸었어요. 다른 빈 액자를 골라 주세요.' : c === 'quota_exceeded' ? '전시는 한 사람당 10점까지예요. 다른 그림을 먼저 내려 주세요.' : '전시하지 못했어요. 잠시 뒤 다시 해 주세요.', 6000);
-      try { if (c === 'slot_taken' && window.hwasil.refresh) window.hwasil.refresh('gallery'); } catch (x) {}
+      if (c === 'slot_taken') { try { if (window.hwasil.refresh) window.hwasil.refresh('gallery'); } catch (x) {} if (!quiet) toast('방금 다른 분이 먼저 걸었어요. 다른 빈 액자를 골라 주세요.', 6000); return 'taken'; }
+      toast(c === 'removed_banned' ? '관리자가 내렸던 작품이라 다시 걸 수 없어요.' : c === 'quota_exceeded' ? '전시는 한 사람당 10점까지예요. 다른 그림을 먼저 내려 주세요.' : '전시하지 못했어요. 잠시 뒤 다시 해 주세요.', 6000);
+      return 'fail';
     }
   }
   function openHangPicker(sl) {
@@ -2515,7 +2562,7 @@ body.padOpen #hud { visibility: hidden; }
         try { if (w.exh && galCol) { try { await galCol.doc(uid + '_' + w.id).delete(); } catch (e) {} } await myCol_.doc(w.id).delete(); } catch (e) { b2.textContent = '삭제 실패'; }
       });
       const b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'btn'; b3.textContent = w.exh ? '자리 옮기기' : '전시하기';
-      b3.addEventListener('click', () => startHang(w));
+      b3.addEventListener('click', () => { if (w.exh) startHang(w); else askExhibit(w); });
       acts.appendChild(b1); acts.appendChild(b3);
       if (w.exh) {
         const b4 = document.createElement('button'); b4.type = 'button'; b4.className = 'btn'; b4.textContent = '전시 내리기';

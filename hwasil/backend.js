@@ -21,7 +21,7 @@
 
   function rpc(fn, args) {
     return sb.rpc(fn, args).then(function (r) {
-      if (r.error) { var m = r.error.message || ''; var e = new Error(m); e.code = /quota_exceeded/.test(m) ? 'quota_exceeded' : /too_big/.test(m) ? 'too_big' : /bad_code/.test(m) ? 'bad_code' : /slot_taken/.test(m) ? 'slot_taken' : /bad_admin/.test(m) ? 'bad_admin' : /invalid_argument|bad_token/.test(m) ? 'invalid_argument' : 'error'; throw e; }
+      if (r.error) { var m = r.error.message || ''; var e = new Error(m); e.code = /quota_exceeded/.test(m) ? 'quota_exceeded' : /too_big/.test(m) ? 'too_big' : /bad_code/.test(m) ? 'bad_code' : /slot_taken/.test(m) ? 'slot_taken' : /removed_banned/.test(m) ? 'removed_banned' : /bad_admin/.test(m) ? 'bad_admin' : /invalid_argument|bad_token/.test(m) ? 'invalid_argument' : 'error'; throw e; }
       return r.data;
     });
   }
