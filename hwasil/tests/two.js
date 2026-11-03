@@ -8,6 +8,8 @@ const { start, vis, until, check, done } = require('./lib');
   await A.click('#dressRows button[data-i="1"][data-v="5"]'); await A.click('#dressRows button[data-i="3"][data-v="4"]'); await A.click('#dressClose');
   const lookA = await A.evaluate(() => window.__hw.look()); await B.waitForTimeout(2500);
   check(await B.evaluate(l => Array.from(window.__hw.remotes.values()).some(r => r.look === l), lookA), "B sees A's new look: " + lookA);
+  await A.click('#emoteBtn'); await A.click('#emoteBar .emo[data-e=wave]'); await B.waitForTimeout(900);
+  check(await B.evaluate(() => Array.from(window.__hw.remotes.values()).some(r => r.av.emote && r.av.emote.id === 'wave')), "B sees A's wave emote");
   let tapped = false;                                          /* both start at the same spot, so the same screen point hits the same easel */
   for (let y = 60; y < 700 && !tapped; y += 30) for (let x = 20; x < 380 && !tapped; x += 25) { await A.mouse.click(x, y); await A.waitForTimeout(60); tapped = await A.evaluate(() => { const e = document.querySelector('#toast'); return !!(e && !e.hidden && /걸어가요/.test(e.textContent)); }); }
   check(tapped, 'A taps an easel');

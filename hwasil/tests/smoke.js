@@ -5,6 +5,10 @@ const { start, vis, until, check, done } = require('./lib');
   const def = await p.inputValue('#nameInput'); check(def.length > 0 && def.length <= 10 && !/^화가\d+$/.test(def), 'fun random default name: ' + def);
   await t.enter(p, '시험');
   check(/화실 1/.test(await p.textContent('#online')), 'enters a studio: ' + await p.textContent('#online'));
+  await p.click('#emoteBtn'); await p.waitForTimeout(200);                    /* emotes */
+  check(await vis(p, '#emoteBar') && (await p.locator('#emoteBar .emo').count()) === 5, 'emote bar with five emotes opens');
+  await p.click('#emoteBar .emo[data-e=heart]'); await p.waitForTimeout(500);
+  check((await p.evaluate(() => window.__hw.emote())) === 'heart' && !(await vis(p, '#emoteBar')), 'emote plays and the bar closes');
   await p.click('#worksBtn'); await p.waitForTimeout(300);                    /* graphics quality setting is offered */
   check(await p.evaluate(() => !!document.querySelector('#qBox') && !!document.querySelector('#qSeg button.on')), 'graphics quality setting exists');
   await p.click('#worksClose'); await p.waitForTimeout(200);

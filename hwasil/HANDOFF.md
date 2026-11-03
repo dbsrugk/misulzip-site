@@ -76,6 +76,14 @@
 - 링크 미리보기: `<head>`의 og:* / twitter:* 태그 + `hwasil/og.jpg`(1200x630, 풍차 들판). 다시 만들 땐 `NODE_PATH=$(npm root -g) node hwasil/tests/og.js`. 카카오톡은 미리보기를 캐시하므로, 이미 보낸 링크는 안 바뀔 수 있음(새 링크는 주소 끝에 `?v=2` 같은 걸 붙이면 새로 읽음).
 - 파비콘은 🎨 이모지(데이터 URL).
 
+## v7 (큰 개편)
+- 캐릭터: 둥근 툰 캐릭터. `makeAvatar(look)`, look = 7자리(피부,머리,머리색,모자,옷색,소품,얼굴) = `hw-look`. 꾸미기 시트(#dress)는 미리보기를 메인 렌더러로 작은 렌더타깃에 그림. 프레즌스 필드 `a`(look), `m`/`mt`(표현 id/카운터).
+- 표현(EMOTES: 손 흔들기, 박수, 하트, 춤, 깜짝) `startEmote()`, 머리 위 이모지 `fxList`, 걷는 먼지 `puff()`(고품질만). 멈출 때 미끄러지듯 감속(`curSp`), 걸을 때 앞으로 기울기.
+- 배경: 툰 재질(`L()`), 해 방향 `SUN` + 플레이어를 따라다니는 그림자(`sunFollow`), 하늘 돔 셰이더, 안개, 풀 질감, 바람(`sway()`), 바다/호수 셰이더(`waterMat`), 둥근 나무·덤불·바위, 나비·꽃가루·새, 화분. 그래픽 품질 `hw-q` hi/lo(낮음=그림자·풀·나비 줄임, 느린 폰은 자동 하향. 자동화 테스트는 `navigator.webdriver`로 제외).
+- 건물: 천장 18(`RM.h`), 문 `DOOR=5.2, DSH=7.6`(아치), 들보·기둥·몰딩·샹들리에·아치 창.
+- 액자: 42칸 `addSlot(room,size,...)` (화실 15 + 전시관 27), 크기 s/m/l(`FD`), 작품 비율대로 액자 모양(`applyAspect`). 전시 문서에 `room`('gallery'|'studio')·`size`, 작품 문서에 `er`·`es`. 걸기 창 #hang. 한 번에 최대 60점 불러옴.
+- 시험(`hwasil/tests`): 가짜 Supabase에 메모리 DB 포함, WebGL 콘솔 오류도 실패로 침. `window.__hw` 훅(테스트 전용: pos, easels, remotes, slots, emote, look, go).
+
 ## 아직 못 한 것 / 다음 할 일
 1. ⭐ 실제 폰 2대 시험 (서로 보임 / 그리기 구경 / 저장 / 전시). 혼자만 보이면 Realtime 공개 채널 설정 확인.
 2. 시험 결과 고치기 → 수동 재배포.

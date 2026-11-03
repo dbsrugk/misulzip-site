@@ -304,6 +304,8 @@ body.padOpen #hud { visibility: hidden; }
 #keyBox .field { margin: 10px 0 8px; }
 #keyBox .btn { width: 100%; margin-top: 8px; }
 #keyMsg { margin-top: 8px; font-weight: 500; }
+#emoteBar { margin-top: 8px; }
+#emoteBar .emo { pointer-events: auto; width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--ink); background: var(--paper); font-size: 25px; line-height: 1; cursor: pointer; box-shadow: 0 2px 0 var(--ink); }
 .nameRow { display: flex; gap: 8px; align-items: stretch; }
 .nameRow input { flex: 1; min-width: 0; }
 .nameRow .btn { padding: 4px 12px; font-size: 22px; line-height: 1; }
@@ -329,7 +331,9 @@ body.padOpen #hud { visibility: hidden; }
     <button class="chip" id="online" type="button">나 혼자 있는 중</button>
     <button class="chip" id="placesBtn" type="button">장소 이동</button>
     <button class="chip" id="dressBtn" type="button">꾸미기</button>
+    <button class="chip" id="emoteBtn" type="button">표현</button>
   </div>
+  <div class="row" id="emoteBar" hidden></div>
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
   <button class="sitBtn" id="viewBtn" type="button" hidden>작품 크게 보기</button>
@@ -1099,7 +1103,8 @@ body.padOpen #hud { visibility: hidden; }
   const blobGeo = new T.CircleGeometry(0.8, 18), blobMat = B(0x000000, { transparent: true, opacity: 0.22 });
   function makeAvatar(look) {
     const skinC = SKINS[look[0]], hairC = HAIRCOLS[look[2]], coatC = COATS[look[4]], hairI = look[1], hatI = look[3], accI = look[5], faceI = look[6];
-    const g = new T.Group(), av = { group: g, look: look, seed: look.reduce((a, b, i) => a + b * (i + 3), 0) * 0.37, blinking: false };
+    const g = new T.Group(), av = { lift: 0, emote: null, group: g, look: look, seed: look.reduce((a, b, i) => a + b * (i + 3), 0) * 0.37, blinking: false };
+    g.rotation.order = 'YXZ';                               /* yaw first, then lean forward */
     let rs = (av.seed * 9973 + 7) % 1; const rnd2 = () => { rs = (rs * 16807 + 0.318) % 1; return rs; };
     const accent = new T.Color(coatC).offsetHSL(0.5, 0.05, -0.12).getHex();
     const coat = TN(coatC), skin = TN(skinC), hairM = TN(hairC, { side: T.DoubleSide }), dark = TN(0x3a3f6b), wood = TN(0xb58b57);
@@ -1154,9 +1159,26 @@ body.padOpen #hud { visibility: hidden; }
     return av;
   }
   function disposeAvatar(av) { av.group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); if (av.faceMat) av.faceMat.dispose(); }
-  /* walking, painting at an easel, breathing, blinking */
+  /* ---------- emotes ---------- */
+  const EMOTES = [
+    { id: 'wave', icon: '👋', name: '손 흔들기', dur: 2.6, fx: '' }, { id: 'clap', icon: '👏', name: '박수', dur: 2.2, fx: '👏' },
+    { id: 'heart', icon: '❤️', name: '하트', dur: 2.8, fx: '❤️' }, { id: 'dance', icon: '💃', name: '춤추기', dur: 3.8, fx: '♪' }, { id: 'wow', icon: '😲', name: '깜짝', dur: 1.9, fx: '❗' }
+  ];
+  /* walking, emotes, painting at an easel, breathing, blinking */
   function animateAvatar(av, phase, amp, t, painting) {
-    if (painting && amp < 0.15) {
+    let em = av.emote, ep = -1; if (em) { if (t - em.t0 < em.dur) ep = t - em.t0; else av.emote = em = null; }
+    av.lift = 0; av.torso.rotation.z = 0; av.headG.rotation.z = 0;
+    if (ep >= 0 && amp < 0.3 && !painting) {
+      const id = em.id, L1 = av.armL, R1 = av.armR;
+      L1.rotation.set(0, 0, 0); R1.rotation.set(0, 0, 0); av.legL.rotation.x = av.legR.rotation.x = 0;
+      if (id === 'wave') R1.rotation.z = 2.4 + Math.sin(ep * 11) * 0.3;
+      else if (id === 'clap') { const c = 0.28 + 0.25 * Math.sin(ep * 17); L1.rotation.x = R1.rotation.x = -1.25; L1.rotation.z = c; R1.rotation.z = -c; }
+      else if (id === 'heart') { L1.rotation.z = -2.7; R1.rotation.z = 2.7; L1.rotation.x = R1.rotation.x = -0.15; av.headG.rotation.z = Math.sin(ep * 4) * 0.08; }
+      else if (id === 'dance') {
+        const w = Math.sin(ep * 9); R1.rotation.z = 2.1 + w * 0.5; L1.rotation.z = -2.1 + w * 0.5; av.torso.rotation.z = w * 0.13; av.headG.rotation.z = -w * 0.12;
+        av.legL.rotation.x = w * 0.6; av.legR.rotation.x = -w * 0.6; av.lift = Math.abs(w) * 0.3;
+      } else if (id === 'wow') { L1.rotation.z = -2.4; R1.rotation.z = 2.4; if (ep < 0.5) av.lift = Math.sin(ep / 0.5 * Math.PI) * 0.9; }
+    } else if (painting && amp < 0.15) {
       av.armR.rotation.x = -1.25 + Math.sin(t * 7 + av.seed) * 0.22; av.armR.rotation.z = -0.12 + Math.sin(t * 3.1) * 0.08;
       av.armL.rotation.x = -0.75; av.armL.rotation.z = 0.12; av.legL.rotation.x = av.legR.rotation.x = 0;
     } else {
@@ -1168,6 +1190,44 @@ body.padOpen #hud { visibility: hidden; }
     const bl = ((t + av.seed) % 3.7) < 0.14;
     if (bl !== av.blinking) { av.blinking = bl; av.faceMat.map = bl ? av.texBlink : av.texOpen; }
   }
+  /* floating symbols above a head, and little dust puffs at the feet */
+  const fxList = [], fxTex = {}, puffs = [];
+  function emojiTex(ch) {
+    if (fxTex[ch]) return fxTex[ch];
+    const c = document.createElement('canvas'); c.width = c.height = 96; const x = c.getContext('2d');
+    x.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(ch, 48, 52);
+    const t = new T.CanvasTexture(c); t.minFilter = T.LinearFilter; t.generateMipmaps = false; return (fxTex[ch] = t);
+  }
+  function startEmote(av, em) {
+    av.emote = { id: em.id, t0: tNow, dur: em.dur };
+    if (!em.fx) return;
+    const n = em.id === 'dance' ? 4 : 1;
+    for (let i = 0; i < n; i++) {
+      const sp = new T.Sprite(new T.SpriteMaterial({ map: emojiTex(em.fx), transparent: true, depthWrite: false, fog: false })); sp.scale.set(1.5, 1.5, 1); sp.visible = false; scene.add(sp);
+      fxList.push({ sp: sp, av: av, t0: tNow + i * 0.8, dur: em.id === 'dance' ? 1.6 : em.dur, dx: i * 1.7 });
+    }
+  }
+  function updateFx(t) {
+    for (let i = fxList.length - 1; i >= 0; i--) {
+      const f = fxList[i], k = (t - f.t0) / f.dur;
+      if (k > 1) { scene.remove(f.sp); f.sp.material.dispose(); fxList.splice(i, 1); continue; }
+      if (k < 0) continue;
+      f.sp.visible = true; f.sp.position.set(f.av.group.position.x + Math.sin(t * 3 + f.dx) * 0.35, 3.9 + k * 1.6, f.av.group.position.z); f.sp.material.opacity = k < 0.7 ? 1 : (1 - k) / 0.3;
+    }
+    for (let i = 0; i < puffs.length; i++) {
+      const q = puffs[i]; if (!q.on) continue; const k = (t - q.t0) / 0.6;
+      if (k >= 1) { q.on = false; q.m.visible = false; continue; }
+      q.m.scale.setScalar(0.35 + k * 0.9); q.m.position.y = 0.15 + k * 0.35; q.m.material.opacity = 0.5 * (1 - k);
+    }
+  }
+  function puff(x, z) {
+    if (!HI) return;
+    let q = puffs.find(p2 => !p2.on);
+    if (!q && puffs.length < 28) { const m = new T.Mesh(new T.SphereGeometry(0.3, 8, 6), new T.MeshBasicMaterial({ color: 0xeadfc6, transparent: true, depthWrite: false })); m.userData.noShadow = true; scene.add(m); q = { m: m, on: false, t0: 0 }; puffs.push(q); }
+    if (!q) return;
+    q.on = true; q.t0 = tNow; q.m.visible = true; q.m.position.set(x + (Math.random() - 0.5) * 0.5, 0.15, z + (Math.random() - 0.5) * 0.5);
+  }
+
   function rr(x, px, py, w, h, r) {
     x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r);
     x.arcTo(px, py + h, px, py, r); x.arcTo(px, py, px + w, py, r); x.closePath();
@@ -1578,6 +1638,12 @@ body.padOpen #hud { visibility: hidden; }
   function openDress() { renderDress(); $('#dress').hidden = false; clearInterval(dressT); drawPreview(performance.now() / 1000); dressT = setInterval(() => drawPreview(performance.now() / 1000), 90); }
   function closeDress() { $('#dress').hidden = true; clearInterval(dressT); }
   $('#dressBtn').addEventListener('click', () => { if (started) openDress(); });
+  EMOTES.forEach(em => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'emo'; b.textContent = em.icon; b.dataset.e = em.id; b.setAttribute('aria-label', em.name);
+    b.addEventListener('click', () => { if (!started || pad.open || watch.open) return; myEmote = { id: em.id, n: myEmote.n + 1 }; startEmote(me, em); pushPresence(true); $('#emoteBar').hidden = true; });
+    $('#emoteBar').appendChild(b);
+  });
+  $('#emoteBtn').addEventListener('click', () => { if (started) $('#emoteBar').hidden = !$('#emoteBar').hidden; });
   $('#introDress').addEventListener('click', openDress);
   $('#dressClose').addEventListener('click', closeDress);
   $('#dressRandom').addEventListener('click', () => { myLook = randomLook(); applyMyLook(); });
@@ -1587,7 +1653,7 @@ body.padOpen #hud { visibility: hidden; }
   const START = { x: 0, z: 20.5 };
   const pos = { x: START.x, z: START.z };
   let heading = Math.PI, camYaw = 0, camPitch = 0.5, camDist = 24, camTx = pos.x, camTz = pos.z;
-  let started = false, walkPhase = 0, walkAmp = 0, tNow = 0, myEasel = -1;
+  let started = false, walkPhase = 0, walkAmp = 0, tNow = 0, myEasel = -1, curSp = 0, wdx = 0, wdz = 0, puffT = 0;
   const joy = { x: 0, y: 0 }, keys = {};
   const SPEED = 7.5;
   const joyEl = $('#joy'), knob = $('#knob'), JR = 46;
@@ -2309,6 +2375,7 @@ body.padOpen #hud { visibility: hidden; }
     old.group.remove(r.shadow); old.group.remove(r.plate.sprite); scene.remove(old.group); disposeAvatar(old);
     nu.group.add(r.shadow); nu.group.add(r.plate.sprite); scene.add(nu.group); r.av = nu; r.look = code;
   }
+  let myEmote = { id: '', n: 0 };
   function addRemote(p) {
     const pr = p.presence || {};
     const look = lookOf(pr);
@@ -2333,6 +2400,8 @@ body.padOpen #hud { visibility: hidden; }
       const nm = sanitize(typeof pr.n === 'string' ? pr.n : '').slice(0, 10) || '화가';
       if (nm !== r.name) { r.name = nm; r.plate.set(nm); }
       const lc = lookOf(pr).join(''); if (lc !== r.look) rebuildRemote(r, lc);
+      const mt = Number(pr.mt) || 0;                                         /* a new emote counter = play it (but not the old one when I just arrived) */
+      if (r.mt === undefined) r.mt = mt; else if (mt !== r.mt) { r.mt = mt; const em = EMOTES.find(q => q.id === pr.m); if (em) startEmote(r.av, em); }
       r.tx = clamp(pr.x, -RM.hx, OUT.x1 + 2); r.tz = clamp(pr.z, OUT.z0 - 2, Math.max(GZ1, OUT.z1));
       r.th = typeof pr.h === 'number' && isFinite(pr.h) ? pr.h : r.th; r.w = pr.w === 1 ? 1 : 0;
       r.e = typeof pr.e === 'number' && pr.e >= 0 && pr.e < easels.length ? Math.floor(pr.e) : -1;
@@ -2349,8 +2418,8 @@ body.padOpen #hud { visibility: hidden; }
   function pushPresence(force) {
     if (!roomNS || !started) return;
     const now = performance.now();
-    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel };
-    const k = patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.a;
+    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, m: myEmote.id, mt: myEmote.n };
+    const k = patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.a + ',' + patch.mt;
     if (!force && (k === lastSent || now - lastSend < 100 + Math.min(200, (inRoomCount - 1) * 12))) return;
     lastSend = now; lastSent = k;
     roomNS.presence(patch).catch(function () {});
@@ -2469,9 +2538,10 @@ body.padOpen #hud { visibility: hidden; }
     if (started && !pad.open && !watch.open && m > 0.08) {
       const sy = Math.sin(camYaw), cy = Math.cos(camYaw);
       const dx = cy * ix - sy * iy, dz = -sy * ix - cy * iy, dl = Math.hypot(dx, dz) || 1, sp = SPEED * m;
-      tryMove(dx / dl * sp * dt, dz / dl * sp * dt);
+      wdx = dx / dl; wdz = dz / dl; curSp = lerp(curSp, sp, 1 - Math.exp(-dt * 10));
+      tryMove(wdx * curSp * dt, wdz * curSp * dt);
       heading += angDiff(heading, Math.atan2(dx, dz)) * Math.min(1, dt * 12);
-      walkAmp = lerp(walkAmp, 1, Math.min(1, dt * 10)); walkPhase += dt * (6 + sp * 0.9);
+      walkAmp = lerp(walkAmp, 1, Math.min(1, dt * 10)); walkPhase += dt * (6 + curSp * 0.9);
     } else if (goal && started && !pad.open && !watch.open) {
       const tg = walkTarget(), gx = tg.x - pos.x, gz = tg.z - pos.z, gd = Math.hypot(gx, gz);
       const g0 = goal;
@@ -2491,10 +2561,15 @@ body.padOpen #hud { visibility: hidden; }
           else toast('길이 막혔어요. 조이스틱으로 가까이 가 주세요', 4000);
         }
       }
-    } else walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10));
+    } else {                                             /* let go of the stick: glide to a stop instead of freezing */
+      curSp = lerp(curSp, 0, 1 - Math.exp(-dt * 9));
+      if (curSp > 0.3 && started && !pad.open && !watch.open) { tryMove(wdx * curSp * dt, wdz * curSp * dt); walkPhase += dt * (6 + curSp * 0.9); walkAmp = lerp(walkAmp, Math.min(1, curSp / SPEED + 0.1), Math.min(1, dt * 10)); }
+      else { curSp = 0; walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10)); }
+    }
     animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0);
-    player.position.set(pos.x, 0.0 + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp, pos.z);
-    player.rotation.y = heading;
+    player.position.set(pos.x, 0.0 + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp + me.lift, pos.z);
+    player.rotation.y = heading; player.rotation.x = 0.11 * walkAmp;
+    if (walkAmp > 0.6 && !player.userData.hidden) { puffT -= dt; if (puffT <= 0) { puffT = 0.17; puff(pos.x - Math.sin(heading) * 0.2, pos.z - Math.cos(heading) * 0.2); } }
     blob.position.set(pos.x, 0.05, pos.z);
     sunFollow(pos.x, pos.z); swayT.value = tNow;
     pushPresence(false);
@@ -2503,10 +2578,12 @@ body.padOpen #hud { visibility: hidden; }
       const moving = Math.hypot(dx, dz) > 0.05 || r.w === 1;
       r.x += dx * f2; r.z += dz * f2; r.h += angDiff(r.h, r.th) * Math.min(1, dt * 12);
       r.amp = lerp(r.amp, moving ? 1 : 0, Math.min(1, dt * 10)); if (r.amp > 0.05) r.phase += dt * 10;
-      r.av.group.position.set(r.x, Math.abs(Math.sin(r.phase)) * 0.09 * r.amp, r.z); r.av.group.rotation.y = r.h;
       animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0);
+      r.av.group.position.set(r.x, Math.abs(Math.sin(r.phase)) * 0.09 * r.amp + r.av.lift, r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp;
+      if (r.amp > 0.6) { r.puffT = (r.puffT || 0) - dt; if (r.puffT <= 0) { r.puffT = 0.25; puff(r.x, r.z); } }
       r.plate.sprite.visible = Math.hypot(r.x - pos.x, r.z - pos.z) < 28;
     });
+    updateFx(tNow);
     updateSitBtn(); updateViewBtn();
     easels.forEach(e => {
       e.ring.material.opacity = (e.idx === nearIdx ? 0.9 : 0.4) + 0.12 * Math.sin(tNow * 3 + e.idx);
@@ -2534,7 +2611,7 @@ body.padOpen #hud { visibility: hidden; }
     const dy = 2.4 + Math.sin(camPitch) * camDist;
     const dz = camTz + Math.cos(camYaw) * cp * camDist;
     const artist = pad.open && pad.view !== 'off' && pad.easel >= 0;
-    player.visible = !artist; blob.visible = !artist;
+    player.visible = !artist; blob.visible = !artist; player.userData.hidden = artist;
     if (hiddenEasel >= 0 && (!artist || hiddenEasel !== pad.easel)) { easels[hiddenEasel].grp.visible = true; easels[hiddenEasel].ring.visible = true; hiddenEasel = -1; }
     if (artist && hiddenEasel !== pad.easel) { hiddenEasel = pad.easel; easels[hiddenEasel].grp.visible = false; easels[hiddenEasel].ring.visible = false; }   /* clear view past my own easel */
     if (artist) {                                       /* the artist's own eyes: from the seat, over the easel, towards the scenery */
