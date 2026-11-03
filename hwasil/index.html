@@ -2591,13 +2591,14 @@ body.padOpen #hud { visibility: hidden; }
     const AC = window.AudioContext || window.webkitAudioContext;
     const CHORDS = [[48, 55, 59, 64], [45, 55, 60, 64], [41, 53, 57, 64], [43, 55, 59, 62]], PENT = [0, 2, 4, 7, 9], CL = 9;
     let ctx = null, master = null, verbIn = null, dryIn = null, windG = null, waterG = null;
-    let on = store('hw-music') !== '0', vol = parseFloat(store('hw-vol')); vol = isNaN(vol) ? 0.6 : clamp(vol, 0, 1);
+    let on = store('hw-music') !== '0', vol = parseFloat(store('hw-vol')); vol = isNaN(vol) ? 0.7 : clamp(vol, 0, 1);
     let timer = 0, chordAt = 0, ci = 0, noteAt = 0, pi = 4, birdAt = 0, zone = 'studio', lake = 0, sea = 0;
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12), rr = () => Math.random();
     function init() {
       if (ctx) return true; if (!AC) return false;
       try { ctx = new AC(); } catch (e) { ctx = null; return false; }
-      master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+      master = ctx.createGain(); master.gain.value = 0;
+      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; master.connect(comp); comp.connect(ctx.destination);   /* louder, but never harsh */
       const len = Math.floor(ctx.sampleRate * 2.6), ir = ctx.createBuffer(2, len, ctx.sampleRate);
       for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (rr() * 2 - 1) * Math.pow(1 - i / len, 2.8); }
       const cv = ctx.createConvolver(); cv.buffer = ir; const vg = ctx.createGain(); vg.gain.value = 0.7; cv.connect(vg); vg.connect(master);
@@ -2636,7 +2637,7 @@ body.padOpen #hud { visibility: hidden; }
       lake = zone === 'out' ? clamp(1 - Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) / 26, 0, 1) : 0;
       sea = zone === 'out' ? clamp((pos.x - 112) / 30, 0, 1) : 0;
     }
-    function level() { return on && started && !document.hidden ? vol * 0.55 : 0; }
+    function level() { return on && started && !document.hidden ? vol * 1.7 : 0; }
     function tick() {
       timer = setTimeout(tick, 350);
       if (!ctx || ctx.state !== 'running') return;
