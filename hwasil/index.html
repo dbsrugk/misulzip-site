@@ -386,6 +386,7 @@ body.padOpen #hud { visibility: hidden; }
   <div class="padStatus" id="padStatus" role="status" aria-live="polite"></div>
   <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas><canvas id="refCanvas" class="refCanvas" hidden aria-hidden="true"></canvas><div class="sizeFloat" id="sizeFloat" hidden aria-hidden="true"><i></i><b></b></div><div class="heartLayer" id="padHearts"></div><div class="likeBadge" id="padLikes" hidden>♥ 0</div></div>
   <div class="padTools">
+    <button class="btn" id="zoomReset" type="button" hidden>🔍 원래 크기</button>
     <div class="seg" id="paperSeg" role="group" aria-label="종이 모양">
       <button type="button" data-paper="land">가로</button>
       <button type="button" data-paper="port">세로</button>
@@ -2715,6 +2716,7 @@ body.padOpen #hud { visibility: hidden; }
   }
   var paperBlank = true;
   function schedule() { if (!pad.raf) pad.raf = requestAnimationFrame(() => { pad.raf = 0; present(); }); }
+  var zm = { z: 1, tx: 0, ty: 0, q: 1, ptr: new Map(), g: null, wt: 0 };   /* paper zoom: z = scale, tx/ty = shift in screen px, q = canvas sharpness tier */
   const PAPERS = { land: [1000, 750], port: [750, 1000], sq: [900, 900] };
   function paperKind() { return pad.W === pad.H ? 'sq' : (pad.W > pad.H ? 'land' : 'port'); }
   function refreshPaperSeg() {                              /* the shape can only change while the sheet is still blank */
@@ -2725,12 +2727,12 @@ body.padOpen #hud { visibility: hidden; }
     const board = $('#padBoard'), aw = board.clientWidth - 14, ah = board.clientHeight - 14;
     if (aw < 20 || ah < 20) return;
     const k = Math.min(aw / pad.W, ah / pad.H), cw = Math.floor(pad.W * k), ch = Math.floor(pad.H * k);
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min((window.devicePixelRatio || 1) * zm.q, 4);
     padCv.style.width = cw + 'px'; padCv.style.height = ch + 'px';
     padCv.width = Math.round(cw * dpr); padCv.height = Math.round(ch * dpr);
     baseCv.width = padCv.width; baseCv.height = padCv.height;
     sc = padCv.width / pad.W;
-    rebuildBase(); present(); paintPreview(false); paintRef(); refreshPaperSeg();
+    rebuildBase(); present(); paintPreview(false); paintRef(); refreshPaperSeg(); applyZoom();
   }
   $('#paperSeg').addEventListener('click', e => {
     const b = e.target.closest('button'), p = b && PAPERS[b.dataset.paper];
@@ -2790,7 +2792,9 @@ body.padOpen #hud { visibility: hidden; }
     padLikes = 0; $('#padLikes').hidden = true; $('#padHearts').textContent = '';
     pad.easel = opts.easel; pad.dirty = false; pad.cur = null; pad.pid = null; pad.confirmClose = false; pad.confirmClear = false;
     $('#padClose').textContent = '닫기'; $('#padClear').textContent = '전체 지우기';
+    zm.z = 1; zm.tx = zm.ty = 0; zm.q = 1; zm.ptr.clear(); zm.g = null;
     pad.open = true; padEl.hidden = false; sitBtn.hidden = true; applyView(); refreshPaperSeg();
+    if (!store('hw-zoomhint')) { store('hw-zoomhint', '1'); setTimeout(() => { if (pad.open) setStatus('두 손가락을 벌리면 종이가 커지고, 끌면 움직여요. 한 손가락은 그리기예요.'); }, 600); }
     setStatus(dbNS ? (pad.easel >= 0 ? (pad.easel + 1) + '번 이젤에서 그리는 중' : '') : '이 화면에서는 저장되지 않아요. 로그인한 화면에서 열어 주세요.', !dbNS);
     requestAnimationFrame(fitPad);
     pushPresence(true);
@@ -2891,8 +2895,61 @@ body.padOpen #hud { visibility: hidden; }
     const r = padCv.getBoundingClientRect();
     return [Math.round(clamp((e.clientX - r.left) / r.width * pad.W, -20, pad.W + 20)), Math.round(clamp((e.clientY - r.top) / r.height * pad.H, -20, pad.H + 20))];
   }
+  /* two fingers (or the wheel) zoom and move the paper; one finger still draws. Drawings are stored in paper units, so zoom never changes the picture */
+  function zoomLimits() {
+    const w = parseFloat(padCv.style.width) || padCv.clientWidth, h = parseFloat(padCv.style.height) || padCv.clientHeight;
+    return { x: (zm.z - 1) * w / 2 + 40, y: (zm.z - 1) * h / 2 + 40 };
+  }
+  function applyZoom() {
+    if (zm.z <= 1.01) { zm.z = 1; zm.tx = zm.ty = 0; }
+    const L = zoomLimits(); zm.tx = clamp(zm.tx, -L.x, L.x); zm.ty = clamp(zm.ty, -L.y, L.y);
+    const tr = zm.z === 1 ? '' : 'translate(' + zm.tx.toFixed(1) + 'px,' + zm.ty.toFixed(1) + 'px) scale(' + zm.z.toFixed(3) + ')';
+    [padCv, refCv].forEach(c => { c.style.transformOrigin = '50% 50%'; c.style.transform = tr; });
+    const b = $('#zoomReset'); b.hidden = zm.z === 1; b.textContent = '🔍 ×' + zm.z.toFixed(1) + ' · 원래 크기';
+  }
+  function zoomBase() {                                   /* where the paper's own centre sits on screen, ignoring the zoom shift */
+    const r = padCv.getBoundingClientRect(); return { x: r.left + r.width / 2 - zm.tx, y: r.top + r.height / 2 - zm.ty };
+  }
+  function zoomAbout(mx, my, z1, from) {                  /* keep the paper point under (mx, my) where it was when the gesture began */
+    const f = from || { z: zm.z, tx: zm.tx, ty: zm.ty, c: zoomBase(), mx: mx, my: my };
+    const vx = (f.mx - f.c.x - f.tx) / f.z, vy = (f.my - f.c.y - f.ty) / f.z;
+    zm.z = clamp(z1, 1, 6); zm.tx = mx - f.c.x - vx * zm.z; zm.ty = my - f.c.y - vy * zm.z; applyZoom();
+  }
+  function zoomSharp() {                                  /* after a gesture: re-draw the paper sharper when zoomed in (and back when out) */
+    const q = zm.z > 3 ? 3 : zm.z > 1.5 ? 2 : 1;
+    if (q !== zm.q && pad.open && pad.pid === null) { zm.q = q; fitPad(); }
+  }
   padCv.addEventListener('pointerdown', e => {
-    if (pad.pid !== null) return;
+    if (e.pointerType === 'mouse') { if (e.button === 1 && zm.z > 1) { zm.g = { pan: true, x: e.clientX, y: e.clientY, tx: zm.tx, ty: zm.ty, id: e.pointerId }; try { padCv.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); } return; }
+    zm.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (zm.ptr.size === 2) {
+      if (pad.cur) { pad.cur = null; pad.pid = null; present(); }                          /* the first finger was only the start of a pinch: drop its stroke */
+      const a = Array.from(zm.ptr.values()), mx = (a[0].x + a[1].x) / 2, my = (a[0].y + a[1].y) / 2;
+      zm.g = { d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1, z: zm.z, tx: zm.tx, ty: zm.ty, c: zoomBase(), mx: mx, my: my };
+      try { padCv.setPointerCapture(e.pointerId); } catch (x) {}
+    }
+  });
+  padCv.addEventListener('pointermove', e => {
+    const g = zm.g; if (!g) return;
+    if (g.pan) { if (e.pointerId === g.id) { zm.tx = g.tx + e.clientX - g.x; zm.ty = g.ty + e.clientY - g.y; applyZoom(); } return; }
+    if (!zm.ptr.has(e.pointerId)) return;
+    zm.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (zm.ptr.size < 2) return;
+    const a = Array.from(zm.ptr.values()), mx = (a[0].x + a[1].x) / 2, my = (a[0].y + a[1].y) / 2, d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1;
+    zoomAbout(mx, my, g.z * d / g.d, g);
+  });
+  ['pointerup', 'pointercancel'].forEach(ev => padCv.addEventListener(ev, e => {
+    if (zm.g && zm.g.pan) { if (e.pointerId === zm.g.id) zm.g = null; return; }
+    zm.ptr.delete(e.pointerId);
+    if (zm.ptr.size < 2 && zm.g) { zm.g = null; zoomSharp(); }
+  }));
+  padCv.addEventListener('wheel', e => {
+    if (!pad.open) return;
+    e.preventDefault(); zoomAbout(e.clientX, e.clientY, zm.z * Math.exp(-clamp(e.deltaY, -400, 400) * 0.002)); clearTimeout(zm.wt); zm.wt = setTimeout(zoomSharp, 250);
+  }, { passive: false });
+  $('#zoomReset').addEventListener('click', () => { zm.z = 1; zm.tx = zm.ty = 0; applyZoom(); zoomSharp(); });
+  padCv.addEventListener('pointerdown', e => {
+    if (pad.pid !== null || zm.ptr.size >= 2 || (e.pointerType === 'mouse' && e.button !== 0)) return;
     e.preventDefault();
     $('#sizeFloat').hidden = true;                      /* the size/tool hint must never cover what I am about to draw */
     if (ref.move && ref.img) { refDrag = { id: e.pointerId, x: e.clientX, y: e.clientY, ox: ref.ox, oy: ref.oy }; try { padCv.setPointerCapture(e.pointerId); } catch (x) {} return; }
