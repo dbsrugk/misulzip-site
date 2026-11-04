@@ -10,7 +10,9 @@ const { start, vis, until, check, done } = require('./lib');
   check(await B.evaluate(l => Array.from(window.__hw.remotes.values()).some(r => r.look === l), lookA), "B sees A's new look: " + lookA);
   await A.click('#emoteBtn'); await A.click('#emoteBar .emo[data-e=wave]'); await B.waitForTimeout(900);
   check(await B.evaluate(() => Array.from(window.__hw.remotes.values()).some(r => r.av.emote && r.av.emote.id === 'wave')), "B sees A's wave emote");
-  let tapped = false;                                          /* both start at the same spot, so the same easel is in view for both */
+  for (const P of [A, B]) await P.evaluate(() => { window.__hw.pos.x = 50; window.__hw.pos.z = 4; });   /* the easels stand in the atelier hut now: both walk to its front */
+  await A.waitForTimeout(5000);
+  await B.waitForTimeout(0); let tapped = false;                                          /* both start at the same spot, so the same easel is in view for both */
   const eIdx = await A.evaluate(() => { for (let i = 0; i < 6; i++) { const p = window.__hw.easelXY(i); if (p.ok && p.x > 20 && p.x < 370 && p.y > 100 && p.y < 620) return i; } return -1; });
   if (eIdx >= 0) { const xy = await A.evaluate(i => window.__hw.easelXY(i), eIdx); await A.mouse.click(xy.x, xy.y); await A.waitForTimeout(300); tapped = await A.evaluate(() => { const e = document.querySelector('#toast'); return !!(e && !e.hidden && /걸어가요/.test(e.textContent)); }); }
   check(tapped, 'A taps an easel');
@@ -18,6 +20,7 @@ const { start, vis, until, check, done } = require('./lib');
   const box = await A.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   await A.mouse.move(box.x + box.w * 0.2, box.y + box.h * 0.3); await A.mouse.down(); await A.mouse.move(box.x + box.w * 0.8, box.y + box.h * 0.7, { steps: 12 }); await A.mouse.up(); await A.waitForTimeout(1200);
   let w = false;
+  await B.waitForTimeout(2500);
   { const xy = await B.evaluate(i => window.__hw.easelXY(i), eIdx); await B.mouse.click(xy.x, xy.y); await B.waitForTimeout(400); w = await vis(B, '#watch'); }
   check(w, 'B taps the occupied easel and the watch view opens');
   await B.waitForTimeout(1500);
