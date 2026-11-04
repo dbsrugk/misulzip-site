@@ -450,7 +450,7 @@ body.padOpen #hud { visibility: hidden; }
     </details>
     <details id="tBox">
       <summary>시간과 날씨</summary>
-      <p class="empty">하늘은 시계에 맞춰 낮, 노을, 밤으로 돌고(30분에 한 바퀴) 날씨도 바뀌어요. 모두 같은 하늘을 봐요. 직접 고르면 이 화면에서만 바뀌어요.</p>
+      <p class="empty">하늘은 시계에 맞춰 낮, 노을, 밤으로 돌아요(30분에 한 바퀴). 모두 같은 하늘을 봐요. 날씨는 늘 맑음이고, 비·눈·안개는 직접 고르면 이 화면에서만 나와요.</p>
       <div class="dressRow"><div class="lab">시간</div><div class="seg" id="tSeg" role="group" aria-label="시간"><button type="button" data-t="auto">자동</button><button type="button" data-t="day">낮</button><button type="button" data-t="sunset">노을</button><button type="button" data-t="night">밤</button></div></div>
       <div class="dressRow"><div class="lab">날씨</div><div class="seg" id="wSeg" role="group" aria-label="날씨"><button type="button" data-w="auto">자동</button><button type="button" data-w="clear">맑음</button><button type="button" data-w="rain">비</button><button type="button" data-w="snow">눈</button><button type="button" data-w="fog">안개</button></div></div>
     </details>
@@ -873,12 +873,16 @@ body.padOpen #hud { visibility: hidden; }
     /* side walls: each wing has its own colour */
     for (let k = 0; k < 6; k++) { const zc = zs - 32 * k - 16, m = wingMat(k); wall(32, -hw, zc, Math.PI / 2, m); wall(32, hw, zc, -Math.PI / 2, m); }
     wall(hw * 2, 0, GGZ, 0, wingMat(5));
-    /* marble floor with a red runner */
-    const fc = document.createElement('canvas'); fc.width = fc.height = 128; const fx = fc.getContext('2d'); fx.fillStyle = '#ece6da'; fx.fillRect(0, 0, 128, 128); fx.fillStyle = '#d5ccb9'; fx.fillRect(0, 0, 64, 64); fx.fillRect(64, 64, 64, 64);
-    const ft = new T.CanvasTexture(fc); ft.wrapS = ft.wrapT = T.RepeatWrapping; ft.repeat.set(hw, GGL / 2);
-    const fl = new T.Mesh(new T.PlaneGeometry(hw * 2, GGL), new T.MeshLambertMaterial({ map: ft })); fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0, zs - GGL / 2); scene.add(fl);
-    const run = new T.Mesh(new T.PlaneGeometry(5, GGL - 2), L(0x7a2323)); run.rotation.x = -Math.PI / 2; run.position.set(0, 0.02, zs - GGL / 2); scene.add(run);
-    [-2.7, 2.7].forEach(x => { const e = new T.Mesh(new T.PlaneGeometry(0.25, GGL - 2), L(0xd9b35a)); e.rotation.x = -Math.PI / 2; e.position.set(x, 0.03, zs - GGL / 2); scene.add(e); });
+    /* every wing has its own floor and carpet (marble, black and white, wood, sage, concrete, dark wood) */
+    function tile(c1, c2, rx, rz) { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.fillStyle = c1; x.fillRect(0, 0, 128, 128); x.fillStyle = c2; x.fillRect(0, 0, 64, 64); x.fillRect(64, 64, 64, 64); const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rx, rz); return t; }
+    const FLOORS = [() => tile('#e6cfb4', '#cfae88', hw, 16), () => tile('#f3eee4', '#2f2b27', hw / 2, 8), () => { const t = plankTexture(); t.repeat.set(hw / 3, 32 / 3); return t; }, () => tile('#e9eedd', '#d2dcbf', hw, 16), () => tile('#d8d8d6', '#c2c2c0', hw / 3, 5), () => { const t = plankTexture(); t.repeat.set(hw / 3, 32 / 3); return t; }];
+    const CARPET = [0x7a2323, 0x2f5a3c, 0x23304f, 0x4c6f86, 0x3a3a3f, 0x5a3a24];
+    for (let k = 0; k < 6; k++) {
+      const zc = zs - 32 * k - 16, fl = new T.Mesh(new T.PlaneGeometry(hw * 2, 32), new T.MeshLambertMaterial({ map: FLOORS[k](), color: k === 5 ? 0xb89a74 : 0xffffff }));
+      fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0, zc); scene.add(fl);
+      const run = new T.Mesh(new T.PlaneGeometry(5, 32), L(CARPET[k])); run.rotation.x = -Math.PI / 2; run.position.set(0, 0.02, zc); scene.add(run);
+      [-2.7, 2.7].forEach(x => { const e = new T.Mesh(new T.PlaneGeometry(0.25, 32), L(0xd9b35a)); e.rotation.x = -Math.PI / 2; e.position.set(x, 0.03, zc); scene.add(e); });
+    }
     /* ceiling, beams, pilasters */
     const ce = new T.Mesh(new T.PlaneGeometry(hw * 2, GGL), B(0xe9dfc8)); ce.rotation.x = Math.PI / 2; ce.position.set(0, RM.h, zs - GGL / 2); ce.userData.noShadow = true; scene.add(ce);
     const cream = L(0xf8f5ee), beamM = L(0x6b4a2f);
@@ -1073,14 +1077,14 @@ body.padOpen #hud { visibility: hidden; }
     const gc = document.createElement('canvas'); gc.width = gc.height = 128; const gx = gc.getContext('2d'), gr = gx.createRadialGradient(64, 64, 4, 64, 64, 62);
     gr.addColorStop(0, 'rgba(255,240,190,0.9)'); gr.addColorStop(1, 'rgba(255,240,190,0)'); gx.fillStyle = gr; gx.fillRect(0, 0, 128, 128);
     const glowTex = new T.CanvasTexture(gc);
-    [[-18, 0], [0, 0], [18, 0], [0, RM.hz + 10], [0, RM.hz + 22], [0, GZ1 + 10], [0, GZ1 + 22], [(-GX + W1X) / 2, WZ], [(W1X + W2X) / 2, WZ]].concat([0, 1, 2, 3, 4, 5].map(k => [0, GGS - 16 - 32 * k]), [[-12, -RM.hz - ROT / 2 + 9], [12, -RM.hz - ROT / 2 + 9]]).forEach(c => {
+    [[-18, 0], [0, 0], [18, 0], [0, RM.hz + 10], [0, RM.hz + 22], [0, GZ1 + 10], [0, GZ1 + 22], [(-GX + W1X) / 2, WZ], [(W1X + W2X) / 2, WZ]].concat([0, 1, 2, 3, 4, 5].map(k => [0, GGS - 16 - 32 * k, [0xffd9a0, 0xffc27a, 0xcfdcff, 0xfff0b0, 0xeaf6ff, 0xffd8a8][k]]), [[-12, -RM.hz - ROT / 2 + 9], [12, -RM.hz - ROT / 2 + 9]]).forEach(c => {
       const g = new T.Group(); g.position.set(c[0], 0, c[1]); scene.add(g); g.userData.noShadow = true;
       put(g, new T.Mesh(cyl(0.05, 0.05, 6.6, 5), gold), 0, RM.h - 1.6 - 3.3, 0);
       const ring = new T.Group(); ring.position.y = RM.h - 8.4; g.add(ring);
       put(ring, new T.Mesh(new T.TorusGeometry(2.3, 0.14, 8, 30), gold), 0, 0, 0).rotation.x = Math.PI / 2;
       put(ring, new T.Mesh(new T.TorusGeometry(1.2, 0.1, 8, 24), gold), 0, 0.5, 0).rotation.x = Math.PI / 2;
       for (let k = 0; k < 8; k++) { const a = k / 8 * 6.2832; put(ring, new T.Mesh(new T.SphereGeometry(0.24, 8, 6), B(0xfff2b0)), Math.cos(a) * 2.3, 0.3, Math.sin(a) * 2.3); }
-      const glow = new T.Sprite(new T.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); glow.scale.set(6.5, 6.5, 1); glow.material.opacity = 0.55; glow.position.y = 0.2; ring.add(glow);
+      const glow = new T.Sprite(new T.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); glow.scale.set(6.5, 6.5, 1); glow.material.opacity = 0.55; glow.position.y = 0.2; ring.add(glow); if (c[2]) glow.material.color.setHex(c[2]);
       chandeliers.push({ g: g, ring: ring });
     });
   })();
@@ -1118,7 +1122,7 @@ body.padOpen #hud { visibility: hidden; }
   const WHITE = new T.Color(0xffffff), FIREFLY = new T.Color(0xc9ff6a), FLY_DAY = new T.Color(0xfff3c0), tTop = new T.Color(), tMid = new T.Color(), tBot = new T.Color(), tFog = new T.Color();
   let indoorK = 0, outK = 0;
   const fr = x => x - Math.floor(x);
-  function weatherNow() { const r = fr(Math.sin(Math.floor(Date.now() / WX_SLOT) * 12.9898 + 4.1) * 43758.5453); return r < 0.5 ? 'clear' : r < 0.68 ? 'cloudy' : r < 0.82 ? 'rain' : r < 0.9 ? 'snow' : 'fog'; }
+  function weatherNow() { return 'clear'; }                /* the sky is always clear by default (rain, snow and fog are only there when somebody picks them in the settings) */
   function stopsAt(t) {
     let i = 0; while (i < STOPS.length - 2 && t >= STOPS[i + 1].t) i++;
     const a = STOPS[i], b = STOPS[i + 1], f0 = clamp((t - a.t) / (b.t - a.t), 0, 1), f = f0 * f0 * (3 - 2 * f0);
@@ -1532,7 +1536,7 @@ body.padOpen #hud { visibility: hidden; }
       sl.ex = { id: 'cat_' + c.id, title: c.title, artist: c.artist + ' · ' + c.year, w: c.w, h: c.h, at: 0, strokes: [] }; sl.key = 'cat'; applyAspect(sl, sl.ex); releaseSlot(sl, true);
       const D = sl.D; put(g, new T.Mesh(bx(D * 0.45, 0.12, 0.3), brass), 0, D / 2 + FRAME_T + 0.7, 0.4); put(g, new T.Mesh(bx(0.08, 0.5, 0.08), brass), 0, D / 2 + FRAME_T + 0.45, 0.2);
       const cone = new T.Shape(); cone.moveTo(-D * 0.22, 0); cone.lineTo(D * 0.22, 0); cone.lineTo(D * 0.62, -(D + 1.6)); cone.lineTo(-D * 0.62, -(D + 1.6)); cone.closePath();
-      const lc = new T.Mesh(new T.ShapeGeometry(cone), new T.MeshBasicMaterial({ color: 0xffe3a8, transparent: true, opacity: 0.1, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
+      const lc = new T.Mesh(new T.ShapeGeometry(cone), new T.MeshBasicMaterial({ color: [0xffd9a0, 0xffc27a, 0xcfdcff, 0xfff0b0, 0xeaf6ff, 0xffd8a8][Math.floor(i / 4)], transparent: true, opacity: 0.1, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
       lc.position.set(0, D / 2 + FRAME_T + 0.6, 0.45); lc.userData.noShadow = true; g.add(lc);                       /* the light falling on the picture */
     });
     side('annex', GZ1, 0); endWall('annex', GZ2);
@@ -2441,7 +2445,7 @@ body.padOpen #hud { visibility: hidden; }
     if (!ok) { $('#intro').hidden = false; $('#codeField').hidden = false; codeMsg('코드가 맞지 않아요. 한 번 더 확인해 주세요.'); $('#codeInput').select(); return; }
     const nm = sanitize($('#nameInput').value).slice(0, 10);
     if (nm) { myName = nm; store('hw-name', nm); myPlate.set(myName); }
-    started = true; $('#intro').hidden = true; store('hw-in', '1');   /* remembered: a reload goes straight back in */
+    started = true; $('#intro').hidden = true; store('hw-in', '1'); music.unlock(); setTimeout(() => music.hint(), 1600);   /* remembered: a reload goes straight back in */
     pushPresence(true);
     toast('이젤을 눌러 보세요. 비어 있으면 앉아서 그리고, 누가 그리는 중이면 구경해요', 7000);
   });
@@ -3396,9 +3400,18 @@ body.padOpen #hud { visibility: hidden; }
   const music = (function () {
     const AC = window.AudioContext || window.webkitAudioContext;
     const CHORDS = [[48, 55, 59, 64], [45, 55, 60, 64], [41, 53, 57, 64], [43, 55, 59, 62]], PENT = [0, 2, 4, 7, 9], CL = 9;
+    /* every wing of the grand gallery has its own mood: chords, scale, instrument, pace */
+    const MOODS = [
+      { chords: [[50, 57, 62, 65], [48, 55, 60, 64], [53, 57, 60, 65], [46, 53, 58, 62]], scale: [0, 2, 3, 5, 7, 9, 10], base: 62, type: 'triangle', dur: 1.8, amp: 0.075, bell: false, step: [1.0, 2.0], pad: 0.03 },      /* renaissance: a lute and a modal tune */
+      { chords: [[48, 55, 60, 64], [43, 50, 55, 59], [45, 52, 57, 60], [41, 48, 53, 57]], scale: [0, 2, 4, 5, 7, 9, 11], base: 72, type: 'sawtooth', dur: 0.9, amp: 0.028, bell: true, step: [0.45, 0.95], pad: 0.025 },   /* baroque: a bright, busy harpsichord */
+      { chords: [[45, 52, 57, 60], [41, 48, 53, 57], [48, 55, 60, 64], [43, 50, 55, 59]], scale: [0, 2, 3, 5, 7, 8, 10], base: 57, type: 'triangle', dur: 3.4, amp: 0.07, bell: false, step: [1.8, 3.4], pad: 0.05 },     /* romantic: a slow piano in a minor key */
+      { chords: [[48, 55, 59, 66], [50, 57, 61, 67], [52, 59, 63, 69], [46, 53, 57, 64]], scale: [0, 2, 4, 6, 8, 10], base: 72, type: 'sine', dur: 3.6, amp: 0.05, bell: true, step: [1.6, 3.0], pad: 0.04 },          /* impressionist: floating whole tones */
+      { chords: [[40, 47, 52, 59]], scale: [0, 3, 7, 10], base: 60, type: 'sine', dur: 4, amp: 0.045, bell: false, step: [3.0, 5.5], pad: 0.05 },                                                                          /* modern: a quiet drone and few notes */
+      { chords: [[50, 57, 62, 69], [52, 59, 64, 71]], scale: [0, 2, 5, 7, 9], base: 62, type: 'triangle', dur: 1.5, amp: 0.08, bell: false, step: [1.4, 3.2], pad: 0.025 }                                              /* east asia: a plucked pentatonic tune */
+    ];
     let ctx = null, master = null, verbIn = null, dryIn = null, windG = null, waterG = null, rainG = null;
     let on = store('hw-music') !== '0', vol = parseFloat(store('hw-vol')); vol = isNaN(vol) ? 0.7 : clamp(vol, 0, 1);
-    let timer = 0, chordAt = 0, ci = 0, noteAt = 0, pi = 4, birdAt = 0, zone = 'studio', lake = 0, sea = 0;
+    let timer = 0, chordAt = 0, ci = 0, noteAt = 0, pi = 4, birdAt = 0, zone = 'studio', lake = 0, sea = 0, wing = -1, lastMk = '', firstT = 0, jingled = false;
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12), rr = () => Math.random();
     function init() {
       if (ctx) return true; if (!AC) return false;
@@ -3422,10 +3435,11 @@ body.padOpen #hud { visibility: hidden; }
       o.connect(g); out(g); o.start(t); o.stop(t + dur + 0.1);
       if (bell) { const o2 = ctx.createOscillator(), g2 = ctx.createGain(); o2.type = 'sine'; o2.frequency.value = freq * 3.99; g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(amp * 0.2, t + 0.006); g2.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.22); o2.connect(g2); out(g2); o2.start(t); o2.stop(t + dur * 0.3); }
     }
-    function pad(midi, t, dur, amp) {
+    function pad(midi, t, dur, amp, att) {
+      att = att || 3;
       [-5, 5].forEach(dt => {
         const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(); o.type = dt < 0 ? 'triangle' : 'sine'; o.frequency.value = mtof(midi); o.detune.value = dt;
-        f.type = 'lowpass'; f.frequency.value = 700; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + 3); g.gain.setValueAtTime(amp, t + dur - 3.2); g.gain.linearRampToValueAtTime(0, t + dur);
+        f.type = 'lowpass'; f.frequency.value = 700; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + att); g.gain.setValueAtTime(amp, t + dur - 3.2); g.gain.linearRampToValueAtTime(0, t + dur);
         o.connect(f); f.connect(g); out(g); o.start(t); o.stop(t + dur + 0.1);
       });
     }
@@ -3442,20 +3456,34 @@ body.padOpen #hud { visibility: hidden; }
       if (pos.x > RM.hx) zone = 'out'; else zone = (pos.z > GZ0 || (pos.z < -RM.hz && Math.abs(pos.x) < 21)) ? 'hall' : 'studio';
       lake = zone === 'out' ? clamp(1 - Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) / 26, 0, 1) : 0;
       sea = zone === 'out' ? clamp((pos.x - 112) / 30, 0, 1) : 0;
+      wing = (pos.z < GGS && pos.z > GGZ && Math.abs(pos.x) < 14) ? clamp(Math.floor((GGS - pos.z) / 32), 0, MOODS.length - 1) : -1;
     }
-    function level() { return on && started && !document.hidden ? vol * 3.0 : 0; }
+    function level() { return on && !document.hidden ? vol * 3.0 : 0; }            /* no waiting for the world to load: sound starts at the first tap */
     function tick() {
       timer = setTimeout(tick, 350);
       if (!ctx || ctx.state !== 'running') return;
       const now = ctx.currentTime; where();
-      master.gain.setTargetAtTime(level(), now, 0.5);
+      if (!firstT) firstT = now;
+      master.gain.setTargetAtTime(level(), now, now < firstT + 4 ? 0.1 : 0.5);
       windG.gain.setTargetAtTime(zone === 'out' ? 0.04 + 0.02 * Math.sin(now * 0.3) + ATM.rain * 0.03 : 0, now, 0.8);
       rainG.gain.setTargetAtTime(ATM.rain * (zone === 'out' ? 0.05 : 0.018), now, 1.0);
       waterG.gain.setTargetAtTime(lake * 0.07 * (0.75 + 0.25 * Math.sin(now * 0.8)) + sea * 0.11 * (0.45 + 0.55 * Math.abs(Math.sin(now * 0.33))), now, 0.8);
       if (level() <= 0) return;
-      if (!chordAt || chordAt < now - 1) { chordAt = now + 0.1; noteAt = chordAt + 0.8; }
-      while (chordAt < now + 1.5) { const amp = zone === 'hall' ? 0.045 : 0.035; CHORDS[ci].forEach((m, k) => pad(m, chordAt + k * 0.3, CL + 3, amp)); ci = (ci + 1) % CHORDS.length; chordAt += CL; }
+      const md = wing >= 0 ? MOODS[wing] : null, mk = md ? 'w' + wing : zone;
+      if (!chordAt || chordAt < now - 1 || mk !== lastMk) { lastMk = mk; chordAt = now + 0.1; noteAt = chordAt + (md ? 0.5 : 0.8); ci = 0; pi = 4; }   /* a new place: a new piece starts at once */
+      if (!jingled) { jingled = true; CHORDS[0].forEach((m, k) => tone(mtof(m + 12), now + 0.03 + k * 0.17, 2.6, 'triangle', 0.075, true)); }   /* a little arpeggio, audible right away */
+      const chords = md ? md.chords : CHORDS, quick = now < firstT + 5;
+      while (chordAt < now + 1.5) { const amp = md ? md.pad : zone === 'hall' ? 0.045 : 0.035; chords[ci].forEach((m, k) => pad(m, chordAt + k * 0.3, CL + 3, amp, quick ? 0.8 : 3)); ci = (ci + 1) % chords.length; chordAt += CL; }
       while (noteAt < now + 1.2) {
+        if (md) {
+          const sc = md.scale, n = sc.length;
+          pi = clamp(pi + (rr() < 0.5 ? -1 : 1) * (rr() < 0.3 ? 2 : 1), 0, 2 * n - 1);
+          const f = mtof(md.base + sc[pi % n] + 12 * Math.floor(pi / n));
+          tone(f, noteAt, md.dur, md.type, md.amp, md.bell);
+          if (rr() < 0.25) tone(f, noteAt + md.step[0] * 0.8, md.dur * 0.6, 'sine', md.amp * 0.3, false);
+          noteAt += md.step[0] + rr() * (md.step[1] - md.step[0]);
+          continue;
+        }
         const hall = zone === 'hall' || ATM.night > 0.7;                 /* at night the piece turns lower and calmer */
         pi = clamp(pi + (rr() < 0.5 ? -1 : 1) * (rr() < 0.3 ? 2 : 1), 0, 9);
         const midi = (hall ? 60 : 72) + PENT[pi % 5] + 12 * Math.floor(pi / 5), f = mtof(midi);
@@ -3466,14 +3494,18 @@ body.padOpen #hud { visibility: hidden; }
       if (zone === 'out' && sea < 0.5 && ATM.night < 0.5 && ATM.rain < 0.3 && now > birdAt) { chirp(now + 0.05); birdAt = now + 2.5 + rr() * 5; }
     }
     function apply() { if (!ctx) return; if (on) { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); } else if (ctx.state === 'running') ctx.suspend().catch(() => {}); if (master) master.gain.setTargetAtTime(level(), ctx.currentTime, 0.3); }
-    function start() { if (!init()) return; if (!timer) tick(); apply(); }
+    function start() {
+      if (!init()) return; apply(); clearTimeout(timer);
+      if (ctx.state === 'running') tick(); else { timer = setTimeout(tick, 350); ctx.resume().then(() => { clearTimeout(timer); tick(); }).catch(() => {}); }   /* start the instant the browser lets the sound run */
+    }
     document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend().catch(() => {}); else if (on) ctx.resume().catch(() => {}); });
     return {
       unlock() { if (on) start(); },                                   /* browsers only allow sound after a tap */
       toggle() { on = !on; store('hw-music', on ? '1' : '0'); if (on) start(); else apply(); return on; },
       setVol(v) { vol = clamp(v, 0, 1); store('hw-vol', String(vol)); apply(); },
       get on() { return on; }, get vol() { return vol; },
-      state() { return { on: on, vol: vol, ctx: ctx ? ctx.state : 'none', zone: zone }; }
+      hint() { if (on && (!ctx || ctx.state !== 'running')) toast('🎵 화면을 한 번 터치하면 음악이 시작돼요', 5000); },
+      state() { where(); return { on: on, vol: vol, ctx: ctx ? ctx.state : 'none', zone: zone, wing: wing }; }
     };
   })();
   ['pointerdown', 'keydown', 'touchend'].forEach(ev => window.addEventListener(ev, () => music.unlock(), { passive: true }));
