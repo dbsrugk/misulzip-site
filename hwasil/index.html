@@ -256,6 +256,15 @@ body.padOpen #hud { visibility: hidden; }
 .roomRow .c { font-size: 13px; color: #6f665a; }
 #roomsList, #placesList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 /* works sheet */
+#art { position: fixed; inset: 0; z-index: 27; display: flex; flex-direction: column; background: rgba(28, 24, 20, 0.96); }
+#art .artWrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 14px 14px 8px; touch-action: none; cursor: grab; position: relative; }
+#art #artImg { max-width: 100%; max-height: 100%; object-fit: contain; border: 3px solid #3a2a1c; box-shadow: 0 0 0 8px #6b4a2f, 6px 8px 0 8px rgba(0,0,0,0.35); background: var(--paper); user-select: none; -webkit-user-select: none; transform-origin: 50% 50%; }
+#art .artNone { color: var(--chalk); font: 400 24px/1.4 var(--font-display); text-align: center; }
+#art .artInfo { background: var(--paper); border-top: 3px solid var(--ink); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); max-height: 46%; overflow-y: auto; touch-action: pan-y; }
+#art h2 { margin: 0; font: 400 28px/1.2 var(--font-display); }
+#art .artMeta { margin: 4px 0 8px; color: #6d655b; font: 400 18px/1.4 var(--font-display); }
+#art .artText { margin: 0 0 12px; font: 400 20px/1.5 var(--font-display); white-space: pre-line; }
+#art .artBtns { display: flex; gap: 8px; flex-wrap: wrap; }
 #cropCv { display: block; width: 100%; max-height: 50vh; object-fit: contain; margin: 10px auto; border: 2px solid var(--ink); border-radius: 8px; touch-action: none; cursor: grab; }
 #crop .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 #dress, #hang, #crop { position: fixed; inset: 0; z-index: 40; background: rgba(36, 32, 28, 0.55); display: flex; align-items: flex-end; justify-content: center; }
@@ -500,6 +509,16 @@ body.padOpen #hud { visibility: hidden; }
   <div id="viewerCap"></div>
   <div id="viewerAct"></div>
   <button class="btn" id="viewerClose" type="button">닫기</button>
+</div>
+
+<div id="art" hidden role="dialog" aria-label="명화 보기">
+  <div class="artWrap" id="artWrap"><img id="artImg" alt="" draggable="false"><p class="artNone" id="artNone" hidden></p></div>
+  <div class="artInfo">
+    <h2 id="artTitle"></h2>
+    <p class="artMeta" id="artMeta"></p>
+    <p class="artText" id="artText"></p>
+    <div class="artBtns"><button class="btn primary" id="artSpeak" type="button">🔊 도슨트 듣기</button><button class="btn" id="artZoomOff" type="button" hidden>원래 크기</button><button class="btn" id="artClose" type="button">닫기</button></div>
+  </div>
 </div>
 
 <div id="rooms" hidden>
@@ -1433,21 +1452,21 @@ body.padOpen #hud { visibility: hidden; }
     const floor = new T.Mesh(new T.PlaneGeometry(S.w, S.d), floorM); floor.rotation.x = -Math.PI / 2; floor.position.set(S.x, 0.05, S.z); floor.receiveShadow = true; scene.add(floor);
     put(scene, new T.Mesh(bx(S.w + 0.8, 0.12, S.d + 0.8), stone), S.x, 0.02, S.z);                  /* a thin step all around */
     /* columns: two rows with a wide gap in front, and three on each side */
-    const cols = [];
+    const cols = [], DH = 5.5;                                                                      /* extra height: tall, airy columns */
     [x0 + 1.2, x0 + 5.7, x1 - 5.7, x1 - 1.2].forEach(x => { cols.push([x, z0 + 1.0]); cols.push([x, z1 - 1.0]); });
     [S.z - 5.5, S.z, S.z + 5.5].forEach(z => { cols.push([x0 + 0.9, z]); cols.push([x1 - 0.9, z]); });
     cols.forEach(q => {
       put(scene, new T.Mesh(bx(1.5, 0.4, 1.5), stone), q[0], 0.25, q[1]);
-      put(scene, new T.Mesh(cyl(0.42, 0.5, 6.2, 14), marble), q[0], 3.55, q[1]);
-      put(scene, new T.Mesh(bx(1.4, 0.4, 1.4), stone), q[0], 6.85, q[1]);
+      put(scene, new T.Mesh(cyl(0.46, 0.56, 6.2 + DH, 16), marble), q[0], 3.55 + DH / 2, q[1]);
+      put(scene, new T.Mesh(bx(1.5, 0.4, 1.5), stone), q[0], 6.85 + DH, q[1]);
       colliders.push({ x: q[0], z: q[1], r: 0.75 });
     });
     /* the roof fades while it stands between the camera and me, so the camera can look down in */
     const roof = new T.Group(); scene.add(roof); const roofM = L(0xf4f0e8), roofS = L(0xe2dccf);            /* its own materials: fading must not touch the columns */
-    put(roof, new T.Mesh(bx(S.w + 1.4, 0.6, S.d + 1.4), roofM), S.x, 7.3, S.z);
-    put(roof, new T.Mesh(bx(S.w + 1.8, 0.35, S.d + 1.8), roofS), S.x, 7.0, S.z);
-    [-6, 0, 6].forEach(dz => put(roof, new T.Mesh(bx(S.w, 0.45, 0.5), roofS), S.x, 6.85, S.z + dz));
-    addOccluder(roof, x0 - 1.2, 6.5, z0 - 1.2, x1 + 1.2, 8, z1 + 1.2);
+    put(roof, new T.Mesh(bx(S.w + 1.4, 0.6, S.d + 1.4), roofM), S.x, 7.3 + DH, S.z);
+    put(roof, new T.Mesh(bx(S.w + 1.8, 0.35, S.d + 1.8), roofS), S.x, 7.0 + DH, S.z);
+    [-6, 0, 6].forEach(dz => put(roof, new T.Mesh(bx(S.w, 0.45, 0.5), roofS), S.x, 6.85 + DH, S.z + dz));
+    addOccluder(roof, x0 - 1.2, 6.5 + DH, z0 - 1.2, x1 + 1.2, 8 + DH, z1 + 1.2);
     /* the sign over the front, facing the path */
     const sc = document.createElement('canvas'); sc.width = 768; sc.height = 192; const g = sc.getContext('2d');
     const st = new T.CanvasTexture(sc); st.minFilter = T.LinearFilter; st.generateMipmaps = false;
@@ -1458,7 +1477,7 @@ body.padOpen #hud { visibility: hidden; }
       g.font = '46px ' + FONT_UI; g.fillStyle = '#6d655b'; g.fillText('돌아다니며 구경해요', 384, 142); st.needsUpdate = true;
     }
     drawSign(); if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '조각전시관돌아다니며구경해요').then(drawSign).catch(() => {});
-    const sign = new T.Mesh(new T.PlaneGeometry(8, 2), new T.MeshBasicMaterial({ map: st })); sign.position.set(S.x, 5.2, z0 - 0.95); sign.rotation.y = Math.PI; scene.add(sign);
+    const sign = new T.Mesh(new T.PlaneGeometry(8, 2), new T.MeshBasicMaterial({ map: st })); sign.position.set(S.x, 6.2 + DH / 2, z0 - 0.95); sign.rotation.y = Math.PI; scene.add(sign);
     /* a plinth, a name card and a pool of light for each piece */
     function plate(text, x, y, z) {
       const c = document.createElement('canvas'); c.width = 512; c.height = 128; const q = c.getContext('2d');
@@ -2569,9 +2588,72 @@ body.padOpen #hud { visibility: hidden; }
       ctx.drawImage(im, (sl.cv.width - dw) / 2, (sl.cv.height - dh) / 2, dw, dh); sl.tex.needsUpdate = true;
     });
   }
+  /* artwork view: the picture big, the description under it, and a button that reads it aloud (the phone's own Korean voice) */
+  const art = { z: 1, tx: 0, ty: 0, ptr: new Map(), g: null, gen: 0, on: false };
+  const ttsOk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  function artSpeakStop() {
+    art.gen++; art.on = false;
+    try { if (ttsOk) speechSynthesis.cancel(); } catch (e) {}
+    $('#artSpeak').textContent = '🔊 도슨트 듣기';
+  }
+  function artSpeak(text) {
+    artSpeakStop();
+    const gen = ++art.gen, parts = (text.match(/[^.?!。\n]+[.?!。]?/g) || [text]).map(x => x.trim()).filter(Boolean);
+    let voice = null; try { voice = (speechSynthesis.getVoices() || []).find(v => /^ko/i.test(v.lang)) || null; } catch (e) {}
+    art.on = true; $('#artSpeak').textContent = '⏹ 멈추기';
+    parts.forEach((t, i) => {                              /* short pieces: some phones stop reading one long text halfway */
+      const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; if (voice) u.voice = voice; u.rate = 0.95;
+      if (i === parts.length - 1) u.onend = u.onerror = () => { if (gen === art.gen) artSpeakStop(); };
+      speechSynthesis.speak(u);
+    });
+  }
+  function artApply() {
+    if (art.z <= 1.01) { art.z = 1; art.tx = art.ty = 0; }
+    const im = $('#artImg'), w = im.clientWidth * (art.z - 1) / 2, h = im.clientHeight * (art.z - 1) / 2;
+    art.tx = clamp(art.tx, -w - 30, w + 30); art.ty = clamp(art.ty, -h - 30, h + 30);
+    im.style.transform = art.z === 1 ? '' : 'translate(' + art.tx.toFixed(1) + 'px,' + art.ty.toFixed(1) + 'px) scale(' + art.z.toFixed(3) + ')';
+    $('#artZoomOff').hidden = art.z === 1;
+  }
+  function artCenter() { const r = $('#artImg').getBoundingClientRect(); return { x: r.left + r.width / 2 - art.tx, y: r.top + r.height / 2 - art.ty }; }
+  function artZoomAbout(mx, my, z1, from) {
+    const f = from || { z: art.z, tx: art.tx, ty: art.ty, c: artCenter(), mx: mx, my: my };
+    const vx = (f.mx - f.c.x - f.tx) / f.z, vy = (f.my - f.c.y - f.ty) / f.z;
+    art.z = clamp(z1, 1, 5); art.tx = mx - f.c.x - vx * art.z; art.ty = my - f.c.y - vy * art.z; artApply();
+  }
+  function openArt(c) {
+    $('#artTitle').textContent = c.title; $('#artMeta').textContent = c.artist + ' · ' + c.year + (c.place ? ' · ' + c.place : '');
+    $('#artText').textContent = c.blurb || '';
+    art.z = 1; art.tx = art.ty = 0; art.ptr.clear(); art.g = null; artApply();
+    const im = $('#artImg'), none = $('#artNone'); none.hidden = true; im.hidden = false; im.removeAttribute('src');
+    if (c.img) { im.onerror = () => { im.hidden = true; none.hidden = false; none.textContent = '작품 사진을 불러오지 못했어요.'; }; im.alt = c.title; im.src = c.img; }
+    else { im.hidden = true; none.hidden = false; none.textContent = '작품 사진은 곧 걸려요'; }
+    $('#artSpeak').hidden = !ttsOk; $('#artSpeak').onclick = () => { if (art.on) artSpeakStop(); else artSpeak([c.title + '.', c.artist + ', ' + c.year + '.', c.place ? c.place + '.' : '', c.blurb || ''].join(' ')); };
+    $('#artSpeak').textContent = '🔊 도슨트 듣기'; $('#art').hidden = false;
+    document.querySelector('#art .artInfo').scrollTop = 0;
+  }
+  function closeArt() { artSpeakStop(); $('#art').hidden = true; }
+  $('#artClose').addEventListener('click', closeArt);
+  $('#artZoomOff').addEventListener('click', () => { art.z = 1; artApply(); });
+  window.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#art').hidden) closeArt(); });
+  { const wr = $('#artWrap');
+    wr.addEventListener('pointerdown', e => {
+      art.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (art.ptr.size === 2) { const a = Array.from(art.ptr.values()); art.g = { two: true, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1, z: art.z, tx: art.tx, ty: art.ty, c: artCenter(), mx: (a[0].x + a[1].x) / 2, my: (a[0].y + a[1].y) / 2 }; }
+      else if (art.ptr.size === 1 && art.z > 1) art.g = { x: e.clientX, y: e.clientY, tx: art.tx, ty: art.ty };
+      try { wr.setPointerCapture(e.pointerId); } catch (x) {}
+    });
+    wr.addEventListener('pointermove', e => {
+      if (!art.ptr.has(e.pointerId)) return; art.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const g = art.g; if (!g) return;
+      if (g.two && art.ptr.size >= 2) { const a = Array.from(art.ptr.values()); artZoomAbout((a[0].x + a[1].x) / 2, (a[0].y + a[1].y) / 2, g.z * (Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1) / g.d, g); }
+      else if (!g.two) { art.tx = g.tx + e.clientX - g.x; art.ty = g.ty + e.clientY - g.y; artApply(); }
+    });
+    ['pointerup', 'pointercancel'].forEach(ev => wr.addEventListener(ev, e => { art.ptr.delete(e.pointerId); if (art.ptr.size < 2) art.g = null; }));
+    wr.addEventListener('wheel', e => { e.preventDefault(); artZoomAbout(e.clientX, e.clientY, art.z * Math.exp(-clamp(e.deltaY, -400, 400) * 0.002)); }, { passive: false });
+  }
   function showDocent(sl) {
     const c = sl.cat; if (!c) return;
-    showCard(c.title, c.artist + ' · ' + c.year + '\n' + c.place + '\n\n' + c.blurb + (c.img ? '' : '\n\n(작품 사진은 곧 걸려요)'), [['dcClose', '닫기', true, () => {}]]);
+    openArt(c);
   }
   function showWork(ex) {                                 /* open the big view; fetch the lines first when they are not here yet */
     if (Array.isArray(ex.strokes)) { openViewer(ex); return; }
@@ -2648,7 +2730,7 @@ body.padOpen #hud { visibility: hidden; }
   let tap = null;
   function shown(o) { for (; o; o = o.parent) if (!o.visible) return false; return true; }
   function onTap(cx, cy) {
-    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#dress').hidden || !$('#hang').hidden) return;
+    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#dress').hidden || !$('#hang').hidden || !$('#art').hidden) return;
     const r = cv.getBoundingClientRect();
     ray.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -((cy - r.top) / r.height) * 2 + 1 }, camera);
     const hits = ray.intersectObjects(hitList, false);

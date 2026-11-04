@@ -227,8 +227,8 @@ const { start, vis, until, check, done } = require('./lib');
   const mi = await p.evaluate(() => window.__hw.slots.findIndex(q => q.room === 'museum' && q.cat.id === 'monalisa'));
   check(await until(p, i => window.__hw.slots[i].live && !!window.__hw.slots[i].cv, mi, 30), 'a masterpiece frame near me is drawn (card with title)');
   await p.evaluate(i => window.__hw.tapSlot(i), mi); await p.waitForTimeout(400);
-  check(await p.evaluate(() => !document.querySelector('#exAsk').hidden && /모나리자/.test(document.querySelector('#exAskText').textContent) && /레오나르도/.test(document.querySelector('#exAskNote').textContent)), 'tapping a masterpiece opens the docent card');
-  await p.click('#dcClose'); await p.waitForTimeout(200);
+  check(await p.evaluate(() => !document.querySelector('#art').hidden && /모나리자/.test(document.querySelector('#artTitle').textContent) && /레오나르도/.test(document.querySelector('#artMeta').textContent)), 'tapping a masterpiece opens the artwork view');
+  await p.click('#artClose'); await p.waitForTimeout(200);
   check(await p.evaluate(i => { const s = window.__hw.slots[i]; return !!s.ex && s.reserved && !!s.cat; }, mi), 'a masterpiece frame is not an empty frame to hang on');
   /* people in the museum */
   check(await until(p, () => window.__hw.npcs() === 7, null, 20), 'a docent and six visitors are in the museum');
