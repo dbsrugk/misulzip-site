@@ -29,14 +29,14 @@ language sql stable set search_path = '' as $$
 
 create or replace function hwasil._ev() returns trigger
 language plpgsql set search_path = '' as $$
-declare by text := coalesce(current_setting('hwasil.by', true), '');
+declare who text := coalesce(current_setting('hwasil.by', true), '');
 begin
   if tg_table_name = 'gallery' then
     if tg_op = 'INSERT' then
       insert into hwasil.events (kind, owner, info) values ('exhibit_add', new.owner,
         jsonb_build_object('title', new.doc->>'title', 'artist', new.doc->>'artist', 'room', new.doc->>'room', 'slot', new.slot));
     elsif tg_op = 'DELETE' then
-      insert into hwasil.events (kind, owner, info) values (case when by = 'admin' then 'exhibit_admin_removed' else 'exhibit_remove' end, old.owner,
+      insert into hwasil.events (kind, owner, info) values (case when who = 'admin' then 'exhibit_admin_removed' else 'exhibit_remove' end, old.owner,
         jsonb_build_object('title', old.doc->>'title', 'artist', old.doc->>'artist', 'room', old.doc->>'room'));
     elsif tg_op = 'UPDATE' and new.slot is distinct from old.slot then
       insert into hwasil.events (kind, owner, info) values ('exhibit_move', new.owner,

@@ -186,6 +186,19 @@ const { start, vis, until, check, done } = require('./lib');
   check((await p.locator('#viewerAct .btn').count()) === 1, 'admin sees a take-down button on another painter\'s frame');
   await p.locator('#viewerAct .btn').click(); await p.waitForTimeout(200); await p.locator('#viewerAct .btn').click(); await p.waitForTimeout(1500);
   check(await p.evaluate(j => !window.__hw.slots[j].ex && !window.__db.gallery['zz_other'], gj), 'the admin takes the frame down');
+  /* the admin vault keeps what was taken down; the visit mark was sent on entry */
+  check(await p.evaluate(() => (window.__rpcs || []).includes('hwasil_ping')), 'a visit mark is sent on entry');
+  await p.click('#worksBtn'); await p.waitForTimeout(300); await p.evaluate(() => { document.querySelector('#adBox').open = true; });
+  await p.click('#adVault'); await p.waitForTimeout(600);
+  check((await p.locator('#adList .nameRow').count()) === 1, 'the vault lists the work the admin took down');
+  await p.locator('#adList .nameRow button', { hasText: '보기' }).click(); await p.waitForTimeout(600);
+  check(await vis(p, '#viewer'), 'a vault work can be looked at');
+  await p.click('#viewerClose'); await p.waitForTimeout(300);
+  await p.click('#worksBtn'); await p.waitForTimeout(300); await p.evaluate(() => { document.querySelector('#adBox').open = true; });
+  await p.click('#adVault'); await p.waitForTimeout(500);
+  await p.locator('#adList .nameRow button', { hasText: '다시 허용' }).click(); await p.waitForTimeout(800);
+  check(await p.evaluate(() => (window.__db.removed || []).length === 0), 'allowing a vault work again empties the vault');
+  await p.click('#worksClose'); await p.waitForTimeout(300);
   /* sky: night and rain can be chosen in the settings and the scene follows (and nothing breaks: shader errors fail the run) */
   await p.click('#worksBtn'); await p.waitForTimeout(300); await p.evaluate(() => { document.querySelector('#tBox').open = true; });
   await p.click('#tSeg button[data-t=night]'); await p.click('#wSeg button[data-w=rain]'); await p.click('#worksClose'); await p.waitForTimeout(300);

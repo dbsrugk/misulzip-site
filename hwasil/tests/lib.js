@@ -20,7 +20,10 @@ const STUB = `window.supabase={createClient(){return{
   if(fn==='hwasil_gallery_set'){db.gallery[a.gid]=Object.assign({},a.d,{id:a.gid});return ok();}
   if(fn==='hwasil_gallery_hang'){if(Object.values(db.gallery).some(g=>g.slot===a.sl&&g.id!==a.gid))return Promise.resolve({data:null,error:{message:'slot_taken'}});db.gallery[a.gid]=Object.assign({},a.d,{id:a.gid,slot:a.sl});return ok();}
   if(fn==='hwasil_admin_check')return ok(a.pw==='adminpw');
-  if(fn==='hwasil_admin_del'){if(a.pw!=='adminpw')return Promise.resolve({data:null,error:{message:'bad_admin'}});const g=db.gallery[a.gid];if(g&&g.workId&&db.works[g.workId])Object.assign(db.works[g.workId],{exh:false,removed:true});delete db.gallery[a.gid];return ok();}
+  if(fn==='hwasil_admin_del'){if(a.pw!=='adminpw')return Promise.resolve({data:null,error:{message:'bad_admin'}});const g=db.gallery[a.gid];if(g&&g.workId&&db.works[g.workId])Object.assign(db.works[g.workId],{exh:false,removed:true});if(g){db.removed=db.removed||[];db.removed.push(Object.assign({},g,{rid:db.removed.length+1,rat:Date.now()}));}delete db.gallery[a.gid];return ok();}
+  if(fn==='hwasil_admin_removed'){if(a.pw!=='adminpw')return Promise.resolve({data:null,error:{message:'bad_admin'}});return ok((db.removed||[]).map(r=>({id:r.rid,at:r.rat,title:r.title,artist:r.artist,room:r.room})));}
+  if(fn==='hwasil_admin_removed_get'){const r=(db.removed||[]).find(x=>x.rid===a.rid);return ok(r?Object.assign({},r,{id:'removed_'+r.rid}):null);}
+  if(fn==='hwasil_admin_unban'){db.removed=(db.removed||[]).filter(x=>x.rid!==a.rid);return ok();}
   if(fn==='hwasil_gallery_del'){delete db.gallery[a.gid];return ok();}
   if(fn==='hwasil_gallery_index')return ok(Object.values(db.gallery).sort((x,y)=>y.at-x.at).map(g=>{const c=Object.assign({},g);delete c.strokes;return c;}));
   if(fn==='hwasil_gallery_get')return ok(db.gallery[a.gid]||null);

@@ -460,6 +460,8 @@ body.padOpen #hud { visibility: hidden; }
       <span class="nameRow" id="adRow"><input id="adPw" type="password" autocomplete="off" placeholder="관리자 비밀번호"><button class="btn" id="adGo" type="button">켜기</button></span>
       <p class="empty" id="adMsg" hidden></p>
       <button class="btn" id="adOff" type="button" hidden>관리자 끄기</button>
+      <button class="btn" id="adVault" type="button" hidden>내린 작품 보관함</button>
+      <div id="adList" hidden></div>
     </details>
     <details id="keyBox">
       <summary>다른 기기로 옮기기</summary>
@@ -2432,6 +2434,7 @@ body.padOpen #hud { visibility: hidden; }
   if (savedCode) { $('#codeInput').value = savedCode; $('#codeField').hidden = true; }
   function codeMsg(t) { const m = $('#codeMsg'); m.textContent = t; m.hidden = !t; }
   let entering = false;
+  function sendPing() { try { if (window.hwasil && window.hwasil.ping) window.hwasil.ping(myName); } catch (e) {} }
   $('#startBtn').addEventListener('click', async () => {
     if (started || entering) return;
     if (!window.hwasil) { codeMsg('화실 서버를 불러오지 못했어요. 새로고침해 주세요.'); return; }
@@ -2447,6 +2450,7 @@ body.padOpen #hud { visibility: hidden; }
     if (nm) { myName = nm; store('hw-name', nm); myPlate.set(myName); }
     started = true; $('#intro').hidden = true; store('hw-in', '1'); music.unlock(); setTimeout(() => music.hint(), 1600);   /* remembered: a reload goes straight back in */
     pushPresence(true);
+    sendPing(); setInterval(() => { if (!document.hidden) sendPing(); }, 240000);   /* visit log for the daily report */
     toast('이젤을 눌러 보세요. 비어 있으면 앉아서 그리고, 누가 그리는 중이면 구경해요', 7000);
   });
   $('#nameInput').value = myName;
@@ -3076,7 +3080,7 @@ body.padOpen #hud { visibility: hidden; }
     m.textContent = '이제 "' + nm + '"(으)로 불려요.'; m.className = 'empty'; m.hidden = false;
   });
   function paintAdmin() {
-    $('#adRow').hidden = adminOn; $('#adOff').hidden = !adminOn;
+    $('#adRow').hidden = adminOn; $('#adOff').hidden = !adminOn; $('#adVault').hidden = !adminOn; if (!adminOn) $('#adList').hidden = true;
     $('#adNote').textContent = adminOn ? '관리자 모드가 켜져 있어요. 전시된 그림을 누르면 "관리자: 내리기"가 보여요.' : '관리자 비밀번호를 넣으면, 이 기기에서 부적절한 작품을 내릴 수 있어요.';
   }
   $('#adGo').addEventListener('click', async () => {
@@ -3087,6 +3091,29 @@ body.padOpen #hud { visibility: hidden; }
   });
   $('#adOff').addEventListener('click', () => { window.hwasil.admin.logout(); adminOn = false; paintAdmin(); $('#adMsg').hidden = true; });
   paintAdmin();
+  /* vault of works the admin took down: look at them, or allow one to be hung again */
+  async function loadVault() {
+    const box = $('#adList'); box.hidden = false; box.textContent = '불러오는 중…';
+    let list = null; try { list = await window.hwasil.admin.removed(); } catch (e) {}
+    if (!list) { box.textContent = '보관함을 불러오지 못했어요.'; return; }
+    box.textContent = '';
+    if (!list.length) { box.textContent = '내린 작품이 아직 없어요.'; return; }
+    list.forEach(r => {
+      const row = document.createElement('div'); row.className = 'nameRow';
+      const t = document.createElement('span'); t.className = 'empty'; t.style.flex = '1';
+      t.textContent = (r.title || '제목 없음') + ' · ' + (r.artist || '') + ' · ' + new Date(r.at).toLocaleDateString('ko-KR');
+      const v = document.createElement('button'); v.className = 'btn'; v.type = 'button'; v.textContent = '보기';
+      v.addEventListener('click', async () => {
+        try { const d = await window.hwasil.admin.removedGet(r.id); if (d) { $('#works').hidden = true; openViewer(d); } } catch (e) { toast('불러오지 못했어요.', 2500); }
+      });
+      const u = document.createElement('button'); u.className = 'btn'; u.type = 'button'; u.textContent = '다시 허용';
+      u.addEventListener('click', async () => {
+        try { await window.hwasil.admin.unban(r.id); toast('다시 걸 수 있게 했어요.', 2500); loadVault(); } catch (e) { toast('처리하지 못했어요.', 2500); }
+      });
+      row.append(t, v, u); box.appendChild(row);
+    });
+  }
+  $('#adVault').addEventListener('click', loadVault);
   $('#worksClose').addEventListener('click', () => { $('#works').hidden = true; });
   $('#works').addEventListener('click', e => { if (e.target === $('#works')) $('#works').hidden = true; });
 

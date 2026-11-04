@@ -98,8 +98,13 @@
       },
       check: function () { var pw = store('hw-admin'); if (!pw) return Promise.resolve(false); return rpc('hwasil_admin_check', { code: code, pw: pw }).then(function (ok) { if (!ok) store('hw-admin', null); return !!ok; }, function () { return false; }); },
       logout: function () { store('hw-admin', null); },
-      del: function (gid) { return rpc('hwasil_admin_del', { code: code, pw: store('hw-admin') || '', gid: gid }).then(function () { galleryChanged(); }); }
+      del: function (gid) { return rpc('hwasil_admin_del', { code: code, pw: store('hw-admin') || '', gid: gid }).then(function () { galleryChanged(); }); },
+      removed: function () { return rpc('hwasil_admin_removed', { code: code, pw: store('hw-admin') || '' }).then(function (r) { return r || []; }); },
+      removedGet: function (rid) { return rpc('hwasil_admin_removed_get', { code: code, pw: store('hw-admin') || '', rid: rid }); },
+      unban: function (rid) { return rpc('hwasil_admin_unban', { code: code, pw: store('hw-admin') || '', rid: rid }); }
     },
+    /* a "I'm here" mark for the daily report (who came, how often); failures are ignored */
+    ping: function (nm) { if (!sb || !code) return Promise.resolve(); return rpc('hwasil_ping', { code: code, token: token, nm: String(nm || '') }).then(function () {}, function () {}); },
     inviteLink: function () { return code ? location.origin + location.pathname + '#c=' + encodeURIComponent(code) : ''; }
   };
 
