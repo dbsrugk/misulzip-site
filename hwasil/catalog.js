@@ -11,7 +11,7 @@ window.MUSEUM_WINGS = [
 ];
 window.MUSEUM_CATALOG = [
   /* 르네상스 */
-  { id: 'monalisa', title: '모나리자', artist: '레오나르도 다 빈치', year: '1503년경', place: '루브르 박물관 (프랑스)', w: 53, h: 77, size: 'l',
+  { id: 'monalisa', title: '모나리자', artist: '레오나르도 다 빈치', year: '1503년경', place: '루브르 박물관 (프랑스)', w: 939, h: 1400, size: 'l', img: 'art/monalisa.jpg',
     blurb: '윤곽선을 연기처럼 번지게 그리는 \'스푸마토\' 기법으로 그려서, 보는 위치에 따라 표정이 달라 보인다고 해요. 은은한 미소의 비밀을 찾으러 오는 사람이 세상에서 가장 많은 그림이에요.' },
   { id: 'venus', title: '비너스의 탄생', artist: '산드로 보티첼리', year: '1485년경', place: '우피치 미술관 (이탈리아)', w: 278, h: 172, size: 'l', img: 'art/venus.jpg',
     blurb: '바다 거품에서 태어난 사랑의 여신이 커다란 조개를 타고 해안에 닿는 장면이에요. 옛 신화를 큰 그림으로 되살린 르네상스의 대표작이에요.' },
