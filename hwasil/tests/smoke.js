@@ -47,7 +47,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.evaluate(() => { const r = document.querySelector('#volRange'); r.value = 25; r.dispatchEvent(new Event('input')); });
   check(await p.evaluate(() => window.__hw.music().vol === 0.25 && localStorage.getItem('hw-vol') === '0.25'), 'volume slider sets and remembers the volume');
   const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 22, 'easels: ' + n);                    /* the lobby keeps six easels (an atelier corner); the outdoor spots keep theirs */
-  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 12, 'twelve places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
+  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 13, 'thirteen places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
   /* the gallery has no partitions any more; the annex and the garden can be visited */
   await place(6, 'annex.png'); await place(7, 'garden.png'); await place(8, 'west1.png'); await place(9, 'west2.png'); await place(10, 'orchard.png');
   /* a place is reached on foot now: from the studio to the annex through both doors, then out to the garden through the east door */
@@ -62,6 +62,11 @@ const { start, vis, until, check, done } = require('./lib');
   await p.evaluate(() => { window.__hwInstant = false; });
   wk = await walkTo(9);
   check(wk.ok && await near(-49, 39), 'and on foot from the gallery through both west doors to west hall 2');
+  await p.evaluate(() => { window.__hwInstant = true; });
+  await place(12, 'rotunda.png');                                           /* just inside the rotunda: the way north leads around the fountain */
+  await p.evaluate(() => { window.__hwInstant = false; });
+  wk = await walkTo(11);
+  check(wk.ok && await near(0, -78), 'on foot from the rotunda around the fountain to the grand gallery');
   await p.evaluate(() => { window.__hwInstant = true; });
   await place(0, 'studio.png');
   check(await p.evaluate(() => window.__hw.occ().length) === 0, 'no see-through partitions are left');
@@ -192,7 +197,13 @@ const { start, vis, until, check, done } = require('./lib');
   /* the grand gallery: reserved masterpiece frames with a docent card; nobody can hang a drawing on them */
   check(await p.evaluate(() => { const m = window.__hw.slots.filter(q => q.room === 'museum'); return m.length === 24 && m.every(q => q.reserved && q.cat); }), 'the grand gallery has 24 reserved masterpiece frames');
   await place(11, 'grand.png');
-  check(await p.evaluate(() => window.__hw.pos.z < -30 && window.__hw.pos.z > -60), 'the grand gallery place is north of the lobby door');
+  check(await p.evaluate(() => window.__hw.pos.z < -64 && window.__hw.pos.z > -100), 'the grand gallery place is north of the rotunda');
+  check(await until(p, () => /대회랑 · 르네상스/.test(window.__hw.area()) && !document.querySelector('#areaBanner').hidden && /르네상스/.test(document.querySelector('#areaName').textContent), null, 10), 'a banner names the place I arrived at (grand gallery, Renaissance)');
+  await place(12, 'rotunda.png');
+  check(await until(p, () => window.__hw.area() === '중앙 로툰다', null, 10), 'the rotunda is named too');
+  await place(7, 'garden.png');
+  check(await until(p, () => window.__hw.area() === '야외 전시 정원' && document.querySelector('#areaName').textContent === '야외 전시 정원', null, 10), 'outdoors the banner names the garden');
+  await place(11, 'grand.png');
   const mi = await p.evaluate(() => window.__hw.slots.findIndex(q => q.room === 'museum' && q.cat.id === 'monalisa'));
   check(await until(p, i => window.__hw.slots[i].live && !!window.__hw.slots[i].cv, mi, 30), 'a masterpiece frame near me is drawn (card with title)');
   await p.evaluate(i => window.__hw.tapSlot(i), mi); await p.waitForTimeout(400);
