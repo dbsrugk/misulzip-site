@@ -256,8 +256,10 @@ body.padOpen #hud { visibility: hidden; }
 .roomRow .c { font-size: 13px; color: #6f665a; }
 #roomsList, #placesList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 /* works sheet */
-#dress, #hang { position: fixed; inset: 0; z-index: 40; background: rgba(36, 32, 28, 0.55); display: flex; align-items: flex-end; justify-content: center; }
-#dress .sheet, #hang .sheet { max-height: 92%; }
+#cropCv { display: block; width: 100%; max-height: 50vh; object-fit: contain; margin: 10px auto; border: 2px solid var(--ink); border-radius: 8px; touch-action: none; cursor: grab; }
+#crop .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+#dress, #hang, #crop { position: fixed; inset: 0; z-index: 40; background: rgba(36, 32, 28, 0.55); display: flex; align-items: flex-end; justify-content: center; }
+#dress .sheet, #hang .sheet, #crop .sheet { max-height: 92%; }
 .dressBody { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; touch-action: pan-y; padding: 2px; }
 #dressCanvas { align-self: center; width: 150px; height: 188px; flex: 0 0 auto; border: 2px solid var(--ink); border-radius: 18px; background: linear-gradient(#cfe6f2, #f3efd6); }
 .dressRow .lab { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
@@ -384,6 +386,11 @@ body.padOpen #hud { visibility: hidden; }
   <div class="padStatus" id="padStatus" role="status" aria-live="polite"></div>
   <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas><canvas id="refCanvas" class="refCanvas" hidden aria-hidden="true"></canvas><div class="sizeFloat" id="sizeFloat" hidden aria-hidden="true"><i></i><b></b></div><div class="heartLayer" id="padHearts"></div><div class="likeBadge" id="padLikes" hidden>♥ 0</div></div>
   <div class="padTools">
+    <div class="seg" id="paperSeg" role="group" aria-label="종이 모양">
+      <button type="button" data-paper="land">가로</button>
+      <button type="button" data-paper="port">세로</button>
+      <button type="button" data-paper="sq">정사각</button>
+    </div>
     <div class="seg" id="viewSeg" role="group" aria-label="풍경 보기" hidden>
       <button type="button" data-view="off">풍경 끔</button>
       <button type="button" data-view="split">풍경 위</button>
@@ -506,6 +513,20 @@ body.padOpen #hud { visibility: hidden; }
   <div class="sheet" role="dialog" aria-label="장소 이동">
     <div class="sheetHead"><h2>장소 이동</h2><button class="btn" id="placesClose" type="button">닫기</button></div>
     <div id="placesList"></div>
+  </div>
+</div>
+
+<div id="crop" hidden>
+  <div class="sheet" role="dialog" aria-label="전시용 자르기">
+    <div class="sheetHead"><h2>전시용으로 자르기</h2><button class="btn" id="cropClose" type="button">닫기</button></div>
+    <p class="empty">모양을 고르고 그림 위를 끌어서 자를 곳을 맞춰요. 원본은 그대로 남고, 액자에 걸리는 모습만 바뀌어요.</p>
+    <div class="seg" id="cropSeg" role="group" aria-label="자르는 모양">
+      <button type="button" data-r="0" class="on">원본</button><button type="button" data-r="1.3333">가로</button><button type="button" data-r="0.75">세로</button><button type="button" data-r="1">정사각</button>
+    </div>
+    <canvas id="cropCv" aria-label="자를 곳 고르기"></canvas>
+    <label class="size" for="cropZoom">크기 <input id="cropZoom" type="range" min="30" max="100" value="100"></label>
+    <div class="acts"><button class="btn primary" id="cropOk" type="button">이대로 자르기</button><button class="btn" id="cropReset" type="button">자르기 없애기</button></div>
+    <p class="empty" id="cropMsg" hidden></p>
   </div>
 </div>
 
@@ -1578,7 +1599,8 @@ body.padOpen #hud { visibility: hidden; }
   }
 
   function exhibitDoc(w, workId) {
-    return { kind: 'exhibit', owner: uid, workId: workId, artist: myName, title: w.title || '', room: roomOf(w.er), size: w.es === 's' || w.es === 'l' ? w.es : 'm', w: w.w, h: w.h, at: Date.now(), strokes: w.strokes.map(q => ({ k: q.k, c: q.c, w: q.w, p: q.p })) };
+    const v = cropped(w);
+    return { kind: 'exhibit', owner: uid, workId: workId, artist: myName, title: w.title || '', room: roomOf(w.er), size: w.es === 's' || w.es === 'l' ? w.es : 'm', w: v.w, h: v.h, at: Date.now(), strokes: v.strokes.map(q => ({ k: q.k, c: q.c, w: q.w, p: q.p })) };
   }
 
   /* ---------- avatars / name plates ---------- */
@@ -1642,6 +1664,10 @@ body.padOpen #hud { visibility: hidden; }
     av.faceMat = new T.MeshBasicMaterial({ map: av.texOpen, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     headG.add(new T.Mesh(new T.SphereGeometry(0.606, 24, 14, Math.PI / 2 - 0.8, 1.6, Math.PI / 2 - 0.42, 0.85), av.faceMat));
     /* hair */
+  function cropped(w) {                                   /* the exhibit shows only the chosen part: strokes move so the crop's corner becomes (0,0) */
+    const c = w.crop; if (!c || !(c.w > 20) || !(c.h > 20)) return w;
+    return Object.assign({}, w, { w: c.w, h: c.h, strokes: w.strokes.map(q => ({ k: q.k, c: q.c, w: q.w, p: (q.p || []).map((v, i) => Math.round((v - (i % 2 ? c.y : c.x)) * 10) / 10) })) });
+  }
     const cap = () => { const m = new T.Mesh(new T.SphereGeometry(0.645, 22, 14, 0, Math.PI * 2, 0, 1.75), hairM); m.rotation.x = -0.4; m.position.y = 0.02; return m; };
     const backHalf = (R, sy, y, th) => { const m = new T.Mesh(new T.SphereGeometry(R, 18, 12, Math.PI, Math.PI, 0, th), hairM); m.scale.set(1, sy, 1); m.position.set(0, y, -0.02); return m; };
     if (hairI >= 1) headG.add(cap());
@@ -2622,7 +2648,7 @@ body.padOpen #hud { visibility: hidden; }
     padCv.width = Math.round(cw * dpr); padCv.height = Math.round(ch * dpr);
     baseCv.width = padCv.width; baseCv.height = padCv.height;
     sc = padCv.width / pad.W;
-    rebuildBase(); present(); paintPreview(false); paintRef();
+    rebuildBase(); present(); paintPreview(false); paintRef(); refreshPaperSeg();
   }
   /* views: 'off' = full sheet, 'split' = scenery on top, 'ghost' = scenery behind a see-through sheet */
   function viewFor(easel) {
@@ -2677,9 +2703,18 @@ body.padOpen #hud { visibility: hidden; }
     padLikes = 0; $('#padLikes').hidden = true; $('#padHearts').textContent = '';
     pad.easel = opts.easel; pad.dirty = false; pad.cur = null; pad.pid = null; pad.confirmClose = false; pad.confirmClear = false;
     $('#padClose').textContent = '닫기'; $('#padClear').textContent = '전체 지우기';
-    pad.open = true; padEl.hidden = false; sitBtn.hidden = true; applyView();
+    pad.open = true; padEl.hidden = false; sitBtn.hidden = true; applyView(); refreshPaperSeg();
+    const blank = pad.id == null && pad.strokes.length === 0 && !pad.cur;
+    if (blank !== paperBlank) { paperBlank = blank; refreshPaperSeg(); }
     setStatus(dbNS ? (pad.easel >= 0 ? (pad.easel + 1) + '번 이젤에서 그리는 중' : '') : '이 화면에서는 저장되지 않아요. 로그인한 화면에서 열어 주세요.', !dbNS);
+  var paperBlank = true;
     requestAnimationFrame(fitPad);
+  const PAPERS = { land: [1000, 750], port: [750, 1000], sq: [900, 900] };
+  function paperKind() { return pad.W === pad.H ? 'sq' : (pad.W > pad.H ? 'land' : 'port'); }
+  function refreshPaperSeg() {                              /* the shape can only change while the sheet is still blank */
+    const blank = pad.open && pad.id == null && pad.strokes.length === 0, k = paperKind();
+    document.querySelectorAll('#paperSeg button').forEach(b => { b.classList.toggle('on', b.dataset.paper === k); b.disabled = !blank && b.dataset.paper !== k; });
+  }
     pushPresence(true);
     pad.sentOff = 0;
     if (pad.easel >= 0) enqueueFull(null);
@@ -2691,6 +2726,11 @@ body.padOpen #hud { visibility: hidden; }
     }
   }
   function closePad() {
+  $('#paperSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'), p = b && PAPERS[b.dataset.paper];
+    if (!p || b.disabled || pad.id != null || pad.strokes.length) return;
+    pad.W = p[0]; pad.H = p[1]; fitPad();
+  });
     finishEasel(); clearRef();
     pad.open = false; padEl.hidden = true; pad.easel = -1; myEasel = -1; applyView();
     clearTimeout(closeTimer); clearTimeout(clearTimer);
@@ -3096,6 +3136,53 @@ body.padOpen #hud { visibility: hidden; }
     const box = $('#adList'); box.hidden = false; box.textContent = '불러오는 중…';
     let list = null; try { list = await window.hwasil.admin.removed(); } catch (e) {}
     if (!list) { box.textContent = '보관함을 불러오지 못했어요.'; return; }
+  /* crop for the exhibit: a rectangle of a fixed shape that can be moved and shrunk; saved on the work as crop = {x,y,w,h} in drawing units */
+  const cropSt = { work: null, r: 0, s: 1, cx: 0, cy: 0, drag: null };
+  function cropRect() {
+    const w = cropSt.work, a = cropSt.r || w.w / w.h;
+    let rw = a >= w.w / w.h ? w.w : w.h * a, rh = a >= w.w / w.h ? w.w / a : w.h;
+    rw *= cropSt.s; rh *= cropSt.s;
+    return { x: clamp(cropSt.cx - rw / 2, 0, w.w - rw), y: clamp(cropSt.cy - rh / 2, 0, w.h - rh), w: rw, h: rh };
+  }
+  function drawCrop() {
+    const w = cropSt.work, cv = $('#cropCv'), k = Math.min(600 / w.w, 440 / w.h);
+    cv.width = Math.round(w.w * k); cv.height = Math.round(w.h * k);
+    try { paintWork(cv, w, '#ece6d9'); } catch (e) {}
+    const r = cropRect(), g = cv.getContext('2d');
+    g.fillStyle = 'rgba(36,32,28,0.55)';
+    g.fillRect(0, 0, cv.width, r.y * k); g.fillRect(0, (r.y + r.h) * k, cv.width, cv.height - (r.y + r.h) * k);
+    g.fillRect(0, r.y * k, r.x * k, r.h * k); g.fillRect((r.x + r.w) * k, r.y * k, cv.width - (r.x + r.w) * k, r.h * k);
+    g.strokeStyle = '#fff'; g.lineWidth = 3; g.strokeRect(r.x * k, r.y * k, r.w * k, r.h * k);
+  }
+  function openCrop(w) {
+    cropSt.work = w; cropSt.r = 0; cropSt.s = 1; cropSt.cx = w.w / 2; cropSt.cy = w.h / 2;
+    document.querySelectorAll('#cropSeg button').forEach(b => b.classList.toggle('on', b.dataset.r === '0'));
+    $('#cropZoom').value = 100; $('#cropMsg').hidden = true; $('#cropOk').disabled = $('#cropReset').disabled = false;
+    $('#works').hidden = true; $('#crop').hidden = false; drawCrop();
+  }
+  async function saveCrop(c) {
+    const w = cropSt.work, m = $('#cropMsg'); m.hidden = false; m.className = 'empty';
+    $('#cropOk').disabled = $('#cropReset').disabled = true;
+    try {
+      await myCol_.doc(w.id).update({ crop: c }); w.crop = c;
+      if (w.exh && w.sl) await hangAt(w, { id: w.sl, room: w.er, size: w.es }, { quiet: true });    /* a hung work is hung again with the new shape */
+      $('#crop').hidden = true; renderWorks(); $('#works').hidden = false;
+      toast(c ? '전시용으로 잘랐어요.' + (w.exh ? ' 걸려 있는 그림도 바꿨어요.' : '') : '자르기를 없앴어요.', 3500);
+    } catch (e) { m.textContent = '저장하지 못했어요. 잠시 뒤 다시 해 주세요.'; m.className = 'empty bad'; $('#cropOk').disabled = $('#cropReset').disabled = false; }
+  }
+  $('#cropSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cropSt.r = Number(b.dataset.r); document.querySelectorAll('#cropSeg button').forEach(x => x.classList.toggle('on', x === b)); drawCrop(); });
+  $('#cropZoom').addEventListener('input', e => { cropSt.s = (Number(e.target.value) || 100) / 100; drawCrop(); });
+  { const cv = $('#cropCv');
+    cv.addEventListener('pointerdown', e => { cropSt.drag = { x: e.clientX, y: e.clientY, cx: cropSt.cx, cy: cropSt.cy }; try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
+    cv.addEventListener('pointermove', e => {
+      const d = cropSt.drag; if (!d || !cropSt.work) return;
+      const k = cv.getBoundingClientRect().width / cropSt.work.w;
+      cropSt.cx = d.cx + (e.clientX - d.x) / k; cropSt.cy = d.cy + (e.clientY - d.y) / k; drawCrop();
+    });
+    const end = () => { cropSt.drag = null; }; cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end); }
+  $('#cropOk').addEventListener('click', () => { const r = cropRect(); saveCrop(cropSt.r === 0 && cropSt.s === 1 ? null : { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.w), h: Math.round(r.h) }); });
+  $('#cropReset').addEventListener('click', () => saveCrop(null));
+  $('#cropClose').addEventListener('click', () => { $('#crop').hidden = true; $('#works').hidden = false; });
     box.textContent = '';
     if (!list.length) { box.textContent = '내린 작품이 아직 없어요.'; return; }
     list.forEach(r => {
@@ -3132,6 +3219,9 @@ body.padOpen #hud { visibility: hidden; }
   });
   let keyArm = 0;
   function keyDisarm() { clearTimeout(keyArm); keyArm = 0; keyApply.textContent = '이 열쇠로 바꾸기'; keyApply.classList.remove('danger'); }
+      const b5 = document.createElement('button'); b5.type = 'button'; b5.className = 'btn'; b5.textContent = w.crop ? '자르기 고치기' : '전시용 자르기';
+      b5.addEventListener('click', () => openCrop(w));
+      acts.appendChild(b5);
   $('#keyInput').addEventListener('input', () => { keyDisarm(); say(''); });
   keyApply.addEventListener('click', () => {
     const raw = $('#keyInput').value.toLowerCase().replace(/[^0-9a-f]/g, '');
@@ -3143,8 +3233,23 @@ body.padOpen #hud { visibility: hidden; }
     }
     keyDisarm();
     if (!window.hwasil.setKey(raw)) { say('열쇠를 바꾸지 못했어요. 브라우저 저장이 막혀 있는지 확인해 주세요.', true); return; }
+    const changed = nm !== myName;
     say('바꿨어요. 다시 불러오는 중…'); setTimeout(() => location.reload(), 400);
   });
+    const hung = works.filter(w => w.exh && w.sl);
+    if (!changed || !hung.length) return;
+    /* hung frames keep the artist name they were hung with, so ask whether to update them too */
+    const q = document.createElement('div'); q.textContent = '전시 중인 그림 ' + hung.length + '점의 화가 이름도 "' + nm + '"(으)로 바꿀까요? 그대로 두면 예전 이름이 남아요.';
+    const row = document.createElement('div'); row.className = 'acts';
+    const yes = document.createElement('button'); yes.type = 'button'; yes.className = 'btn primary'; yes.textContent = '전시 이름도 바꾸기';
+    const no = document.createElement('button'); no.type = 'button'; no.className = 'btn'; no.textContent = '그대로 두기';
+    no.addEventListener('click', () => { m.textContent = '전시 중인 그림의 이름은 그대로 뒀어요.'; });
+    yes.addEventListener('click', async () => {
+      yes.disabled = no.disabled = true; let ok = 0;
+      for (const w of hung) { if (await hangAt(w, { id: w.sl, room: w.er, size: w.es }, { quiet: true }) === 'ok') ok++; }
+      m.textContent = ok === hung.length ? '전시 중인 그림 ' + ok + '점의 이름을 바꿨어요.' : ok + '점만 바꿨어요. 나머지는 잠시 뒤 다시 해 주세요.';
+    });
+    row.appendChild(yes); row.appendChild(no); m.textContent = ''; m.appendChild(q); m.appendChild(row);
 
   function sitAt(i) {
     const e = easels[i]; pos.x = e.sit.x; pos.z = e.sit.z; heading = e.heading; camYaw = heading + Math.PI; walkAmp = 0; myEasel = i;
