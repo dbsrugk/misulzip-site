@@ -1017,7 +1017,7 @@ body.padOpen #hud { visibility: hidden; }
       });
       scene.remove(m); g.add(m); m.position.set(0, 3.2 + h / 2, 0); colliders.push({ x: x - w / 2 + 0.2, z: z, r: 0.5 }, { x: x + w / 2 - 0.2, z: z, r: 0.5 });
     }
-    board(-8.6, z0 + 5, 5.6, 3.4, ['▲ 정면 큰 문  명화 미술관(대회랑)', '▶ 동쪽 문  화실 · 정원 · 호수 · 바다', '▼ 남쪽 문  친구들의 신진 작가관', '● 이 홀  쉬어 가는 중앙 홀'], '도토리 미술관');
+    board(-8.6, z0 + 5, 5.6, 3.4, ['▲ 정면 큰 문  명화 미술관(대회랑)', '▶ 동쪽 문  화실 · 조각 전시관 · 정원 · 바다', '▼ 남쪽 문  친구들의 신진 작가관', '● 이 홀  쉬어 가는 중앙 홀'], '도토리 미술관');
     board(8.6, z0 + 5, 5.6, 3.4, W.map((wg, i) => (i + 1) + '. ' + wg.name + '  ' + wg.note).slice(0, 6), '대회랑 전시구역');
 
     /* --- the central rotunda (중앙 로툰다): between the lobby door and the corridor: a fountain, a ring of columns, an oculus, benches --- */
@@ -1299,7 +1299,7 @@ body.padOpen #hud { visibility: hidden; }
     plinth(0, 0, 2.3, 2.0);
     put(scene, makeTwist(1.9), 0, 2.0, 0);
     plinth(-3.5, 1.5, 1.0, 1.1);
-    const b1 = put(scene, makeBust(1.1), -3.5, 1.1, 1.5); b1.rotation.y = 0.8; glbProp('bust_1.glb', -3.5, 1.1, 1.5, 1.7, 0.8, b1);
+    const b1 = put(scene, makeBust(1.1), -3.5, 1.1, 1.5); b1.rotation.y = 0.8;
     plinth(3.5, -1.3, 1.0, 1.1);
     const r1 = put(scene, makeRing(1), 3.5, 1.1, -1.3); r1.rotation.y = 0.5;
     plinth(0.7, 3.8, 0.95, 0.9);
@@ -1310,7 +1310,7 @@ body.padOpen #hud { visibility: hidden; }
     [-1, 1].forEach(sd => {
       const x = sd * 8.2, z = RM.hz - 3;
       put(scene, new T.Mesh(bx(2.0, 3.6, 2.0), woodD), x, 1.8, z);
-      const bb = put(scene, makeBust(2.5), x, 3.6, z); bb.rotation.y = Math.PI - sd * 0.4; glbProp(sd < 0 ? 'bust_2.glb' : 'bust_1.glb', x, 3.6, z, 3.2, bb.rotation.y, bb);
+      const bb = put(scene, makeBust(2.5), x, 3.6, z); bb.rotation.y = Math.PI - sd * 0.4;
       colliders.push({ x: x, z: z, r: 1.7 });
     });
     /* four corner sculptures */
@@ -1318,7 +1318,6 @@ body.padOpen #hud { visibility: hidden; }
       const x = c[0] * (RM.hx - 4), z = c[1] * (RM.hz - 4);
       put(scene, new T.Mesh(bx(2.2, 0.9, 2.2), woodD), x, 0.45, z);
       const s = put(scene, i % 2 ? makeRing(2.3) : makeTwist(1.7), x, 0.9, z); s.rotation.y = i;
-      if (i === 1) glbProp('statue_1.glb', x, 0.9, z, 3.4, i, s); if (i === 2) glbProp('vase_1.glb', x, 0.9, z, 2.0, i, s);
       colliders.push({ x: x, z: z, r: 1.7 });
     });
     /* potted plants along the north wall (between the windows) */
@@ -1407,6 +1406,87 @@ body.padOpen #hud { visibility: hidden; }
     [x0 + 2.4, x1 - 6.5].forEach(x => { put(scene, new T.Mesh(bx(3.2, 0.5, 0.8), wood), x, 0.45, z1 - 1.6); colliders.push({ x: x, z: z1 - 1.6, r: 0.9 }); });   /* against the shelf wall, clear of the easel aisles */
     for (let k = 0; k <= A.w; k += 2) colliders.push({ x: x0 + k, z: z1, r: 0.8 });
     for (let k = 1; k <= A.d; k += 2) { colliders.push({ x: x0, z: z0 + k, r: 0.8 }); colliders.push({ x: x1, z: z0 + k, r: 0.8 }); }
+  })();
+  /* the sculpture pavilion (조각 전시관): a marble colonnade on the field beside the main path. The real 3D statues from the lobby stand here around a hand-built Pieta. */
+  const SCULPT = { x: 88, z: 14, w: 26, d: 22 };
+  function makePieta() {
+    const g = new T.Group(), m = L(0xf2efe8), m2 = L(0xe4dfd4);
+    const add = (geo, mat, x, y, z, rx, ry, rz) => { const o = new T.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx || 0, ry || 0, rz || 0); g.add(o); return o; };
+    add(new T.DodecahedronGeometry(1.5, 0), m2, 0, 0.45, 0).scale.set(1.35, 0.6, 1.1);                  /* the rock she sits on */
+    add(new T.ConeGeometry(1.0, 2.5, 16), m, 0, 2.05, -0.35);                                           /* Mary: a long robe, shoulders, head, veil */
+    add(new T.SphereGeometry(0.42, 14, 10), m, 0, 3.15, -0.35);
+    add(new T.SphereGeometry(0.3, 14, 10), m, 0, 3.6, -0.3);
+    add(new T.ConeGeometry(0.42, 0.7, 12), m, 0, 3.8, -0.3);
+    add(new T.SphereGeometry(1, 16, 10), m, 0, 1.3, 0.55).scale.set(1.6, 0.45, 1.0);                    /* the folds in her lap */
+    add(cyl(0.3, 0.26, 1.7, 12), m, 0, 1.85, 0.75, 0, 0, Math.PI / 2 + 0.1);                            /* Christ across her lap: body, head, legs, arm */
+    add(new T.SphereGeometry(0.27, 12, 10), m, -1.15, 1.7, 0.75);
+    add(cyl(0.2, 0.14, 1.5, 10), m, 1.45, 1.2, 0.8, 0, 0, Math.PI / 2 - 0.5);
+    add(cyl(0.09, 0.08, 1.0, 8), m, -0.3, 1.3, 1.1, 0.2, 0, 0);
+    add(cyl(0.12, 0.1, 1.3, 8), m, -0.55, 2.5, 0.25, -0.5, 0, 0.7);                                      /* her arm holding him */
+    return g;
+  }
+  (function () {
+    const S = SCULPT, x0 = S.x - S.w / 2, x1 = S.x + S.w / 2, z0 = S.z - S.d / 2, z1 = S.z + S.d / 2;
+    const marble = L(0xf4f0e8), stone = L(0xe2dccf), FONT_UI = '"Gamja Flower", "Noto Sans KR", sans-serif';
+    const floorM = new T.MeshLambertMaterial({ color: 0xece6da });
+    new T.TextureLoader().load('textures/marble_white.jpg', t => { t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(S.w / 6, S.d / 6); floorM.map = t; floorM.color.set(0xffffff); floorM.needsUpdate = true; }, undefined, () => {});
+    const floor = new T.Mesh(new T.PlaneGeometry(S.w, S.d), floorM); floor.rotation.x = -Math.PI / 2; floor.position.set(S.x, 0.05, S.z); floor.receiveShadow = true; scene.add(floor);
+    put(scene, new T.Mesh(bx(S.w + 0.8, 0.12, S.d + 0.8), stone), S.x, 0.02, S.z);                  /* a thin step all around */
+    /* columns: two rows with a wide gap in front, and three on each side */
+    const cols = [];
+    [x0 + 1.2, x0 + 5.7, x1 - 5.7, x1 - 1.2].forEach(x => { cols.push([x, z0 + 1.0]); cols.push([x, z1 - 1.0]); });
+    [S.z - 5.5, S.z, S.z + 5.5].forEach(z => { cols.push([x0 + 0.9, z]); cols.push([x1 - 0.9, z]); });
+    cols.forEach(q => {
+      put(scene, new T.Mesh(bx(1.5, 0.4, 1.5), stone), q[0], 0.25, q[1]);
+      put(scene, new T.Mesh(cyl(0.42, 0.5, 6.2, 14), marble), q[0], 3.55, q[1]);
+      put(scene, new T.Mesh(bx(1.4, 0.4, 1.4), stone), q[0], 6.85, q[1]);
+      colliders.push({ x: q[0], z: q[1], r: 0.75 });
+    });
+    /* the roof fades while it stands between the camera and me, so the camera can look down in */
+    const roof = new T.Group(); scene.add(roof); const roofM = L(0xf4f0e8), roofS = L(0xe2dccf);            /* its own materials: fading must not touch the columns */
+    put(roof, new T.Mesh(bx(S.w + 1.4, 0.6, S.d + 1.4), roofM), S.x, 7.3, S.z);
+    put(roof, new T.Mesh(bx(S.w + 1.8, 0.35, S.d + 1.8), roofS), S.x, 7.0, S.z);
+    [-6, 0, 6].forEach(dz => put(roof, new T.Mesh(bx(S.w, 0.45, 0.5), roofS), S.x, 6.85, S.z + dz));
+    addOccluder(roof, x0 - 1.2, 6.5, z0 - 1.2, x1 + 1.2, 8, z1 + 1.2);
+    /* the sign over the front, facing the path */
+    const sc = document.createElement('canvas'); sc.width = 768; sc.height = 192; const g = sc.getContext('2d');
+    const st = new T.CanvasTexture(sc); st.minFilter = T.LinearFilter; st.generateMipmaps = false;
+    function drawSign() {
+      g.fillStyle = '#f4efe4'; g.fillRect(0, 0, 768, 192); g.strokeStyle = '#8f8368'; g.lineWidth = 10; g.strokeRect(5, 5, 758, 182);
+      g.fillStyle = '#3a342c'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '84px ' + FONT_UI; g.fillText('조각 전시관', 384, 72);
+      g.font = '46px ' + FONT_UI; g.fillStyle = '#6d655b'; g.fillText('돌아다니며 구경해요', 384, 142); st.needsUpdate = true;
+    }
+    drawSign(); if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '조각전시관돌아다니며구경해요').then(drawSign).catch(() => {});
+    const sign = new T.Mesh(new T.PlaneGeometry(8, 2), new T.MeshBasicMaterial({ map: st })); sign.position.set(S.x, 5.2, z0 - 0.95); sign.rotation.y = Math.PI; scene.add(sign);
+    /* a plinth, a name card and a pool of light for each piece */
+    function plate(text, x, y, z) {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 128; const q = c.getContext('2d');
+      const tex = new T.CanvasTexture(c); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
+      function draw() { q.fillStyle = '#f4efe4'; q.fillRect(0, 0, 512, 128); q.strokeStyle = '#8f8368'; q.lineWidth = 6; q.strokeRect(3, 3, 506, 122); q.fillStyle = '#3a342c'; q.textAlign = 'center'; q.textBaseline = 'middle'; q.font = '54px ' + FONT_UI; q.fillText(text, 256, 66); tex.needsUpdate = true; }
+      draw(); if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', text).then(draw).catch(() => {});
+      const m = new T.Mesh(new T.PlaneGeometry(2.0, 0.5), new T.MeshBasicMaterial({ map: tex })); m.position.set(x, y, z); m.rotation.y = Math.PI; scene.add(m);
+    }
+    function light(x, z, r) {
+      const mat = new T.MeshBasicMaterial({ color: 0xfff1cf, transparent: true, opacity: 0.07, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide, fog: false });
+      const cone = new T.Mesh(new T.ConeGeometry(r, 5.8, 24, 1, true), mat); cone.position.set(x, 4.0, z); cone.userData.noShadow = true; scene.add(cone);
+      const gl = new T.Mesh(new T.CircleGeometry(r * 0.9, 24), new T.MeshBasicMaterial({ color: 0xfff1cf, transparent: true, opacity: 0.16, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
+      gl.rotation.x = -Math.PI / 2; gl.position.set(x, 0.07, z); gl.userData.noShadow = true; scene.add(gl);
+    }
+    function stand(x, z, w, h, title, mk) {
+      put(scene, new T.Mesh(bx(w, h, w), stone), x, h / 2, z);
+      put(scene, new T.Mesh(bx(w + 0.4, 0.18, w + 0.4), marble), x, 0.14, z);
+      plate(title, x, Math.min(h * 0.55, 1.0), z - w / 2 - 0.03);
+      light(x, z, w + 0.6); colliders.push({ x: x, z: z, r: w / 2 + 0.35 });
+      if (mk) mk(x, h, z);
+    }
+    /* centre: the Pieta */
+    stand(S.x, S.z, 3.6, 1.0, '피에타 · 코드로 만든 조각', (x, h, z) => { const p = makePieta(); p.position.set(x, h, z); p.rotation.y = Math.PI; p.scale.setScalar(1.3); scene.add(p); });
+    /* around it: the real 3D pieces (plain stand-ins until the model has been fetched) */
+    stand(S.x - 7.5, S.z - 4, 1.8, 1.0, '흉상 A', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = 0.6; glbProp('bust_1.glb', x, h, z, 1.9, 0.6, b); });
+    stand(S.x + 7.5, S.z - 4, 1.8, 1.0, '흉상 B', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = -0.6; glbProp('bust_2.glb', x, h, z, 1.9, -0.6, b); });
+    stand(S.x - 7.5, S.z + 4.5, 2.0, 0.9, '고딕 조각상', (x, h, z) => { const b = put(scene, makeTwist(2.0), x, h, z); glbProp('statue_1.glb', x, h, z, 3.4, Math.PI - 0.5, b); });
+    stand(S.x + 7.5, S.z + 4.5, 1.8, 0.9, '꽃병', (x, h, z) => { const b = put(scene, makeRing(1.6), x, h, z); glbProp('vase_1.glb', x, h, z, 2.0, 0.4, b); });
   })();
   /* ---- paint bucket: a fill is stored as one tiny stroke {k:'f', c, p:[x,y]} and replayed in order on whatever canvas is drawn.
      It floods the colour under the seed, treats nearly-closed gaps (radius gap px) as walls, then grows back to the lines. ---- */
@@ -1861,7 +1941,7 @@ body.padOpen #hud { visibility: hidden; }
   /* ---------- outdoors: a field east of the studio with scenic drawing spots ---------- */
   anim.push((dt, t) => chandeliers.forEach((c, i) => { c.ring.rotation.y = t * 0.08 * (i % 2 ? 1 : -1); }));
   const PLACES = [
-    { name: '중앙 홀', note: '여기서 시작해요. 북쪽 미술관, 동쪽 화실, 남쪽 친구들 전시', x: 0, z: 14, h: Math.PI },
+    { name: '중앙 홀', note: '여기서 시작해요. 북쪽 미술관, 동쪽 화실과 조각 전시관, 남쪽 친구들 전시', x: 0, z: 14, h: Math.PI },
     { name: '신진 작가관', note: '친구들이 그린 그림이 걸린 곳', x: 0, z: 31, h: 0 },
     { name: '산 전망대', note: '눈 덮인 봉우리를 바라보며', x: 85, z: -41, h: Math.PI, pitch: 0.22 },
     { name: '바닷가', note: '모래사장과 수평선, 등대', x: 134, z: 0, h: Math.PI / 2, pitch: 0.22 },
@@ -1874,7 +1954,8 @@ body.padOpen #hud { visibility: hidden; }
     { name: '꽃길 정원', note: '양쪽에 액자가 걸린 둥근 꽃길', x: GARD2.x, z: GARD2.z + 9, h: Math.PI, pitch: 0.3 },
     { name: '대회랑', note: '명화를 만나는 아주 긴 복도', x: 0, z: GGS - 14, h: Math.PI, pitch: 0.2 },
     { name: '중앙 로툰다', note: '분수와 기둥이 있는 둥근 홀', x: 0, z: -RM.hz - 6, h: Math.PI, pitch: 0.3 },
-    { name: '화실', note: '이젤이 놓인 나무 오두막. 앉아서 그려요', x: 50, z: 3.5, h: 0, pitch: 0.4 }
+    { name: '화실', note: '이젤이 놓인 나무 오두막. 앉아서 그려요', x: 50, z: 3.5, h: 0, pitch: 0.4 },
+    { name: '조각 전시관', note: '대리석 기둥 사이에 조각상이 서 있어요', x: SCULPT.x, z: 0.5, h: 0, pitch: 0.35 }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
@@ -1979,6 +2060,7 @@ body.padOpen #hud { visibility: hidden; }
       if (Math.abs(x - MILL.x) < 9 && z < 30 && z > 0) return false;
       if (Math.hypot(x - 40, z) < 9) return false;
       if (x > 34 && x < 66 && z > 4 && z < 32) return false;                 /* the atelier hut */
+      if (x > 70 && x < 106 && z > -1 && z < 29) return false;               /* the sculpture pavilion */
       if (Math.hypot(x - GARD.x, z - GARD.z) < GARD.r + 1) return false;
       if (Math.hypot(x - GARD2.x, z - GARD2.z) < GARD2.r + 1) return false;
       if (Math.abs(x - GARD2.x) < 4 && z > GARD2.z && z < 0) return false;
@@ -2029,6 +2111,8 @@ body.padOpen #hud { visibility: hidden; }
       if (Math.abs(x - LAKE.x) < 2.6 && z > -1 && z < 22) return false;
       if (Math.abs(x - MILL.x) < 2.6 && z > -1 && z < 26) return false;
       if (Math.hypot(x - 40, z) < 7) return false;
+      if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 1.5 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 1.5) return false;
+      if (Math.abs(x - ATELIER.x) < ATELIER.w / 2 + 1 && Math.abs(z - ATELIER.z) < ATELIER.d / 2 + 1) return false;
       if (Math.hypot(x - GARD.x, z - GARD.z) < GARD.r) return false;
       if (Math.hypot(x - GARD2.x, z - GARD2.z) < GARD2.r) return false;
       return Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 2.4;
@@ -3844,9 +3928,10 @@ body.padOpen #hud { visibility: hidden; }
   function docentTalk() { const l = DOCENT_LINES[docentLine++ % DOCENT_LINES.length]; showCard(l[0], l[1], [['dtClose', '고마워요', true, () => {}]]); }
 
   /* ---------- where am I: a name banner pops up every time I step into another place ---------- */
-  const AREA_NOTE = { '중앙 홀': '북쪽 미술관 · 동쪽 화실 · 남쪽 친구들 전시', '화실': '이젤을 눌러 앉아서 그려요', '중앙 로툰다': '분수와 기둥이 있는 둥근 홀', '신진 작가관': '친구들이 그린 그림이 걸려 있어요', '별관': '신진 작가관의 두 번째 전시장', '서쪽 전시관 1': '친구들이 그린 그림', '서쪽 전시관 2': '친구들이 그린 그림', '야외 전시 정원': '하늘 아래 액자가 둘러선 정원', '꽃길 정원': '양쪽에 그림이 걸린 둥근 꽃길', '산 전망대': '눈 덮인 봉우리를 바라보며', '바닷가': '모래사장과 수평선, 등대', '호숫가': '잔잔한 물, 수련, 작은 배', '풍차 들판': '꽃밭 너머로 돌아가는 풍차', '들판 산책길': '중앙 홀 동쪽 문 밖의 넓은 들판' };
+  const AREA_NOTE = { '중앙 홀': '북쪽 미술관 · 동쪽 화실과 조각 전시관 · 남쪽 친구들 전시', '화실': '이젤을 눌러 앉아서 그려요', '조각 전시관': '흉상과 조각상, 한가운데에는 피에타', '중앙 로툰다': '분수와 기둥이 있는 둥근 홀', '신진 작가관': '친구들이 그린 그림이 걸려 있어요', '별관': '신진 작가관의 두 번째 전시장', '서쪽 전시관 1': '친구들이 그린 그림', '서쪽 전시관 2': '친구들이 그린 그림', '야외 전시 정원': '하늘 아래 액자가 둘러선 정원', '꽃길 정원': '양쪽에 그림이 걸린 둥근 꽃길', '산 전망대': '눈 덮인 봉우리를 바라보며', '바닷가': '모래사장과 수평선, 등대', '호숫가': '잔잔한 물, 수련, 작은 배', '풍차 들판': '꽃밭 너머로 돌아가는 풍차', '들판 산책길': '중앙 홀 동쪽 문 밖의 넓은 들판' };
   function areaNameAt(x, z) {
     if (x > RM.hx - 0.5) {
+      if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 3 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 3) return '조각 전시관';
       if (Math.abs(x - ATELIER.x) < ATELIER.w / 2 + 3 && Math.abs(z - ATELIER.z) < ATELIER.d / 2 + 6) return '화실';
       if (Math.hypot(x - GARD.x, z - GARD.z) < 20) return '야외 전시 정원';
       if (Math.hypot(x - GARD2.x, z - GARD2.z) < 20) return '꽃길 정원';

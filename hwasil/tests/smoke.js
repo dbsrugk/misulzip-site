@@ -48,7 +48,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.evaluate(() => { const r = document.querySelector('#volRange'); r.value = 25; r.dispatchEvent(new Event('input')); });
   check(await p.evaluate(() => window.__hw.music().vol === 0.25 && localStorage.getItem('hw-vol') === '0.25'), 'volume slider sets and remembers the volume');
   const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 22, 'easels: ' + n);                    /* the lobby keeps six easels (an atelier corner); the outdoor spots keep theirs */
-  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 14, 'fourteen places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
+  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 15, 'fifteen places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
   /* the gallery has no partitions any more; the annex and the garden can be visited */
   await place(6, 'annex.png'); await place(7, 'garden.png'); await place(8, 'west1.png'); await place(9, 'west2.png'); await place(10, 'orchard.png');
   /* a place is reached on foot now: from the studio to the annex through both doors, then out to the garden through the east door */
@@ -70,7 +70,7 @@ const { start, vis, until, check, done } = require('./lib');
   check(wk.ok && await near(0, -78), 'on foot from the rotunda around the fountain to the grand gallery');
   await p.evaluate(() => { window.__hwInstant = true; });
   await place(0, 'studio.png');
-  check(await p.evaluate(() => window.__hw.occ().length) === 0, 'no see-through partitions are left');
+  check(await p.evaluate(() => window.__hw.occ().every(k => k > 0.95)), 'nothing is see-through at the start (only the pavilion roof fades, and only over its visitors)');
   await p.evaluate(() => window.__hw.go(11));                /* hall -> beach easel: through the east door */
   check(await until(p, () => !document.querySelector('#pad').hidden, null, 200), 'walks out the east door and sits at a beach easel');
   await p.waitForTimeout(2500);
