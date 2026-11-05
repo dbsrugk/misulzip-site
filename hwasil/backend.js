@@ -47,6 +47,7 @@
   window.addEventListener('error', function (e) { diag('jserr=' + (e && e.message)); });
 
   /* ---------- entry code ---------- */
+  var rxOff = false;
   var hw = window.hwasil = {
     stats: stats,
     savedCode: function () {
@@ -105,6 +106,9 @@
     },
     /* a "I'm here" mark for the daily report (who came, how often); failures are ignored */
     ping: function (nm) { if (!sb || !code) return Promise.resolve(); return rpc('hwasil_ping', { code: code, token: token, nm: String(nm || '') }).then(function () {}, function () {}); },
+    /* emoji reactions kept per artwork; if the database does not have them yet, both calls quietly do nothing */
+    react: function (item, kind) { if (!sb || !code || rxOff) return Promise.resolve(); return rpc('hwasil_react', { code: code, item: String(item), kind: kind }).then(function () {}, function () { rxOff = true; }); },
+    reactions: function (item) { if (!sb || !code || rxOff) return Promise.resolve({}); return rpc('hwasil_reactions', { code: code, item: String(item) }).then(function (r) { return r || {}; }, function () { rxOff = true; return {}; }); },
     inviteLink: function () { return code ? location.origin + location.pathname + '#c=' + encodeURIComponent(code) : ''; }
   };
 

@@ -1987,12 +1987,20 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function reactTo(i) {
     if (!rxSlot) return;
     spawnRx(rxSlot, i); myRx = { i: i, s: rxSlot.id, n: myRx.n + 1 }; pushPresence(true);
+    const key = rxKey(rxSlot); if (key) { try { window.hwasil.react(key, i); } catch (e) {} rxCounts[i] = (rxCounts[i] || 0) + 1; showRxCounts(); }
     const pop = document.createElement('div'); pop.className = 'rxPop'; pop.textContent = RX[i];
     pop.style.left = (window.innerWidth / 2 + (Math.random() - 0.5) * 140 - 17) + 'px'; pop.style.top = (window.innerHeight * 0.55) + 'px';
     document.body.appendChild(pop); setTimeout(() => pop.remove(), 1400);
   }
+  let rxCounts = {}, rxBoxes = [];
+  const rxKey = sl => sl && (sl.cat ? 'c:' + sl.cat.id : sl.ex && sl.ex.id ? 'w:' + sl.ex.id : '');
+  function showRxCounts() { rxBoxes.forEach(box => Array.from(box.children).forEach((b, i) => { const n = rxCounts[i] | 0; b.textContent = RX[i] + (n ? ' ' + n : ''); })); }
+  function loadRx(sl) {
+    rxCounts = {}; showRxCounts(); const key = rxKey(sl);
+    if (key && window.hwasil && window.hwasil.reactions) window.hwasil.reactions(key).then(r => { if (rxSlot === sl) { rxCounts = {}; Object.keys(r || {}).forEach(k => { rxCounts[k] = Number(r[k]) || 0; }); showRxCounts(); } }, () => {});
+  }
   function buildRx(box) {
-    box.textContent = '';
+    box.textContent = ''; if (rxBoxes.indexOf(box) < 0) rxBoxes.push(box);
     RX.forEach((ch, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'rxBtn'; b.textContent = ch; b.setAttribute('aria-label', '반응 남기기 ' + ch); b.addEventListener('click', () => reactTo(i)); box.appendChild(b); });
   }
   function updateFx(t) {
@@ -2765,7 +2773,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   function showDocent(sl) {
     const c = sl.cat; if (!c) return;
-    rxSlot = sl; buildRx($('#rxBarA'));
+    rxSlot = sl; buildRx($('#rxBarA')); loadRx(sl);
     openArt(c);
   }
   function showWork(ex) {                                 /* open the big view; fetch the lines first when they are not here yet */
@@ -2792,7 +2800,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   function openViewer(ex) {
     viewerActions(ex);
-    rxSlot = slots.find(q => q.ex === ex || (q.ex && ex && q.ex.id === ex.id)) || null; $('#rxBarV').hidden = !rxSlot; if (rxSlot) buildRx($('#rxBarV'));
+    rxSlot = slots.find(q => q.ex === ex || (q.ex && ex && q.ex.id === ex.id)) || null; $('#rxBarV').hidden = !rxSlot; if (rxSlot) { buildRx($('#rxBarV')); loadRx(rxSlot); }
     const c = $('#viewerCanvas'), dpr = Math.min(window.devicePixelRatio || 1, 2);
     const mw = window.innerWidth - 56, mh = window.innerHeight - 170, sc = Math.max(0.1, Math.min(mw / ex.w, mh / ex.h));
     const cw = Math.round(ex.w * sc), ch = Math.round(ex.h * sc);
