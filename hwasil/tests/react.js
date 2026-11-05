@@ -18,5 +18,6 @@ const { start, vis, until, check, done } = require('./lib');
   await a.evaluate(() => window.__hw.wish()); await a.waitForTimeout(300);
   check(await a.evaluate(() => window.__hw.fx()) >= f1 + 3, 'a coin and sparkles fly up from the fountain');
   check(/풍덩/.test(await a.evaluate(() => document.querySelector('#toast').textContent)), 'a wish pops up');
+  check(await a.evaluate(() => window.__hw.spots()) === 3, 'the Pieta, the windmill and the lake can be tapped for a note');
   await t.close(); process.exit(done(t));
 })().catch(e => { console.log('ERR', e.message); process.exit(1); });

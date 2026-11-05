@@ -820,6 +820,9 @@ body.padOpen #hud { visibility: hidden; }
   /* things hung on an outer wall: shown only while the camera is on the inside of that wall */
   const onWall = [];
   const hitList = [];  /* tappable things: easels and gallery frames */
+function infoSpot(x, y, z, w, h, d, msg) {  /* an invisible box in the world: tap it and a short note pops up */
+  const m = new T.Mesh(new T.BoxGeometry(w, h, d), new T.MeshBasicMaterial({ visible: false })); m.position.set(x, y, z); m.userData.msg = msg; scene.add(m); hitList.push(m); return m;
+}
 const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const hitMat = new T.MeshBasicMaterial({ visible: false });
   function hang(obj, ax, lim, inside) { onWall.push({ o: obj, ax: ax, lim: lim, inside: inside }); return obj; }
@@ -1081,6 +1084,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       put(gg, new T.Mesh(bx(3.6, 2.6, 3.6), marbleG), 0, 2.5, 0); put(gg, new T.Mesh(bx(4.2, 0.35, 4.2), brassM), 0, 3.95, 0);
       const p = makePieta(); p.position.set(0, 4.1, 0); p.scale.setScalar(1.7); gg.add(p);
       colliders.push({ x: 0, z: GGZ + 12, r: 4.2 });
+      infoSpot(0, 4, GGZ + 12, 9, 8, 9, '🗿 대리석 피에타예요. 슬픔에 잠긴 어머니가 아들을 안고 있어요. 미켈란젤로가 스물셋에 깎은 조각이 모델이에요');
     })();
     /* lobby boards: where to go */
     function board(x, z, w, h, lines, title) {
@@ -2431,6 +2435,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         const bar = new T.Mesh(bx(3.6, 0.7, 0.24), woodD2); bar.position.set(1.9, 0, 0); bar.userData.noShadow = true; grp.add(bar);
       });
     }
+    infoSpot(MILL.x, 6, MILL.z, 9, 12, 9, '🌬 풍차가 바람 따라 천천히 돌아요. 꽃밭 사이로 걸어 보세요');
+    infoSpot(LAKE.x, 1, LAKE.z, LAKE.r * 1.4, 2, LAKE.r * 1.4, '🪷 호수에 수련이 피어 있고 작은 배가 떠 있어요. 물가에서 그림 그리기 좋은 곳이에요');
     signpost(38, -7, ['화실', '조각 전시관', '야외 전시 정원', '산 전망대', '호숫가', '풍차 들판', '바닷가']);
     signpost(66, -6, ['화실', '조각 전시관', '꽃길 정원', '야외 전시 정원', '바닷가']);
 
@@ -2942,6 +2948,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       }
       if (o.userData.bench !== undefined) { tapBench(o.userData.bench); return; }
       if (o.userData.spot === 'fountain') { wishAtFountain(); return; }
+      if (o.userData.msg) { toast(o.userData.msg, 4500); return; }
       const sl = o.userData.slot;
       if (sl) { frameTap(sl); return; }
     }
