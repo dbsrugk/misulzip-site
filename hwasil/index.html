@@ -2602,7 +2602,7 @@ body.padOpen #hud { visibility: hidden; }
     let voice = null; try { voice = (speechSynthesis.getVoices() || []).find(v => /^ko/i.test(v.lang)) || null; } catch (e) {}
     art.on = true; $('#artSpeak').textContent = '⏹ 멈추기';
     parts.forEach((t, i) => {                              /* short pieces: some phones stop reading one long text halfway */
-      const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; if (voice) u.voice = voice; u.rate = 0.95;
+      const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; if (voice) u.voice = voice; u.rate = 1.05; u.pitch = 1.9;                  /* a high, bright little-kid voice */
       if (i === parts.length - 1) u.onend = u.onerror = () => { if (gen === art.gen) artSpeakStop(); };
       speechSynthesis.speak(u);
     });
