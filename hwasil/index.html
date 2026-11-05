@@ -1712,6 +1712,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (tour.wait) { if (!inspect) { tour.on = false; tour.wait = 0; } else if (performance.now() > tour.wait) tourNext(); }
       else if (!goal) { tour.on = false; exitInspect(); }
     });
+    /* stone urns with flowers along the back colonnade, a little colour and softness between the great white pieces */
+    { const flow = [0xe05a6d, 0xf2b84a, 0xb86ad8, 0xf08a5d];
+      [-25, -7, 7, 25].forEach((d, i) => { const ux = S.x + d, uz = z1 - 2.0;
+        put(scene, new T.Mesh(cyl(0.7, 0.45, 1.3, 14), granite), ux, 0.7, uz); put(scene, new T.Mesh(cyl(0.85, 0.7, 0.25, 14), marble), ux, 1.4, uz);
+        put(scene, new T.Mesh(new T.SphereGeometry(0.85, 12, 8), L(0x3f8a4b)), ux, 1.95, uz).scale.y = 0.7;
+        for (let k = 0; k < 7; k++) { const a1 = k * 0.9 + i, r1 = 0.2 + (k % 3) * 0.2; put(scene, new T.Mesh(new T.SphereGeometry(0.17, 8, 6), L(flow[(k + i) % 4])), ux + Math.cos(a1) * r1, 2.25 + (k % 2) * 0.1, uz + Math.sin(a1) * r1); }
+        colliders.push({ x: ux, z: uz, r: 0.9 }); }); }
     /* lights: three spotlights follow the pieces nearest to me, each aimed and sized for its piece; a piece I am inspecting always gets one */
     const spots = [0, 1, 2].map(() => { const sp = new T.SpotLight(0xffe6c4, 0, 60, 0.5, 0.75, 1.2); sp.position.set(S.x, 30, S.z); scene.add(sp); scene.add(sp.target); return sp; });
     anim.push(() => {
@@ -2291,6 +2298,14 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     }
     strip(RM.hx, 0, 138, 0, 3.4); strip(85, 0, 85, -46, 3); strip(LAKE.x, 0, LAKE.x, 21, 3); strip(MILL.x, 0, MILL.x, 25, 3);
     flat(new T.CircleGeometry(6.5, 32), pathM, 40, 0.031, 0);
+    /* the great promenade in front of the sculpture pavilion: a broad paved plaza instead of a thin path */
+    { const PZ = { x0: 58, x1: 140, z0: -8, z1: 1.5 };
+      const pc = document.createElement('canvas'); pc.width = pc.height = 256; const pq = pc.getContext('2d');
+      [[0, 0, '#ece2c8'], [128, 0, '#e0d3b2'], [0, 128, '#e0d3b2'], [128, 128, '#ece2c8']].forEach(a => { pq.fillStyle = a[2]; pq.fillRect(a[0], a[1], 128, 128); });
+      pq.strokeStyle = 'rgba(130,108,70,0.28)'; pq.lineWidth = 3; pq.strokeRect(1.5, 1.5, 253, 253); pq.beginPath(); pq.moveTo(128, 0); pq.lineTo(128, 256); pq.moveTo(0, 128); pq.lineTo(256, 128); pq.stroke();
+      const pt = new T.CanvasTexture(pc); pt.wrapS = pt.wrapT = T.RepeatWrapping; pt.repeat.set((PZ.x1 - PZ.x0) / 8, (PZ.z1 - PZ.z0) / 8); pt.anisotropy = 4;
+      const plz = new T.Mesh(new T.PlaneGeometry(PZ.x1 - PZ.x0, PZ.z1 - PZ.z0), new T.MeshLambertMaterial({ map: pt })); plz.rotation.x = -Math.PI / 2; plz.position.set((PZ.x0 + PZ.x1) / 2, 0.04, (PZ.z0 + PZ.z1) / 2); plz.receiveShadow = true; plz.userData.noShadow = true; scene.add(plz);
+      [PZ.z0 - 0.15, PZ.z1 + 0.15].forEach(zz => { const ed = new T.Mesh(new T.PlaneGeometry(PZ.x1 - PZ.x0, 0.3), new T.MeshLambertMaterial({ color: 0xc9b98f })); ed.rotation.x = -Math.PI / 2; ed.position.set((PZ.x0 + PZ.x1) / 2, 0.045, zz); ed.userData.noShadow = true; scene.add(ed); }); }
 
     /* sea, beach, foam */
     const sea = flat(new T.PlaneGeometry(700, 400, HI ? 140 : 70, HI ? 60 : 30), waterMat({ mode: 0, shore: SEA_X, depth: 80, shallow: 0x7fd8ee, deep: 0x2f7fc4, amp: 0.1 }), SEA_X + 350, -0.01, 0);
@@ -2353,12 +2368,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const SPOTS = [{ x: 85, z: -46, r: 16 }, { x: LAKE.x, z: LAKE.z, r: 21 }, { x: MILL.x, z: MILL.z, r: 22 }];
     function free(x, z) {
       if (Math.abs(z) < 4.5 && x < 140) return false;
+      if (x > 54 && x < 146 && z > -14 && z < 4.5) return false;             /* the broad promenade and a lawn margin either side */
       if (Math.abs(x - 85) < 8 && z < 4 && z > -50) return false;            /* keep a wide clear lane along the branch paths so the view is never blocked */
       if (Math.abs(x - LAKE.x) < 9 && z < 26 && z > 0) return false;
       if (Math.abs(x - MILL.x) < 9 && z < 30 && z > 0) return false;
       if (Math.hypot(x - 40, z) < 9) return false;
       if (x > 34 && x < 66 && z > 4 && z < 32) return false;                 /* the atelier hut */
-      if (x > 70 && x < 106 && z > -1 && z < 29) return false;               /* the sculpture pavilion */
+      if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 8 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 8) return false;   /* the sculpture pavilion, with a wide lawn around it */
       if (Math.hypot(x - GARD.x, z - GARD.z) < GARD.r + 1) return false;
       if (Math.hypot(x - GARD2.x, z - GARD2.z) < GARD2.r + 1) return false;
       if (Math.abs(x - GARD2.x) < 4 && z > GARD2.z && z < 0) return false;
@@ -2405,6 +2421,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     /* wind-blown grass, bushes and rocks */
     function offPaths(x, z) {
       if (Math.abs(z) < 2.6 && x < 139) return false;
+      if (x > 56 && x < 141 && z > -8.5 && z < 2) return false;
       if (Math.abs(x - 85) < 2.6 && z < 1 && z > -47) return false;
       if (Math.abs(x - LAKE.x) < 2.6 && z > -1 && z < 22) return false;
       if (Math.abs(x - MILL.x) < 2.6 && z > -1 && z < 26) return false;
@@ -4665,6 +4682,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (!started) { camYaw += dt * 0.1; camPitch = 0.4; }
     const f = 1 - Math.exp(-dt * 8);
     if (inspect && (Math.hypot(joy.x, joy.y) > 0.2 || keys.w || keys.a || keys.s || keys.d || keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright)) exitInspect();
+    if (inspect && cptr.size === 0) camYaw += dt * 0.28;                       /* a slow turn of its own until a finger takes over */
     camTx += ((inspect ? inspect.x : pos.x) - camTx) * f; camTz += ((inspect ? inspect.z : pos.z) - camTz) * f;
     camDist += ((started ? camWant : 26) - camDist) * Math.min(1, dt * 3);
     const pe = Math.max(camPitch, 0.08), cp = Math.cos(pe);      /* below 0.08 the camera stops sinking and starts looking up instead */
