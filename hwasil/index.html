@@ -2393,6 +2393,34 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     });
     for (let i = 0; i < 4; i++) addEaselAt(MILL.x + (i - 1.5) * 7, 29, -Math.PI / 2);
     sign('풍차 들판', MILL.x - 6.5, 12);
+    /* signposts on the field: wooden arrows that point to each place, with the walking distance */
+    function signpost(x, z, names) {
+      const eol = names.length;
+      at(new T.Mesh(cyl(0.16, 0.2, 5.4, 8), woodD2), x, 2.7, z); colliders.push({ x: x, z: z, r: 0.6 });
+      names.forEach((nm, i) => {
+        const pl = PLACES.find(q => q.name === nm); if (!pl) return;
+        const dx = pl.x - x, dz = pl.z - z, L = Math.hypot(dx, dz) || 1, th = Math.atan2(-dz, dx), d = Math.max(1, Math.round(L / 5) * 5);
+        const mk = right => {
+          const c = document.createElement('canvas'); c.width = 512; c.height = 96; const q = c.getContext('2d');
+          const draw = () => {
+            q.fillStyle = '#c9a56b'; q.fillRect(0, 0, 512, 96); q.strokeStyle = '#6b4a2f'; q.lineWidth = 8; q.strokeRect(4, 4, 504, 88);
+            q.fillStyle = '#2a2118'; q.textBaseline = 'middle'; q.textAlign = right ? 'right' : 'left';
+            const t = right ? nm + '  ' + d + 'm ▶' : '◀ ' + nm + '  ' + d + 'm'; q.font = '50px "Gamja Flower", "Noto Sans KR", sans-serif';
+            const tw = q.measureText(t).width; if (tw > 470) q.font = Math.floor(50 * 470 / tw) + 'px "Gamja Flower", "Noto Sans KR", sans-serif';
+            q.fillText(t, right ? 496 : 16, 50);
+          };
+          draw(); const tex = new T.CanvasTexture(c); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
+          if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', nm).then(() => { draw(); tex.needsUpdate = true; }).catch(() => {});
+          return tex;
+        };
+        const grp = new T.Group(); grp.position.set(x, 4.9 - i * 0.78, z); grp.rotation.y = th; scene.add(grp);
+        const front = new T.Mesh(new T.PlaneGeometry(3.6, 0.675), new T.MeshBasicMaterial({ map: mk(true) })); front.position.set(1.9, 0, 0.14); grp.add(front);
+        const back = new T.Mesh(new T.PlaneGeometry(3.6, 0.675), new T.MeshBasicMaterial({ map: mk(false) })); back.position.set(1.9, 0, -0.14); back.rotation.y = Math.PI; grp.add(back);
+        const bar = new T.Mesh(bx(3.6, 0.7, 0.24), woodD2); bar.position.set(1.9, 0, 0); bar.userData.noShadow = true; grp.add(bar);
+      });
+    }
+    signpost(38, -7, ['화실', '조각 전시관', '야외 전시 정원', '산 전망대', '호숫가', '풍차 들판', '바닷가']);
+    signpost(66, -6, ['화실', '조각 전시관', '꽃길 정원', '야외 전시 정원', '바닷가']);
 
     /* a little life: butterflies, drifting pollen, far-away birds */
     const BF = HI ? 16 : 6, flies = [], wingGeo = new T.PlaneGeometry(0.42, 0.36); wingGeo.translate(0.21, 0, 0);
@@ -4253,10 +4281,18 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     g.fillStyle = 'rgba(37,33,29,0.1)'; g.fillRect(X(-RM.hx), ZU(-RM.hz), X(RM.hx) - X(-RM.hx), ZU(RM.hz) - ZU(-RM.hz));                 /* the central hall */
     g.strokeStyle = 'rgba(37,33,29,0.35)'; g.lineWidth = 1; g.strokeRect(X(-RM.hx), ZU(-RM.hz), X(RM.hx) - X(-RM.hx), ZU(RM.hz) - ZU(-RM.hz));
     g.font = '11px sans-serif'; g.textBaseline = 'middle';
-    const hit = [];
+    const hit = [], placed = [];
     PLACES.forEach(pl => {
       const c = catOf(pl), px = X(pl.x), py = ZU(pl.z); g.fillStyle = PCOL[c]; g.beginPath(); g.arc(px, py, 5, 0, 6.2832); g.fill();
-      g.fillStyle = '#25211d'; const tw = g.measureText(pl.name).width; g.textAlign = px + tw + 12 > W ? 'right' : 'left'; g.fillText(pl.name, px + (g.textAlign === 'left' ? 9 : -9), py);
+      g.fillStyle = '#25211d'; const tw = g.measureText(pl.name).width;
+      const tries = [[1, 0], [-1, 0], [1, -11], [-1, -11], [1, 11], [-1, 11], [1, -22], [-1, 22]];            /* label side and shift: take the first spot that does not run over another label or the edge */
+      let put0 = tries[0];
+      for (let ti = 0; ti < tries.length; ti++) {
+        const sd = tries[ti][0], lx = sd > 0 ? px + 9 : px - 9 - tw, ly = py + tries[ti][1];
+        if (lx < 2 || lx + tw > W - 2 || ly < 8 || ly > H - 8) continue;
+        if (!placed.some(r => lx < r.x + r.w + 2 && lx + tw + 2 > r.x && Math.abs(ly - r.y) < 12)) { put0 = tries[ti]; break; }
+      }
+      { const sd = put0[0], lx = sd > 0 ? px + 9 : px - 9 - tw; placed.push({ x: lx, w: tw, y: py + put0[1] }); g.textAlign = 'left'; g.fillText(pl.name, lx, py + put0[1]); }
       hit.push({ pl: pl, x: px, y: py });
     });
     const mx = X(clamp(pos.x, x0, x1)), my = clamp(ZU(pos.z), 8, H - 8); g.fillStyle = '#e0453a'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(mx, my, 6, 0, 6.2832); g.fill(); g.stroke();
