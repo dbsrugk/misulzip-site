@@ -48,6 +48,8 @@ module.exports = async function handler(req, res) {
   if (!v.license_key || !ours(v)) return res.status(403).json({ error: "invalid" });
   const k = v.license_key;
   if (k.status === "disabled" || k.status === "expired") return res.status(403).json({ error: "invalid" });
+  // 무제한 이용권(활성화 횟수 제한 없음)은 소재마다 활성화하지 않고 바로 폴더를 연다
+  if (!k.activation_limit) return res.json({ url, unlimited: true, usage: null, limit: null });
   if (k.activation_limit && k.activation_usage >= k.activation_limit) {
     return res.status(403).json({ error: "used_up", usage: k.activation_usage, limit: k.activation_limit });
   }
