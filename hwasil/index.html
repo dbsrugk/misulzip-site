@@ -223,8 +223,14 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #pad.split .padMain { background: var(--chalk); border: 2px solid var(--ink); border-bottom: 0; border-radius: 18px 18px 0 0; padding: 8px 12px 0; margin: 0 -14px -10px; }
 #pad.split .padTop .btn, #pad.ghost .padTop .btn { box-shadow: 0 2px 8px rgba(36, 32, 28, 0.35); }
 #pad.split .padTools { gap: 5px; }
-#pad.split .padTools .btn { padding: 6px 10px; font-size: 16px; }
-#pad.split .seg button { padding: 6px 10px; font-size: 16px; }
+#pad.split .padTools .btn { padding: 10px 12px; font-size: 16px; }
+#pad.split .seg button { padding: 10px 12px; font-size: 16px; }
+#padOptsBtn { display: none; }
+@media (max-width: 700px) {
+  #padOptsBtn { display: inline-block; }
+  #pad:not(.optsOpen) #paperSeg, #pad:not(.optsOpen) #viewSeg, #pad:not(.optsOpen) #ghostWrap { display: none; }          /* paper shape and scenery view stay folded away so the drawing area and the tools get the room */
+  #pad .swatches .sw { width: 38px; height: 38px; }
+}
 #pad.split .swatches { gap: 6px; }
 #pad.ghost .padMain { background: transparent; }
 #pad.ghost #padCanvas { opacity: var(--ghost, 0.6); }
@@ -431,6 +437,7 @@ body.padOpen #hud { visibility: hidden; }
   <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas><canvas id="refCanvas" class="refCanvas" hidden aria-hidden="true"></canvas><div class="sizeFloat" id="sizeFloat" hidden aria-hidden="true"><i></i><b></b></div><div class="heartLayer" id="padHearts"></div><div class="likeBadge" id="padLikes" hidden>♥ 0</div></div>
   <div class="padTools">
     <button class="btn" id="zoomReset" type="button" hidden>🔍 원래 크기</button>
+    <button class="btn" id="padOptsBtn" type="button" aria-expanded="false">종이·풍경 ▾</button>
     <div class="seg" id="paperSeg" role="group" aria-label="종이 모양">
       <button type="button" data-paper="land">가로</button>
       <button type="button" data-paper="port">세로</button>
@@ -3603,6 +3610,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   padCv.addEventListener('pointerup', endStroke);
   padCv.addEventListener('pointercancel', endStroke);
+  $('#padOptsBtn').addEventListener('click', () => { const on = padEl.classList.toggle('optsOpen'); $('#padOptsBtn').setAttribute('aria-expanded', String(on)); $('#padOptsBtn').textContent = on ? '종이·풍경 ▴' : '종이·풍경 ▾'; fitPad(); });
   $('#padUndo').addEventListener('click', () => {
     if (pad.cur || !pad.strokes.length) return;
     pad.strokes.pop(); pad.dirty = true; rebuildBase(); present(); emitCount();
