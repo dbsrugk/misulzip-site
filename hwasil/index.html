@@ -2636,11 +2636,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   let artCtx = null;
   function artSpeakStop() {
     art.gen++; art.on = false;
-    clearTimeout(art.endT);
+    clearTimeout(art.endT); clearInterval(art.revT);
+    if (art.full != null) { $('#artText').textContent = art.full; art.full = null; }                    /* stopped or finished: the whole text is back */
     try { if (art.master) { art.master.disconnect(); art.master = null; } } catch (e) {}
     $('#artSpeak').textContent = '🔊 도슨트 듣기';
   }
-  function artSpeak(text) {
+  function artSpeak(text, blurb) {
     artSpeakStop();
     try {
       if (!artCtx) artCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2648,9 +2649,11 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     } catch (e) { return; }
     const gen = art.gen, ctx = artCtx, master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination); art.master = master;
     let t = ctx.currentTime + 0.12;
-    const chars = Array.from(text);
+    const chars = Array.from(text), marks = [], pre = chars.length - Array.from(blurb || '').length;
+    art.full = blurb || ''; if (blurb) $('#artText').textContent = '';                       /* the description starts blank and appears as it is read */
     chars.forEach((ch, i) => {
       const code = ch.charCodeAt(0);
+      if (i >= pre) marks.push(t);
       if (/[.!?。]/.test(ch)) { t += 0.38; return; }
       if (/[,，·]/.test(ch)) { t += 0.2; return; }
       if (/\s/.test(ch)) { t += 0.07; return; }
@@ -2668,6 +2671,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       t += 0.098;
     });
     art.on = true; $('#artSpeak').textContent = '⏹ 멈추기';
+    if (blurb) { const bch = Array.from(blurb); art.revT = setInterval(() => { const now = ctx.currentTime; let n = 0; while (n < marks.length && marks[n] <= now + 0.02) n++; $('#artText').textContent = bch.slice(0, n).join(''); }, 50); }
     art.endT = setTimeout(() => { if (gen === art.gen) artSpeakStop(); }, (t - ctx.currentTime) * 1000 + 300);
   }
   function artApply() {
@@ -2690,7 +2694,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const im = $('#artImg'), none = $('#artNone'); none.hidden = true; im.hidden = false; im.removeAttribute('src');
     if (c.img) { im.onerror = () => { im.hidden = true; none.hidden = false; none.textContent = '작품 사진을 불러오지 못했어요.'; }; im.alt = c.title; im.src = c.img; }
     else { im.hidden = true; none.hidden = false; none.textContent = '작품 사진은 곧 걸려요'; }
-    $('#artSpeak').hidden = !ttsOk; $('#artSpeak').onclick = () => { if (art.on) artSpeakStop(); else artSpeak([c.title + '.', c.artist + ', ' + c.year + '.', c.place ? c.place + '.' : '', c.blurb || ''].join(' ')); };
+    $('#artSpeak').hidden = !ttsOk; $('#artSpeak').onclick = () => { if (art.on) artSpeakStop(); else artSpeak(c.blurb || c.title, c.blurb || ''); };
     $('#artSpeak').textContent = '🔊 도슨트 듣기'; $('#art').hidden = false;
     document.querySelector('#art .artInfo').scrollTop = 0;
   }
