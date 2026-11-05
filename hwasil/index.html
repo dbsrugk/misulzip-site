@@ -1510,7 +1510,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     for (let k = 1; k <= A.d; k += 2) { colliders.push({ x: x0, z: z0 + k, r: 0.8 }); colliders.push({ x: x1, z: z0 + k, r: 0.8 }); }
   })();
   /* the sculpture pavilion (조각 전시관): a marble colonnade on the field beside the main path. The real 3D statues from the lobby stand here around a hand-built Pieta. */
-  const SCULPT = { x: 96, z: 11.5, w: 56, d: 19 };
+  const SCULPT = { x: 102, z: 14.5, w: 76, d: 25 };
   function makePieta() {
     const g = new T.Group(), m = L(0xf2efe8), m2 = L(0xe4dfd4);
     const add = (geo, mat, x, y, z, rx, ry, rz) => { const o = new T.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx || 0, ry || 0, rz || 0); g.add(o); return o; };
@@ -1537,11 +1537,11 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       q.strokeStyle = 'rgba(120,98,60,0.35)'; q.lineWidth = 3; q.strokeRect(1.5, 1.5, 253, 253); q.beginPath(); q.moveTo(128, 0); q.lineTo(128, 256); q.moveTo(0, 128); q.lineTo(256, 128); q.stroke();
       const ft = new T.CanvasTexture(fc); ft.wrapS = ft.wrapT = T.RepeatWrapping; ft.repeat.set(S.w / 8, S.d / 8); ft.anisotropy = 4; floorM.map = ft; }
     const floor = new T.Mesh(new T.PlaneGeometry(S.w, S.d), floorM); floor.rotation.x = -Math.PI / 2; floor.position.set(S.x, 0.05, S.z); floor.receiveShadow = true; scene.add(floor);
-    put(scene, new T.Mesh(bx(S.w + 0.8, 0.12, S.d + 0.8), stone), S.x, 0.02, S.z);                  /* a thin step all around */
+    put(scene, new T.Mesh(bx(S.w + 0.8, 0.12, S.d + 0.8), stone), S.x, -0.04, S.z);                  /* a thin step all around */
     /* columns: two rows with a wide gap in front, and three on each side */
     const cols = [], DH = 26;                                                                       /* a colossal hall: columns 33 m high */
-    [-26.8, -18, -9, 9, 18, 26.8].forEach(d => cols.push([S.x + d, z1 - 1.0]));                          /* back row: six, behind everything */
-    [-26.8, -19.5, -12, 12, 19.5, 26.8].forEach(d => cols.push([S.x + d, z0 + 1.0]));                    /* the front colonnade: a wide gap in the middle for the entrance */
+    [-36, -24, -12, 12, 24, 36].forEach(d => cols.push([S.x + d, z1 - 1.0]));                          /* back row: six, behind everything */
+    [-36, -27, -18, 18, 27, 36].forEach(d => cols.push([S.x + d, z0 + 1.0]));                    /* the front colonnade: a wide gap in the middle for the entrance */
     cols.push([x0 + 0.9, S.z], [x1 - 0.9, S.z]);
     cols.forEach(q => {
       const plain = put(scene, new T.Mesh(cyl(0.8, 0.95, 7.0 + DH, 14), marble), q[0], 0.05 + (7.0 + DH) / 2, q[1]);          /* a plain stand-in until the fluted column model has loaded */
@@ -1552,7 +1552,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const roof = new T.Group(); scene.add(roof); const roofM = L(0xf4f0e8), roofS = L(0xe2dccf);            /* its own materials: fading must not touch the columns */
     put(roof, new T.Mesh(bx(S.w + 1.4, 0.6, S.d + 1.4), roofM), S.x, 7.3 + DH, S.z);
     put(roof, new T.Mesh(bx(S.w + 1.8, 0.35, S.d + 1.8), roofS), S.x, 7.0 + DH, S.z);
-    [-8, 0, 8].forEach(dz => put(roof, new T.Mesh(bx(S.w, 0.6, 0.7), roofS), S.x, 6.85 + DH, S.z + dz));
+    [-9, 0, 9].forEach(dz => put(roof, new T.Mesh(bx(S.w, 0.6, 0.7), roofS), S.x, 6.85 + DH, S.z + dz));
     addOccluder(roof, x0 - 1.2, 6.5 + DH, z0 - 1.2, x1 + 1.2, 8 + DH, z1 + 1.2);
     /* the sign over the front, facing the path */
     const sc = document.createElement('canvas'); sc.width = 768; sc.height = 192; const g = sc.getContext('2d');
@@ -1564,7 +1564,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       g.font = '46px ' + FONT_UI; g.fillStyle = '#6d655b'; g.fillText('돌아다니며 구경해요', 384, 142); st.needsUpdate = true;
     }
     drawSign(); if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '조각전시관돌아다니며구경해요').then(drawSign).catch(() => {});
-    const sign = new T.Mesh(new T.PlaneGeometry(17, 4.25), new T.MeshBasicMaterial({ map: st })); sign.position.set(S.x, 7.0 + DH + 1.2, z0 - 0.9); sign.rotation.y = Math.PI; scene.add(sign);
+    const sign = new T.Mesh(new T.PlaneGeometry(24, 6), new T.MeshBasicMaterial({ map: st })); sign.position.set(S.x, 7.0 + DH + 1.2, z0 - 0.9); sign.rotation.y = Math.PI; scene.add(sign);
     /* a plinth, a name card and a pool of light for each piece */
     function plate(text, x, y, z) {
       const c = document.createElement('canvas'); c.width = 512; c.height = 128; const q = c.getContext('2d');
@@ -1598,20 +1598,20 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       stand(x, z, pw, ph, title, (px, h, pz) => { const b = put(scene, makeBust(1.7), px, h, pz); b.scale.setScalar(mh / 1.9); b.rotation.y = rotY; const gp = glbProp(file, px, h, pz, mh, rotY, b); gp.far = far || 1; }, Object.assign({ hh: ph + mh }, info));
     }
     const soft = new T.MeshLambertMaterial({ color: 0xf1ece0 });
-    giant(XX - 8.5, z0 + 3.5, 5.0, 1.8, '① 문지기 사자', 'lion_head/lion_head.gltf', 10, 0.5, { id: 'lion', artist: '사자상 조각 전통', year: '고대부터 지금까지', place: '조각 전시관 입구', blurb: '사자는 아주 오래전부터 힘과 용기, 왕의 상징이었어요. 궁전 문과 다리, 무덤을 지키는 사자 조각은 세계 곳곳에 남아 있어요. 갈기 한 가닥까지 살려 깎은 솜씨를 올려다보세요.' }, 2.2);
-    stand(XX - 23, z0 + 4.5, 2.0, 1.0, '② 고대 흉상', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = 0.9; glbProp('bust_1.glb', x, h, z, 2.1, 0.9, b); }, { id: 'bust_a', hh: 3.2, artist: '고대 그리스·로마 양식', year: '기원전 5세기~기원후 2세기', place: '조각 전시관', blurb: '고대 그리스와 로마 사람들은 훌륭한 사람의 얼굴을 대리석과 청동으로 남겼어요. 머리카락 한 올, 눈썹의 결까지 살아 있는 것처럼 다듬은 것이 특징이에요.' });
-    giant(XX - 22, ZZ + 0.5, 5.0, 1.6, '③ 황소 머리', 'bull_head/bull_head.gltf', 9, 0.9, { id: 'bull', artist: '황소상 조각 전통', year: '고대부터 지금까지', place: '조각 전시관', blurb: '황소는 힘과 풍요를 뜻해서 고대 지중해와 메소포타미아의 신전에서 자주 조각됐어요. 굵은 목과 뿔의 곡선이 강한 인상을 줘요.' }, 2.2);
-    stand(XX - 22.5, z1 - 3.5, 2.4, 0.9, '④ 고딕 조각상', (x, h, z) => { const b = put(scene, makeTwist(2.0), x, h, z); b.scale.setScalar(1.7); glbProp('statue_1.glb', x, h, z, 5.0, Math.PI - 0.5, b); }, { id: 'gothic', hh: 6.5, artist: '중세 고딕 성당 조각 양식', year: '12~15세기', place: '조각 전시관', blurb: '고딕 성당의 문과 벽을 장식하던 성인 조각이에요. 길고 가는 몸과 주름진 옷자락이 하늘을 향해 솟는 느낌을 줘요.' });
-    giant(XX - 14, z1 - 3.0, 2.6, 1.0, '⑤ 말 머리', 'horse_head/horse_head.gltf', 3.4, 0.6, { id: 'horsehead', artist: '말 머리 조각 전통', year: '고대부터 지금까지', place: '조각 전시관', blurb: '말 머리 조각은 고대 그리스 신전의 장식으로 유명해요. 달리는 말의 목과 갈기를 한 덩어리로 담아 속도감과 힘을 보여 줘요. 이 작품은 청동 느낌으로 만들어졌어요.' }, 2.2);
-    stand(XX - 10.5, ZZ, 2.2, 1.0, '⑥ 공간 속의 새', (x, h, z) => { const sb = put(scene, new T.Mesh(cyl(0.3, 0.55, 9, 12), soft), x, h + 4.5, z); sb.rotation.z = 0.06; glbProp('bird.glb', x, h, z, 9, 0.5, sb); }, { id: 'bird', hh: 10.5, artist: '브랑쿠시 양식을 본뜬 모형', year: '1920~1940년대 양식', place: '조각 전시관', blurb: '새의 몸을 그대로 깎지 않고, 날아오르는 느낌만 남겨 길게 갈아 낸 조각이에요. 매끈한 표면이 빛을 받아 위아래로 길게 반짝여요. 이 작품은 그 양식을 본떠 블렌더로 만든 모형이에요.' });
+    giant(XX - 13, z0 + 5.0, 5.0, 1.8, '① 문지기 사자', 'lion_head/lion_head.gltf', 10, 0.94, { id: 'lion', artist: '사자상 조각 전통', year: '고대부터 지금까지', place: '조각 전시관 입구', blurb: '사자는 아주 오래전부터 힘과 용기, 왕의 상징이었어요. 궁전 문과 다리, 무덤을 지키는 사자 조각은 세계 곳곳에 남아 있어요. 갈기 한 가닥까지 살려 깎은 솜씨를 올려다보세요.' }, 2.2);
+    stand(XX - 31, z0 + 4.5, 2.0, 1.0, '② 고대 흉상', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = 0.9; glbProp('bust_1.glb', x, h, z, 2.1, 0.9, b); }, { id: 'bust_a', hh: 3.2, artist: '고대 그리스·로마 양식', year: '기원전 5세기~기원후 2세기', place: '조각 전시관', blurb: '고대 그리스와 로마 사람들은 훌륭한 사람의 얼굴을 대리석과 청동으로 남겼어요. 머리카락 한 올, 눈썹의 결까지 살아 있는 것처럼 다듬은 것이 특징이에요.' });
+    giant(XX - 31, ZZ, 5.0, 1.6, '③ 황소 머리', 'bull_head/bull_head.gltf', 9, 1.4, { id: 'bull', artist: '황소상 조각 전통', year: '고대부터 지금까지', place: '조각 전시관', blurb: '황소는 힘과 풍요를 뜻해서 고대 지중해와 메소포타미아의 신전에서 자주 조각됐어요. 굵은 목과 뿔의 곡선이 강한 인상을 줘요.' }, 2.2);
+    stand(XX - 31, z1 - 3.5, 2.4, 0.9, '④ 고딕 조각상', (x, h, z) => { const b = put(scene, makeTwist(2.0), x, h, z); b.scale.setScalar(1.7); glbProp('statue_1.glb', x, h, z, 5.0, Math.PI - 0.5, b); }, { id: 'gothic', hh: 6.5, artist: '중세 고딕 성당 조각 양식', year: '12~15세기', place: '조각 전시관', blurb: '고딕 성당의 문과 벽을 장식하던 성인 조각이에요. 길고 가는 몸과 주름진 옷자락이 하늘을 향해 솟는 느낌을 줘요.' });
+    giant(XX - 19, z1 - 3.0, 2.6, 1.0, '⑤ 말 머리', 'horse_head/horse_head.gltf', 3.4, 0.6, { id: 'horsehead', artist: '말 머리 조각 전통', year: '고대부터 지금까지', place: '조각 전시관', blurb: '말 머리 조각은 고대 그리스 신전의 장식으로 유명해요. 달리는 말의 목과 갈기를 한 덩어리로 담아 속도감과 힘을 보여 줘요. 이 작품은 청동 느낌으로 만들어졌어요.' }, 2.2);
+    stand(XX - 17, ZZ, 2.2, 1.0, '⑥ 공간 속의 새', (x, h, z) => { const sb = put(scene, new T.Mesh(cyl(0.3, 0.55, 9, 12), soft), x, h + 4.5, z); sb.rotation.z = 0.06; glbProp('bird.glb', x, h, z, 9, 0.5, sb); }, { id: 'bird', hh: 10.5, artist: '브랑쿠시 양식을 본뜬 모형', year: '1920~1940년대 양식', place: '조각 전시관', blurb: '새의 몸을 그대로 깎지 않고, 날아오르는 느낌만 남겨 길게 갈아 낸 조각이에요. 매끈한 표면이 빛을 받아 위아래로 길게 반짝여요. 이 작품은 그 양식을 본떠 블렌더로 만든 모형이에요.' });
     stand(XX, z1 - 2.7, 4.6, 0.8, '⑦ 구멍 뚫린 누운 형상', (x, h, z) => { const sr = put(scene, new T.Mesh(new T.SphereGeometry(1, 14, 10), soft), x, h + 1.3, z); sr.scale.set(3.2, 1.2, 1.4); glbProp('reclining.glb', x, h, z, 3.0, 0, sr); }, { id: 'moore', hh: 4.5, artist: '헨리 무어 양식을 본뜬 모형', year: '20세기 중반 양식', place: '조각 전시관', blurb: '누워 있는 사람 같기도 하고 언덕 같기도 한 큰 덩어리에 구멍을 뚫은 조각이에요. 구멍으로 뒤쪽 풍경이 보여서 조각이 빈 곳까지 함께 만든다고 해요. 이 작품은 그 양식을 본떠 블렌더로 만든 모형이에요.' });
-    giant(XX + 14, z1 - 3.0, 2.8, 1.3, '⑧ 청동 가오리', 'bronze_ray_statue/bronze_ray_statue.gltf', 3.6, Math.PI, { id: 'ray', artist: '청동 조각 (Tina 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '청동은 구리에 주석을 섞은 금속으로, 녹인 쇠를 틀에 부어 만들어요. 바닷속을 날 듯 헤엄치는 가오리의 날개 곡선을 살린 조각이에요.' }, 2.2);
-    giant(XX + 23.5, ZZ + 4, 6.0, 3.0, '⑨ 거대한 청동 고래', 'bronze_whale_statue/bronze_whale_statue.gltf', 11, Math.PI - 0.6, { id: 'whale', artist: '청동 조각 (Tina 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '큰 고래가 헤엄치는 순간을 붙잡아 둔 청동 조각이에요. 오래 두면 푸르스름한 녹이 슬어 멋이 깊어져요. 높은 받침대 위에서 내려다보는 듯해요.' }, 2.2);
-    stand(XX + 24.5, ZZ - 3, 1.8, 0.8, '⑩ 콘크리트 고양이', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); glbProp('concrete_cat_statue/concrete_cat_statue.gltf', x, h, z, 1.9, -1.0, b); }, { id: 'cat', hh: 3, artist: '거리 조각 (Rico Cilliers·Riley Queen 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '길가에 놓인 콘크리트 고양이 조각이에요. 요즘 조각은 전시관 밖 거리와 공원에도 나와서 사람들과 함께 지내요.' });
-    stand(XX + 20.5, z0 + 3.5, 2.0, 0.9, '⑪ 꽃병', (x, h, z) => { const b = put(scene, makeRing(1.6), x, h, z); glbProp('vase_1.glb', x, h, z, 2.6, 0.4, b); }, { id: 'vase', hh: 3.5, artist: '고대 그리스 도기 양식', year: '기원전 6~4세기', place: '조각 전시관', blurb: '고대 그리스 사람들은 물과 기름, 포도주를 담던 항아리에 신화 속 장면을 그려 넣었어요. 쓰임새와 아름다움이 하나가 된 공예품이에요.' });
-    stand(XX + 15.5, ZZ - 1.5, 2.0, 1.0, '⑫ 르네상스 흉상', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = -0.9; glbProp('bust_2.glb', x, h, z, 2.1, -0.9, b); }, { id: 'bust_b', hh: 3.2, artist: '르네상스 초상 조각 양식', year: '15~16세기', place: '조각 전시관', blurb: '르네상스 시대에는 고대 조각을 다시 배우며 사람의 개성을 있는 그대로 담으려 했어요. 주름과 표정이 살아 있어서 이야기를 건네는 듯해요.' });
-    stand(XX + 10.5, ZZ, 3.2, 0.8, '⑬ 세잎 매듭', (x, h, z) => { const sk = put(scene, new T.Mesh(new T.TorusKnotGeometry(1.5, 0.4, 48, 8, 2, 3), soft), x, h + 3.0, z); glbProp('knot.glb', x, h, z, 6.0, 0.4, sk); }, { id: 'knot', hh: 7, artist: '수학을 조각으로 옮긴 모형', year: '현대', place: '조각 전시관', blurb: '끈 하나를 세 번 꼬아 끝을 이은 세잎 매듭이에요. 아무리 돌려 봐도 풀리지 않는 모양이라서 수학에서 가장 단순한 매듭으로 꼽혀요. 이 작품은 블렌더로 만든 모형이에요.' });
-    giant(XX + 8.5, z0 + 3.5, 5.0, 1.8, '⑭ 문지기 사자', 'lion_head/lion_head.gltf', 10, -0.5, { id: 'lion2', artist: '사자상 조각 전통', year: '고대부터 지금까지', place: '조각 전시관 입구', blurb: '입구 양쪽에서 방문객을 맞이하는 한 쌍의 사자예요. 한 쌍의 사자가 문을 지키는 모습은 동서양 궁전과 사찰, 다리에서 모두 볼 수 있어요.' }, 2.2);
+    giant(XX + 19, z1 - 3.0, 2.8, 1.3, '⑧ 청동 가오리', 'bronze_ray_statue/bronze_ray_statue.gltf', 3.6, Math.PI, { id: 'ray', artist: '청동 조각 (Tina 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '청동은 구리에 주석을 섞은 금속으로, 녹인 쇠를 틀에 부어 만들어요. 바닷속을 날 듯 헤엄치는 가오리의 날개 곡선을 살린 조각이에요.' }, 2.2);
+    giant(XX + 31, z1 - 5.5, 6.0, 3.0, '⑨ 거대한 청동 고래', 'bronze_whale_statue/bronze_whale_statue.gltf', 11, Math.PI - 0.6, { id: 'whale', artist: '청동 조각 (Tina 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '큰 고래가 헤엄치는 순간을 붙잡아 둔 청동 조각이에요. 오래 두면 푸르스름한 녹이 슬어 멋이 깊어져요. 높은 받침대 위에서 내려다보는 듯해요.' }, 2.2);
+    stand(XX + 32, ZZ, 1.8, 0.8, '⑩ 콘크리트 고양이', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); glbProp('concrete_cat_statue/concrete_cat_statue.gltf', x, h, z, 1.9, -1.0, b); }, { id: 'cat', hh: 3, artist: '거리 조각 (Rico Cilliers·Riley Queen 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '길가에 놓인 콘크리트 고양이 조각이에요. 요즘 조각은 전시관 밖 거리와 공원에도 나와서 사람들과 함께 지내요.' });
+    stand(XX + 32, z0 + 4.5, 2.0, 0.9, '⑪ 꽃병', (x, h, z) => { const b = put(scene, makeRing(1.6), x, h, z); glbProp('vase_1.glb', x, h, z, 2.6, 0.4, b); }, { id: 'vase', hh: 3.5, artist: '고대 그리스 도기 양식', year: '기원전 6~4세기', place: '조각 전시관', blurb: '고대 그리스 사람들은 물과 기름, 포도주를 담던 항아리에 신화 속 장면을 그려 넣었어요. 쓰임새와 아름다움이 하나가 된 공예품이에요.' });
+    stand(XX + 25, z0 + 8.5, 2.0, 1.0, '⑫ 르네상스 흉상', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = -0.9; glbProp('bust_2.glb', x, h, z, 2.1, -0.9, b); }, { id: 'bust_b', hh: 3.2, artist: '르네상스 초상 조각 양식', year: '15~16세기', place: '조각 전시관', blurb: '르네상스 시대에는 고대 조각을 다시 배우며 사람의 개성을 있는 그대로 담으려 했어요. 주름과 표정이 살아 있어서 이야기를 건네는 듯해요.' });
+    stand(XX + 20, ZZ + 1.5, 3.2, 0.8, '⑬ 세잎 매듭', (x, h, z) => { const sk = put(scene, new T.Mesh(new T.TorusKnotGeometry(1.5, 0.4, 48, 8, 2, 3), soft), x, h + 3.0, z); glbProp('knot.glb', x, h, z, 6.0, 0.4, sk); }, { id: 'knot', hh: 7, artist: '수학을 조각으로 옮긴 모형', year: '현대', place: '조각 전시관', blurb: '끈 하나를 세 번 꼬아 끝을 이은 세잎 매듭이에요. 아무리 돌려 봐도 풀리지 않는 모양이라서 수학에서 가장 단순한 매듭으로 꼽혀요. 이 작품은 블렌더로 만든 모형이에요.' });
+    giant(XX + 13, z0 + 5.0, 5.0, 1.8, '⑭ 문지기 사자', 'lion_head/lion_head.gltf', 10, -0.94, { id: 'lion2', artist: '사자상 조각 전통', year: '고대부터 지금까지', place: '조각 전시관 입구', blurb: '입구 양쪽에서 방문객을 맞이하는 한 쌍의 사자예요. 한 쌍의 사자가 문을 지키는 모습은 동서양 궁전과 사찰, 다리에서 모두 볼 수 있어요.' }, 2.2);
     /* the finale in the middle: the great white horse, eighteen metres tall, on a wide plinth */
     giant(XX, ZZ, 8.4, 2.4, '⑮ 거대한 백마', 'horse_statue_01/horse_statue_01.gltf', 18, Math.PI + 0.3, { id: 'horse', artist: '도자기 말 조각 (Rico Cilliers 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '하얀 도자기로 빚은 말이 뒷발로 일어선 모습이에요. 갈기와 근육의 흐름을 부드럽게 살렸어요. 말은 예부터 조각가들이 가장 사랑한 주제 가운데 하나예요. 이 전시관에서 가장 큰 작품이에요.' }, 3);
     glbGlow = false;
@@ -1621,15 +1621,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       wps.push([XX, ZZ - 6.2]);
       for (let i = 0; i + 1 < wps.length; i++) {
         const a = wps[i], b2 = wps[i + 1], len = Math.hypot(b2[0] - a[0], b2[1] - a[1]), seg = new T.Mesh(new T.PlaneGeometry(len, 0.4), goldM);
-        seg.rotation.x = -Math.PI / 2; seg.rotation.z = Math.atan2(b2[1] - a[1], b2[0] - a[0]) * -1; seg.position.set((a[0] + b2[0]) / 2, 0.09, (a[1] + b2[1]) / 2); seg.userData.noShadow = true; scene.add(seg);
+        seg.rotation.x = -Math.PI / 2; seg.rotation.z = Math.atan2(b2[1] - a[1], b2[0] - a[0]) * -1; seg.position.set((a[0] + b2[0]) / 2, 0.3, (a[1] + b2[1]) / 2); seg.userData.noShadow = true; scene.add(seg);
       }
     }
     /* a red carpet from the road to the horse, with gold edges and a ring round the plinth */
-    { const gold2 = B(0xd9a93a), red = L(0x9b1c2a), len = (ZZ - 4.2) - (z0 - 3);
+    { const gold2 = B(0xd9a93a), red = L(0x7d1824), len = (ZZ - 4.2) - (z0 - 3);
       const g1 = new T.Mesh(new T.PlaneGeometry(4.9, len), gold2), r1 = new T.Mesh(new T.PlaneGeometry(3.9, len), red);
-      [g1, r1].forEach((m, i) => { m.rotation.x = -Math.PI / 2; m.position.set(XX, 0.07 + i * 0.01, (z0 - 3 + ZZ - 4.2) / 2); m.userData.noShadow = true; scene.add(m); });
+      [g1, r1].forEach((m, i) => { m.rotation.x = -Math.PI / 2; m.position.set(XX, 0.14 + i * 0.05, (z0 - 3 + ZZ - 4.2) / 2); m.material.polygonOffset = true; m.material.polygonOffsetFactor = -2 - i; m.material.polygonOffsetUnits = -2 - i; m.userData.noShadow = true; scene.add(m); });
       const rg = new T.Mesh(new T.RingGeometry(5.4, 7.2, 48), gold2), rr = new T.Mesh(new T.RingGeometry(5.7, 6.9, 48), red);
-      [rg, rr].forEach((m, i) => { m.rotation.x = -Math.PI / 2; m.position.set(XX, 0.07 + i * 0.01, ZZ); m.userData.noShadow = true; scene.add(m); });
+      [rg, rr].forEach((m, i) => { m.rotation.x = -Math.PI / 2; m.position.set(XX, 0.14 + i * 0.05, ZZ); m.material.polygonOffset = true; m.material.polygonOffsetFactor = -2 - i; m.material.polygonOffsetUnits = -2 - i; m.userData.noShadow = true; scene.add(m); });
     }
     /* the temple front: an architrave, a cornice, a pediment with a gold sun on blue, and red banners between the columns */
     { const F = z0 + 1.0, W = S.w + 6, top = 7.0 + DH, goldL = new T.MeshLambertMaterial({ color: 0xd9a93a, emissive: 0x3a2a05 }), navy = new T.MeshBasicMaterial({ color: 0x2c3f6e, side: T.DoubleSide }), sunM = new T.MeshBasicMaterial({ color: 0xf0c64a, side: T.DoubleSide });
@@ -1647,7 +1647,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       bq.fillStyle = '#9b1c2a'; bq.fillRect(0, 0, 128, 512); bq.strokeStyle = '#e2b84a'; bq.lineWidth = 8; bq.strokeRect(8, 8, 112, 496); bq.fillStyle = '#e2b84a'; bq.beginPath(); bq.arc(64, 150, 34, 0, 6.3); bq.fill();
       for (let k = 0; k < 6; k++) { bq.fillRect(40 + k * 8 - 8, 300 + k * 0, 4, 110); } bq.beginPath(); bq.moveTo(8, 504); bq.lineTo(64, 450); bq.lineTo(120, 504); bq.closePath(); bq.fill();
       const bt = new T.CanvasTexture(bc), bm = new T.MeshLambertMaterial({ map: bt, side: T.DoubleSide, emissive: 0x2a0508 }), banners = [];
-      [-23.4, -15.75, 15.75, 23.4].forEach(d => { const bn = new T.Mesh(new T.PlaneGeometry(3.2, 12.8), bm); bn.position.set(S.x + d, top - 11.5, F - 1.3); bn.rotation.y = Math.PI; bn.userData.noShadow = true; scene.add(bn); banners.push(bn); });
+      [-31.5, -22.5, 22.5, 31.5].forEach(d => { const bn = new T.Mesh(new T.PlaneGeometry(3.2, 12.8), bm); bn.position.set(S.x + d, top - 11.5, F - 1.3); bn.rotation.y = Math.PI; bn.userData.noShadow = true; scene.add(bn); banners.push(bn); });
       anim.push(() => { const t = performance.now() / 1000; banners.forEach((bn, i) => { bn.rotation.z = Math.sin(t * 0.8 + i * 1.7) * 0.025; }); });
       /* two braziers beside the carpet, a flame that flickers */
       const flames = [];
@@ -1659,7 +1659,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     }
     /* tall cypress trees along the long sides, for a bit of green and shape */
     { const leaf = L(0x2f6f3d), bark = L(0x6b4a2f);
-      [x0 - 3.2, x1 + 3.2].forEach(cx => [z0 + 3, z0 + 9.5, z0 + 16].forEach(cz => {
+      [x1 + 3.2].forEach(cx => [z0 + 3, z0 + 9.5, z0 + 16, z0 + 22].forEach(cz => {
         put(scene, new T.Mesh(cyl(0.28, 0.36, 1.6, 8), bark), cx, 0.8, cz);
         put(scene, new T.Mesh(new T.ConeGeometry(1.9, 11, 10), leaf), cx, 6.2, cz); put(scene, new T.Mesh(new T.ConeGeometry(1.3, 5, 10), leaf), cx, 10.6, cz); colliders.push({ x: cx, z: cz, r: 1.2 });
       })); }

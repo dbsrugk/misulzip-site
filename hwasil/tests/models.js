@@ -2,7 +2,7 @@
 const { start, until, check, done } = require('./lib');
 (async () => {
   const t = await start(); const p = await t.client('A'); await t.enter(p, '구경꾼');
-  await p.evaluate(() => { window.__hw.pos.x = 88; window.__hw.pos.z = 4; });
+  await p.evaluate(() => { window.__hw.pos.x = 72; window.__hw.pos.z = 8; });
   check(await until(p, () => window.__hw.props().some(q => q[0] === 'bust_1.glb' && q[1] === 2 && q[2]), null, 60), 'a bust model loads at the sculpture pavilion and is shown');
   await p.waitForTimeout(1500); await p.screenshot({ path: t.out('models_pavilion.png') });
   await p.evaluate(() => { window.__hw.pos.x = 0; window.__hw.pos.z = -2; });
