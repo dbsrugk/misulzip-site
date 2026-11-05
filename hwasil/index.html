@@ -966,6 +966,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       });
     }
     /* wing banners hang across the corridor; the door sign hangs inside the lobby */
+    /* a line of text that shrinks to fit between the frame lines instead of running over them */
+    function fitText(g, text, px, maxW, x, y) {
+      g.font = px + 'px "Gamja Flower", "Noto Sans KR", sans-serif';
+      const mw = g.measureText(text).width; if (mw > maxW) g.font = Math.max(24, Math.floor(px * maxW / mw)) + 'px "Gamja Flower", "Noto Sans KR", sans-serif';
+      g.fillText(text, x, y);
+    }
     function banner(w, h, y, x, z, draw) {
       const c = document.createElement('canvas'); c.width = 1024; c.height = Math.round(1024 * h / w); const g = c.getContext('2d');
       g.fillStyle = '#fffdf7'; g.fillRect(0, 0, c.width, c.height); g.strokeStyle = '#b9923f'; g.lineWidth = 14; g.strokeRect(12, 12, c.width - 24, c.height - 24); g.strokeStyle = '#25211d'; g.lineWidth = 4; g.strokeRect(30, 30, c.width - 60, c.height - 60);
@@ -977,18 +983,18 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       return m;
     }
     W.forEach((wg, k) => banner(9, 2.4, 20, 0, wingZ(k) - 2.5, (g, cw, ch) => {
-      g.fillStyle = '#25211d'; g.font = '112px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText(wg.name, cw / 2, ch * 0.42);
-      g.fillStyle = '#6d655b'; g.font = '56px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText(wg.note, cw / 2, ch * 0.74);
+      g.fillStyle = '#25211d'; fitText(g, wg.name, 112, cw - 170, cw / 2, ch * 0.42);
+      g.fillStyle = '#6d655b'; fitText(g, wg.note, 56, cw - 170, cw / 2, ch * 0.74);
     }));
     banner(7.2, 2.2, 21, 0, z0 + 0.3, (g, cw, ch) => {
-      g.fillStyle = '#25211d'; g.font = '110px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('대회랑', cw / 2, ch * 0.42);
-      g.fillStyle = '#6d655b'; g.font = '52px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('명화를 만나러 가요', cw / 2, ch * 0.74);
+      g.fillStyle = '#25211d'; fitText(g, '대회랑', 110, cw - 170, cw / 2, ch * 0.42);
+      g.fillStyle = '#6d655b'; fitText(g, '명화를 만나러 가요', 52, cw - 170, cw / 2, ch * 0.74);
     }).rotation.y = Math.PI;
     /* the far end: a tall window and a note that more is coming */
     const eg = new T.Mesh(new T.ShapeGeometry(archShape(6, 12), 18), B(0xfff3c8)); eg.position.set(0, 3, GGZ + 0.05); scene.add(eg); winMats.push(eg.material);
     banner(8, 2, 8, 0, GGZ + 0.2, (g, cw, ch) => {
-      g.fillStyle = '#25211d'; g.font = '84px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('다음 전시를 준비하고 있어요', cw / 2, ch * 0.45);
-      g.fillStyle = '#6d655b'; g.font = '46px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('새 작품이 계속 걸려요', cw / 2, ch * 0.76);
+      g.fillStyle = '#25211d'; fitText(g, '다음 전시를 준비하고 있어요', 84, cw - 170, cw / 2, ch * 0.45);
+      g.fillStyle = '#6d655b'; fitText(g, '새 작품이 계속 걸려요', 46, cw - 170, cw / 2, ch * 0.76);
     }).rotation.y = 0;
 
     /* --- richer hall: wainscot, rail, skylight, tall windows, portals between wings, benches, urns, the landmark statue, lobby boards --- */
@@ -1055,8 +1061,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       [-6, 0, 6].forEach(dz => { benchAt(-(R - 5.2), cz + dz, Math.PI / 2); benchAt(R - 5.2, cz + dz, -Math.PI / 2); });
       [-9, 9].forEach(dz => [-1, 1].forEach(sd => urnAt(sd * (R - 4), cz + dz, 1.4, (gi + (dz > 0 ? 1 : 0)) % 2 ? 0x8a5a3a : 0x3f6fa8)));
       banner(9, 2.4, 20, 0, cz + 9, (g, cw, ch) => {
-        g.fillStyle = '#25211d'; g.font = '112px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('둥근 홀', cw / 2, ch * 0.42);
-        g.fillStyle = '#6d655b'; g.font = '56px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('앉아서 잠깐 쉬어 가요', cw / 2, ch * 0.74);
+        g.fillStyle = '#25211d'; fitText(g, '둥근 홀', 112, cw - 170, cw / 2, ch * 0.42);
+        g.fillStyle = '#6d655b'; fitText(g, '앉아서 잠깐 쉬어 가요', 56, cw - 170, cw / 2, ch * 0.74);
       });
     });
     /* the hall's landmark: a big marble group on a stepped plinth at the far end, facing the visitors */
@@ -1072,14 +1078,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const g = new T.Group(); g.position.set(x, 0, z); scene.add(g);
       [-w / 2 + 0.2, w / 2 - 0.2].forEach(dx => put(g, new T.Mesh(cyl(0.12, 0.14, 3.2 + h, 8), woodDk), dx, (3.2 + h) / 2, 0));
       const m = banner(w, h, 3.2 + h / 2, 0, 0, (gx, cw, ch) => {
-        gx.fillStyle = '#25211d'; gx.font = '84px "Gamja Flower", "Noto Sans KR", sans-serif'; gx.fillText(title, cw / 2, ch * 0.16);
-        gx.font = '56px "Gamja Flower", "Noto Sans KR", sans-serif'; gx.textAlign = 'left';
-        lines.forEach((ln, i) => { gx.fillStyle = i % 2 ? '#6d655b' : '#25211d'; gx.fillText(ln, cw * 0.09, ch * (0.34 + i * 0.145)); });
+        gx.fillStyle = '#25211d'; fitText(gx, title, 84, cw - 170, cw / 2, ch * 0.15);
+        gx.textAlign = 'left';
+        const cols = lines.length > 6 ? 2 : 1, rows = Math.ceil(lines.length / cols), step = Math.min(0.16, 0.6 / rows), colW = (cw - 180) / cols;
+        lines.forEach((ln, i) => { const cI = Math.floor(i / rows), rI = i % rows; gx.fillStyle = cols > 1 && rI === 0 ? '#a07a2c' : rI % 2 ? '#6d655b' : '#25211d'; fitText(gx, ln, cols > 1 ? 54 : 56, colW - 24, 90 + cI * colW, ch * (0.31 + rI * step)); });
       });
       scene.remove(m); g.add(m); m.position.set(0, 3.2 + h / 2, 0); colliders.push({ x: x - w / 2 + 0.2, z: z, r: 0.5 }, { x: x + w / 2 - 0.2, z: z, r: 0.5 });
     }
     board(-8.6, z0 + 5, 5.6, 3.4, ['▲ 정면 큰 문  명화 미술관(대회랑)', '▶ 동쪽 문  화실 · 조각 전시관 · 정원 · 바다', '▼ 남쪽 문  친구들의 신진 작가관', '● 이 홀  쉬어 가는 중앙 홀'], '도토리 미술관');
-    board(8.6, z0 + 5, 5.6, 3.4, W.map((wg, i) => (i + 1) + '. ' + wg.name + '  ' + wg.note).slice(0, 6), '대회랑 전시구역');
+    board(8.6, z0 + 5, 5.6, 3.4, ['한눈에 보기'].concat(W.slice(0, 6).map((wg, i) => (i + 1) + '. ' + wg.name), ['더 깊이 보기'], W.slice(6).map((wg, i) => (i + 7) + '. ' + wg.name)), '대회랑 전시구역');
 
     /* --- the central rotunda (중앙 로툰다): between the lobby door and the corridor: a fountain, a ring of columns, an oculus, benches --- */
     (function () {
@@ -1128,17 +1135,17 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       [-8, 8].forEach(dz => { benchAt(-17.4, cz + dz, Math.PI / 2); benchAt(17.4, cz + dz, -Math.PI / 2); });
       [-1, 1].forEach(sd => { urnAt(sd * 17.6, zS - 3.5, 1.6, 0x8a5a3a); urnAt(sd * 17.6, zN + 3.5, 1.6, 0x4f7a5a); });
       banner(10, 2.4, 22, 0, zN + 0.25, (g, cw, ch) => {
-        g.fillStyle = '#25211d'; g.font = '112px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('대회랑 ▲', cw / 2, ch * 0.42);
-        g.fillStyle = '#6d655b'; g.font = '56px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('르네상스에서 동양까지', cw / 2, ch * 0.74);
+        g.fillStyle = '#25211d'; fitText(g, '대회랑 ▲', 112, cw - 170, cw / 2, ch * 0.42);
+        g.fillStyle = '#6d655b'; fitText(g, '르네상스에서 동양까지', 56, cw - 170, cw / 2, ch * 0.74);
       });
       banner(8, 2.2, 22, 0, zS - 0.35, (g, cw, ch) => {
-        g.fillStyle = '#25211d'; g.font = '104px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('중앙 홀 ▼', cw / 2, ch * 0.42);
-        g.fillStyle = '#6d655b'; g.font = '52px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('화실과 정원으로 돌아가요', cw / 2, ch * 0.74);
+        g.fillStyle = '#25211d'; fitText(g, '중앙 홀 ▼', 104, cw - 170, cw / 2, ch * 0.42);
+        g.fillStyle = '#6d655b'; fitText(g, '화실과 정원으로 돌아가요', 52, cw - 170, cw / 2, ch * 0.74);
       });
       [-1, 1].forEach(sd => { const tp = banner(3.4, 9.5, 13, sd * (RX - 0.1), cz, (g, cw, ch) => {
-        g.fillStyle = '#25211d'; g.font = '150px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('🌰', cw / 2, ch * 0.18);
-        g.font = '120px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('도토리', cw / 2, ch * 0.42); g.fillText('미술관', cw / 2, ch * 0.58);
-        g.fillStyle = '#6d655b'; g.font = '60px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('천천히', cw / 2, ch * 0.78); g.fillText('걸어요', cw / 2, ch * 0.86);
+        g.fillStyle = '#25211d'; fitText(g, '🌰', 150, cw - 170, cw / 2, ch * 0.18);
+        fitText(g, '도토리', 120, cw - 170, cw / 2, ch * 0.42); g.fillText('미술관', cw / 2, ch * 0.58);
+        g.fillStyle = '#6d655b'; fitText(g, '천천히', 60, cw - 170, cw / 2, ch * 0.78); g.fillText('걸어요', cw / 2, ch * 0.86);
       }); tp.rotation.y = sd < 0 ? Math.PI / 2 : -Math.PI / 2; });
     })();
   })();
@@ -1524,7 +1531,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     function plate(text, x, y, z) {
       const c = document.createElement('canvas'); c.width = 512; c.height = 128; const q = c.getContext('2d');
       const tex = new T.CanvasTexture(c); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
-      function draw() { q.fillStyle = '#f4efe4'; q.fillRect(0, 0, 512, 128); q.strokeStyle = '#8f8368'; q.lineWidth = 6; q.strokeRect(3, 3, 506, 122); q.fillStyle = '#3a342c'; q.textAlign = 'center'; q.textBaseline = 'middle'; q.font = '54px ' + FONT_UI; q.fillText(text, 256, 66); tex.needsUpdate = true; }
+      function draw() { q.fillStyle = '#f4efe4'; q.fillRect(0, 0, 512, 128); q.strokeStyle = '#8f8368'; q.lineWidth = 6; q.strokeRect(3, 3, 506, 122); q.fillStyle = '#3a342c'; q.textAlign = 'center'; q.textBaseline = 'middle'; q.font = '54px ' + FONT_UI; { const tw = q.measureText(text).width; if (tw > 470) q.font = Math.floor(54 * 470 / tw) + 'px ' + FONT_UI; } q.fillText(text, 256, 66); tex.needsUpdate = true; }
       draw(); if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', text).then(draw).catch(() => {});
       const m = new T.Mesh(new T.PlaneGeometry(2.0, 0.5), new T.MeshBasicMaterial({ map: tex })); m.position.set(x, y, z); m.rotation.y = Math.PI; scene.add(m);
     }
@@ -2014,6 +2021,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     s.set = function (n) {
       x.clearRect(0, 0, 256, 64);
       x.font = '32px "Gamja Flower", "Noto Sans KR", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      { const tw = x.measureText(n).width; if (tw > 214) x.font = Math.max(14, Math.floor(32 * 214 / tw)) + 'px "Gamja Flower", "Noto Sans KR", sans-serif'; }
       const w = Math.min(244, x.measureText(n).width + 30);
       x.fillStyle = '#fffdf7'; rr(x, 128 - w / 2, 8, w, 48, 24); x.fill();
       x.strokeStyle = '#25211d'; x.lineWidth = 3; x.stroke();
