@@ -13,5 +13,10 @@ const { start, vis, until, check, done } = require('./lib');
   check(await a.evaluate(() => window.__hw.fx()) > 0, 'the emoji floats up in front of the frame for me');
   
   check(await until(b, f => window.__hw.fx() > f, f0, 20), 'a friend in the room sees the emoji too');
+  /* the fountain: tapping it tosses a coin and shows a wish */
+  const f1 = await a.evaluate(() => { document.querySelector('#artClose').click(); return window.__hw.fx(); });
+  await a.evaluate(() => window.__hw.wish()); await a.waitForTimeout(300);
+  check(await a.evaluate(() => window.__hw.fx()) >= f1 + 3, 'a coin and sparkles fly up from the fountain');
+  check(/풍덩/.test(await a.evaluate(() => document.querySelector('#toast').textContent)), 'a wish pops up');
   await t.close(); process.exit(done(t));
 })().catch(e => { console.log('ERR', e.message); process.exit(1); });

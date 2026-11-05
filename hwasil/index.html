@@ -1134,6 +1134,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       put(fg, new T.Mesh(cyl(0.9, 1.3, 3.0, 16), plasterM), 0, 2.7, 0); put(fg, new T.Mesh(cyl(2.6, 1.0, 0.6, 24), plasterM), 0, 4.0, 0); put(fg, new T.Mesh(cyl(1.6, 0.4, 1.4, 16), plasterM), 0, 4.9, 0);
       const bowl = put(fg, new T.Mesh(new T.CircleGeometry(2.3, 28), new T.MeshBasicMaterial({ color: 0x8fd3f0, transparent: true, opacity: 0.9 })), 0, 4.32, 0); bowl.rotation.x = -Math.PI / 2;
       colliders.push({ x: 0, z: cz, r: 5.9 });
+      { const fh = put(fg, new T.Mesh(cyl(5.6, 5.6, 4.6, 12), hitMat), 0, 2.3, 0); fh.userData.spot = 'fountain'; hitList.push(fh); }       /* tap the fountain: toss a coin and make a wish */
       const rips = [0, 1, 2].map(i => { const m = new T.Mesh(new T.RingGeometry(0.92, 1, 40), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: T.DoubleSide, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.set(0, 1.33, 0); fg.add(m); return m; });
       const jets = []; for (let i = 0; i < 28; i++) { const m = new T.Mesh(new T.SphereGeometry(0.17, 8, 6), new T.MeshBasicMaterial({ color: 0xcdefff, transparent: true, opacity: 0.9 })); m.userData.noShadow = true; fg.add(m); jets.push({ m: m, a: i / 28 * Math.PI * 2, ph: (i * 0.37) % 1 }); }
       anim.push((dt, t) => {
@@ -1992,6 +1993,17 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const sp = new T.Sprite(new T.SpriteMaterial({ map: emojiTex(RX[i]), transparent: true, depthWrite: false, fog: false })); sp.scale.set(1.3, 1.3, 1); sp.visible = false; scene.add(sp);
     const nx = Math.sin(sl.ry), nz = Math.cos(sl.ry), spread = (Math.random() - 0.5) * sl.D * 0.8;
     fxList.push({ sp: sp, at: { x: sl.x + nx * 0.9 + Math.cos(sl.ry) * spread, y: sl.y + sl.D / 2 - 0.2, z: sl.z + nz * 0.9 - Math.sin(sl.ry) * spread }, t0: tNow, dur: 2.2, dx: Math.random() * 6 });
+  }
+  const WISHES = ['오늘도 좋은 그림을 그리게 해 주세요 🎨', '친구들이 내 그림을 좋아하게 해 주세요 💛', '멋진 명화를 오래오래 볼 수 있게 해 주세요 🖼', '손이 떨리지 않고 선이 곱게 나오게 해 주세요 ✏️', '다음 전시에 내 그림이 걸리게 해 주세요 🌰', '모두 같이 즐거운 하루가 되게 해 주세요 🎈'];
+  let lastWish = 0;
+  function wishAtFountain() {                               /* a coin flies up from the fountain and a wish pops up as a toast */
+    const now = performance.now(); if (now - lastWish < 900) return; lastWish = now;
+    const cz0 = -RM.hz - ROT / 2;
+    for (let i = 0; i < 3; i++) {
+      const sp = new T.Sprite(new T.SpriteMaterial({ map: emojiTex(i === 0 ? '🪙' : '✨'), transparent: true, depthWrite: false, fog: false })); sp.scale.set(1.2, 1.2, 1); sp.visible = false; scene.add(sp);
+      fxList.push({ sp: sp, at: { x: (Math.random() - 0.5) * 3, y: 5.6, z: cz0 + (Math.random() - 0.5) * 3 }, t0: tNow + i * 0.25, dur: 2, dx: i * 2 });
+    }
+    toast('🪙 풍덩! ' + WISHES[Math.floor(Math.random() * WISHES.length)], 3500);
   }
   function reactTo(i) {
     if (!rxSlot) return;
@@ -2929,6 +2941,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         return;
       }
       if (o.userData.bench !== undefined) { tapBench(o.userData.bench); return; }
+      if (o.userData.spot === 'fountain') { wishAtFountain(); return; }
       const sl = o.userData.slot;
       if (sl) { frameTap(sl); return; }
     }
