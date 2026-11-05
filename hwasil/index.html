@@ -803,6 +803,7 @@ body.padOpen #hud { visibility: hidden; }
   /* things hung on an outer wall: shown only while the camera is on the inside of that wall */
   const onWall = [];
   const hitList = [];  /* tappable things: easels and gallery frames */
+const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const hitMat = new T.MeshBasicMaterial({ visible: false });
   function hang(obj, ax, lim, inside) { onWall.push({ o: obj, ax: ax, lim: lim, inside: inside }); return obj; }
   (function () {                                   /* north wall with the grand door to the grand gallery */
@@ -1014,7 +1015,8 @@ body.padOpen #hud { visibility: hidden; }
       const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g);
       put(g, new T.Mesh(bx(3.4, 0.35, 1.2), L(0x7a2323)), 0, 1.15, 0); put(g, new T.Mesh(bx(3.6, 0.2, 1.4), woodDk), 0, 0.95, 0);
       [-1.5, 1.5].forEach(dx => put(g, new T.Mesh(bx(0.3, 0.95, 1.1), woodDk), dx, 0.47, 0));
-      colliders.push({ x: x, z: z, r: 1.3 }); return g;
+      colliders.push({ x: x, z: z, r: 1.3 });
+      const hb = put(g, new T.Mesh(bx(3.8, 1.8, 1.6), hitMat), 0, 0.9, 0); hb.userData.bench = benches.length; hitList.push(hb); benches.push({ x: x, z: z, ry: ry }); return g;
     }
     for (let b = 0; b < GG.bays; b++) { const zc = bayZ(b); benchAt(-(GG.hw - 5.7), zc, Math.PI / 2); benchAt(GG.hw - 5.7, zc, -Math.PI / 2); }   /* in front of every picture */
     function urnAt(x, z, sc, col) {                        /* a lathe-turned urn: smooth, with a brass rim */
@@ -1906,7 +1908,7 @@ body.padOpen #hud { visibility: hidden; }
     { id: 'heart', icon: '❤️', name: '하트', dur: 2.8, fx: '❤️' }, { id: 'dance', icon: '💃', name: '춤추기', dur: 3.8, fx: '♪' }, { id: 'wow', icon: '😲', name: '깜짝', dur: 1.9, fx: '❗' }
   ];
   /* walking, emotes, painting at an easel, breathing, blinking */
-  function animateAvatar(av, phase, amp, t, painting) {
+  function animateAvatar(av, phase, amp, t, painting, sitting) {
     let em = av.emote, ep = -1; if (em) { if (t - em.t0 < em.dur) ep = t - em.t0; else av.emote = em = null; }
     av.lift = 0; av.torso.rotation.z = 0; av.headG.rotation.z = 0;
     if (ep >= 0 && amp < 0.3 && !painting) {
@@ -1926,6 +1928,7 @@ body.padOpen #hud { visibility: hidden; }
       const s = Math.sin(phase) * 0.8 * amp;
       av.legL.rotation.x = s; av.legR.rotation.x = -s; av.armL.rotation.x = -s * 0.9; av.armR.rotation.x = s * 0.9; av.armL.rotation.z = av.armR.rotation.z = 0;
     }
+    if (sitting) { av.legL.rotation.x = av.legR.rotation.x = -1.45; av.lift = 0.66; }                         /* on a bench: legs forward, raised onto the seat */
     av.torso.scale.y = 1 + 0.022 * Math.sin(t * 2.2 + av.seed);
     av.headG.position.y = 1.85 + 0.014 * Math.sin(t * 2.2 + av.seed + 0.6);
     const bl = ((t + av.seed) % 3.7) < 0.14;
@@ -2466,7 +2469,7 @@ body.padOpen #hud { visibility: hidden; }
   const START = { x: 0, z: 20.5 };
   const pos = { x: START.x, z: START.z };
   let heading = Math.PI, camYaw = 0, camPitch = 0.5, camDist = 24, camTx = pos.x, camTz = pos.z;
-  let started = false, walkPhase = 0, walkAmp = 0, tNow = 0, myEasel = -1, curSp = 0, wdx = 0, wdz = 0, puffT = 0;
+  let started = false, walkPhase = 0, walkAmp = 0, tNow = 0, myEasel = -1, mySeat = -1, curSp = 0, wdx = 0, wdz = 0, puffT = 0;
   const joy = { x: 0, y: 0 }, keys = {};
   const SPEED = 7.5;
   const joyEl = $('#joy'), knob = $('#knob'), JR = 46;
@@ -2628,22 +2631,44 @@ body.padOpen #hud { visibility: hidden; }
   }
   /* artwork view: the picture big, the description under it, and a button that reads it aloud (the phone's own Korean voice) */
   const art = { z: 1, tx: 0, ty: 0, ptr: new Map(), g: null, gen: 0, on: false };
-  const ttsOk = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  /* the docent "talks" like Animal Crossing: a quick, bright blip for every syllable, pitched by the letters (no real voice, so it sounds the same on every phone) */
+  const ttsOk = !!(window.AudioContext || window.webkitAudioContext);
+  let artCtx = null;
   function artSpeakStop() {
     art.gen++; art.on = false;
-    try { if (ttsOk) speechSynthesis.cancel(); } catch (e) {}
+    clearTimeout(art.endT);
+    try { if (art.master) { art.master.disconnect(); art.master = null; } } catch (e) {}
     $('#artSpeak').textContent = '🔊 도슨트 듣기';
   }
   function artSpeak(text) {
     artSpeakStop();
-    const gen = ++art.gen, parts = (text.match(/[^.?!。\n]+[.?!。]?/g) || [text]).map(x => x.trim()).filter(Boolean);
-    let voice = null; try { voice = (speechSynthesis.getVoices() || []).find(v => /^ko/i.test(v.lang)) || null; } catch (e) {}
-    art.on = true; $('#artSpeak').textContent = '⏹ 멈추기';
-    parts.forEach((t, i) => {                              /* short pieces: some phones stop reading one long text halfway */
-      const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; if (voice) u.voice = voice; u.rate = 1.05; u.pitch = 1.9;                  /* a high, bright little-kid voice */
-      if (i === parts.length - 1) u.onend = u.onerror = () => { if (gen === art.gen) artSpeakStop(); };
-      speechSynthesis.speak(u);
+    try {
+      if (!artCtx) artCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (artCtx.state === 'suspended' && artCtx.resume) artCtx.resume();
+    } catch (e) { return; }
+    const gen = art.gen, ctx = artCtx, master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination); art.master = master;
+    let t = ctx.currentTime + 0.12;
+    const chars = Array.from(text);
+    chars.forEach((ch, i) => {
+      const code = ch.charCodeAt(0);
+      if (/[.!?。]/.test(ch)) { t += 0.38; return; }
+      if (/[,，·]/.test(ch)) { t += 0.2; return; }
+      if (/\s/.test(ch)) { t += 0.07; return; }
+      let semi;
+      if (code >= 0xac00 && code <= 0xd7a3) { const n = code - 0xac00; semi = (Math.floor(n / 588) * 3 + Math.floor((n % 588) / 28) * 5) % 13; }
+      else semi = code % 9;
+      const f0 = 420 * Math.pow(2, semi / 12) * (/\?/.test(text.slice(i, i + 12)) && i > chars.length - 12 ? 1.12 : 1);   /* a bright, high, child-like register */
+      const dur = 0.085, o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'triangle'; o2.type = 'sine';
+      o.frequency.setValueAtTime(f0 * 0.93, t); o.frequency.exponentialRampToValueAtTime(f0 * 1.07, t + dur);
+      o2.frequency.setValueAtTime(f0 * 2.01, t); o2.frequency.exponentialRampToValueAtTime(f0 * 2.15, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.32, t + 0.012); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); o2.connect(g); g.connect(master);
+      o.start(t); o.stop(t + dur + 0.02); o2.start(t); o2.stop(t + dur + 0.02);
+      t += 0.098;
     });
+    art.on = true; $('#artSpeak').textContent = '⏹ 멈추기';
+    art.endT = setTimeout(() => { if (gen === art.gen) artSpeakStop(); }, (t - ctx.currentTime) * 1000 + 300);
   }
   function artApply() {
     if (art.z <= 1.01) { art.z = 1; art.tx = art.ty = 0; }
@@ -2767,6 +2792,30 @@ body.padOpen #hud { visibility: hidden; }
   const ray = new T.Raycaster();
   let tap = null;
   function shown(o) { for (; o; o = o.parent) if (!o.visible) return false; return true; }
+  /* sitting on a bench: tap it, walk to it, sit facing the wall; move the stick to get up */
+  const seatXY = (bi, side) => { const b = benches[bi], lx = side ? 0.85 : -0.85; return { x: b.x + lx * Math.cos(b.ry), z: b.z - lx * Math.sin(b.ry) }; };
+  const seatTaken = key => { for (const r of remotes.values()) if (r.s === key) return true; return false; };
+  function tapBench(bi) {
+    let best = -1, bd = 1e9;
+    for (let side = 0; side < 2; side++) { const key = bi * 2 + side; if (seatTaken(key) && key !== mySeat) continue; const q = seatXY(bi, side), d = Math.hypot(q.x - pos.x, q.z - pos.z); if (d < bd) { bd = d; best = key; } }
+    if (best < 0) { toast('이 벤치는 자리가 다 찼어요 🙂', 2500); return; }
+    if (best === mySeat) { standUp(); return; }
+    if (mySeat >= 0) standUp();
+    const b = benches[bi], q = seatXY(bi, best % 2);
+    goal = { x: q.x + Math.sin(b.ry) * 1.9, z: q.z + Math.cos(b.ry) * 1.9, seat: best, stuck: 0 };
+    toast('벤치로 걸어가요', 2000);
+  }
+  function sitBench(key) {
+    const bi = key >> 1, b = benches[bi], q = seatXY(bi, key & 1);
+    pos.x = q.x; pos.z = q.z; heading = b.ry + Math.PI; camYaw = heading + Math.PI; walkAmp = 0; curSp = 0; mySeat = key;
+    toast('앉았어요 🪑 움직이면 일어나요', 3000);
+  }
+  function standUp() {
+    if (mySeat < 0) return;
+    const b = benches[mySeat >> 1], nx = pos.x + Math.sin(b.ry) * 1.9, nz = pos.z + Math.cos(b.ry) * 1.9;
+    if (walkable(nx, nz)) { pos.x = nx; pos.z = nz; }
+    mySeat = -1;
+  }
   function onTap(cx, cy) {
     if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#dress').hidden || !$('#hang').hidden || !$('#art').hidden) return;
     const r = cv.getBoundingClientRect();
@@ -2783,6 +2832,7 @@ body.padOpen #hud { visibility: hidden; }
         toast((idx + 1) + '번 이젤로 걸어가요', 2500);
         return;
       }
+      if (o.userData.bench !== undefined) { tapBench(o.userData.bench); return; }
       const sl = o.userData.slot;
       if (sl) { frameTap(sl); return; }
     }
@@ -2805,6 +2855,9 @@ body.padOpen #hud { visibility: hidden; }
         if (goal.z < GGS - 2 && pos.z > GGS + 2 && pos.z > -RM.hz - ROT / 2 + 4 && Math.abs(pos.x) < 8) return { x: 9, z: -RM.hz - ROT / 2, way: true };     /* walk around the fountain */
         return { x: goal.x, z: goal.z, way: false };
       }
+      const rcz = -RM.hz - ROT / 2;                           /* leaving south: walk around the fountain of the rotunda instead of into it */
+      if (pos.z < rcz + 6 && Math.abs(pos.x) < 8) return { x: 9, z: rcz, way: true };
+      if (pos.z < -RM.hz - 6 && Math.abs(pos.x) >= 8) return { x: 9, z: -RM.hz - 4, way: true };
       if (Math.abs(pos.x) > 1.2 && pos.z < -RM.hz - 1.2) return { x: 0, z: -RM.hz - 1.6, way: true };
       return { x: 0, z: -RM.hz + 2.5, way: true };
     }
@@ -3013,7 +3066,7 @@ body.padOpen #hud { visibility: hidden; }
   }
   function closePad() {
     finishEasel(); clearRef();
-    pad.open = false; padEl.hidden = true; pad.easel = -1; myEasel = -1; applyView();
+    pad.open = false; padEl.hidden = true; pad.easel = -1; myEasel = -1; mySeat = -1; applyView();
     clearTimeout(closeTimer); clearTimeout(clearTimer);
     pushPresence(true);
   }
@@ -3309,7 +3362,7 @@ body.padOpen #hud { visibility: hidden; }
     const nx = Math.sin(sl.ry), nz = Math.cos(sl.ry), h = Math.atan2(-nx, -nz);
     const pl = { name: ROOM_NAME[sl.room], x: sl.x + nx * 4, z: sl.z + nz * 4, h: h, pitch: 0.2 };
     if (window.__hwInstant) { snapTo(pl); return; }
-    myEasel = -1; goal = { x: pl.x, z: pl.z, place: pl, stuck: 0 };
+    myEasel = -1; mySeat = -1; goal = { x: pl.x, z: pl.z, place: pl, stuck: 0 };
     toast('액자 앞으로 걸어가요. 조이스틱을 움직이면 멈춰요', 3000);
   }
   async function save() {
@@ -3786,6 +3839,7 @@ body.padOpen #hud { visibility: hidden; }
       if (!r.init) r.lt = nt;
       r.tx = nx; r.tz = nz;
       r.th = typeof pr.h === 'number' && isFinite(pr.h) ? pr.h : r.th; r.w = pr.w === 1 ? 1 : 0;
+      r.s = typeof pr.s === 'number' && pr.s >= 0 && pr.s < benches.length * 2 ? Math.floor(pr.s) : -1;
       r.e = typeof pr.e === 'number' && pr.e >= 0 && pr.e < easels.length ? Math.floor(pr.e) : -1;
       if (!r.init) { r.x = r.tx; r.z = r.tz; r.h = r.th; r.init = true; }
     });
@@ -3800,8 +3854,8 @@ body.padOpen #hud { visibility: hidden; }
   function pushPresence(force) {
     if (!roomNS || !started) return;
     const now = performance.now();
-    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, m: myEmote.id, mt: myEmote.n };
-    const k = patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.a + ',' + patch.mt;
+    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n };
+    const k = patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.s + ',' + patch.a + ',' + patch.mt;
     if (!force && (k === lastSent || now - lastSend < 100 + Math.min(200, (inRoomCount - 1) * 12))) return;
     lastSend = now; lastSent = k;
     roomNS.presence(patch).catch(function () {});
@@ -3826,7 +3880,7 @@ body.padOpen #hud { visibility: hidden; }
     for (const k in boards) delete boards[k];
     for (const k in lastWant) delete lastWant[k];
     easels.forEach(e => { paintWork(e.cvs, { w: 4, h: 3, strokes: [] }, '#d8d0c0'); e.tex.needsUpdate = true; });
-    inRoomCount = 1; myEasel = -1;
+    inRoomCount = 1; myEasel = -1; mySeat = -1;
   }
   async function enterRoom(n) {
     if (!lobby || switching) return;
@@ -4085,7 +4139,7 @@ body.padOpen #hud { visibility: hidden; }
 
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
-    pos.x = pl.x; pos.z = pl.z; heading = pl.h; camYaw = pl.h + Math.PI; camPitch = pl.pitch || 0.5; camTx = pos.x; camTz = pos.z; camInit = false; myEasel = -1; camAim = null;
+    pos.x = pl.x; pos.z = pl.z; heading = pl.h; camYaw = pl.h + Math.PI; camPitch = pl.pitch || 0.5; camTx = pos.x; camTz = pos.z; camInit = false; myEasel = -1; mySeat = -1; camAim = null;
     pushPresence(true);
   }
   function arrivePlace(pl) {                               /* arrived on foot: turn to face the view and glide the camera behind me */
@@ -4096,7 +4150,7 @@ body.padOpen #hud { visibility: hidden; }
     if (!started || pad.open || watch.open) return;
     $('#places').hidden = true; goal = null;
     if (window.__hwInstant) { snapTo(pl); toast(pl.name + '에 왔어요', 3000); return; }
-    myEasel = -1;
+    myEasel = -1; mySeat = -1;
     if (Math.hypot(pl.x - pos.x, pl.z - pos.z) < 1) { arrivePlace(pl); return; }
     goal = { x: pl.x, z: pl.z, place: pl, stuck: 0 };
     toast(pl.name + '(으)로 걸어가요. 조이스틱을 움직이면 멈춰요', 4000);
@@ -4150,6 +4204,7 @@ body.padOpen #hud { visibility: hidden; }
     const m = Math.min(1, len);
     lodT -= dt; if (lodT <= 0) { lodT = 0.5; slotLOD(); }
     if (goal && m > 0.08) goal = null;
+    if (mySeat >= 0 && m > 0.08) standUp();
     if (camAim) { camYaw += angDiff(camYaw, camAim.yaw) * Math.min(1, dt * 3); camPitch += (camAim.pitch - camPitch) * Math.min(1, dt * 3); camAim.t -= dt; if (camAim.t <= 0) camAim = null; }
     if (started && !pad.open && !watch.open && m > 0.08) {
       const sy = Math.sin(camYaw), cy = Math.cos(camYaw);
@@ -4164,6 +4219,7 @@ body.padOpen #hud { visibility: hidden; }
       if (!tg.way && gd < (g0.place ? 0.7 : 0.5)) {
         goal = null; walkAmp = lerp(walkAmp, 0, 0.5);
         if (g0.place) arrivePlace(g0.place);
+        else if (g0.seat !== undefined) sitBench(g0.seat);
         else if (occupied(g0.idx)) openWatch(g0.idx); else sit(g0.idx);
       } else {
         const ox = pos.x, oz = pos.z, sp = SPEED * (g0.place ? 1.5 : 0.9);
@@ -4175,7 +4231,7 @@ body.padOpen #hud { visibility: hidden; }
         else if (g0.stuck > 0.8) {
           const near = Math.hypot(g0.x - pos.x, g0.z - pos.z) < 4;
           goal = null;
-          if (near) { if (occupied(g0.idx)) openWatch(g0.idx); else sit(g0.idx); }
+          if (near) { if (g0.seat !== undefined) sitBench(g0.seat); else if (occupied(g0.idx)) openWatch(g0.idx); else sit(g0.idx); }
           else toast('길이 막혔어요. 조이스틱으로 가까이 가 주세요', 4000);
         }
       }
@@ -4184,7 +4240,7 @@ body.padOpen #hud { visibility: hidden; }
       if (curSp > 0.3 && started && !pad.open && !watch.open) { tryMove(wdx * curSp * dt, wdz * curSp * dt); walkPhase += dt * (6 + curSp * 0.9); walkAmp = lerp(walkAmp, Math.min(1, curSp / SPEED + 0.1), Math.min(1, dt * 10)); }
       else { curSp = 0; walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10)); }
     }
-    animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0);
+    animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0, mySeat >= 0);
     player.position.set(pos.x, 0.0 + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp + me.lift, pos.z);
     player.rotation.y = heading; player.rotation.x = 0.11 * walkAmp;
     if (walkAmp > 0.6 && !player.userData.hidden) { puffT -= dt; if (puffT <= 0) { puffT = 0.17; puff(pos.x - Math.sin(heading) * 0.2, pos.z - Math.cos(heading) * 0.2); } }
@@ -4197,7 +4253,7 @@ body.padOpen #hud { visibility: hidden; }
       const moving = Math.hypot(dx, dz) > 0.05 || r.w === 1;
       r.x += dx * f2; r.z += dz * f2; r.h += angDiff(r.h, r.th) * Math.min(1, dt * 12);
       r.amp = lerp(r.amp, moving ? 1 : 0, Math.min(1, dt * 10)); if (r.amp > 0.05) r.phase += dt * 10;
-      animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0);
+      animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0, r.s >= 0);
       r.av.group.position.set(r.x, Math.abs(Math.sin(r.phase)) * 0.09 * r.amp + r.av.lift, r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp;
       if (r.amp > 0.6) { r.puffT = (r.puffT || 0) - dt; if (r.puffT <= 0) { r.puffT = 0.25; puff(r.x, r.z); } }
       r.plate.sprite.visible = Math.hypot(r.x - pos.x, r.z - pos.z) < 28;

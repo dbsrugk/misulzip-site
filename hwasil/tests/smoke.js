@@ -232,7 +232,7 @@ const { start, vis, until, check, done } = require('./lib');
   check(await p.evaluate(i => { const s = window.__hw.slots[i]; return !!s.ex && s.reserved && !!s.cat; }, mi), 'a masterpiece frame is not an empty frame to hang on');
   /* the two round halls: the gallery floor and walls continue past them and you can stand in them */
   check(await p.evaluate(() => window.__hw.gaps().length === 2), 'two round halls');
-  for (const g of await p.evaluate(() => window.__hw.gaps())) { await p.evaluate(z => { window.__hw.pos.x = 21; window.__hw.pos.z = z; }, g); await p.waitForTimeout(3000); check(await p.evaluate(() => /둥근 홀/.test(window.__hw.area())), 'the bulge of a round hall is named: ' + await p.evaluate(() => window.__hw.area())); }
+  for (const g of await p.evaluate(() => window.__hw.gaps())) { await p.evaluate(z => { window.__hw.pos.x = 21; window.__hw.pos.z = z; }, g); check(await until(p, () => /둥근 홀/.test(window.__hw.area()), null, 20), 'the bulge of a round hall is named: ' + await p.evaluate(() => window.__hw.area())); }
   await place(11, 'grand.png');
   /* people in the museum */
   check(await until(p, () => window.__hw.npcs() === 7, null, 20), 'a docent and six visitors are in the museum');
