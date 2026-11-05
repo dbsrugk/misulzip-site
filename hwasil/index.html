@@ -705,7 +705,7 @@ body.padOpen #hud { visibility: hidden; }
 
   /* ---------- the studio room ---------- */
   const RM = { hx: 32, hz: 24, h: 26 };                  /* a very tall hall: pictures hang low, chandeliers and beams far above */
-  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, GZ2 = GZ1 + 30, DOOR = 5.2, DSH = 10, WZ = RM.hz + 15, W1X = -GX - 30, W2X = W1X - 30, GG = { hw: 12, bays: Math.max(12, Math.ceil(((window.MUSEUM_CATALOG || []).length) / 2)), bay: 16 }, ROT = 40, GGS = -RM.hz - ROT, GGL = GG.bays * GG.bay, GGZ = GGS - GGL;   /* ROT: the rotunda sits between the lobby door and the corridor, which starts at GGS */   /* GG: the grand gallery (대회랑) runs north from the lobby's big door: 12 bays of 16 */   /* WZ: z of the doors of the west wing; the west halls span x W1X..-GX and W2X..W1X */   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
+  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, GZ2 = GZ1 + 30, DOOR = 5.2, DSH = 10, WZ = RM.hz + 15, W1X = -GX - 30, W2X = W1X - 30, GG = { hw: 16, bays: Math.max(12, Math.ceil(((window.MUSEUM_CATALOG || []).length) / 2)), bay: 16 }, ROT = 40, GGS = -RM.hz - ROT, GGL = GG.bays * GG.bay, GGZ = GGS - GGL;   /* ROT: the rotunda sits between the lobby door and the corridor, which starts at GGS */   /* GG: the grand gallery (대회랑) runs north from the lobby's big door: 12 bays of 16 */   /* WZ: z of the doors of the west wing; the west halls span x W1X..-GX and W2X..W1X */   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
   const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 58, z: -29, r: 19 }, GARD2 = { x: 112, z: -26, r: 19 };   /* GARD: the open-air exhibition garden */
   const colliders = [];
@@ -1006,7 +1006,7 @@ body.padOpen #hud { visibility: hidden; }
       [-1.5, 1.5].forEach(dx => put(g, new T.Mesh(bx(0.3, 0.95, 1.1), woodDk), dx, 0.47, 0));
       colliders.push({ x: x, z: z, r: 1.3 }); return g;
     }
-    for (let b = 0; b < GG.bays; b++) { const zc = zs - GG.bay * (b + 0.5); benchAt(-6.3, zc, Math.PI / 2); benchAt(6.3, zc, -Math.PI / 2); }   /* in front of every picture */
+    for (let b = 0; b < GG.bays; b++) { const zc = zs - GG.bay * (b + 0.5); benchAt(-(GG.hw - 5.7), zc, Math.PI / 2); benchAt(GG.hw - 5.7, zc, -Math.PI / 2); }   /* in front of every picture */
     function urnAt(x, z, sc, col) {                        /* a lathe-turned urn: smooth, with a brass rim */
       const pts = [[0, 0], [0.55, 0], [0.62, 0.12], [0.5, 0.35], [0.72, 0.9], [0.86, 1.5], [0.7, 2.0], [0.42, 2.25], [0.5, 2.35], [0.58, 2.45], [0.5, 2.55]].map(q => new T.Vector2(q[0], q[1]));
       const g = new T.Group(); g.position.set(x, 0, z); g.scale.setScalar(sc); scene.add(g);
@@ -3887,7 +3887,7 @@ body.padOpen #hud { visibility: hidden; }
       if (pos.x > RM.hx) zone = 'out'; else zone = (pos.z > GZ0 || (pos.z < -RM.hz && Math.abs(pos.x) < 21)) ? 'hall' : 'studio';
       lake = zone === 'out' ? clamp(1 - Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) / 26, 0, 1) : 0;
       sea = zone === 'out' ? clamp((pos.x - 112) / 30, 0, 1) : 0;
-      wing = (pos.z < GGS && pos.z > GGZ && Math.abs(pos.x) < 14) ? [0, 1, 2, 3, 4, 5, 0, 1, 2, 4, 5][clamp(Math.floor((GGS - pos.z) / 32), 0, 10)] % MOODS.length : -1;   /* the five later zones reuse the music of the matching older ones */
+      wing = (pos.z < GGS && pos.z > GGZ && Math.abs(pos.x) < GG.hw + 2) ? [0, 1, 2, 3, 4, 5, 0, 1, 2, 4, 5][clamp(Math.floor((GGS - pos.z) / 32), 0, 10)] % MOODS.length : -1;   /* the five later zones reuse the music of the matching older ones */
     }
     function level() { return on && !document.hidden ? vol * 3.0 : 0; }            /* no waiting for the world to load: sound starts at the first tap */
     function tick() {
@@ -3973,7 +3973,7 @@ body.padOpen #hud { visibility: hidden; }
     mk('도슨트', [2, 3, 6, 2, 8, 1, 1], -5.2, GGS - 8, Math.PI / 2, 'docent');
     const looks = [[0, 1, 2, 0, 3, 0, 0], [3, 4, 1, 1, 5, 2, 2], [4, 0, 5, 3, 0, 0, 3], [1, 6, 4, 2, 7, 4, 1], [5, 2, 0, 4, 9, 0, 0], [2, 5, 7, 5, 1, 3, 2]];
     looks.forEach((lk, i) => {
-      const bay = (i * 2 + 1) % GG.bays, side = i % 2 ? 1 : -1, n = mk('관람객', lk, side * 7.2, GGS - GG.bay * (bay + 0.5), side > 0 ? Math.PI / 2 : -Math.PI / 2, 'visitor');
+      const bay = (i * 2 + 1) % GG.bays, side = i % 2 ? 1 : -1, n = mk('관람객', lk, side * (GG.hw - 4.8), GGS - GG.bay * (bay + 0.5), side > 0 ? Math.PI / 2 : -Math.PI / 2, 'visitor');
       n.bay = bay; n.side = side;
     });
   }
@@ -3995,7 +3995,7 @@ body.padOpen #hud { visibility: hidden; }
           n.wait -= dt;
           if (n.wait <= 0) {                                 /* on to a picture nearby, sometimes the other wall */
             n.bay = clamp(n.bay + Math.floor(Math.random() * 5) - 2, 0, GG.bays - 1); if (Math.random() < 0.3) n.side = -n.side;
-            n.tx = n.side * (6 + Math.random() * 2.2); n.tz = GGS - GG.bay * (n.bay + 0.5) + (Math.random() - 0.5) * 3; n.wait = 5 + Math.random() * 8;
+            n.tx = n.side * (GG.hw - 6 + Math.random() * 2.2); n.tz = GGS - GG.bay * (n.bay + 0.5) + (Math.random() - 0.5) * 3; n.wait = 5 + Math.random() * 8;
           }
         }
         n.h += angDiff(n.h, n.th) * Math.min(1, dt * 6);
