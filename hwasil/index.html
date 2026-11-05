@@ -116,6 +116,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #viewer { position: fixed; inset: 0; z-index: 26; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(28, 24, 20, 0.94); padding: 16px; }
 #viewerCanvas { display: block; background: var(--paper); border: 3px solid #3a2a1c; box-shadow: 0 0 0 8px #6b4a2f, 6px 8px 0 8px rgba(0,0,0,0.35); }
 #viewerCap { color: var(--chalk); font: 400 26px/1.2 var(--font-display); text-align: center; overflow-wrap: anywhere; }
+#tourBtn { bottom: calc(196px + env(safe-area-inset-bottom, 0px)); font-size: 20px; padding: 12px 18px; background: #fff; }
 .sitBtn[disabled] { background: var(--chalk); box-shadow: none; opacity: 0.85; cursor: default; }
 
 #inspectBar {
@@ -406,6 +407,7 @@ body.padOpen #hud { visibility: hidden; }
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
   <button class="sitBtn" id="viewBtn" type="button" hidden>작품 크게 보기</button>
+  <button class="sitBtn" id="tourBtn" type="button" hidden>🚶 15점 코스 걷기</button>
   <div id="inspectBar" hidden>
     <div class="isText"><b id="isTitle"></b><span id="isHint">손가락으로 끌어서 돌려 보세요 · 두 손가락으로 크게·작게</span></div>
     <div class="isBtns"><button class="btn" id="isInfo" type="button">설명 듣기</button><button class="btn primary" id="isClose" type="button">닫기</button></div>
@@ -1393,12 +1395,17 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       (glbCache[file] = glbCache[file] || new Promise((res, rej) => gltfLoader.load('models/' + file, res, undefined, rej))).then(gltf => {
         const o = gltf.scene.clone(true), box = new T.Box3().setFromObject(o), size = box.getSize(new T.Vector3()), c = box.getCenter(new T.Vector3()), s = h / (size.y || 1);
         o.scale.setScalar(s); o.position.set(-c.x * s, -box.min.y * s, -c.z * s);
-        o.traverse(m => { if (m.isMesh) { m.userData.noShadow = true; if (glow && m.material && m.material.emissive) { const mt = m.material; mt.map = null; mt.color.set(0xf1ece0); if (mt.metalness !== undefined) mt.metalness = 0; mt.roughness = 0.78; mt.emissive.set(0xfff0d8); mt.emissiveMap = null; mt.emissiveIntensity = 0.15; mt.needsUpdate = true; if (glowMats.indexOf(mt) < 0) glowMats.push(mt); } } });
+        o.traverse(m => { if (m.isMesh) { m.userData.noShadow = true; if (glow && m.material && m.material.emissive) { let mt = m.material; if (p.fade) { mt = m.material = mt.clone(); (p.fadeMats = p.fadeMats || []).push(mt); } mt.map = null; mt.color.set(0xf1ece0); if (mt.metalness !== undefined) mt.metalness = 0; mt.roughness = 0.78; mt.emissive.set(0xfff0d8); mt.emissiveMap = null; mt.emissiveIntensity = 0.15; mt.needsUpdate = true; if (glowMats.indexOf(mt) < 0) glowMats.push(mt); } } });
         g.add(o); p.state = 2;
       }).catch(() => { p.state = 3; });
     };
     return p;
   }
+  anim.push(() => glbProps.forEach(p => {                /* a column right next to the camera turns see-through so it never blocks the view */
+    if (!p.fadeMats) return;
+    const d = Math.hypot(camera.position.x - p.x, camera.position.z - p.z), want = Math.min(1, Math.max(0.1, (d - 2.0) / 7));
+    p.fadeMats.forEach(mt => { const tr = want < 0.99; if (mt.transparent !== tr) { mt.transparent = tr; mt.needsUpdate = true; } mt.opacity += (want - mt.opacity) * 0.2; });
+  }));
   anim.push(() => glbProps.forEach(p => {
     if (!gltfLoader || p.state === 3) return;
     const d = Math.hypot(pos.x - p.x, pos.z - p.z);
@@ -1563,7 +1570,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     cols.push([x0 + 0.9, S.z], [x1 - 0.9, S.z]);
     cols.forEach(q => {
       const plain = put(scene, new T.Mesh(cyl(0.8, 0.95, 7.0 + DH, 14), marble), q[0], 0.05 + (7.0 + DH) / 2, q[1]);          /* a plain stand-in until the fluted column model has loaded */
-      const cp = glbProp('column.glb', q[0], 0.05, q[1], 7.0 + DH, 0, plain); cp.far = 5;                                  /* fluted shaft, rounded base, leafy capital with scrolls */
+      const cp = glbProp('column.glb', q[0], 0.05, q[1], 7.0 + DH, 0, plain); cp.far = 5; cp.fade = true;                                  /* fluted shaft, rounded base, leafy capital with scrolls */
       colliders.push({ x: q[0], z: q[1], r: 0.95 });
     });
     /* the roof fades while it stands between the camera and me, so the camera can look down in */
@@ -1681,6 +1688,30 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         put(scene, new T.Mesh(cyl(0.28, 0.36, 1.6, 8), bark), cx, 0.8, cz);
         put(scene, new T.Mesh(new T.ConeGeometry(1.9, 11, 10), leaf), cx, 6.2, cz); put(scene, new T.Mesh(new T.ConeGeometry(1.3, 5, 10), leaf), cx, 10.6, cz); colliders.push({ x: cx, z: cz, r: 1.2 });
       })); }
+    /* a guided walk: the avatar walks to each piece in order, the camera circles it for a few seconds, then on to the next; moving by hand ends it */
+    const tour = { on: false, i: -1, wait: 0, stops: [] };
+    stage.forEach(st => { const dx = XX - st.x, dz = ZZ - st.z, d = Math.hypot(dx, dz) || 1, k = st.w / 2 + 2.6, nx = d > 0.5 ? dx / d : 0, nz = d > 0.5 ? dz / d : -1;
+      tour.stops.push({ x: st.x + nx * k, z: st.z + nz * k, sl: extraSlots.find(q => q.id === st.id) }); });
+    const tourBtn = document.getElementById('tourBtn');
+    function tourNext() {
+      tour.i++; tour.wait = 0;
+      if (tour.i >= tour.stops.length) { tour.on = false; exitInspect(); toast('코스를 다 돌았어요 🎉', 4000); return; }
+      const s0 = tour.stops[tour.i]; exitInspect(); goal = { x: s0.x, z: s0.z, tour: tour.i, stuck: 0 };
+      toast((tour.i + 1) + ' / ' + tour.stops.length + ' · ' + ((s0.sl && s0.sl.cat && s0.sl.cat.title) || ''), 2500);
+    }
+    window.__sculptTour = {
+      arrive: i => { if (!tour.on) return; const s0 = tour.stops[i]; if (s0 && s0.sl) { enterInspect(s0.sl); tour.wait = performance.now() + 6500; } else tourNext(); },
+      active: () => tour.on
+    };
+    tourBtn.addEventListener('click', () => { if (tour.on) { tour.on = false; goal = null; exitInspect(); return; } tour.on = true; tour.i = -1; tourNext(); });
+    anim.push(() => {
+      const here = areaShown === '조각 전시관';
+      tourBtn.hidden = !(started && here && !pad.open && !watch.open && mySeat < 0) && !tour.on;
+      tourBtn.textContent = tour.on ? '⏹ 코스 그만 보기' : '🚶 15점 코스 걷기';
+      if (!tour.on) return;
+      if (tour.wait) { if (!inspect) { tour.on = false; tour.wait = 0; } else if (performance.now() > tour.wait) tourNext(); }
+      else if (!goal) { tour.on = false; exitInspect(); }
+    });
     /* lights: three spotlights follow the pieces nearest to me, each aimed and sized for its piece; a piece I am inspecting always gets one */
     const spots = [0, 1, 2].map(() => { const sp = new T.SpotLight(0xffe6c4, 0, 60, 0.5, 0.75, 1.2); sp.position.set(S.x, 30, S.z); scene.add(sp); scene.add(sp.target); return sp; });
     anim.push(() => {
@@ -4572,6 +4603,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (!tg.way && gd < (g0.place ? 0.7 : 0.5)) {
         goal = null; walkAmp = lerp(walkAmp, 0, 0.5);
         if (g0.place) arrivePlace(g0.place);
+        else if (g0.tour !== undefined) window.__sculptTour.arrive(g0.tour);
         else if (g0.seat !== undefined) sitBench(g0.seat);
         else if (occupied(g0.idx)) openWatch(g0.idx); else sit(g0.idx);
       } else {
@@ -4580,7 +4612,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         heading += angDiff(heading, Math.atan2(gx, gz)) * Math.min(1, dt * 12);
         walkAmp = lerp(walkAmp, 1, Math.min(1, dt * 10)); walkPhase += dt * (6 + sp * 0.9);
         g0.stuck = Math.hypot(pos.x - ox, pos.z - oz) < sp * dt * 0.3 ? g0.stuck + dt : 0;
-        if (g0.stuck > 0.8 && g0.place) { goal = null; snapTo(g0.place); toast(g0.place.name + '에 왔어요', 3000); }       /* blocked on the way: take the shortcut */
+        if (g0.stuck > 0.8 && g0.tour !== undefined) { goal = null; window.__sculptTour.arrive(g0.tour); }
+        else if (g0.stuck > 0.8 && g0.place) { goal = null; snapTo(g0.place); toast(g0.place.name + '에 왔어요', 3000); }       /* blocked on the way: take the shortcut */
         else if (g0.stuck > 0.8) {
           const near = Math.hypot(g0.x - pos.x, g0.z - pos.z) < 4;
           goal = null;
