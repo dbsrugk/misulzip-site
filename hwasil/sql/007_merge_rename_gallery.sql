@@ -1,0 +1,9 @@
+-- 제안(아직 적용 안 함, 주인 확인 뒤에 실행): 열쇠를 합칠 때 옮겨 온 전시의 id 앞부분과 doc.owner 도 새 열쇠로 바꿔 둔다.
+-- 지금 앱은 옛 id 그대로도 "내 전시"로 알아보므로 꼭 필요하진 않고, 데이터를 깔끔하게 하려는 정리용이다.
+-- 006 의 함수 끝(return 직전)에 아래 문장을 넣어 다시 만들면 된다. 같은 id 가 이미 있으면 건너뛴다.
+--
+--   update hwasil.gallery g
+--      set id = o || '_' || (g.doc->>'workId'),
+--          doc = jsonb_set(g.doc, '{owner}', to_jsonb(o))
+--    where g.owner = o and g.doc ? 'workId' and g.id <> o || '_' || (g.doc->>'workId')
+--      and not exists (select 1 from hwasil.gallery x where x.id = o || '_' || (g.doc->>'workId'));

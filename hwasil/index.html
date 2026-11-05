@@ -3981,12 +3981,21 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (raw.length !== 32) { say('합칠 열쇠를 위 칸에 붙여넣어 주세요.', true); return; }
     if (window.hwasil.getKey() === raw) { say('지금 쓰는 열쇠와 같아요.'); return; }
     if (!window.hwasil.mergeKey) { say('지금은 합칠 수 없어요.', true); return; }
-    if (!mergeArm) { keyMerge.textContent = '정말 합칠까요? 되돌릴 수 없어요'; keyMerge.classList.add('danger'); mergeArm = setTimeout(mergeDisarm, 6000); return; }
+    if (!mergeArm) {
+      say('그 열쇠를 살펴보는 중…'); mergeArm = -1;
+      window.hwasil.peekKey(raw).then(r => {
+        if (!r.works) { mergeArm = 0; say('그 열쇠에는 합칠 그림이 없어요. 열쇠를 다시 확인해 주세요.', true); return; }
+        say('그 열쇠에는 그림 ' + r.works + '개(전시 중 ' + r.hung + '개)가 있어요.');
+        keyMerge.textContent = '그림 ' + r.works + '개를 합칠까요? 한 번 더 누르면 합쳐요'; keyMerge.classList.add('danger'); mergeArm = setTimeout(mergeDisarm, 8000);
+      }, () => { mergeArm = 0; say('열쇠를 확인하지 못했어요. 다시 해 주세요.', true); });
+      return;
+    }
+    if (mergeArm === -1) return;
     mergeDisarm(); say('합치는 중…');
     window.hwasil.mergeKey(raw).then(r => {
       if (r && r.same) { say('지금 쓰는 열쇠와 같아요.'); return; }
       const left = (r.works_left || 0) + (r.hung_left || 0);
-      say('합쳤어요. 그림 ' + r.works + '개, 전시 ' + r.hung + '개를 옮겼어요.' + (left ? ' 한도(그림 60개, 전시 10개)를 넘어서 ' + left + '개는 옛 열쇠에 남았어요.' : ''));
+      say('합쳤어요. 그림 ' + r.works + '개, 전시 ' + r.hung + '개를 옮겼어요. 옛 열쇠를 쓰던 기기에서는 「이 열쇠로 바꾸기」로 지금 열쇠를 붙여넣어야 같은 그림이 보여요.' + (left ? ' 한도(그림 60개, 전시 10개)를 넘어서 ' + left + '개는 옛 열쇠에 남았어요.' : ''));
     }, () => say('합치지 못했어요. 열쇠를 확인하고 다시 해 주세요.', true));
   });
 

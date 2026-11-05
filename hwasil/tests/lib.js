@@ -16,6 +16,8 @@ const STUB = `window.supabase={createClient(){return{
   if(fn==='hwasil_work_set'){db.works[a.wid]=Object.assign({},a.d,{id:a.wid});return ok();}
   if(fn==='hwasil_work_patch'){Object.assign(db.works[a.wid]||{},a.d);return ok();}
   if(fn==='hwasil_work_del'){delete db.works[a.wid];return ok();}
+  if(fn==='hwasil_works_list'&&window.__other&&a.token===window.__other.key)return ok(window.__other.works);
+  if(fn==='hwasil_merge_keys'){const o=window.__other;if(!o||a.from_token!==o.key)return ok({works:0,works_left:0,hung:0,hung_left:0});o.works.forEach(w=>{db.works[w.id]=w;});const n=o.works.length;o.works=[];return ok({works:n,works_left:0,hung:0,hung_left:0});}
   if(fn==='hwasil_works_list')return ok(Object.values(db.works).sort((x,y)=>y.at-x.at));
   if(fn==='hwasil_gallery_set'){db.gallery[a.gid]=Object.assign({},a.d,{id:a.gid});return ok();}
   if(fn==='hwasil_gallery_hang'){if(Object.values(db.gallery).some(g=>g.slot===a.sl&&g.id!==a.gid))return Promise.resolve({data:null,error:{message:'slot_taken'}});db.gallery[a.gid]=Object.assign({},a.d,{id:a.gid,slot:a.sl});return ok();}

@@ -90,6 +90,11 @@
       if (!/^[0-9a-f]{32}$/.test(k)) return Promise.reject(new Error('invalid_argument'));
       return ready.then(function () { return rpc('hwasil_merge_keys', { code: code, token: token, from_token: k }); }).then(function (r) { refresh('mine'); galleryChanged(); return r; });
     },
+    peekKey: function (k) {                            /* how much sits under another key (read only): shown before merging */
+      k = String(k || '').toLowerCase().replace(/[^0-9a-f]/g, '');
+      if (!/^[0-9a-f]{32}$/.test(k)) return Promise.reject(new Error('invalid_argument'));
+      return ready.then(function () { return rpc('hwasil_works_list', { code: code, token: k, lim: 60 }); }).then(function (rows) { rows = rows || []; return { works: rows.length, hung: rows.filter(function (r) { return r && r.exh; }).length }; });
+    },
     setKey: function (k) {
       k = String(k || '').toLowerCase().replace(/[^0-9a-f]/g, '');
       if (!/^[0-9a-f]{32}$/.test(k)) return false;
