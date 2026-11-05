@@ -820,6 +820,7 @@ body.padOpen #hud { visibility: hidden; }
   /* things hung on an outer wall: shown only while the camera is on the inside of that wall */
   const onWall = [];
   const hitList = [];  /* tappable things: easels and gallery frames */
+const extraSlots = [];  /* frame-like things that are not hanging slots (sculptures): they take reactions too */
 function infoSpot(x, y, z, w, h, d, msg) {  /* an invisible box in the world: tap it and a short note pops up */
   const m = new T.Mesh(new T.BoxGeometry(w, h, d), new T.MeshBasicMaterial({ visible: false })); m.position.set(x, y, z); m.userData.msg = msg; scene.add(m); hitList.push(m); return m;
 }
@@ -1555,20 +1556,25 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const gl = new T.Mesh(new T.CircleGeometry(r * 0.9, 24), new T.MeshBasicMaterial({ color: 0xfff1cf, transparent: true, opacity: 0.16, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
       gl.rotation.x = -Math.PI / 2; gl.position.set(x, 0.07, z); gl.userData.noShadow = true; scene.add(gl);
     }
-    function stand(x, z, w, h, title, mk) {
+    function stand(x, z, w, h, title, mk, info) {
       put(scene, new T.Mesh(bx(w, h, w), stone), x, h / 2, z);
       put(scene, new T.Mesh(bx(w + 0.4, 0.18, w + 0.4), marble), x, 0.14, z);
       plate(title, x, Math.min(h * 0.55, 1.0), z - w / 2 - 0.03);
       light(x, z, w + 0.6); colliders.push({ x: x, z: z, r: w / 2 + 0.35 });
       if (mk) mk(x, h, z);
+      if (info) {
+        const hb = new T.Mesh(new T.BoxGeometry(w + 0.6, 6, w + 0.6), new T.MeshBasicMaterial({ visible: false })); hb.position.set(x, 3, z); scene.add(hb);
+        const sl = { id: 'sculpt:' + info.id, x: x, y: h + 2.2, z: z - w / 2 - 0.4, ry: Math.PI, D: 3, cat: Object.assign({ title: title.split(' · ')[0], blurb: '', w: 0, h: 0, year: '' }, info) };
+        hb.userData.sculpt = sl; hitList.push(hb); extraSlots.push(sl);
+      }
     }
     /* centre: the Pieta */
-    stand(S.x, S.z, 3.6, 1.0, '피에타 · 코드로 만든 조각', (x, h, z) => { const p = makePieta(); p.position.set(x, h, z); p.rotation.y = Math.PI; p.scale.setScalar(1.3); scene.add(p); });
+    stand(S.x, S.z, 3.6, 1.0, '피에타 · 코드로 만든 조각', (x, h, z) => { const p = makePieta(); p.position.set(x, h, z); p.rotation.y = Math.PI; p.scale.setScalar(1.3); scene.add(p); }, { id: 'pieta', artist: '미켈란젤로 (이 작품은 그 조각을 본떠 코드로 만든 모형)', year: '1498~1499', place: '바티칸 성 베드로 대성전', blurb: '죽은 예수를 무릎에 안은 성모 마리아를 대리석 한 덩어리로 깎은 조각이에요. 미켈란젤로가 스물셋 즈음에 만들었고, 그가 이름을 새긴 단 하나의 작품이에요. 슬픔 속에서도 고요하고 아름다운 얼굴이 특징이에요.' });
     /* around it: the real 3D pieces (plain stand-ins until the model has been fetched) */
-    stand(S.x - 7.5, S.z - 4, 1.8, 1.0, '흉상 A', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = 0.6; glbProp('bust_1.glb', x, h, z, 1.9, 0.6, b); });
-    stand(S.x + 7.5, S.z - 4, 1.8, 1.0, '흉상 B', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = -0.6; glbProp('bust_2.glb', x, h, z, 1.9, -0.6, b); });
-    stand(S.x - 7.5, S.z + 4.5, 2.0, 0.9, '고딕 조각상', (x, h, z) => { const b = put(scene, makeTwist(2.0), x, h, z); glbProp('statue_1.glb', x, h, z, 3.4, Math.PI - 0.5, b); });
-    stand(S.x + 7.5, S.z + 4.5, 1.8, 0.9, '꽃병', (x, h, z) => { const b = put(scene, makeRing(1.6), x, h, z); glbProp('vase_1.glb', x, h, z, 2.0, 0.4, b); });
+    stand(S.x - 7.5, S.z - 4, 1.8, 1.0, '고대 흉상', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = 0.6; glbProp('bust_1.glb', x, h, z, 1.9, 0.6, b); }, { id: 'bust_a', artist: '고대 그리스·로마 양식', year: '기원전 5세기~기원후 2세기', place: '조각 전시관', blurb: '고대 그리스와 로마 사람들은 훌륭한 사람의 얼굴을 대리석과 청동으로 남겼어요. 머리카락 한 올, 눈썹의 결까지 살아 있는 것처럼 다듬은 것이 특징이에요.' });
+    stand(S.x + 7.5, S.z - 4, 1.8, 1.0, '르네상스 흉상', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = -0.6; glbProp('bust_2.glb', x, h, z, 1.9, -0.6, b); }, { id: 'bust_b', artist: '르네상스 초상 조각 양식', year: '15~16세기', place: '조각 전시관', blurb: '르네상스 시대에는 고대 조각을 다시 배우며 사람의 개성을 있는 그대로 담으려 했어요. 주름과 표정이 살아 있어서 이야기를 건네는 듯해요.' });
+    stand(S.x - 7.5, S.z + 4.5, 2.0, 0.9, '고딕 조각상', (x, h, z) => { const b = put(scene, makeTwist(2.0), x, h, z); glbProp('statue_1.glb', x, h, z, 3.4, Math.PI - 0.5, b); }, { id: 'gothic', artist: '중세 고딕 성당 조각 양식', year: '12~15세기', place: '조각 전시관', blurb: '고딕 성당의 문과 벽을 장식하던 성인 조각이에요. 길고 가는 몸과 주름진 옷자락이 하늘을 향해 솟는 느낌을 줘요.' });
+    stand(S.x + 7.5, S.z + 4.5, 1.8, 0.9, '꽃병', (x, h, z) => { const b = put(scene, makeRing(1.6), x, h, z); glbProp('vase_1.glb', x, h, z, 2.0, 0.4, b); }, { id: 'vase', artist: '고대 그리스 도기 양식', year: '기원전 6~4세기', place: '조각 전시관', blurb: '고대 그리스 사람들은 물과 기름, 포도주를 담던 항아리에 신화 속 장면을 그려 넣었어요. 쓰임새와 아름다움이 하나가 된 공예품이에요.' });
   })();
   /* ---- paint bucket: a fill is stored as one tiny stroke {k:'f', c, p:[x,y]} and replayed in order on whatever canvas is drawn.
      It floods the colour under the seed, treats nearly-closed gaps (radius gap px) as walls, then grows back to the lines. ---- */
@@ -2805,7 +2811,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     art.z = 1; art.tx = art.ty = 0; art.ptr.clear(); art.g = null; artApply();
     const im = $('#artImg'), none = $('#artNone'); none.hidden = true; im.hidden = false; im.removeAttribute('src');
     if (c.img) { im.onerror = () => { im.hidden = true; none.hidden = false; none.textContent = '작품 사진을 불러오지 못했어요.'; }; im.alt = c.title; im.src = c.img; }
-    else { im.hidden = true; none.hidden = false; none.textContent = '작품 사진은 곧 걸려요'; }
+    else { im.hidden = true; none.hidden = false; none.textContent = c.blurb && !c.w ? '조각은 전시관에서 직접 둘러보며 감상해요 🙂' : '작품 사진은 곧 걸려요'; }
     $('#artSpeak').hidden = !ttsOk; $('#artSpeak').onclick = () => { if (art.on) artSpeakStop(); else artSpeak(c.blurb || c.title, c.blurb || ''); };
     $('#artSpeak').textContent = '🔊 도슨트 듣기'; $('#art').hidden = false;
     document.querySelector('#art .artInfo').scrollTop = 0;
@@ -2952,6 +2958,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       }
       if (o.userData.bench !== undefined) { tapBench(o.userData.bench); return; }
       if (o.userData.spot === 'fountain') { wishAtFountain(); return; }
+      if (o.userData.sculpt) { showDocent(o.userData.sculpt); return; }
       if (o.userData.msg) { toast(o.userData.msg, 4500); return; }
       const sl = o.userData.slot;
       if (sl) { frameTap(sl); return; }
@@ -3961,7 +3968,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const mt = Number(pr.mt) || 0;                                         /* a new emote counter = play it (but not the old one when I just arrived) */
       if (r.mt === undefined) r.mt = mt; else if (mt !== r.mt) { r.mt = mt; const em = EMOTES.find(q => q.id === pr.m); if (em) startEmote(r.av, em); }
       const rn = Number(pr.rn) || 0;
-      if (r.rn === undefined) r.rn = rn; else if (rn !== r.rn) { r.rn = rn; if (typeof pr.rs === 'string') spawnRx(slots.find(q => q.id === pr.rs), Number(pr.rx)); }
+      if (r.rn === undefined) r.rn = rn; else if (rn !== r.rn) { r.rn = rn; if (typeof pr.rs === 'string') spawnRx(slots.find(q => q.id === pr.rs) || extraSlots.find(q => q.id === pr.rs), Number(pr.rx)); }
       const nx = clamp(pr.x, -RM.hx, OUT.x1 + 2), nz = clamp(pr.z, OUT.z0 - 2, Math.max(GZ2, OUT.z1)), nt = performance.now();
       if (r.init && (nx !== r.tx || nz !== r.tz)) {                           /* a new position: estimate the walking speed so the avatar glides on between updates */
         const dtp = (nt - r.lt) / 1000, jump = Math.hypot(nx - r.tx, nz - r.tz);
