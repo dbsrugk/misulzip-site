@@ -996,7 +996,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     }
     W.forEach((wg, k) => banner(9, 2.4, 20, 0, wingZ(k) - 2.5, (g, cw, ch) => {
       g.fillStyle = '#25211d'; fitText(g, wg.name, 112, cw - 170, cw / 2, ch * 0.42);
-      g.fillStyle = '#6d655b'; fitText(g, wg.note, 56, cw - 170, cw / 2, ch * 0.74);
+      g.fillStyle = '#6d655b'; fitText(g, (k >= 6 ? '더 깊이 보기 · ' : '한눈에 보기 · ') + wg.note, 52, cw - 170, cw / 2, ch * 0.74);
     }));
     banner(7.2, 2.2, 21, 0, z0 + 0.3, (g, cw, ch) => {
       g.fillStyle = '#25211d'; fitText(g, '대회랑', 110, cw - 170, cw / 2, ch * 0.42);
