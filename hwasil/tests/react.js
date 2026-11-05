@@ -21,10 +21,15 @@ const { start, vis, until, check, done } = require('./lib');
   check(await a.evaluate(() => window.__hw.spots()) === 7, 'the Pieta, windmill, lake, lighthouse, sailboat, viewpoint and garden bust can be tapped for a note');
   /* the sculptures in the pavilion open the same docent view and take reactions */
   check(await a.evaluate(() => window.__hw.sculpts()) === 15, 'fifteen sculpture pieces can be tapped');
-  await a.evaluate(() => window.__hw.tapSculpt(11)); await a.waitForTimeout(500);
+  await a.evaluate(() => window.__hw.tapSculpt(14)); await a.waitForTimeout(500);
   check(await vis(a, '#art') && /백마/.test(await a.textContent('#artTitle')) && (await a.textContent('#artText')).length > 30, 'tapping the centre horse opens its description');
   check(/Rico Cilliers/.test(await a.textContent('#artMeta')), 'the artist is shown');
   const f2 = await b.evaluate(() => window.__hw.fx()); await a.locator('#rxBarA .rxBtn').nth(1).click();
   check(await until(b, f => window.__hw.fx() > f, f2, 20), 'a friend sees the reaction left on a sculpture');
+  await a.click('#artClose').catch(() => {}); await a.waitForTimeout(300);
+  await a.evaluate(() => window.__hw.inspectSculpt(14)); await a.waitForTimeout(600);
+  check(await a.evaluate(() => window.__hw.inspecting()) && await vis(a, '#inspectBar'), 'tapping a statue starts the inspect mode with its bar');
+  await a.click('#isClose'); await a.waitForTimeout(300);
+  check(!(await a.evaluate(() => window.__hw.inspecting())) && !(await vis(a, '#inspectBar')), 'the close button ends the inspect mode');
   await t.close(); process.exit(done(t));
 })().catch(e => { console.log('ERR', e.message); process.exit(1); });
