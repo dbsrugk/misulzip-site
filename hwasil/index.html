@@ -1279,6 +1279,24 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const m = new T.Points(g, new T.PointsMaterial({ size: 0.42, map: dotTex, color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, fog: false }));
     m.frustumCulled = false; m.visible = false; m.userData.noShadow = true; scene.add(m); return { n: n, a: a, rx: rx, ry: ry, rz: rz, m: m, g: g };
   })();
+  /* small and middling decorations far out in the fog are not drawn: the world is wide and the phone is small */
+  const farList = []; let farBuilt = 0, farNext = 0, farNear = 0, farNearAll = 0;
+  function farCull(t) {
+    if (!farBuilt) { if (t < 5) return; farBuilt = 1;
+      scene.traverse(o => {
+        if (!o.isMesh || o.isSkinnedMesh || !o.visible || !o.geometry || Object.keys(o.userData).length) return;
+        if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+        o.updateWorldMatrix(true, false); const e = o.matrixWorld.elements, sc = Math.max(Math.hypot(e[0], e[1], e[2]), Math.hypot(e[4], e[5], e[6]), Math.hypot(e[8], e[9], e[10])), r = o.geometry.boundingSphere.radius * sc;
+        if (r < 2.5) farList.push({ o: o, r: r, cut: r < 0.7 ? 55 : 80, off: false });
+      }); return; }
+    if (t < farNext) return; farNext = t + 0.35;
+    const px = pos.x, pz = pos.z;
+    for (let i = 0; i < farList.length; i++) {
+      const q = farList[i], e = q.o.matrixWorld.elements, dx = e[12] - px, dz = e[14] - pz, far = dx * dx + dz * dz > q.cut * q.cut;
+      if (far && !q.off) { if (q.o.visible) { q.o.visible = false; q.off = true; } }
+      else if (!far && q.off) { q.o.visible = true; q.off = false; }
+    }
+  }
   function updateAtmosphere(dt, now) {
     const tm = atmMode.time, t = tm === 'day' ? 0.27 : tm === 'sunset' ? 0.55 : tm === 'night' ? 0.85 : ((Date.now() / 1000) % CYCLE) / CYCLE;
     const w = atmMode.wx === 'auto' ? weatherNow() : atmMode.wx;
@@ -4532,6 +4550,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function update(dt) {
     tNow += dt;
     for (let i = 0; i < anim.length; i++) anim[i](dt, tNow);
+    farCull(tNow);
     let ix = joy.x + ((keys['d'] || keys['arrowright']) ? 1 : 0) - ((keys['a'] || keys['arrowleft']) ? 1 : 0);
     let iy = joy.y + ((keys['w'] || keys['arrowup']) ? 1 : 0) - ((keys['s'] || keys['arrowdown']) ? 1 : 0);
     const len = Math.hypot(ix, iy); if (len > 1) { ix /= len; iy /= len; }
