@@ -268,13 +268,16 @@ body.padOpen #hud { visibility: hidden; }
 .roomRow .n { font: 400 22px/1 var(--font-display); }
 .roomRow .c { font-size: 13px; color: #6f665a; }
 .roomRow[hidden], #placesList[hidden] { display: none !important; }
-#placesTabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
-#placesTabs .btn { padding: 6px 12px; font-size: 15px; }
-#placesTabs .btn.on { background: var(--ink); color: var(--paper); }
+.roomRow .rk { font: 400 28px/1 var(--font-display); min-width: 38px; text-align: center; }
+.roomRow .l { flex: 1; min-width: 0; }
+#fameNote { margin: 0; font-size: 13px; color: #6f665a; }
+#placesTabs, #fameTabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
+#placesTabs .btn, #fameTabs .btn { padding: 6px 12px; font-size: 15px; }
+#fameTabs .btn.on, #placesTabs .btn.on { background: var(--ink); color: var(--paper); }
 #placesMap { width: 100%; border: 2px solid var(--ink); border-radius: 12px; background: #f3ecdb; touch-action: pan-y; }
 .catTag { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 12px; border: 1.5px solid currentColor; vertical-align: middle; }
 .catTag.ex { color: #8a4a47; } .catTag.out { color: #3f7a4f; } .catTag.mk { color: #3f6fa8; }
-#roomsList, #placesList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+#roomsList, #placesList, #fameList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 /* works sheet */
 #art { position: fixed; inset: 0; z-index: 27; display: flex; flex-direction: column; background: rgba(28, 24, 20, 0.96); }
 #art .artWrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 14px 14px 8px; touch-action: none; cursor: grab; position: relative; }
@@ -298,7 +301,7 @@ body.padOpen #hud { visibility: hidden; }
 .opt.on { background: var(--ink); color: var(--paper); }
 .dressFoot { display: flex; gap: 8px; }
 .dressFoot .btn { flex: 1; }
-#works, #rooms, #places {
+#works, #rooms, #places, #fame {
   position: fixed;
   inset: 0;
   z-index: 25;
@@ -397,6 +400,7 @@ body.padOpen #hud { visibility: hidden; }
   <div class="row">
     <button class="chip" id="worksBtn" type="button">내 그림 <b id="worksCount">0</b></button>
     <button class="chip" id="online" type="button">나 혼자 있는 중</button>
+    <button class="chip" id="fameBtn" type="button">🏆 명예의 전당</button>
     <button class="chip" id="placesBtn" type="button">장소 이동</button>
     <button class="chip" id="dressBtn" type="button">꾸미기</button>
     <button class="chip" id="emoteBtn" type="button">표현</button>
@@ -569,6 +573,15 @@ body.padOpen #hud { visibility: hidden; }
     <div id="placesTabs"></div>
     <canvas id="placesMap" hidden></canvas>
     <div id="placesList"></div>
+  </div>
+</div>
+
+<div id="fame" hidden>
+  <div class="sheet" role="dialog" aria-label="명예의 전당">
+    <div class="sheetHead"><h2>🏆 명예의 전당</h2><button class="btn" id="fameClose" type="button">닫기</button></div>
+    <div id="fameTabs"></div>
+    <p id="fameNote">반응을 많이 받은 순서예요. 「보러 가기」를 누르면 작품 앞까지 걸어가요.</p>
+    <div id="fameList"></div>
   </div>
 </div>
 
@@ -3094,7 +3107,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (!ok) { $('#intro').hidden = false; $('#codeField').hidden = false; codeMsg('코드가 맞지 않아요. 한 번 더 확인해 주세요.'); $('#codeInput').select(); return; }
     const nm = sanitize($('#nameInput').value).slice(0, 10);
     if (nm) { myName = nm; store('hw-name', nm); myPlate.set(myName); }
-    started = true; $('#intro').hidden = true; store('hw-in', '1'); music.unlock(); setTimeout(() => music.hint(), 1600);   /* remembered: a reload goes straight back in */
+    started = true; $('#intro').hidden = true; store('hw-in', '1'); music.unlock(); setTimeout(() => music.hint(), 1600);
+    setTimeout(() => { if (!store('hw-fame')) { store('hw-fame', '1'); toast('🏆 위쪽 「명예의 전당」에서 인기 작품을 보고 바로 찾아갈 수 있어요', 6000); } }, 5000);   /* remembered: a reload goes straight back in */
     pushPresence(true);
     sendPing(); setInterval(() => { if (!document.hidden) sendPing(); }, 240000);   /* visit log for the daily report */
     toast('정면 큰 문은 미술관, 동쪽 문 밖은 그림 그리는 화실이에요', 7000);
@@ -3142,7 +3156,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     mySeat = -1;
   }
   function onTap(cx, cy) {
-    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#dress').hidden || !$('#hang').hidden || !$('#art').hidden) return;
+    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#fame').hidden || !$('#dress').hidden || !$('#hang').hidden || !$('#art').hidden) return;
     const r = cv.getBoundingClientRect();
     ray.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -((cy - r.top) / r.height) * 2 + 1 }, camera);
     const hits = ray.intersectObjects(hitList, false);
@@ -4577,6 +4591,52 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       row.appendChild(left); row.appendChild(bt); list.appendChild(row);
     });
   }
+  /* ---------- hall of fame: the most-reacted works, one tap to walk to them ---------- */
+  const fame = { tab: 'work', seq: 0, cache: {} };
+  function standFor(sl) {                               /* a spot in front of a frame, facing it */
+    const fx = Math.sin(sl.ry), fz = Math.cos(sl.ry);
+    for (const d of [sl.D + 2.4, sl.D + 1.4, 3.4, 2.4]) { const x = sl.x + fx * d, z = sl.z + fz * d; if (walkable(x, z)) return { x: x, z: z, h: sl.ry + Math.PI }; }
+    return { x: sl.x + fx * 3, z: sl.z + fz * 3, h: sl.ry + Math.PI };
+  }
+  function fameItems(tab) {
+    if (tab === 'work') return slots.filter(q => !q.reserved && q.ex).map(q => ({ key: 'w:' + q.ex.id, title: q.ex.title || '제목 없는 그림', sub: (q.ex.artist || '이름 없는 화가') + ' · ' + (ROOM_NAME[q.room] || ''), at: q.ex.at || 0, pl: Object.assign({ name: q.ex.title || '그림', pitch: 0.3 }, standFor(q)) }));
+    if (tab === 'art') return slots.filter(q => q.reserved && q.cat).map((q, i) => ({ key: 'c:' + q.cat.id, title: q.cat.title, sub: (q.cat.artist || '') + (ROOM_NAME[q.room] ? ' · ' + ROOM_NAME[q.room] : ''), at: -i, pl: Object.assign({ name: q.cat.title, pitch: 0.3 }, standFor(q)) }));
+    return extraSlots.filter(q => q.cat && String(q.id).indexOf('sculpt:') === 0).map((q, i) => ({ key: 'c:' + q.cat.id, title: q.cat.title, sub: '조각 전시관', at: -i, pl: { name: q.cat.title, x: q.sx, z: q.sz - q.w / 2 - 3.6, h: 0, pitch: 0.35 } }));
+  }
+  function renderFame() {
+    const list = $('#fameList'), tabs = $('#fameTabs'); tabs.textContent = ''; list.textContent = '';
+    [['work', '친구들 작품'], ['art', '명화'], ['sc', '조각']].forEach(t => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (fame.tab === t[0] ? ' on' : ''); b.textContent = t[1];
+      b.addEventListener('click', () => { fame.tab = t[0]; renderFame(); }); tabs.appendChild(b);
+    });
+    const items = fameItems(fame.tab), my = ++fame.seq;
+    if (!items.length) { const e = document.createElement('p'); e.className = 'empty'; e.textContent = fame.tab === 'work' ? '아직 전시된 작품이 없어요. 내 그림을 걸어 보세요!' : '작품을 불러오는 중이에요.'; list.appendChild(e); return; }
+    const total = k => { const c = fame.cache[k]; return c ? Object.keys(c).reduce((a, x) => a + (Number(c[x]) || 0), 0) : 0; };
+    const draw = () => {
+      if (my !== fame.seq) return; list.textContent = '';
+      const rows = items.slice().sort((a, b) => total(b.key) - total(a.key) || b.at - a.at).slice(0, 20), top = total(rows[0].key) > 0;
+      rows.forEach((it, i) => {
+        const row = document.createElement('div'); row.className = 'roomRow';
+        const rk = document.createElement('div'); rk.className = 'rk'; rk.textContent = top && total(it.key) > 0 ? (['🥇', '🥈', '🥉'][i] || String(i + 1)) : '·';
+        const left = document.createElement('div'); left.className = 'l';
+        const nm = document.createElement('div'); nm.className = 'n'; nm.textContent = it.title; left.appendChild(nm);
+        const ct = document.createElement('div'); ct.className = 'c'; ct.textContent = it.sub + (total(it.key) ? ' · 반응 ' + total(it.key) : ''); left.appendChild(ct);
+        const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn primary'; bt.textContent = '보러 가기';
+        bt.addEventListener('click', () => { $('#fame').hidden = true; goPlace(it.pl); });
+        row.appendChild(rk); row.appendChild(left); row.appendChild(bt); list.appendChild(row);
+      });
+    };
+    draw();
+    const todo = items.filter(it => !fame.cache[it.key] || Date.now() - (fame.cache[it.key].t || 0) > 60000), run = () => {
+      const it = todo.shift(); if (!it) { draw(); return Promise.resolve(); }
+      return Promise.resolve(window.hwasil && window.hwasil.reactions ? window.hwasil.reactions(it.key) : {}).then(r => { fame.cache[it.key] = Object.assign({}, r || {}); Object.defineProperty(fame.cache[it.key], 't', { value: Date.now(), enumerable: false }); }, () => {}).then(run);
+    };
+    if (todo.length) Promise.all([run(), run(), run(), run()]).then(draw);
+  }
+  $('#fameBtn').addEventListener('click', () => { if (!started) return; renderFame(); $('#fame').hidden = false; });
+  $('#fameClose').addEventListener('click', () => { $('#fame').hidden = true; });
+  $('#fame').addEventListener('click', e => { if (e.target === $('#fame')) $('#fame').hidden = true; });
+  window.__fameOpen = () => { renderFame(); $('#fame').hidden = false; };
   $('#placesBtn').addEventListener('click', () => { if (!started) return; renderPlaces(); $('#places').hidden = false; });
   $('#placesClose').addEventListener('click', () => { $('#places').hidden = true; });
   $('#places').addEventListener('click', e => { if (e.target === $('#places')) $('#places').hidden = true; });
