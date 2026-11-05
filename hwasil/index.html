@@ -1349,16 +1349,17 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   /* real 3D models (models/*.glb, CC0): fetched when someone comes near and drawn only near; the plain stand-in shows until then (and far away) */
   const gltfLoader = T.GLTFLoader ? new T.GLTFLoader() : null, glbProps = [];
+  const glowMats = []; let glbGlow = false;                                         /* set while the sculpture pavilion is built: its statues get a soft self-lit glow so they do not turn black at night */
   function glbProp(file, x, y, z, h, rotY, standIn) {
     const g = new T.Group(); g.position.set(x, y, z); g.rotation.y = rotY || 0; g.visible = false; scene.add(g);
-    const p = { g: g, x: x, z: z, state: 0, standIn: standIn, file: file };
+    const p = { g: g, x: x, z: z, state: 0, standIn: standIn, file: file }, glow = glbGlow;
     glbProps.push(p);
     p.load = function () {
       p.state = 1;
       gltfLoader.load('models/' + file, gltf => {
         const o = gltf.scene, box = new T.Box3().setFromObject(o), size = box.getSize(new T.Vector3()), c = box.getCenter(new T.Vector3()), s = h / (size.y || 1);
         o.scale.setScalar(s); o.position.set(-c.x * s, -box.min.y * s, -c.z * s);
-        o.traverse(m => { if (m.isMesh) m.userData.noShadow = true; });
+        o.traverse(m => { if (m.isMesh) { m.userData.noShadow = true; if (glow && m.material && m.material.emissive) { m.material.emissive.set(0xffffff); if (m.material.map) m.material.emissiveMap = m.material.map; m.material.emissiveIntensity = 0.3; m.material.needsUpdate = true; glowMats.push(m.material); } } });
         g.add(o); p.state = 2;
       }, undefined, () => { p.state = 3; });
     };
@@ -1511,7 +1512,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     return g;
   }
   (function () {
+    glbGlow = true;
     const S = SCULPT, x0 = S.x - S.w / 2, x1 = S.x + S.w / 2, z0 = S.z - S.d / 2, z1 = S.z + S.d / 2;
+    const hallLights = [[S.x, S.z], [S.x - 14, S.z + 4], [S.x + 14, S.z + 4], [S.x - 12, z0 + 5], [S.x + 12, z0 + 5]].map(q => { const L2 = new T.PointLight(0xffe2b8, 0, 46, 1.2); L2.position.set(q[0], 9, q[1]); scene.add(L2); return L2; });
+    anim.push(() => { const k = 0.05 + ATM.night * 0.3; hallLights.forEach(L2 => { L2.intensity = k; }); glowMats.forEach(m => { m.emissiveIntensity = 0.25 + ATM.night * 0.65; }); });
     const marble = L(0xf4f0e8), stone = L(0xe2dccf), FONT_UI = '"Gamja Flower", "Noto Sans KR", sans-serif';
     const floorM = new T.MeshLambertMaterial({ color: 0xece6da });
     new T.TextureLoader().load('textures/marble_white.jpg', t => { t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(S.w / 6, S.d / 6); floorM.map = t; floorM.color.set(0xffffff); floorM.needsUpdate = true; }, undefined, () => {});
@@ -1519,8 +1523,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     put(scene, new T.Mesh(bx(S.w + 0.8, 0.12, S.d + 0.8), stone), S.x, 0.02, S.z);                  /* a thin step all around */
     /* columns: two rows with a wide gap in front, and three on each side */
     const cols = [], DH = 26;                                                                       /* a colossal hall: columns 33 m high */
-    for (let i = 0; i < 7; i++) { const x = x0 + 1.2 + i * (S.w - 2.4) / 6; cols.push([x, z1 - 1.0]); if (Math.abs(x - S.x) > 6) cols.push([x, z0 + 1.0]); }          /* the front keeps a wide gap in the middle */
-    [S.z - 7, S.z, S.z + 7].forEach(z => { cols.push([x0 + 0.9, z]); cols.push([x1 - 0.9, z]); });
+    [x0 + 1.2, S.x - 14, S.x, S.x + 14, x1 - 1.2].forEach(x => cols.push([x, z1 - 1.0]));               /* back row: five, behind everything */
+    [x0 + 1.2, x1 - 1.2].forEach(x => cols.push([x, z0 + 1.0]));                                          /* front: only the two corners, so the entrance is open */
+    cols.push([x0 + 0.9, S.z], [x1 - 0.9, S.z]);
     cols.forEach(q => {
       put(scene, new T.Mesh(bx(1.5, 0.4, 1.5), stone), q[0], 0.25, q[1]);
       put(scene, new T.Mesh(cyl(0.7, 0.85, 6.2 + DH, 18), marble), q[0], 3.55 + DH / 2, q[1]);
@@ -1580,15 +1585,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     giant(XX - 15.5, ZZ + 1.5, 5.0, 1.6, '③ 황소 머리', 'bull_head/bull_head.gltf', 9, 0.9, { id: 'bull', artist: '황소상 조각 전통', year: '고대부터 지금까지', place: '조각 전시관', blurb: '황소는 힘과 풍요를 뜻해서 고대 지중해와 메소포타미아의 신전에서 자주 조각됐어요. 굵은 목과 뿔의 곡선이 강한 인상을 줘요.' }, 2.2);
     stand(XX - 14, ZZ + 7, 2.4, 0.9, '④ 고딕 조각상', (x, h, z) => { const b = put(scene, makeTwist(2.0), x, h, z); b.scale.setScalar(1.7); glbProp('statue_1.glb', x, h, z, 5.0, Math.PI - 0.5, b); }, { id: 'gothic', hh: 6.5, artist: '중세 고딕 성당 조각 양식', year: '12~15세기', place: '조각 전시관', blurb: '고딕 성당의 문과 벽을 장식하던 성인 조각이에요. 길고 가는 몸과 주름진 옷자락이 하늘을 향해 솟는 느낌을 줘요.' });
     giant(XX - 8.5, z1 - 2.6, 2.6, 1.0, '⑤ 말 머리', 'horse_head/horse_head.gltf', 3.4, 0.6, { id: 'horsehead', artist: '말 머리 조각 전통', year: '고대부터 지금까지', place: '조각 전시관', blurb: '말 머리 조각은 고대 그리스 신전의 장식으로 유명해요. 달리는 말의 목과 갈기를 한 덩어리로 담아 속도감과 힘을 보여 줘요. 이 작품은 청동 느낌으로 만들어졌어요.' }, 1.3);
-    giant(XX, z1 - 3.4, 6.0, 2.4, '⑥ 거대한 백마', 'horse_statue_01/horse_statue_01.gltf', 15, Math.PI + 0.3, { id: 'horse', artist: '도자기 말 조각 (Rico Cilliers 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '하얀 도자기로 빚은 말이 뒷발로 일어선 모습이에요. 갈기와 근육의 흐름을 부드럽게 살렸어요. 말은 예부터 조각가들이 가장 사랑한 주제 가운데 하나예요.' }, 2.6);
-    giant(XX + 8.5, z1 - 2.6, 2.8, 1.3, '⑦ 청동 가오리', 'bronze_ray_statue/bronze_ray_statue.gltf', 3.6, Math.PI, { id: 'ray', artist: '청동 조각 (Tina 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '청동은 구리에 주석을 섞은 금속으로, 녹인 쇠를 틀에 부어 만들어요. 바닷속을 날 듯 헤엄치는 가오리의 날개 곡선을 살린 조각이에요.' }, 1.3);
-    giant(XX + 15.5, ZZ + 6, 6.0, 3.0, '⑧ 거대한 청동 고래', 'bronze_whale_statue/bronze_whale_statue.gltf', 11, Math.PI - 0.6, { id: 'whale', artist: '청동 조각 (Tina 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '큰 고래가 헤엄치는 순간을 붙잡아 둔 청동 조각이에요. 오래 두면 푸르스름한 녹이 슬어 멋이 깊어져요. 높은 받침대 위에서 내려다보는 듯해요.' }, 2.2);
-    stand(XX + 17, ZZ + 0.5, 1.8, 0.8, '⑨ 콘크리트 고양이', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); glbProp('concrete_cat_statue/concrete_cat_statue.gltf', x, h, z, 1.9, -1.0, b); }, { id: 'cat', hh: 3, artist: '거리 조각 (Rico Cilliers·Riley Queen 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '길가에 놓인 콘크리트 고양이 조각이에요. 요즘 조각은 전시관 밖 거리와 공원에도 나와서 사람들과 함께 지내요.' });
-    stand(XX + 15, ZZ - 3.8, 2.0, 0.9, '⑩ 꽃병', (x, h, z) => { const b = put(scene, makeRing(1.6), x, h, z); glbProp('vase_1.glb', x, h, z, 2.6, 0.4, b); }, { id: 'vase', hh: 3.5, artist: '고대 그리스 도기 양식', year: '기원전 6~4세기', place: '조각 전시관', blurb: '고대 그리스 사람들은 물과 기름, 포도주를 담던 항아리에 신화 속 장면을 그려 넣었어요. 쓰임새와 아름다움이 하나가 된 공예품이에요.' });
-    stand(XX + 17, z0 + 7.5, 2.0, 1.0, '⑪ 르네상스 흉상', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = -0.9; glbProp('bust_2.glb', x, h, z, 2.1, -0.9, b); }, { id: 'bust_b', hh: 3.2, artist: '르네상스 초상 조각 양식', year: '15~16세기', place: '조각 전시관', blurb: '르네상스 시대에는 고대 조각을 다시 배우며 사람의 개성을 있는 그대로 담으려 했어요. 주름과 표정이 살아 있어서 이야기를 건네는 듯해요.' });
-    giant(XX + 10, z0 + 4.8, 5.0, 1.8, '⑫ 문지기 사자', 'lion_head/lion_head.gltf', 10, -0.5, { id: 'lion2', artist: '사자상 조각 전통', year: '고대부터 지금까지', place: '조각 전시관 입구', blurb: '입구 양쪽에서 방문객을 맞이하는 한 쌍의 사자예요. 한 쌍의 사자가 문을 지키는 모습은 동서양 궁전과 사찰, 다리에서 모두 볼 수 있어요.' }, 2.2);
-    /* the finale in the middle: the Pieta, big, on a round stepped plinth */
-    stand(S.x, S.z, 8.4, 2.4, '⑬ 피에타 · 코드로 만든 조각', (x, h, z) => { const p = makePieta(); p.position.set(x, h, z); p.rotation.y = Math.PI; p.scale.setScalar(4.6); scene.add(p); }, { id: 'pieta', hh: 24, artist: '미켈란젤로 (이 작품은 그 조각을 본떠 코드로 만든 모형)', year: '1498~1499', place: '바티칸 성 베드로 대성전', blurb: '죽은 예수를 무릎에 안은 성모 마리아를 대리석 한 덩어리로 깎은 조각이에요. 미켈란젤로가 스물셋 즈음에 만들었고, 그가 이름을 새긴 단 하나의 작품이에요. 슬픔 속에서도 고요하고 아름다운 얼굴이 특징이에요.' });
+    giant(XX + 8.5, z1 - 2.6, 2.8, 1.3, '⑥ 청동 가오리', 'bronze_ray_statue/bronze_ray_statue.gltf', 3.6, Math.PI, { id: 'ray', artist: '청동 조각 (Tina 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '청동은 구리에 주석을 섞은 금속으로, 녹인 쇠를 틀에 부어 만들어요. 바닷속을 날 듯 헤엄치는 가오리의 날개 곡선을 살린 조각이에요.' }, 1.3);
+    giant(XX + 15.5, ZZ + 6, 6.0, 3.0, '⑦ 거대한 청동 고래', 'bronze_whale_statue/bronze_whale_statue.gltf', 11, Math.PI - 0.6, { id: 'whale', artist: '청동 조각 (Tina 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '큰 고래가 헤엄치는 순간을 붙잡아 둔 청동 조각이에요. 오래 두면 푸르스름한 녹이 슬어 멋이 깊어져요. 높은 받침대 위에서 내려다보는 듯해요.' }, 2.2);
+    stand(XX + 17, ZZ + 0.5, 1.8, 0.8, '⑧ 콘크리트 고양이', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); glbProp('concrete_cat_statue/concrete_cat_statue.gltf', x, h, z, 1.9, -1.0, b); }, { id: 'cat', hh: 3, artist: '거리 조각 (Rico Cilliers·Riley Queen 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '길가에 놓인 콘크리트 고양이 조각이에요. 요즘 조각은 전시관 밖 거리와 공원에도 나와서 사람들과 함께 지내요.' });
+    stand(XX + 15, ZZ - 3.8, 2.0, 0.9, '⑨ 꽃병', (x, h, z) => { const b = put(scene, makeRing(1.6), x, h, z); glbProp('vase_1.glb', x, h, z, 2.6, 0.4, b); }, { id: 'vase', hh: 3.5, artist: '고대 그리스 도기 양식', year: '기원전 6~4세기', place: '조각 전시관', blurb: '고대 그리스 사람들은 물과 기름, 포도주를 담던 항아리에 신화 속 장면을 그려 넣었어요. 쓰임새와 아름다움이 하나가 된 공예품이에요.' });
+    stand(XX + 17, z0 + 7.5, 2.0, 1.0, '⑩ 르네상스 흉상', (x, h, z) => { const b = put(scene, makeBust(1.7), x, h, z); b.rotation.y = -0.9; glbProp('bust_2.glb', x, h, z, 2.1, -0.9, b); }, { id: 'bust_b', hh: 3.2, artist: '르네상스 초상 조각 양식', year: '15~16세기', place: '조각 전시관', blurb: '르네상스 시대에는 고대 조각을 다시 배우며 사람의 개성을 있는 그대로 담으려 했어요. 주름과 표정이 살아 있어서 이야기를 건네는 듯해요.' });
+    giant(XX + 10, z0 + 4.8, 5.0, 1.8, '⑪ 문지기 사자', 'lion_head/lion_head.gltf', 10, -0.5, { id: 'lion2', artist: '사자상 조각 전통', year: '고대부터 지금까지', place: '조각 전시관 입구', blurb: '입구 양쪽에서 방문객을 맞이하는 한 쌍의 사자예요. 한 쌍의 사자가 문을 지키는 모습은 동서양 궁전과 사찰, 다리에서 모두 볼 수 있어요.' }, 2.2);
+    /* the finale in the middle: the great white horse, eighteen metres tall, on a wide stepped plinth */
+    giant(S.x, S.z, 8.4, 2.4, '⑫ 거대한 백마', 'horse_statue_01/horse_statue_01.gltf', 18, Math.PI + 0.3, { id: 'horse', artist: '도자기 말 조각 (Rico Cilliers 제작, CC0)', year: '현대', place: '조각 전시관', blurb: '하얀 도자기로 빚은 말이 뒷발로 일어선 모습이에요. 갈기와 근육의 흐름을 부드럽게 살렸어요. 말은 예부터 조각가들이 가장 사랑한 주제 가운데 하나예요. 이 전시관에서 가장 큰 작품이에요.' }, 3);
+    glbGlow = false;
     /* a gold line on the floor links the stops in order, ending at the Pieta */
     { const route = [[XX, z0 - 0.5], [XX - 10, z0 + 8], [XX - 17, ZZ - 3.5], [XX - 15.5, ZZ + 4.5], [XX - 14, ZZ + 9.5], [XX - 8.5, z1 - 5.8], [XX, z1 - 6.5], [XX + 8.5, z1 - 5.8], [XX + 15.5, ZZ + 9.5], [XX + 17, ZZ + 3], [XX + 15, ZZ - 1.2], [XX + 17, z0 + 10], [XX + 10, z0 + 8], [XX, ZZ - 7]], gold = B(0xe2b84a);
       for (let i = 0; i + 1 < route.length; i++) {
@@ -2119,7 +2124,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { name: '둥근 홀 (뒤)', note: '복도 뒤쪽 두 번째 쉼터', x: 0, z: gapZ(1) + 8, h: Math.PI, pitch: 0.2 },
     { name: '중앙 로툰다', note: '분수와 기둥이 있는 둥근 홀', x: 0, z: -RM.hz - 6, h: Math.PI, pitch: 0.3 },
     { name: '화실', note: '이젤이 놓인 나무 오두막. 앉아서 그려요', x: 50, z: 3.5, h: 0, pitch: 0.4 },
-    { name: '조각 전시관', note: '대리석 기둥 사이에 조각상이 서 있어요', x: SCULPT.x, z: 0.5, h: 0, pitch: 0.35 }
+    { name: '조각 전시관', note: '거대한 조각들을 따라 걷는 12점 코스', x: SCULPT.x, z: 0.5, h: 0, pitch: 0.35 }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
@@ -4279,7 +4284,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function docentTalk() { const l = DOCENT_LINES[docentLine++ % DOCENT_LINES.length]; showCard(l[0], l[1], [['dtClose', '고마워요', true, () => {}]]); }
 
   /* ---------- where am I: a name banner pops up every time I step into another place ---------- */
-  const AREA_NOTE = { '둥근 홀': '벤치에 앉아 잠깐 쉬어 가는 둥근 홀', '중앙 홀': '북쪽 미술관 · 동쪽 화실과 조각 전시관 · 남쪽 친구들 전시', '화실': '이젤을 눌러 앉아서 그려요', '조각 전시관': '흉상과 조각상, 한가운데에는 피에타', '중앙 로툰다': '분수와 기둥이 있는 둥근 홀', '신진 작가관': '친구들이 그린 그림이 걸려 있어요', '별관': '신진 작가관의 두 번째 전시장', '서쪽 전시관 1': '친구들이 그린 그림', '서쪽 전시관 2': '친구들이 그린 그림', '야외 전시 정원': '하늘 아래 액자가 둘러선 정원', '꽃길 정원': '양쪽에 그림이 걸린 둥근 꽃길', '산 전망대': '눈 덮인 봉우리를 바라보며', '바닷가': '모래사장과 수평선, 등대', '호숫가': '잔잔한 물, 수련, 작은 배', '풍차 들판': '꽃밭 너머로 돌아가는 풍차', '들판 산책길': '중앙 홀 동쪽 문 밖의 넓은 들판' };
+  const AREA_NOTE = { '둥근 홀': '벤치에 앉아 잠깐 쉬어 가는 둥근 홀', '중앙 홀': '북쪽 미술관 · 동쪽 화실과 조각 전시관 · 남쪽 친구들 전시', '화실': '이젤을 눌러 앉아서 그려요', '조각 전시관': '거대한 조각들을 따라 걷는 12점 코스, 한가운데에는 18m 백마', '중앙 로툰다': '분수와 기둥이 있는 둥근 홀', '신진 작가관': '친구들이 그린 그림이 걸려 있어요', '별관': '신진 작가관의 두 번째 전시장', '서쪽 전시관 1': '친구들이 그린 그림', '서쪽 전시관 2': '친구들이 그린 그림', '야외 전시 정원': '하늘 아래 액자가 둘러선 정원', '꽃길 정원': '양쪽에 그림이 걸린 둥근 꽃길', '산 전망대': '눈 덮인 봉우리를 바라보며', '바닷가': '모래사장과 수평선, 등대', '호숫가': '잔잔한 물, 수련, 작은 배', '풍차 들판': '꽃밭 너머로 돌아가는 풍차', '들판 산책길': '중앙 홀 동쪽 문 밖의 넓은 들판' };
   function areaNameAt(x, z) {
     if (x > RM.hx - 0.5) {
       if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 3 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 3) return '조각 전시관';
