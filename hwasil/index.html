@@ -1666,9 +1666,9 @@ body.padOpen #hud { visibility: hidden; }
     l.fillStyle = '#6d655b'; l.font = '32px ' + FONT; l.fillText(String(ex.artist || '화가').slice(0, 10), 256, 94);
     sl.ltex.needsUpdate = true;
   }
-  function addSlot(room, size, x, y, z, ry) {
+  function addSlot(room, size, x, y, z, ry, Dopt) {
     emptyTexs();
-    const D = FD[size], g = new T.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
+    const D = Dopt || FD[size], g = new T.Group(); g.position.set(x, y, z); g.rotation.y = ry; scene.add(g);
     const inner = new T.Group(); g.add(inner);
     put(inner, new T.Mesh(bx(D + FRAME_T * 2, D + FRAME_T * 2, 0.16), L(0x3a2a1c)), 0, 0, 0);
     const cs = size === 's' ? 288 : size === 'm' ? 416 : 512;
@@ -1714,15 +1714,18 @@ body.padOpen #hud { visibility: hidden; }
     /* the masterpieces of the grand gallery: reserved frames (nobody can hang a drawing there), a small brass picture light above each */
     const brass = L(0xd9b35a);
     (window.MUSEUM_CATALOG || []).forEach((c, i) => {
-      const bay = Math.floor(i / 2), left = i % 2 === 0, zc = GGS - GG.bay * (bay + 0.5), y = c.size === 'l' ? 6.8 : c.size === 'm' ? 5.4 : 4.4;
-      const g = left ? addSlot('museum', c.size, -GG.hw + 0.1, y, zc, Math.PI / 2) : addSlot('museum', c.size, GG.hw - 0.1, y, zc, -Math.PI / 2);
+      const bay = Math.floor(i / 2), left = i % 2 === 0, zc = GGS - GG.bay * (bay + 0.5);
+      /* real size, squeezed: a 77 cm picture is 3.6 m here, an 8.8 m wall painting 11 m (so the big ones are clearly big and the small ones still readable) */
+      const long = Math.max(c.w, c.h), Dm = Math.round(clamp(3.6 + 2.2 * Math.log2(long / 77), 3.0, 11) * 10) / 10, size = Dm >= 7 ? 'l' : Dm >= 4.2 ? 'm' : 's';
+      const asp = clamp(c.w / c.h, 0.5, 2), hh = (asp >= 1 ? Dm / asp : Dm) / 2, y = 3.4 + hh;
+      const g = left ? addSlot('museum', size, -GG.hw + 0.1, y, zc, Math.PI / 2, Dm) : addSlot('museum', size, GG.hw - 0.1, y, zc, -Math.PI / 2, Dm);
       hang(g, 'x', left ? -GG.hw : GG.hw, left ? 1 : -1);
       const sl = slots[slots.length - 1]; sl.reserved = true; sl.cat = c;
       sl.ex = { id: 'cat_' + c.id, title: c.title, artist: c.artist + ' · ' + c.year, w: c.w, h: c.h, at: 0, strokes: [] }; sl.key = 'cat'; applyAspect(sl, sl.ex); releaseSlot(sl, true);
-      const D = sl.D; put(g, new T.Mesh(bx(D * 0.45, 0.12, 0.3), brass), 0, D / 2 + FRAME_T + 0.7, 0.4); put(g, new T.Mesh(bx(0.08, 0.5, 0.08), brass), 0, D / 2 + FRAME_T + 0.45, 0.2);
-      const cone = new T.Shape(); cone.moveTo(-D * 0.22, 0); cone.lineTo(D * 0.22, 0); cone.lineTo(D * 0.62, -(D + 1.6)); cone.lineTo(-D * 0.62, -(D + 1.6)); cone.closePath();
+      const D = sl.D; put(g, new T.Mesh(bx(D * 0.45, 0.12, 0.3), brass), 0, hh + FRAME_T + 0.7, 0.4); put(g, new T.Mesh(bx(0.08, 0.5, 0.08), brass), 0, hh + FRAME_T + 0.45, 0.2);
+      const cone = new T.Shape(); cone.moveTo(-D * 0.22, 0); cone.lineTo(D * 0.22, 0); cone.lineTo(D * 0.62, -(hh * 2 + 1.6)); cone.lineTo(-D * 0.62, -(hh * 2 + 1.6)); cone.closePath();
       const lc = new T.Mesh(new T.ShapeGeometry(cone), new T.MeshBasicMaterial({ color: [0xffd9a0, 0xffc27a, 0xcfdcff, 0xfff0b0, 0xeaf6ff, 0xffd8a8][Math.floor(i / 4)], transparent: true, opacity: 0.1, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
-      lc.position.set(0, D / 2 + FRAME_T + 0.6, 0.45); lc.userData.noShadow = true; g.add(lc);                       /* the light falling on the picture */
+      lc.position.set(0, hh + FRAME_T + 0.6, 0.45); lc.userData.noShadow = true; g.add(lc);                       /* the light falling on the picture */
     });
     side('annex', GZ1, 0); endWall('annex', GZ2);
     /* studio: the middle row sits above the paint shelves and canvases; a second, higher row above it */
@@ -2618,7 +2621,7 @@ body.padOpen #hud { visibility: hidden; }
     art.z = clamp(z1, 1, 5); art.tx = mx - f.c.x - vx * art.z; art.ty = my - f.c.y - vy * art.z; artApply();
   }
   function openArt(c) {
-    $('#artTitle').textContent = c.title; $('#artMeta').textContent = c.artist + ' · ' + c.year + (c.place ? ' · ' + c.place : '');
+    $('#artTitle').textContent = c.title; $('#artMeta').textContent = c.artist + ' · ' + c.year + (c.place ? ' · ' + c.place : '') + (c.w && c.h ? ' · 실제 크기 가로 ' + c.w + ' × 세로 ' + c.h + 'cm' : '');
     $('#artText').textContent = c.blurb || '';
     art.z = 1; art.tx = art.ty = 0; art.ptr.clear(); art.g = null; artApply();
     const im = $('#artImg'), none = $('#artNone'); none.hidden = true; im.hidden = false; im.removeAttribute('src');

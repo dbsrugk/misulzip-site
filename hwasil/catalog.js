@@ -1,5 +1,5 @@
 /* 도토리 미술관 대회랑의 작품 목록. 저작권이 풀린 작품만 넣는다.
-   w, h = 실제 그림의 가로/세로 비율(액자 모양), size = s/m/l (액자 크기), img = 작품 사진 주소(아직 없으면 비워 둠).
+   w, h = 실제 그림의 가로/세로 크기(cm, 액자 크기와 모양을 정해요), size = s/m/l (액자 크기), img = 작품 사진 주소(아직 없으면 비워 둠).
    설명(blurb)은 이 앱을 위해 새로 쓴 짧은 소개예요. 순서대로 대회랑 왼쪽/오른쪽 벽에 걸려요(6개 전시구역 x 4점). */
 window.MUSEUM_WINGS = [
   { name: '르네상스', note: '14~16세기 이탈리아', wall: 0x8a4a47 },
@@ -16,11 +16,11 @@ window.MUSEUM_WINGS = [
 ];
 window.MUSEUM_CATALOG = [
   /* 르네상스 */
-  { id: 'monalisa', title: '모나리자', artist: '레오나르도 다 빈치', year: '1503년경', place: '루브르 박물관 (프랑스)', w: 939, h: 1400, size: 'l', img: 'art/monalisa.jpg',
+  { id: 'monalisa', title: '모나리자', artist: '레오나르도 다 빈치', year: '1503년경', place: '루브르 박물관 (프랑스)', w: 53, h: 77, size: 'l', img: 'art/monalisa.jpg',
     blurb: '윤곽선을 연기처럼 번지게 그리는 \'스푸마토\' 기법으로 그려서, 보는 위치에 따라 표정이 달라 보인다고 해요. 은은한 미소의 비밀을 찾으러 오는 사람이 세상에서 가장 많은 그림이에요.' },
   { id: 'venus', title: '비너스의 탄생', artist: '산드로 보티첼리', year: '1485년경', place: '우피치 미술관 (이탈리아)', w: 278, h: 172, size: 'l', img: 'art/venus.jpg',
     blurb: '바다 거품에서 태어난 사랑의 여신이 커다란 조개를 타고 해안에 닿는 장면이에요. 옛 신화를 큰 그림으로 되살린 르네상스의 대표작이에요.' },
-  { id: 'adam', title: '아담의 창조', artist: '미켈란젤로', year: '1512년경', place: '시스티나 성당 (바티칸)', w: 1400, h: 652, size: 'm', img: 'art/adam.jpg',
+  { id: 'adam', title: '아담의 창조', artist: '미켈란젤로', year: '1512년경', place: '시스티나 성당 (바티칸)', w: 570, h: 280, size: 'm', img: 'art/adam.jpg',
     blurb: '하느님과 아담의 손가락이 닿을 듯 말 듯한 장면으로 유명해요. 손가락 사이의 작은 틈이 생명이 막 시작되려는 순간을 보여준다고 해요.' },
   { id: 'lastsupper', title: '최후의 만찬', artist: '레오나르도 다 빈치', year: '1495~1498년', place: '산타 마리아 델레 그라치에 성당 (이탈리아)', w: 880, h: 460, size: 'l', img: 'art/lastsupper.jpg',
     blurb: '예수가 \'너희 중 한 사람이 나를 배신할 것이다\'라고 말한 순간, 제자들이 놀라는 모습을 그렸어요. 식탁의 모든 선이 예수 한가운데로 모이도록 그려서 눈길이 저절로 그곳으로 가요.' },
@@ -70,48 +70,48 @@ window.MUSEUM_CATALOG = [
   { id: 'miin', title: '미인도', artist: '신윤복', year: '18세기 말~19세기 초', place: '간송미술관', w: 45.6, h: 114, size: 'm',
     blurb: '조선 시대 여인의 맵시를 섬세한 선과 고운 색으로 그린 그림이에요. 저고리의 곡선과 머리 모양이 생생해서 많은 사랑을 받아요.' },
   /* 르네상스의 시작 */
-  { id: 'giotto', title: '애도(그리스도의 죽음을 슬퍼함)', artist: '조토 디 본도네', year: '1305년경', place: '스크로베니 예배당 (이탈리아)', w: 1400, h: 1295, size: 'm', img: 'art/giotto.jpg',
+  { id: 'giotto', title: '애도(그리스도의 죽음을 슬퍼함)', artist: '조토 디 본도네', year: '1305년경', place: '스크로베니 예배당 (이탈리아)', w: 185, h: 200, size: 'm', img: 'art/giotto.jpg',
     blurb: '예수를 안고 슬퍼하는 사람들의 얼굴이 진짜 사람처럼 생생해요. 금빛 평면 그림이 보통이던 시절에 감정을 그린 이 벽화가 서양 그림의 새 시대를 열었다고 해요.' },
-  { id: 'arnolfini', title: '아르놀피니 부부의 초상', artist: '얀 판 에이크', year: '1434년', place: '내셔널 갤러리 (영국)', w: 1400, h: 1915, size: 'l', img: 'art/arnolfini.jpg',
+  { id: 'arnolfini', title: '아르놀피니 부부의 초상', artist: '얀 판 에이크', year: '1434년', place: '내셔널 갤러리 (영국)', w: 60, h: 82, size: 'l', img: 'art/arnolfini.jpg',
     blurb: '뒤쪽 벽의 작은 둥근 거울에 방 안 전체와 화가의 모습까지 비쳐요. 유화로 천의 주름, 샹들리에까지 놀랍도록 꼼꼼하게 그렸어요.' },
-  { id: 'bosch', title: '쾌락의 정원', artist: '히에로니무스 보스', year: '1500년경', place: '프라도 미술관 (스페인)', w: 1400, h: 750, size: 'l', img: 'art/bosch.jpg',
+  { id: 'bosch', title: '쾌락의 정원', artist: '히에로니무스 보스', year: '1500년경', place: '프라도 미술관 (스페인)', w: 389, h: 220, size: 'l', img: 'art/bosch.jpg',
     blurb: '세 폭으로 된 그림에 낙원과 지옥이 이어지고, 상상 속의 기묘한 사람과 동물이 가득해요. 500년 전 그림인데도 초현실적인 느낌이 들어요.' },
-  { id: 'bruegel', title: '눈 속의 사냥꾼', artist: '피터르 브뤼헐', year: '1565년', place: '빈 미술사 박물관 (오스트리아)', w: 1400, h: 996, size: 'l', img: 'art/bruegel.jpg',
+  { id: 'bruegel', title: '눈 속의 사냥꾼', artist: '피터르 브뤼헐', year: '1565년', place: '빈 미술사 박물관 (오스트리아)', w: 162, h: 117, size: 'l', img: 'art/bruegel.jpg',
     blurb: '눈 덮인 마을로 사냥꾼과 개들이 돌아오고, 멀리서는 사람들이 얼음 위에서 놀아요. 평범한 사람들의 일상을 풍경과 함께 크게 담은 그림이에요.' },
   /* 거장과 극적인 빛 */
-  { id: 'athens', title: '아테네 학당', artist: '라파엘로', year: '1511년경', place: '바티칸 사도궁', w: 1400, h: 1086, size: 'l', img: 'art/athens.jpg',
+  { id: 'athens', title: '아테네 학당', artist: '라파엘로', year: '1511년경', place: '바티칸 사도궁', w: 770, h: 500, size: 'l', img: 'art/athens.jpg',
     blurb: '가운데에서 플라톤은 하늘을, 아리스토텔레스는 땅을 가리켜요. 고대 철학자와 학자 쉰 명 넘게 한 건물 안에 모아 그린, 르네상스 정신을 보여주는 벽화예요.' },
-  { id: 'caravaggio', title: '성 마태오의 소명', artist: '카라바조', year: '1600년경', place: '산 루이지 데이 프란체시 성당 (이탈리아)', w: 1400, h: 1309, size: 'l', img: 'art/caravaggio.jpg',
+  { id: 'caravaggio', title: '성 마태오의 소명', artist: '카라바조', year: '1600년경', place: '산 루이지 데이 프란체시 성당 (이탈리아)', w: 340, h: 322, size: 'l', img: 'art/caravaggio.jpg',
     blurb: '어두운 방에 한 줄기 빛이 들어오며 \'나를 따라오라\'는 부름이 마태오에게 닿아요. 빛과 어둠을 극적으로 쓰는 바로크의 시작을 알린 그림이에요.' },
-  { id: 'prodigal', title: '탕자의 귀환', artist: '렘브란트', year: '1669년경', place: '에르미타주 미술관 (러시아)', w: 1400, h: 1827, size: 'l', img: 'art/prodigal.jpg',
+  { id: 'prodigal', title: '탕자의 귀환', artist: '렘브란트', year: '1669년경', place: '에르미타주 미술관 (러시아)', w: 205, h: 262, size: 'l', img: 'art/prodigal.jpg',
     blurb: '집을 떠났다가 낡은 옷으로 돌아온 아들을 아버지가 두 손으로 감싸 안아요. 렘브란트가 세상을 떠나기 얼마 전에 그린, 용서의 마음이 따뜻하게 느껴지는 그림이에요.' },
-  { id: 'judith', title: '유디트와 홀로페르네스', artist: '아르테미시아 젠틸레스키', year: '17세기 초', place: '이탈리아의 미술관', w: 1400, h: 1702, size: 'l', img: 'art/judith.jpg',
+  { id: 'judith', title: '유디트와 홀로페르네스', artist: '아르테미시아 젠틸레스키', year: '1620년경', place: '우피치 미술관 (이탈리아)', w: 162, h: 199, size: 'l', img: 'art/judith.jpg',
     blurb: '적장을 쓰러뜨리는 유디트와 하녀의 단단한 팔과 시선이 눈길을 끌어요. 여성 화가가 드물던 시대에 힘 있게 이름을 남긴 화가의 대표 주제예요.' },
   /* 혁명의 시대 */
-  { id: 'goya', title: '1808년 5월 3일', artist: '프란시스코 고야', year: '1814년', place: '프라도 미술관 (스페인)', w: 1400, h: 1068, size: 'l', img: 'art/goya.jpg',
+  { id: 'goya', title: '1808년 5월 3일', artist: '프란시스코 고야', year: '1814년', place: '프라도 미술관 (스페인)', w: 347, h: 268, size: 'l', img: 'art/goya.jpg',
     blurb: '나폴레옹 군대에 맞섰던 마드리드 시민이 총 앞에 두 팔을 벌린 장면이에요. 하얀 셔츠에 빛을 모아 전쟁의 비극을 더 아프게 보여줘요.' },
-  { id: 'marat', title: '마라의 죽음', artist: '자크루이 다비드', year: '1793년', place: '벨기에 왕립미술관', w: 1400, h: 1801, size: 'm', img: 'art/marat.jpg',
+  { id: 'marat', title: '마라의 죽음', artist: '자크루이 다비드', year: '1793년', place: '벨기에 왕립미술관', w: 128, h: 165, size: 'm', img: 'art/marat.jpg',
     blurb: '프랑스 혁명가 마라가 욕조 안에서 세상을 떠난 모습이에요. 조용하고 단정한 구도가 오히려 슬픔을 크게 느끼게 해요.' },
-  { id: 'temeraire', title: '전함 테메레르호의 마지막 항해', artist: '윌리엄 터너', year: '1839년', place: '내셔널 갤러리 (영국)', w: 1400, h: 1041, size: 'm', img: 'art/temeraire.jpg',
+  { id: 'temeraire', title: '전함 테메레르호의 마지막 항해', artist: '윌리엄 터너', year: '1839년', place: '내셔널 갤러리 (영국)', w: 121.9, h: 90.7, size: 'm', img: 'art/temeraire.jpg',
     blurb: '큰 전투에서 이름을 날린 낡은 배가 작은 증기선에 끌려 마지막 항구로 가요. 노을빛과 하늘로 새 시대가 오고 옛 시대가 저무는 느낌을 담았어요.' },
-  { id: 'olympia', title: '올랭피아', artist: '에두아르 마네', year: '1863년', place: '오르세 미술관 (프랑스)', w: 1400, h: 954, size: 'm', img: 'art/olympia.jpg',
+  { id: 'olympia', title: '올랭피아', artist: '에두아르 마네', year: '1863년', place: '오르세 미술관 (프랑스)', w: 190, h: 130.5, size: 'm', img: 'art/olympia.jpg',
     blurb: '침대에 누운 여인이 관람객을 똑바로 바라봐서 당시 사람들이 깜짝 놀라 크게 논란이 됐어요. 전통을 깨고 현대 미술의 문을 연 그림으로 꼽혀요.' },
   /* 새로운 눈 */
-  { id: 'cards', title: '카드놀이 하는 사람들', artist: '폴 세잔', year: '1890년대', place: '오르세 미술관 등 (연작)', w: 1400, h: 1194, size: 'm', img: 'art/cards.jpg',
+  { id: 'cards', title: '카드놀이 하는 사람들', artist: '폴 세잔', year: '1890년대', place: '오르세 미술관 (프랑스)', w: 57, h: 47.5, size: 'm', img: 'art/cards.jpg',
     blurb: '농부 두 사람이 말없이 카드놀이에 집중하고 있어요. 세잔은 사물을 둥근 것, 네모난 것의 단순한 모양으로 보고 그려서 현대 미술의 아버지라 불려요.' },
-  { id: 'gauguin', title: '우리는 어디서 왔는가 우리는 무엇인가 우리는 어디로 가는가', artist: '폴 고갱', year: '1897~1898년', place: '보스턴 미술관 (미국)', w: 1400, h: 515, size: 'l', img: 'art/gauguin.jpg',
+  { id: 'gauguin', title: '우리는 어디서 왔는가 우리는 무엇인가 우리는 어디로 가는가', artist: '폴 고갱', year: '1897~1898년', place: '보스턴 미술관 (미국)', w: 374.6, h: 139.1, size: 'l', img: 'art/gauguin.jpg',
     blurb: '타히티에서 그린 긴 그림을 왼쪽에서 오른쪽으로 읽으면 아기에서 노인까지 사람의 한평생이 이어져요. 제목이 곧 고갱이 던진 질문이에요.' },
-  { id: 'dream', title: '꿈', artist: '앙리 루소', year: '1910년', place: '뉴욕 현대미술관 (미국)', w: 1400, h: 953, size: 'm', img: 'art/dream.jpg',
+  { id: 'dream', title: '꿈', artist: '앙리 루소', year: '1910년', place: '뉴욕 현대미술관 (미국)', w: 298.5, h: 204.5, size: 'm', img: 'art/dream.jpg',
     blurb: '정글 한가운데 소파에 누운 여인과 피리 부는 사람, 동물들이 있어요. 세관원으로 일하며 독학으로 그림을 배운 루소의 순수하고 신비로운 상상이에요.' },
-  { id: 'cafe', title: '밤의 카페 테라스', artist: '빈센트 반 고흐', year: '1888년', place: '크뢰러뮐러 미술관 (네덜란드)', w: 1400, h: 1756, size: 'm', img: 'art/cafe.jpg',
+  { id: 'cafe', title: '밤의 카페 테라스', artist: '빈센트 반 고흐', year: '1888년', place: '크뢰러뮐러 미술관 (네덜란드)', w: 65.3, h: 80.7, size: 'm', img: 'art/cafe.jpg',
     blurb: '프랑스 아를의 밤거리에서 노란 가스등 불빛이 번지는 카페를 그렸어요. 고흐가 검은색 대신 짙은 파랑으로 밤하늘을 그린 첫 그림 중 하나예요.' },
   /* 동양 이야기 */
-  { id: 'ssireum', title: '씨름도', artist: '김홍도', year: '18세기', place: '국립중앙박물관', w: 1400, h: 1685, size: 'm', img: 'art/ssireum.jpg',
+  { id: 'ssireum', title: '씨름도', artist: '김홍도', year: '18세기', place: '국립중앙박물관', w: 22.4, h: 27, size: 'm', img: 'art/ssireum.jpg',
     blurb: '구경꾼들이 둥글게 앉은 가운데 두 사람이 샅바를 잡고 승부를 겨뤄요. 사람들의 표정과 몸짓이 재미있어서, 어느 쪽이 이길지 함께 지켜보는 기분이 들어요.' },
-  { id: 'danoh', title: '단오풍정', artist: '신윤복', year: '18세기 말~19세기 초', place: '간송미술관', w: 1400, h: 1115, size: 'm', img: 'art/danoh.jpg',
+  { id: 'danoh', title: '단오풍정', artist: '신윤복', year: '18세기 말~19세기 초', place: '간송미술관', w: 35.6, h: 28.2, size: 'm', img: 'art/danoh.jpg',
     blurb: '단옷날 시냇가에서 머리를 감고 그네 타는 여인들이 있어요. 바위 뒤에서 몰래 훔쳐보는 아이 스님들까지 이야기가 가득한 풍속화예요.' },
-  { id: 'geumgang', title: '금강전도', artist: '정선', year: '1734년', place: '리움미술관', w: 1400, h: 1951, size: 'm', img: 'art/geumgang.jpg',
+  { id: 'geumgang', title: '금강전도', artist: '정선', year: '1734년', place: '리움미술관', w: 94.1, h: 130.6, size: 'm', img: 'art/geumgang.jpg',
     blurb: '금강산 일만이천 봉우리를 둥근 원 안에 한눈에 담았어요. 중국 그림을 따라 그리지 않고 우리 땅을 직접 보고 그린 \'진경산수화\'를 대표하는 그림이에요.' },
-  { id: 'fuji', title: '붉은 후지(맑게 갠 남풍 부는 아침)', artist: '가쓰시카 호쿠사이', year: '1831년경', place: '여러 미술관 (목판 연작 \'후지산 36경\')', w: 1400, h: 945, size: 'm', img: 'art/fuji.jpg',
+  { id: 'fuji', title: '붉은 후지(맑게 갠 남풍 부는 아침)', artist: '가쓰시카 호쿠사이', year: '1831년경', place: '여러 미술관 (목판 연작 \'후지산 36경\')', w: 38.1, h: 25.4, size: 'm', img: 'art/fuji.jpg',
     blurb: '아침 햇빛에 붉게 물든 후지산을 아주 단순한 모양과 색으로 그렸어요. 호쿠사이는 이 연작으로 세계 화가들에게 큰 영향을 주었어요.' }
 ];
