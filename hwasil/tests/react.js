@@ -20,8 +20,8 @@ const { start, vis, until, check, done } = require('./lib');
   check(/풍덩/.test(await a.evaluate(() => document.querySelector('#toast').textContent)), 'a wish pops up');
   check(await a.evaluate(() => window.__hw.spots()) === 7, 'the Pieta, windmill, lake, lighthouse, sailboat, viewpoint and garden bust can be tapped for a note');
   /* the sculptures in the pavilion open the same docent view and take reactions */
-  check(await a.evaluate(() => window.__hw.sculpts()) === 9, 'nine sculpture pieces can be tapped');
-  await a.evaluate(() => window.__hw.tapSculpt(0)); await a.waitForTimeout(500);
+  check(await a.evaluate(() => window.__hw.sculpts()) === 13, 'thirteen sculpture pieces can be tapped');
+  await a.evaluate(() => window.__hw.tapSculpt(12)); await a.waitForTimeout(500);
   check(await vis(a, '#art') && /피에타/.test(await a.textContent('#artTitle')) && (await a.textContent('#artText')).length > 30, 'tapping the Pieta opens its description');
   check(/미켈란젤로/.test(await a.textContent('#artMeta')), 'the artist is shown');
   const f2 = await b.evaluate(() => window.__hw.fx()); await a.locator('#rxBarA .rxBtn').nth(1).click();

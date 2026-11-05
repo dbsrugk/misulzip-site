@@ -84,6 +84,12 @@
       });
     },
     getKey: function () { return token; },
+    /* merge another key's works and hung frames into this one */
+    mergeKey: function (k) {
+      k = String(k || '').toLowerCase().replace(/[^0-9a-f]/g, '');
+      if (!/^[0-9a-f]{32}$/.test(k)) return Promise.reject(new Error('invalid_argument'));
+      return ready.then(function () { return rpc('hwasil_merge_keys', { code: code, token: token, from_token: k }); }).then(function (r) { refresh('mine'); galleryChanged(); return r; });
+    },
     setKey: function (k) {
       k = String(k || '').toLowerCase().replace(/[^0-9a-f]/g, '');
       if (!/^[0-9a-f]{32}$/.test(k)) return false;
