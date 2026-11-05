@@ -705,7 +705,7 @@ body.padOpen #hud { visibility: hidden; }
 
   /* ---------- the studio room ---------- */
   const RM = { hx: 32, hz: 24, h: 26 };                  /* a very tall hall: pictures hang low, chandeliers and beams far above */
-  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, GZ2 = GZ1 + 30, DOOR = 5.2, DSH = 10, WZ = RM.hz + 15, W1X = -GX - 30, W2X = W1X - 30, GG = { hw: 12, bays: 12, bay: 16 }, ROT = 40, GGS = -RM.hz - ROT, GGL = GG.bays * GG.bay, GGZ = GGS - GGL;   /* ROT: the rotunda sits between the lobby door and the corridor, which starts at GGS */   /* GG: the grand gallery (대회랑) runs north from the lobby's big door: 12 bays of 16 */   /* WZ: z of the doors of the west wing; the west halls span x W1X..-GX and W2X..W1X */   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
+  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, GZ2 = GZ1 + 30, DOOR = 5.2, DSH = 10, WZ = RM.hz + 15, W1X = -GX - 30, W2X = W1X - 30, GG = { hw: 12, bays: Math.max(12, Math.ceil(((window.MUSEUM_CATALOG || []).length) / 2)), bay: 16 }, ROT = 40, GGS = -RM.hz - ROT, GGL = GG.bays * GG.bay, GGZ = GGS - GGL;   /* ROT: the rotunda sits between the lobby door and the corridor, which starts at GGS */   /* GG: the grand gallery (대회랑) runs north from the lobby's big door: 12 bays of 16 */   /* WZ: z of the doors of the west wing; the west halls span x W1X..-GX and W2X..W1X */   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
   const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 58, z: -29, r: 19 }, GARD2 = { x: 112, z: -26, r: 19 };   /* GARD: the open-air exhibition garden */
   const colliders = [];
@@ -3887,7 +3887,7 @@ body.padOpen #hud { visibility: hidden; }
       if (pos.x > RM.hx) zone = 'out'; else zone = (pos.z > GZ0 || (pos.z < -RM.hz && Math.abs(pos.x) < 21)) ? 'hall' : 'studio';
       lake = zone === 'out' ? clamp(1 - Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) / 26, 0, 1) : 0;
       sea = zone === 'out' ? clamp((pos.x - 112) / 30, 0, 1) : 0;
-      wing = (pos.z < GGS && pos.z > GGZ && Math.abs(pos.x) < 14) ? clamp(Math.floor((GGS - pos.z) / 32), 0, MOODS.length - 1) : -1;
+      wing = (pos.z < GGS && pos.z > GGZ && Math.abs(pos.x) < 14) ? [0, 1, 2, 3, 4, 5, 0, 1, 2, 4, 5][clamp(Math.floor((GGS - pos.z) / 32), 0, 10)] % MOODS.length : -1;   /* the five later zones reuse the music of the matching older ones */
     }
     function level() { return on && !document.hidden ? vol * 3.0 : 0; }            /* no waiting for the world to load: sound starts at the first tap */
     function tick() {
@@ -3956,7 +3956,7 @@ body.padOpen #hud { visibility: hidden; }
   const npcs = []; let npcBuilt = false, docentLine = 0;
   const DOCENT_LINES = [
     ['안녕하세요, 도토리 미술관 도슨트예요! 🌰', '긴 복도를 따라 걸으며 천천히 구경해 보세요. 작품 앞에 서면 \'작품 이야기 듣기\' 버튼이 나와요.'],
-    ['벤치가 있는 곳이 그림 앞 명당이에요.', '르네상스에서 시작해서 동양의 붓까지, 여섯 개 전시구역을 지나면 복도 끝에서 도토리 지킴이를 만날 수 있어요.'],
+    ['벤치가 있는 곳이 그림 앞 명당이에요.', '르네상스에서 시작해서 동양의 붓까지, 열한 개 전시구역을 지나면 복도 끝에서 커다란 대리석 조각상을 만날 수 있어요.'],
     ['그림 그리는 걸 좋아하시나요?', '동쪽 문 밖 화실에서 그릴 수 있고, 따라 그리기 가이드로 마음에 드는 그림을 깔아 놓고 연습할 수도 있어요.'],
     ['밤에도 한번 와 보세요.', '하늘이 어두워지면 창문과 천장 유리가 파랗게 바뀌고, 그림 위의 작은 조명이 더 예쁘게 보여요.']
   ];

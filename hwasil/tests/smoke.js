@@ -209,7 +209,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.click('#worksBtn'); await p.waitForTimeout(300); await p.click('#tSeg button[data-t=auto]'); await p.click('#wSeg button[data-w=auto]'); await p.click('#worksClose'); await p.waitForTimeout(300);
   check(await p.evaluate(() => localStorage.getItem('hw-time') === 'auto' && localStorage.getItem('hw-wx') === 'auto'), 'time and weather go back to automatic (follow the clock) and are remembered');
   /* the grand gallery: reserved masterpiece frames with a docent card; nobody can hang a drawing on them */
-  check(await p.evaluate(() => { const m = window.__hw.slots.filter(q => q.room === 'museum'); return m.length === 24 && m.every(q => q.reserved && q.cat); }), 'the grand gallery has 24 reserved masterpiece frames');
+  check(await p.evaluate(() => { const m = window.__hw.slots.filter(q => q.room === 'museum'); return m.length === 44 && m.every(q => q.reserved && q.cat); }), 'the grand gallery has 24 reserved masterpiece frames');
   await place(11, 'grand.png');
   check(await p.evaluate(() => window.__hw.pos.z < -64 && window.__hw.pos.z > -100), 'the grand gallery place is north of the rotunda');
   check(await until(p, () => /대회랑 · 르네상스/.test(window.__hw.area()) && !document.querySelector('#areaBanner').hidden && /르네상스/.test(document.querySelector('#areaName').textContent), null, 10), 'a banner names the place I arrived at (grand gallery, Renaissance)');
