@@ -254,6 +254,13 @@ body.padOpen #hud { visibility: hidden; }
 .roomRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 2px solid var(--ink); border-radius: 12px; padding: 10px 14px; background: var(--paper); }
 .roomRow .n { font: 400 22px/1 var(--font-display); }
 .roomRow .c { font-size: 13px; color: #6f665a; }
+.roomRow[hidden], #placesList[hidden] { display: none !important; }
+#placesTabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
+#placesTabs .btn { padding: 6px 12px; font-size: 15px; }
+#placesTabs .btn.on { background: var(--ink); color: var(--paper); }
+#placesMap { width: 100%; border: 2px solid var(--ink); border-radius: 12px; background: #f3ecdb; touch-action: pan-y; }
+.catTag { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 12px; border: 1.5px solid currentColor; vertical-align: middle; }
+.catTag.ex { color: #8a4a47; } .catTag.out { color: #3f7a4f; } .catTag.mk { color: #3f6fa8; }
 #roomsList, #placesList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 /* works sheet */
 #art { position: fixed; inset: 0; z-index: 27; display: flex; flex-direction: column; background: rgba(28, 24, 20, 0.96); }
@@ -540,6 +547,8 @@ body.padOpen #hud { visibility: hidden; }
 <div id="places" hidden>
   <div class="sheet" role="dialog" aria-label="장소 이동">
     <div class="sheetHead"><h2>장소 이동</h2><button class="btn" id="placesClose" type="button">닫기</button></div>
+    <div id="placesTabs"></div>
+    <canvas id="placesMap" hidden></canvas>
     <div id="placesList"></div>
   </div>
 </div>
@@ -4226,12 +4235,47 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     goal = { x: pl.x, z: pl.z, place: pl, stuck: 0 };
     toast(pl.name + '(으)로 걸어가요. 조이스틱을 움직이면 멈춰요', 4000);
   }
+  /* places are grouped into three kinds: exhibition halls, outdoors, and making/resting; the sheet can filter by kind or show a map */
+  const PCAT = { ex: '전시관', out: '야외', mk: '화실·쉼터' }, PCOL = { ex: '#8a4a47', out: '#3f7a4f', mk: '#3f6fa8' };
+  const catOf = pl => ['산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
+  let placesTab = 'all';
+  function drawPlacesMap() {
+    const cv = $('#placesMap'), W = Math.max(240, Math.min(420, ($('#placesList').parentNode.clientWidth || 340) - 40));
+    const sq = z => z >= -70 ? z : -70 + (z + 70) * 0.1, xs = PLACES.map(q => q.x), zs = PLACES.map(q => sq(q.z)), x0 = Math.min.apply(null, xs) - 14, x1 = Math.max.apply(null, xs) + 14, z0 = Math.min.apply(null, zs) - 24, z1 = Math.max.apply(null, zs) + 14;
+    const k = (W - 16) / (x1 - x0), zk = Math.min(k, 640 / (z1 - z0)), H = Math.round((z1 - z0) * zk + 16), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr;
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const X = x => 8 + (x - x0) * k;                                               /* north (smaller z) is up */
+    const ZU = z => 8 + (sq(z) - z0) * zk;                                              /* a schematic: north-south is squeezed so the long gallery fits */
+    g.fillStyle = '#f3ecdb'; g.fillRect(0, 0, W, H);
+    g.fillStyle = 'rgba(63,122,79,0.14)'; g.fillRect(X(RM.hx), ZU(OUT.z0), X(OUT.x1) - X(RM.hx), ZU(OUT.z1) - ZU(OUT.z0));          /* the outdoors */
+    g.fillStyle = 'rgba(138,74,71,0.16)'; g.fillRect(X(-GG.hw), ZU(GGZ), X(GG.hw) - X(-GG.hw), ZU(GGS) - ZU(GGZ));                    /* the grand gallery */
+    g.fillStyle = 'rgba(37,33,29,0.1)'; g.fillRect(X(-RM.hx), ZU(-RM.hz), X(RM.hx) - X(-RM.hx), ZU(RM.hz) - ZU(-RM.hz));                 /* the central hall */
+    g.strokeStyle = 'rgba(37,33,29,0.35)'; g.lineWidth = 1; g.strokeRect(X(-RM.hx), ZU(-RM.hz), X(RM.hx) - X(-RM.hx), ZU(RM.hz) - ZU(-RM.hz));
+    g.font = '11px sans-serif'; g.textBaseline = 'middle';
+    const hit = [];
+    PLACES.forEach(pl => {
+      const c = catOf(pl), px = X(pl.x), py = ZU(pl.z); g.fillStyle = PCOL[c]; g.beginPath(); g.arc(px, py, 5, 0, 6.2832); g.fill();
+      g.fillStyle = '#25211d'; const tw = g.measureText(pl.name).width; g.textAlign = px + tw + 12 > W ? 'right' : 'left'; g.fillText(pl.name, px + (g.textAlign === 'left' ? 9 : -9), py);
+      hit.push({ pl: pl, x: px, y: py });
+    });
+    const mx = X(clamp(pos.x, x0, x1)), my = clamp(ZU(pos.z), 8, H - 8); g.fillStyle = '#e0453a'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(mx, my, 6, 0, 6.2832); g.fill(); g.stroke();
+    cv.onclick = e => { const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; let b = null, bd = 28; hit.forEach(h => { const d = Math.hypot(h.x - x, h.y - y); if (d < bd) { bd = d; b = h; } }); if (b) goPlace(b.pl); };
+  }
   function renderPlaces() {
     const list = $('#placesList'); list.textContent = '';
+    const tabs = $('#placesTabs'); tabs.textContent = '';
+    [['all', '전체'], ['ex', '전시관'], ['out', '야외'], ['mk', '화실·쉼터'], ['map', '🗺 지도']].forEach(t => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (placesTab === t[0] ? ' on' : ''); b.textContent = t[1];
+      b.addEventListener('click', () => { placesTab = t[0]; renderPlaces(); }); tabs.appendChild(b);
+    });
+    $('#placesMap').hidden = placesTab !== 'map'; list.hidden = placesTab === 'map';
+    if (placesTab === 'map') drawPlacesMap();
     PLACES.forEach(pl => {
-      const row = document.createElement('div'); row.className = 'roomRow';
+      const row = document.createElement('div'); row.className = 'roomRow'; const pc = catOf(pl); if (placesTab !== 'all' && placesTab !== 'map' && placesTab !== pc) row.hidden = true;
       const left = document.createElement('div'); left.className = 'l';
       const nm = document.createElement('div'); nm.className = 'n'; nm.textContent = pl.name;
+      const tg = document.createElement('span'); tg.className = 'catTag ' + pc; tg.textContent = PCAT[pc]; nm.appendChild(tg);
       const ct = document.createElement('div'); ct.className = 'c'; ct.textContent = pl.note;
       left.appendChild(nm); left.appendChild(ct);
       const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn primary'; bt.textContent = '가기';
