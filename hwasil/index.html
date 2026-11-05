@@ -705,7 +705,13 @@ body.padOpen #hud { visibility: hidden; }
 
   /* ---------- the studio room ---------- */
   const RM = { hx: 32, hz: 24, h: 26 };                  /* a very tall hall: pictures hang low, chandeliers and beams far above */
-  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, GZ2 = GZ1 + 30, DOOR = 5.2, DSH = 10, WZ = RM.hz + 15, W1X = -GX - 30, W2X = W1X - 30, GG = { hw: 16, bays: Math.max(12, Math.ceil(((window.MUSEUM_CATALOG || []).length) / 2)), bay: 16 }, ROT = 40, GGS = -RM.hz - ROT, GGL = GG.bays * GG.bay, GGZ = GGS - GGL;   /* ROT: the rotunda sits between the lobby door and the corridor, which starts at GGS */   /* GG: the grand gallery (대회랑) runs north from the lobby's big door: 12 bays of 16 */   /* WZ: z of the doors of the west wing; the west halls span x W1X..-GX and W2X..W1X */   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
+  const GX = 14, GL = 30, GZ0 = RM.hz, GZ1 = RM.hz + GL, GZ2 = GZ1 + 30, DOOR = 5.2, DSH = 10, WZ = RM.hz + 15, W1X = -GX - 30, W2X = W1X - 30, GG = { hw: 16, bays: Math.max(12, Math.ceil(((window.MUSEUM_CATALOG || []).length) / 2)), bay: 16 }, ROT = 40, GGS = -RM.hz - ROT, GGAP = 41, GGAPW = [5, 9], GGR = 26, GGL = GG.bays * GG.bay + GGAP * GGAPW.length, GGZ = GGS - GGL;   /* ROT: the rotunda sits between the lobby door and the corridor, which starts at GGS */   /* GG: the grand gallery (대회랑) runs north from the lobby's big door: 12 bays of 16 */   /* WZ: z of the doors of the west wing; the west halls span x W1X..-GX and W2X..W1X */   /* doorways: half width, height of the straight part (an arch of radius DOOR sits on top) */
+  /* the long hall is broken up by two round halls (rotary): they sit before wing 5 and wing 9; GGAP = the straight length they take, GGR = their radius (they bulge out to the sides) */
+  const NW = Math.ceil(GG.bays / 2), gapsBefore = k => GGAPW.filter(w => w <= k).length;
+  const wingZ = k => GGS - 32 * k - GGAP * gapsBefore(k);                       /* z where wing k starts (the corridor runs towards -z) */
+  const bayZ = b => wingZ(Math.floor(b / 2)) - GG.bay * (b % 2) - GG.bay / 2;   /* z of the middle of a picture bay */
+  const gapZ = i => GGS - 32 * GGAPW[i] - GGAP * i - GGAP / 2;                  /* z of the middle of round hall i */
+  const wingAt = z => { for (let k = 0; k < NW; k++) if (z <= wingZ(k) && z > wingZ(k) - 32) return k; return z <= GGZ + 0.01 ? NW - 1 : -1; };   /* -1 inside a round hall */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
   const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 58, z: -29, r: 19 }, GARD2 = { x: 112, z: -26, r: 19 };   /* GARD: the open-air exhibition garden */
   const colliders = [];
@@ -909,14 +915,14 @@ body.padOpen #hud { visibility: hidden; }
 
   /* ---------- the grand gallery (대회랑): a very long hall north of the lobby, six wings of two bays, a masterpiece on every wall bay ---------- */
   (function () {
-    const hw = GG.hw, z0 = -RM.hz, zs = GGS, rotM = L(0xcdbf9f), woodDoor = L(0x6b4a2f), W = window.MUSEUM_WINGS || [], wingMat = k => L((W[k] || W[W.length - 1] || { wall: 0x8c7a5a }).wall);
+    const nW = NW, hw = GG.hw, z0 = -RM.hz, zs = GGS, rotM = L(0xcdbf9f), woodDoor = L(0x6b4a2f), W = window.MUSEUM_WINGS || [], wingMat = k => L((W[k] || W[W.length - 1] || { wall: 0x8c7a5a }).wall);
     /* the corridor side of the lobby door */
     put(scene, new T.Mesh(archFrameGeo(), woodDoor), 0, 0, z0);
     const dg = new T.Group(); dg.position.set(0, 0, z0 - 0.03); dg.rotation.y = Math.PI; scene.add(dg); put(dg, new T.Mesh(archWallGeo(), rotM), 0, 0, 0);
     wall(hw - DOOR, -(hw + DOOR) / 2, z0 - 0.03, Math.PI, rotM); wall(hw - DOOR, (hw + DOOR) / 2, z0 - 0.03, Math.PI, rotM);
     /* side walls: each wing has its own colour */
-    for (let k = 0; k < 6; k++) { const zc = zs - 32 * k - 16, m = wingMat(k); wall(32, -hw, zc, Math.PI / 2, m); wall(32, hw, zc, -Math.PI / 2, m); }
-    wall(hw * 2, 0, GGZ, 0, wingMat(5));
+    for (let k = 0; k < nW; k++) { const zc = wingZ(k) - 16, m = wingMat(k); wall(32, -hw, zc, Math.PI / 2, m); wall(32, hw, zc, -Math.PI / 2, m); }
+    wall(hw * 2, 0, GGZ, 0, wingMat(nW - 1));
     /* every wing has its own floor and carpet (marble, black and white, wood, sage, concrete, dark wood) */
     function tile(c1, c2, rx, rz) { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.fillStyle = c1; x.fillRect(0, 0, 128, 128); x.fillStyle = c2; x.fillRect(0, 0, 64, 64); x.fillRect(64, 64, 64, 64); const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rx, rz); return t; }
     /* real floor pictures (textures/*.jpg, 1024px, each tile ~4 m): the plain colour shows until the picture has loaded */
@@ -931,17 +937,19 @@ body.padOpen #hud { visibility: hidden; }
     }
     const FLOOR_PIC = [['terracotta_tile.jpg', 0xcfae88], ['marble_black.jpg', 0x4a4540], ['wood_floor_light.jpg', 0xc9a574], ['marble_white.jpg', 0xe9eedd], ['stone_beige.jpg', 0xc2c2c0], ['wood_floor_dark.jpg', 0x7b5a36]];
     const CARPET = [0x7a2323, 0x2f5a3c, 0x23304f, 0x4c6f86, 0x3a3a3f, 0x5a3a24];
-    for (let k = 0; k < 6; k++) {
-      const zc = zs - 32 * k - 16, fl = new T.Mesh(new T.PlaneGeometry(hw * 2, 32), picMat(FLOOR_PIC[k][0], hw * 2, 32, FLOOR_PIC[k][1]));
+    for (let k = 0; k < nW; k++) {
+      const zc = wingZ(k) - 16, fl = new T.Mesh(new T.PlaneGeometry(hw * 2, 32), picMat(FLOOR_PIC[k % 6][0], hw * 2, 32, FLOOR_PIC[k % 6][1]));
       fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0, zc); scene.add(fl);
-      const run = new T.Mesh(new T.PlaneGeometry(5, 32), k === 0 ? picMat('fabric_red.jpg', 5, 32, CARPET[0]) : L(CARPET[k])); run.rotation.x = -Math.PI / 2; run.position.set(0, 0.02, zc); scene.add(run);
+      const run = new T.Mesh(new T.PlaneGeometry(5, 32), k === 0 ? picMat('fabric_red.jpg', 5, 32, CARPET[0]) : L(CARPET[k % 6])); run.rotation.x = -Math.PI / 2; run.position.set(0, 0.02, zc); scene.add(run);
       [-2.7, 2.7].forEach(x => { const e = new T.Mesh(new T.PlaneGeometry(0.25, 32), L(0xd9b35a)); e.rotation.x = -Math.PI / 2; e.position.set(x, 0.03, zc); scene.add(e); });
     }
     /* ceiling, beams, pilasters */
-    const ce = new T.Mesh(new T.PlaneGeometry(hw * 2, GGL), B(0xe9dfc8)); ce.rotation.x = Math.PI / 2; ce.position.set(0, RM.h, zs - GGL / 2); ce.userData.noShadow = true; scene.add(ce);
+    const segs = []; { let a = 0; GGAPW.concat([nW]).forEach(w => { segs.push([wingZ(a), a, w]); a = w; }); }   /* [start z, first wing, end wing] of each straight run */
+    segs.forEach(sg => { const L2 = (sg[2] - sg[1]) * 32; const ce = new T.Mesh(new T.PlaneGeometry(hw * 2, L2), B(0xe9dfc8)); ce.rotation.x = Math.PI / 2; ce.position.set(0, RM.h, sg[0] - L2 / 2); ce.userData.noShadow = true; scene.add(ce); });
     const cream = L(0xf8f5ee), beamM = L(0x6b4a2f);
-    for (let k = 0; k <= GG.bays; k++) {
-      const z = zs - GG.bay * k;
+    const edges = []; segs.forEach(sg => { const nb = (sg[2] - sg[1]) * 2; for (let q = 0; q <= nb; q++) edges.push(sg[0] - GG.bay * q); });
+    for (const z of edges) {
+      /* z comes from the list of edges */
       const bm = new T.Mesh(bx(hw * 2 - 0.4, 1.1, 0.9), beamM); bm.position.set(0, RM.h - 1.6, z); bm.userData.noShadow = true; scene.add(bm);
       [-1, 1].forEach(sd => {
         const g = new T.Group(); g.position.set(sd * (hw - 0.55), 0, z); scene.add(g); g.userData.noShadow = true;
@@ -959,7 +967,7 @@ body.padOpen #hud { visibility: hidden; }
       if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '대회랑르네상스바로크낭만과사실인상주의근대의눈동양의붓명화를만나러가요').then(redraw).catch(() => {});
       return m;
     }
-    W.forEach((wg, k) => banner(9, 2.4, 20, 0, zs - 32 * k - 2.5, (g, cw, ch) => {
+    W.forEach((wg, k) => banner(9, 2.4, 20, 0, wingZ(k) - 2.5, (g, cw, ch) => {
       g.fillStyle = '#25211d'; g.font = '112px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText(wg.name, cw / 2, ch * 0.42);
       g.fillStyle = '#6d655b'; g.font = '56px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText(wg.note, cw / 2, ch * 0.74);
     }));
@@ -976,14 +984,16 @@ body.padOpen #hud { visibility: hidden; }
 
     /* --- richer hall: wainscot, rail, skylight, tall windows, portals between wings, benches, urns, the landmark statue, lobby boards --- */
     const brassM = L(0xd9b35a), woodDk = L(0x4a3322), plasterM = L(0xf3efe7);
-    [-1, 1].forEach(sd => {                                /* lower wall panels and a brass rail below the picture labels */
-      const pn = new T.Mesh(bx(0.25, 1.6, GGL), woodDk); pn.position.set(sd * (hw - 0.125), 0.8, zs - GGL / 2); pn.userData.noShadow = true; scene.add(pn);
-      const rl = new T.Mesh(bx(0.3, 0.12, GGL), brassM); rl.position.set(sd * (hw - 0.15), 1.66, zs - GGL / 2); rl.userData.noShadow = true; scene.add(rl);
-    });
-    const sky = new T.Mesh(new T.PlaneGeometry(6, GGL - 2), B(0xfff3c8)); sky.rotation.x = Math.PI / 2; sky.position.set(0, RM.h - 0.05, zs - GGL / 2); sky.userData.noShadow = true; scene.add(sky); winMats.push(sky.material);   /* a long skylight */
-    [-3.1, 3.1].forEach(x => { const f = new T.Mesh(bx(0.3, 0.3, GGL - 2), beamM); f.position.set(x, RM.h - 0.2, zs - GGL / 2); f.userData.noShadow = true; scene.add(f); });
+    segs.forEach(sg => [-1, 1].forEach(sd => {                /* lower wall panels and a brass rail below the picture labels */
+      const SL = (sg[2] - sg[1]) * 32, SC = sg[0] - SL / 2;
+      const pn = new T.Mesh(bx(0.25, 1.6, SL), woodDk); pn.position.set(sd * (hw - 0.125), 0.8, SC); pn.userData.noShadow = true; scene.add(pn);
+      const rl = new T.Mesh(bx(0.3, 0.12, SL), brassM); rl.position.set(sd * (hw - 0.15), 1.66, SC); rl.userData.noShadow = true; scene.add(rl);
+    }));
+    segs.forEach(sg => { const SL = (sg[2] - sg[1]) * 32, SC = sg[0] - SL / 2; const sky = new T.Mesh(new T.PlaneGeometry(6, SL - 2), B(0xfff3c8)); sky.rotation.x = Math.PI / 2; sky.position.set(0, RM.h - 0.05, SC); sky.userData.noShadow = true; scene.add(sky); winMats.push(sky.material);   /* a long skylight */
+      [-3.1, 3.1].forEach(x => { const f = new T.Mesh(bx(0.3, 0.3, SL - 2), beamM); f.position.set(x, RM.h - 0.2, SC); f.userData.noShadow = true; scene.add(f); }); });
+    /* (beams of the skylight are drawn above) */
     for (let b = 0; b < GG.bays; b++) {                    /* tall arched windows above the pictures, one pair per bay */
-      const zc = zs - GG.bay * (b + 0.5);
+      const zc = bayZ(b);
       [-1, 1].forEach(sd => {
         const g = new T.Group(); g.position.set(sd * (hw - 0.04), 13, zc); g.rotation.y = sd < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(g);
         const gl = new T.Mesh(new T.ShapeGeometry(archShape(2.7, 3.5), 14), B(0xfff3c8)); put(g, gl, 0, 0, 0); winMats.push(gl.material);
@@ -992,8 +1002,8 @@ body.padOpen #hud { visibility: hidden; }
         g.userData.noShadow = true; hang(g, 'x', sd * hw, -sd);
       });
     }
-    for (let k = 1; k < 6; k++) {                          /* a stone portal at the start of every wing after the first */
-      const z = zs - 32 * k + 0.6;
+    for (let k = 1; k < nW; k++) {                          /* a stone portal at the start of every wing after the first */
+      const z = wingZ(k) + 0.6;
       [-8.6, 8.6].forEach(x => {
         put(scene, new T.Mesh(bx(1.9, 0.8, 1.9), cream), x, 0.4, z); put(scene, new T.Mesh(bx(1.5, 14, 1.5), cream), x, 7.8, z); put(scene, new T.Mesh(bx(1.9, 0.7, 1.9), cream), x, 15.1, z);
         colliders.push({ x: x, z: z, r: 1.1 });
@@ -1006,14 +1016,39 @@ body.padOpen #hud { visibility: hidden; }
       [-1.5, 1.5].forEach(dx => put(g, new T.Mesh(bx(0.3, 0.95, 1.1), woodDk), dx, 0.47, 0));
       colliders.push({ x: x, z: z, r: 1.3 }); return g;
     }
-    for (let b = 0; b < GG.bays; b++) { const zc = zs - GG.bay * (b + 0.5); benchAt(-(GG.hw - 5.7), zc, Math.PI / 2); benchAt(GG.hw - 5.7, zc, -Math.PI / 2); }   /* in front of every picture */
+    for (let b = 0; b < GG.bays; b++) { const zc = bayZ(b); benchAt(-(GG.hw - 5.7), zc, Math.PI / 2); benchAt(GG.hw - 5.7, zc, -Math.PI / 2); }   /* in front of every picture */
     function urnAt(x, z, sc, col) {                        /* a lathe-turned urn: smooth, with a brass rim */
       const pts = [[0, 0], [0.55, 0], [0.62, 0.12], [0.5, 0.35], [0.72, 0.9], [0.86, 1.5], [0.7, 2.0], [0.42, 2.25], [0.5, 2.35], [0.58, 2.45], [0.5, 2.55]].map(q => new T.Vector2(q[0], q[1]));
       const g = new T.Group(); g.position.set(x, 0, z); g.scale.setScalar(sc); scene.add(g);
       put(g, new T.Mesh(bx(1.5, 0.9, 1.5), plasterM), 0, 0.45, 0); const u = put(g, new T.Mesh(new T.LatheGeometry(pts, 20), L(col)), 0, 0.9, 0);
       put(g, new T.Mesh(cyl(0.6, 0.6, 0.08, 20), brassM), 0, 3.4, 0); colliders.push({ x: x, z: z, r: 0.9 * sc }); return g;
     }
-    [-1, 1].forEach(sd => { urnAt(sd * 8.4, zs - 3.5, 1.5, 0x3f6fa8); for (let k = 1; k < 6; k++) urnAt(sd * 10.3, zs - 32 * k + 0.6, 1.2, k % 2 ? 0x8a5a3a : 0x4f7a5a); });
+    [-1, 1].forEach(sd => { urnAt(sd * 8.4, zs - 3.5, 1.5, 0x3f6fa8); for (let k = 1; k < nW; k++) urnAt(sd * 10.3, wingZ(k) + 0.6, 1.2, k % 2 ? 0x8a5a3a : 0x4f7a5a); });
+    /* the round halls: a circular floor, curved side walls (the corridor passes straight through), a ring skylight, benches in the side bulges */
+    GGAPW.forEach((wi, gi) => {
+      const cz = gapZ(gi), R = GGR, a0 = Math.asin(hw / R), wmat = wingMat(wi - 1); wmat.side = T.DoubleSide;
+      const fl = new T.Mesh(new T.CircleGeometry(R, 64), picMat(FLOOR_PIC[gi ? 2 : 3][0], R * 2, R * 2, FLOOR_PIC[gi ? 2 : 3][1])); fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0.01, cz); scene.add(fl);
+      const rg = new T.Mesh(new T.RingGeometry(6.2, 6.8, 56), brassM); rg.rotation.x = -Math.PI / 2; rg.position.set(0, 0.04, cz); rg.userData.noShadow = true; scene.add(rg);
+      const md = new T.Mesh(new T.CircleGeometry(6.2, 56), L(CARPET[(wi) % 6])); md.rotation.x = -Math.PI / 2; md.position.set(0, 0.03, cz); md.userData.noShadow = true; scene.add(md);
+      [[a0, Math.PI - 2 * a0], [Math.PI + a0, Math.PI - 2 * a0]].forEach(q => {
+        const w1 = new T.Mesh(new T.CylinderGeometry(R, R, RM.h, 48, 1, true, q[0], q[1]), wmat); w1.position.set(0, RM.h / 2, cz); scene.add(w1);
+        const pn = new T.Mesh(new T.CylinderGeometry(R - 0.12, R - 0.12, 1.6, 48, 1, true, q[0], q[1]), woodDk); pn.material.side = T.DoubleSide; pn.position.set(0, 0.8, cz); pn.userData.noShadow = true; scene.add(pn);
+        const rl = new T.Mesh(new T.CylinderGeometry(R - 0.2, R - 0.2, 0.12, 48, 1, true, q[0], q[1]), brassM); rl.position.set(0, 1.66, cz); rl.userData.noShadow = true; scene.add(rl);
+        for (let t = 1; t <= 5; t++) {                      /* pilasters along the curve */
+          const th = q[0] + q[1] * t / 6, g = new T.Group(); g.position.set(Math.sin(th) * (R - 0.6), 0, cz + Math.cos(th) * (R - 0.6)); g.rotation.y = th; scene.add(g); g.userData.noShadow = true;
+          put(g, new T.Mesh(bx(1.1, 0.8, 1.5), cream), 0, 0.4, 0); put(g, new T.Mesh(bx(0.9, RM.h - 2.3, 1.2), cream), 0, 0.8 + (RM.h - 2.3) / 2, 0); put(g, new T.Mesh(bx(1.1, 0.7, 1.5), cream), 0, RM.h - 1.35, 0);
+        }
+      });
+      const ce = new T.Mesh(new T.RingGeometry(9, R + 0.5, 56), B(0xe9dfc8)); ce.rotation.x = Math.PI / 2; ce.position.set(0, RM.h, cz); ce.userData.noShadow = true; scene.add(ce);
+      const oc = new T.Mesh(new T.CircleGeometry(9, 48), B(0xfff3c8)); oc.rotation.x = Math.PI / 2; oc.position.set(0, RM.h - 0.05, cz); oc.userData.noShadow = true; scene.add(oc); winMats.push(oc.material);
+      const rr = new T.Mesh(new T.TorusGeometry(9.1, 0.4, 8, 48), brassM); rr.rotation.x = Math.PI / 2; rr.position.set(0, RM.h - 0.2, cz); rr.userData.noShadow = true; scene.add(rr);
+      [-6, 0, 6].forEach(dz => { benchAt(-(R - 5.2), cz + dz, Math.PI / 2); benchAt(R - 5.2, cz + dz, -Math.PI / 2); });
+      [-9, 9].forEach(dz => [-1, 1].forEach(sd => urnAt(sd * (R - 4), cz + dz, 1.4, (gi + (dz > 0 ? 1 : 0)) % 2 ? 0x8a5a3a : 0x3f6fa8)));
+      banner(9, 2.4, 20, 0, cz + 9, (g, cw, ch) => {
+        g.fillStyle = '#25211d'; g.font = '112px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('둥근 홀', cw / 2, ch * 0.42);
+        g.fillStyle = '#6d655b'; g.font = '56px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('앉아서 잠깐 쉬어 가요', cw / 2, ch * 0.74);
+      });
+    });
     /* the hall's landmark: a big marble group on a stepped plinth at the far end, facing the visitors */
     (function () {
       const gg = new T.Group(); gg.position.set(0, 0, GGZ + 12); scene.add(gg); const marbleG = L(0xf1ede4);
@@ -1714,7 +1749,7 @@ body.padOpen #hud { visibility: hidden; }
     /* the masterpieces of the grand gallery: reserved frames (nobody can hang a drawing there), a small brass picture light above each */
     const brass = L(0xd9b35a);
     (window.MUSEUM_CATALOG || []).forEach((c, i) => {
-      const bay = Math.floor(i / 2), left = i % 2 === 0, zc = GGS - GG.bay * (bay + 0.5);
+      const bay = Math.floor(i / 2), left = i % 2 === 0, zc = bayZ(bay);
       /* real size, squeezed: a 77 cm picture is 3.6 m here, an 8.8 m wall painting 11 m (so the big ones are clearly big and the small ones still readable) */
       const long = Math.max(c.w, c.h), Dm = Math.round(clamp(3.6 + 2.2 * Math.log2(long / 77), 3.0, 11) * 10) / 10, size = Dm >= 7 ? 'l' : Dm >= 4.2 ? 'm' : 's';
       const asp = clamp(c.w / c.h, 0.5, 2), hh = (asp >= 1 ? Dm / asp : Dm) / 2, y = 3.4 + hh;
@@ -1972,6 +2007,8 @@ body.padOpen #hud { visibility: hidden; }
     { name: '서쪽 전시관 2', note: '서쪽 전시관 1의 끝, 초록빛 방', x: W1X - 5, z: WZ, h: -Math.PI / 2 },
     { name: '꽃길 정원', note: '양쪽에 액자가 걸린 둥근 꽃길', x: GARD2.x, z: GARD2.z + 9, h: Math.PI, pitch: 0.3 },
     { name: '대회랑', note: '명화를 만나는 아주 긴 복도', x: 0, z: GGS - 14, h: Math.PI, pitch: 0.2 },
+    { name: '둥근 홀 (앞)', note: '복도 중간의 쉼터. 둥글게 앉아 쉬어요', x: 0, z: gapZ(0) + 8, h: Math.PI, pitch: 0.2 },
+    { name: '둥근 홀 (뒤)', note: '복도 뒤쪽 두 번째 쉼터', x: 0, z: gapZ(1) + 8, h: Math.PI, pitch: 0.2 },
     { name: '중앙 로툰다', note: '분수와 기둥이 있는 둥근 홀', x: 0, z: -RM.hz - 6, h: Math.PI, pitch: 0.3 },
     { name: '화실', note: '이젤이 놓인 나무 오두막. 앉아서 그려요', x: 50, z: 3.5, h: 0, pitch: 0.4 },
     { name: '조각 전시관', note: '대리석 기둥 사이에 조각상이 서 있어요', x: SCULPT.x, z: 0.5, h: 0, pitch: 0.35 }
@@ -2470,7 +2507,8 @@ body.padOpen #hud { visibility: hidden; }
     if (Math.abs(x) <= GX - 1 && z >= GZ1 + 1 && z <= GZ2 - 1) return true;
     if (Math.abs(x) <= DOOR - 0.5 && z <= -RM.hz + 1.01 && z >= -RM.hz - 1.01) return true;                                                 /* the grand door */
     if (Math.abs(x) <= 19 && z <= -RM.hz - 1 && z >= GGS + 1) return true;                                                                 /* the rotunda */
-    if (Math.abs(x) <= GG.hw - 1 && z <= GGS + 1.01 && z >= GGZ + 1) return true;                                                          /* the grand gallery */
+    if (Math.abs(x) <= GG.hw - 1 && z <= GGS + 1.01 && z >= GGZ + 1) return true;
+    if (GGAPW.some((w, g) => Math.hypot(x, z - gapZ(g)) <= GGR - 1)) return true;                                                  /* the round halls */                                                          /* the grand gallery */
     if (Math.abs(z - WZ) <= DOOR - 0.5 && ((x <= -GX + 1.01 && x >= -GX - 1.01) || (x <= W1X + 1.01 && x >= W1X - 1.01))) return true;      /* the west doors */
     if (x >= W1X + 1 && x <= -GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;                                                         /* west hall 1 */
     if (x >= W2X + 1 && x <= W1X - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;                                                         /* west hall 2 */
@@ -2759,7 +2797,7 @@ body.padOpen #hud { visibility: hidden; }
   cv.addEventListener('pointercancel', () => { tap = null; });
   /* next point to walk to: the building is studio -> (south door) gallery -> (far door) annex, and the studio opens east to the field,
      so a goal in another region is reached by walking through the doors one after the other */
-  function areaOf(x, z) { return x > RM.hx - 0.5 ? 'out' : z > RM.hz - 1 ? 'hall' : (z < -RM.hz + 0.5 && Math.abs(x) <= 20.5) ? 'grand' : 'studio'; }
+  function areaOf(x, z) { return x > RM.hx - 0.5 ? 'out' : z > RM.hz - 1 ? 'hall' : (z < -RM.hz + 0.5 && Math.abs(x) <= GGR + 0.5) ? 'grand' : 'studio'; }
   function walkTarget() {
     const rp = areaOf(pos.x, pos.z), rg = areaOf(goal.x, goal.z);
     if (rp === 'grand') {                                    /* the grand gallery: straight on, or back out through the big door */
@@ -3890,7 +3928,7 @@ body.padOpen #hud { visibility: hidden; }
       if (pos.x > RM.hx) zone = 'out'; else zone = (pos.z > GZ0 || (pos.z < -RM.hz && Math.abs(pos.x) < 21)) ? 'hall' : 'studio';
       lake = zone === 'out' ? clamp(1 - Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) / 26, 0, 1) : 0;
       sea = zone === 'out' ? clamp((pos.x - 112) / 30, 0, 1) : 0;
-      wing = (pos.z < GGS && pos.z > GGZ && Math.abs(pos.x) < GG.hw + 2) ? [0, 1, 2, 3, 4, 5, 0, 1, 2, 4, 5][clamp(Math.floor((GGS - pos.z) / 32), 0, 10)] % MOODS.length : -1;   /* the five later zones reuse the music of the matching older ones */
+      wing = (pos.z < GGS && pos.z > GGZ && Math.abs(pos.x) < GG.hw + 2) ? [0, 1, 2, 3, 4, 5, 0, 1, 2, 4, 5][Math.max(0, wingAt(pos.z))] % MOODS.length : -1;   /* the five later zones reuse the music of the matching older ones */
     }
     function level() { return on && !document.hidden ? vol * 3.0 : 0; }            /* no waiting for the world to load: sound starts at the first tap */
     function tick() {
@@ -3976,7 +4014,7 @@ body.padOpen #hud { visibility: hidden; }
     mk('도슨트', [2, 3, 6, 2, 8, 1, 1], -5.2, GGS - 8, Math.PI / 2, 'docent');
     const looks = [[0, 1, 2, 0, 3, 0, 0], [3, 4, 1, 1, 5, 2, 2], [4, 0, 5, 3, 0, 0, 3], [1, 6, 4, 2, 7, 4, 1], [5, 2, 0, 4, 9, 0, 0], [2, 5, 7, 5, 1, 3, 2]];
     looks.forEach((lk, i) => {
-      const bay = (i * 2 + 1) % GG.bays, side = i % 2 ? 1 : -1, n = mk('관람객', lk, side * (GG.hw - 4.8), GGS - GG.bay * (bay + 0.5), side > 0 ? Math.PI / 2 : -Math.PI / 2, 'visitor');
+      const bay = (i * 2 + 1) % GG.bays, side = i % 2 ? 1 : -1, n = mk('관람객', lk, side * (GG.hw - 4.8), bayZ(bay), side > 0 ? Math.PI / 2 : -Math.PI / 2, 'visitor');
       n.bay = bay; n.side = side;
     });
   }
@@ -3998,7 +4036,7 @@ body.padOpen #hud { visibility: hidden; }
           n.wait -= dt;
           if (n.wait <= 0) {                                 /* on to a picture nearby, sometimes the other wall */
             n.bay = clamp(n.bay + Math.floor(Math.random() * 5) - 2, 0, GG.bays - 1); if (Math.random() < 0.3) n.side = -n.side;
-            n.tx = n.side * (GG.hw - 6 + Math.random() * 2.2); n.tz = GGS - GG.bay * (n.bay + 0.5) + (Math.random() - 0.5) * 3; n.wait = 5 + Math.random() * 8;
+            n.tx = n.side * (GG.hw - 6 + Math.random() * 2.2); n.tz = bayZ(n.bay) + (Math.random() - 0.5) * 3; n.wait = 5 + Math.random() * 8;
           }
         }
         n.h += angDiff(n.h, n.th) * Math.min(1, dt * 6);
@@ -4010,7 +4048,7 @@ body.padOpen #hud { visibility: hidden; }
   function docentTalk() { const l = DOCENT_LINES[docentLine++ % DOCENT_LINES.length]; showCard(l[0], l[1], [['dtClose', '고마워요', true, () => {}]]); }
 
   /* ---------- where am I: a name banner pops up every time I step into another place ---------- */
-  const AREA_NOTE = { '중앙 홀': '북쪽 미술관 · 동쪽 화실과 조각 전시관 · 남쪽 친구들 전시', '화실': '이젤을 눌러 앉아서 그려요', '조각 전시관': '흉상과 조각상, 한가운데에는 피에타', '중앙 로툰다': '분수와 기둥이 있는 둥근 홀', '신진 작가관': '친구들이 그린 그림이 걸려 있어요', '별관': '신진 작가관의 두 번째 전시장', '서쪽 전시관 1': '친구들이 그린 그림', '서쪽 전시관 2': '친구들이 그린 그림', '야외 전시 정원': '하늘 아래 액자가 둘러선 정원', '꽃길 정원': '양쪽에 그림이 걸린 둥근 꽃길', '산 전망대': '눈 덮인 봉우리를 바라보며', '바닷가': '모래사장과 수평선, 등대', '호숫가': '잔잔한 물, 수련, 작은 배', '풍차 들판': '꽃밭 너머로 돌아가는 풍차', '들판 산책길': '중앙 홀 동쪽 문 밖의 넓은 들판' };
+  const AREA_NOTE = { '둥근 홀': '벤치에 앉아 잠깐 쉬어 가는 둥근 홀', '중앙 홀': '북쪽 미술관 · 동쪽 화실과 조각 전시관 · 남쪽 친구들 전시', '화실': '이젤을 눌러 앉아서 그려요', '조각 전시관': '흉상과 조각상, 한가운데에는 피에타', '중앙 로툰다': '분수와 기둥이 있는 둥근 홀', '신진 작가관': '친구들이 그린 그림이 걸려 있어요', '별관': '신진 작가관의 두 번째 전시장', '서쪽 전시관 1': '친구들이 그린 그림', '서쪽 전시관 2': '친구들이 그린 그림', '야외 전시 정원': '하늘 아래 액자가 둘러선 정원', '꽃길 정원': '양쪽에 그림이 걸린 둥근 꽃길', '산 전망대': '눈 덮인 봉우리를 바라보며', '바닷가': '모래사장과 수평선, 등대', '호숫가': '잔잔한 물, 수련, 작은 배', '풍차 들판': '꽃밭 너머로 돌아가는 풍차', '들판 산책길': '중앙 홀 동쪽 문 밖의 넓은 들판' };
   function areaNameAt(x, z) {
     if (x > RM.hx - 0.5) {
       if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 3 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 3) return '조각 전시관';
@@ -4024,9 +4062,9 @@ body.padOpen #hud { visibility: hidden; }
       return '들판 산책길';
     }
     if (z > RM.hz - 1) return x < W1X ? '서쪽 전시관 2' : x < -GX ? '서쪽 전시관 1' : z > GZ1 + 0.5 ? '별관' : '신진 작가관';
-    if (z < -RM.hz + 0.5 && Math.abs(x) <= 20.5) {
+    if (z < -RM.hz + 0.5 && Math.abs(x) <= GGR + 0.5) {
       if (z > GGS) return '중앙 로툰다';
-      const W = window.MUSEUM_WINGS || [], k = clamp(Math.floor((GGS - z) / 32), 0, Math.max(0, W.length - 1));
+      const W = window.MUSEUM_WINGS || [], k = wingAt(z); if (k < 0) return '둥근 홀';
       return '대회랑 · ' + (W[k] ? W[k].name : '');
     }
     return '중앙 홀';
