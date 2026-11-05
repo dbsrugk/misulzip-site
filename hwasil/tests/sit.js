@@ -20,7 +20,17 @@ const { start, until, check, done } = require('./lib');
   await b.evaluate(i => window.__hw.tapBench(i), bi);
   check(await until(b, () => window.__hw.seat() >= 0, null, 40), 'the friend sits on the other seat of the same bench');
   check(await a.evaluate(() => window.__hw.seat()) !== await b.evaluate(() => window.__hw.seat()), 'two different seats');
+  /* the seated player can turn round, and a button offers the seat when I am next to a bench */
+  const h0 = await a.evaluate(() => window.__hw.heading());
+  check((await a.textContent('#sitBtn')).includes('반대쪽'), 'a turn-round button shows while sitting');
+  await a.click('#sitBtn', { timeout: 5000 }).catch(e => console.log(e.message.slice(0, 600))); await a.waitForTimeout(300);
+  check(Math.abs(Math.abs(await a.evaluate(() => window.__hw.heading()) - h0) - Math.PI) < 0.01, 'the button turns me to the other side');
   await a.keyboard.down('d'); await a.waitForTimeout(500); await a.keyboard.up('d');
   check(await a.evaluate(() => window.__hw.seat() === -1), 'moving gets me up');
+  await a.waitForTimeout(500);
+  await a.evaluate(q => { window.__hw.pos.x = q[0] + 1.2; window.__hw.pos.z = q[1] + 1.8; }, bs[bi]); await a.waitForTimeout(800);
+  check((await a.textContent('#sitBtn')).includes('벤치에 앉기') && await a.isVisible('#sitBtn'), 'a sit button shows next to a bench');
+  await a.click('#sitBtn'); await a.waitForTimeout(500);
+  check(await a.evaluate(() => window.__hw.seat() >= 0), 'the button sits me down');
   await t.close(); process.exit(done(t));
 })().catch(e => { console.log('ERR', e.message); process.exit(1); });

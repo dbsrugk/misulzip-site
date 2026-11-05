@@ -2807,6 +2807,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (d < 1 && d < bd) { bd = d; best = sl; }
     });
     nearSlot = best; viewBtn.hidden = !best;
+    viewBtn.style.bottom = sitBtn.hidden ? '' : 'calc(124px + env(safe-area-inset-bottom, 0px))';      /* stacked above the sit button instead of on top of it */
     if (best) viewBtn.textContent = best.reserved ? '작품 이야기 듣기' : best.ex ? '작품 크게 보기' : (pendingHang ? '여기에 걸기' : '내 그림을 여기에 걸기');
   }
   /* the gallery list only carries summaries; the lines of a work are fetched when I come close (or open it), then kept for a while */
