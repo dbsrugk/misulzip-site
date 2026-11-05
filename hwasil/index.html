@@ -1359,7 +1359,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       gltfLoader.load('models/' + file, gltf => {
         const o = gltf.scene, box = new T.Box3().setFromObject(o), size = box.getSize(new T.Vector3()), c = box.getCenter(new T.Vector3()), s = h / (size.y || 1);
         o.scale.setScalar(s); o.position.set(-c.x * s, -box.min.y * s, -c.z * s);
-        o.traverse(m => { if (m.isMesh) { m.userData.noShadow = true; if (glow && m.material && m.material.emissive) { m.material.emissive.set(0xffffff); if (m.material.map) m.material.emissiveMap = m.material.map; m.material.emissiveIntensity = 0.3; m.material.needsUpdate = true; glowMats.push(m.material); } } });
+        o.traverse(m => { if (m.isMesh) { m.userData.noShadow = true; if (glow && m.material && m.material.emissive) { const mt = m.material; mt.map = null; mt.color.set(0xf1ece0); if (mt.metalness !== undefined) mt.metalness = 0; mt.roughness = 0.78; mt.emissive.set(0xfff0d8); mt.emissiveMap = null; mt.emissiveIntensity = 0.3; mt.needsUpdate = true; glowMats.push(mt); } } });
         g.add(o); p.state = 2;
       }, undefined, () => { p.state = 3; });
     };
@@ -1515,7 +1515,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     glbGlow = true;
     const S = SCULPT, x0 = S.x - S.w / 2, x1 = S.x + S.w / 2, z0 = S.z - S.d / 2, z1 = S.z + S.d / 2;
     const hallLights = [[S.x, S.z], [S.x - 14, S.z + 4], [S.x + 14, S.z + 4], [S.x - 12, z0 + 5], [S.x + 12, z0 + 5]].map(q => { const L2 = new T.PointLight(0xffe2b8, 0, 46, 1.2); L2.position.set(q[0], 9, q[1]); scene.add(L2); return L2; });
-    anim.push(() => { const k = 0.05 + ATM.night * 0.3; hallLights.forEach(L2 => { L2.intensity = k; }); glowMats.forEach(m => { m.emissiveIntensity = 0.25 + ATM.night * 0.65; }); });
+    anim.push(() => { const k = 0.05 + ATM.night * 0.3; hallLights.forEach(L2 => { L2.intensity = k; }); glowMats.forEach(m => { m.emissiveIntensity = 0.28 + ATM.night * 0.34; }); });
     const marble = L(0xf4f0e8), stone = L(0xe2dccf), FONT_UI = '"Gamja Flower", "Noto Sans KR", sans-serif';
     const floorM = new T.MeshLambertMaterial({ color: 0xece6da });
     new T.TextureLoader().load('textures/marble_white.jpg', t => { t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(S.w / 6, S.d / 6); floorM.map = t; floorM.color.set(0xffffff); floorM.needsUpdate = true; }, undefined, () => {});
