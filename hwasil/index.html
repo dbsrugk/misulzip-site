@@ -974,7 +974,7 @@ body.padOpen #hud { visibility: hidden; }
       g.fillStyle = '#6d655b'; g.font = '46px "Gamja Flower", "Noto Sans KR", sans-serif'; g.fillText('새 작품이 계속 걸려요', cw / 2, ch * 0.76);
     }).rotation.y = 0;
 
-    /* --- richer hall: wainscot, rail, skylight, tall windows, portals between wings, benches, urns, the acorn guardian, lobby boards --- */
+    /* --- richer hall: wainscot, rail, skylight, tall windows, portals between wings, benches, urns, the landmark statue, lobby boards --- */
     const brassM = L(0xd9b35a), woodDk = L(0x4a3322), plasterM = L(0xf3efe7);
     [-1, 1].forEach(sd => {                                /* lower wall panels and a brass rail below the picture labels */
       const pn = new T.Mesh(bx(0.25, 1.6, GGL), woodDk); pn.position.set(sd * (hw - 0.125), 0.8, zs - GGL / 2); pn.userData.noShadow = true; scene.add(pn);
@@ -1014,16 +1014,13 @@ body.padOpen #hud { visibility: hidden; }
       put(g, new T.Mesh(cyl(0.6, 0.6, 0.08, 20), brassM), 0, 3.4, 0); colliders.push({ x: x, z: z, r: 0.9 * sc }); return g;
     }
     [-1, 1].forEach(sd => { urnAt(sd * 8.4, zs - 3.5, 1.5, 0x3f6fa8); for (let k = 1; k < 6; k++) urnAt(sd * 10.3, zs - 32 * k + 0.6, 1.2, k % 2 ? 0x8a5a3a : 0x4f7a5a); });
-    /* the acorn guardian at the far end of the hall */
+    /* the hall's landmark: a big marble group on a stepped plinth at the far end, facing the visitors */
     (function () {
-      const ag = new T.Group(); ag.position.set(0, 0, GGZ + 12); scene.add(ag);
-      put(ag, new T.Mesh(cyl(3.2, 3.6, 1.2, 28), plasterM), 0, 0.6, 0); put(ag, new T.Mesh(cyl(2.6, 2.9, 0.5, 28), brassM), 0, 1.45, 0);
-      const body = put(ag, new T.Mesh(new T.SphereGeometry(1.7, 28, 20), L(0xb5733a)), 0, 3.5, 0); body.scale.set(1, 1.18, 1);
-      const cap = put(ag, new T.Mesh(new T.SphereGeometry(1.85, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), L(0x6b4a2f)), 0, 4.2, 0); cap.scale.set(1, 0.7, 1);
-      put(ag, new T.Mesh(cyl(0.16, 0.22, 0.7, 10), L(0x4a3322)), 0, 5.65, 0);
-      [-0.55, 0.55].forEach(x => put(ag, new T.Mesh(new T.SphereGeometry(0.2, 12, 10), L(0x2b2118)), x, 3.9, 1.55));      /* a friendly face */
-      const sm = put(ag, new T.Mesh(new T.TorusGeometry(0.4, 0.07, 8, 14, Math.PI), L(0x2b2118)), 0, 3.35, 1.62); sm.rotation.z = Math.PI;
-      colliders.push({ x: 0, z: GGZ + 12, r: 3.6 });
+      const gg = new T.Group(); gg.position.set(0, 0, GGZ + 12); scene.add(gg); const marbleG = L(0xf1ede4);
+      put(gg, new T.Mesh(cyl(4.4, 4.6, 0.6, 32), marbleG), 0, 0.3, 0); put(gg, new T.Mesh(cyl(3.5, 3.8, 0.6, 32), plasterM), 0, 0.9, 0);
+      put(gg, new T.Mesh(bx(3.6, 2.6, 3.6), marbleG), 0, 2.5, 0); put(gg, new T.Mesh(bx(4.2, 0.35, 4.2), brassM), 0, 3.95, 0);
+      const p = makePieta(); p.position.set(0, 4.1, 0); p.scale.setScalar(1.7); gg.add(p);
+      colliders.push({ x: 0, z: GGZ + 12, r: 4.2 });
     })();
     /* lobby boards: where to go */
     function board(x, z, w, h, lines, title) {
