@@ -2977,7 +2977,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     toast('그림을 불러오는 중…', 1500);
     ensureStrokes(ex).then(st => openViewer(Object.assign({}, ex, { strokes: st })), () => toast('그림을 불러오지 못했어요. 잠시 뒤 다시 눌러 주세요.', 3000));
   }
-  const isMine = ex => !!ex && !!uid && typeof ex.id === 'string' && ex.id.indexOf(uid + '_') === 0;
+  /* after a key merge the exhibits keep the old key in their id, so mine = my id prefix or one of my works */
+  const isMine = ex => !!ex && !!uid && typeof ex.id === 'string' && (ex.id.indexOf(uid + '_') === 0 || (!!ex.workId && works.some(w => w.id === ex.workId)));
+  const galId = wid => { const ex = exhibits.find(e => e.workId === wid && typeof e.id === 'string' && e.id.slice(-(wid.length + 1)) === '_' + wid); return ex ? ex.id : uid + '_' + wid; };
   let adminOn = false, pendingHang = null;
   function viewerActions(ex) {
     const box = $('#viewerAct'); box.textContent = '';
@@ -3677,7 +3679,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   async function exhibit(w, on) {                         /* on = false: take my work down */
     if (!galCol || !myCol_) { toast('이 화면에서는 전시할 수 없어요.'); return; }
-    try { await galCol.doc(uid + '_' + w.id).delete(); await myCol_.doc(w.id).update({ exh: false }); toast('전시를 내렸어요.'); }
+    try { await galCol.doc(galId(w.id)).delete(); await myCol_.doc(w.id).update({ exh: false }); toast('전시를 내렸어요.'); }
     catch (e) { toast('내리지 못했어요. 잠시 뒤 다시 해 주세요.', 4000); }
   }
   /* first come, first served: a frame belongs to whoever hung something there first; only that person can move or take it down */
@@ -3697,8 +3699,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (jsonbSize(ed) > 258000) { toast('그림이 너무 커서 전시할 수 없어요.'); return 'fail'; }
     pendingHang = null; updateBanner();
     try {
-      await galCol.doc(uid + '_' + w.id).hang(sl.id, ed);
-      strokeCache.set(uid + '_' + w.id + ':' + ed.at, ed.strokes);
+      const gid = galId(w.id); await galCol.doc(gid).hang(sl.id, ed);
+      strokeCache.set(gid + ':' + ed.at, ed.strokes);
       try { await myCol_.doc(w.id).update({ exh: true, er: sl.room, es: sl.size, sl: sl.id, removed: false }); } catch (e) {}
       if (!quiet) toast(ROOM_NAME[sl.room] + '에 걸었어요! 내 자리는 다른 사람이 바꿀 수 없어요.', 5000);
       return 'ok';
@@ -3796,7 +3798,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
           b2.textContent = '정말 삭제'; b2.classList.add('danger'); return;
         }
         clearTimeout(delArm[w.id]); delete delArm[w.id];
-        try { if (w.exh && galCol) { try { await galCol.doc(uid + '_' + w.id).delete(); } catch (e) {} } await myCol_.doc(w.id).delete(); } catch (e) { b2.textContent = '삭제 실패'; }
+        try { if (w.exh && galCol) { try { await galCol.doc(galId(w.id)).delete(); } catch (e) {} } await myCol_.doc(w.id).delete(); } catch (e) { b2.textContent = '삭제 실패'; }
       });
       const b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'btn'; b3.textContent = w.exh ? '자리 옮기기' : '전시하기';
       b3.addEventListener('click', () => { if (w.exh) startHang(w); else askExhibit(w); });
