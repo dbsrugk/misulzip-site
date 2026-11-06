@@ -108,6 +108,7 @@ const { start, vis, until, check, done } = require('./lib');
   check(await p.evaluate(() => !!document.querySelector('#swatches .sw[data-c="#00aa88"]')), 'custom colour is kept in the recent colours');
   await p.click('#eyeBtn'); await p.mouse.click(fxp, fyp); await p.waitForTimeout(300);
   check((await p.evaluate(() => document.querySelector('#padColor').value)) === '#d9342b', 'eyedropper picks the colour from the drawing');
+  await p.click('#padOptsBtn'); await p.waitForTimeout(200);                  /* the paper and scenery settings are folded on a phone */
   const box0 = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   /* trace guide: a picture laid over the paper */
   const refB64 = await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 300; c.height = 200; const x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, 300, 200); x.fillStyle = '#2244ee'; x.fillRect(60, 40, 180, 120); return c.toDataURL('image/png').split(',')[1]; });
@@ -118,7 +119,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.click('#refMode button[data-m=edge]'); await p.waitForTimeout(300);
   check((await refInk()) > 100 && (await refInk()) < 20000, 'outline mode keeps only the edges');
   await p.click('#refMode button[data-m=img]'); await p.waitForTimeout(200);
-  await p.click('#eyeBtn'); await p.mouse.click(box0.x + box0.w * 0.5, box0.y + box0.h * 0.5); await p.waitForTimeout(300);
+  await p.click('#eyeBtn'); const box1 = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; }); await p.mouse.click(box1.x + box1.w * 0.5, box1.y + box1.h * 0.5); await p.waitForTimeout(300);
   check(await p.evaluate(() => { const v = document.querySelector('#padColor').value; return parseInt(v.slice(5, 7), 16) > 200 && parseInt(v.slice(1, 3), 16) < 90; }), 'the eyedropper can pick a colour from the guide picture');
   await p.click('#refOff'); await p.waitForTimeout(200);
   check(await p.evaluate(() => document.querySelector('#refCanvas').hidden), 'the guide can be switched off');
