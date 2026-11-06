@@ -955,10 +955,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     });
     /* the rose windows over the north and south doors */
     const roseAtWall = (grp, seed) => {
-      const rg = new T.Mesh(new T.CircleGeometry(4.2, 56), B(0xffffff, { map: new T.CanvasTexture(roseCanvas(seed)) })); put(grp, rg, 0, 16.2, 0); winMats.push(rg.material);
-      put(grp, new T.Mesh(new T.TorusGeometry(4.35, 0.3, 8, 56), f), 0, 16.2, 0.1);
-      for (let k = 0; k < 8; k++) { const sp = new T.Mesh(bx(0.14, 8.4, 0.2), f); sp.rotation.z = k / 8 * Math.PI; put(grp, sp, 0, 16.2, 0.08); }
-      put(grp, new T.Mesh(new T.TorusGeometry(1.35, 0.1, 8, 28), f), 0, 16.2, 0.1);
+      const rg = new T.Mesh(new T.CircleGeometry(4.2, 56), B(0xffffff, { map: new T.CanvasTexture(roseCanvas(seed)) })); put(grp, rg, 0, 19.8, 0); winMats.push(rg.material);
+      put(grp, new T.Mesh(new T.TorusGeometry(4.35, 0.3, 8, 56), f), 0, 19.8, 0.1);
+      for (let k = 0; k < 8; k++) { const sp = new T.Mesh(bx(0.14, 8.4, 0.2), f); sp.rotation.z = k / 8 * Math.PI; put(grp, sp, 0, 19.8, 0.08); }
+      put(grp, new T.Mesh(new T.TorusGeometry(1.35, 0.1, 8, 28), f), 0, 19.8, 0.1);
     };
     roseAtWall(g, 5);
     { const gs = new T.Group(); gs.position.set(0, 0, RM.hz - 0.04); gs.rotation.y = Math.PI; scene.add(gs); hang(gs, 'z', RM.hz, -1); seam.push(gs); roseAtWall(gs, 8); }
@@ -2499,7 +2499,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const wood = L(0xb89a6a), woodD2 = L(0x7b5a36);
 
     /* paths */
-    const pathM = L(0xe0cf9f);
+    const pathM = L(0xcdb88a);
     function strip(x1, z1, x2, z2, w) {
       const len = Math.hypot(x2 - x1, z2 - z1), g = new T.Group();
       const m = new T.Mesh(new T.PlaneGeometry(w, len), pathM); m.rotation.x = -Math.PI / 2; g.add(m);
