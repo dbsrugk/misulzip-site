@@ -2339,7 +2339,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const s = Math.sin(phase) * 0.8 * amp;
       av.legL.rotation.x = s; av.legR.rotation.x = -s; av.armL.rotation.x = -s * 0.9; av.armR.rotation.x = s * 0.9; av.armL.rotation.z = av.armR.rotation.z = 0;
     }
-    if (sitting) { av.legL.rotation.x = av.legR.rotation.x = -1.45; av.lift = 0.66; }                         /* on a bench: legs forward, raised onto the seat */
+    if (sitting) { av.legL.rotation.x = av.legR.rotation.x = -1.45; av.lift = sitting === 2 ? -0.46 : 0.66; }                         /* on a bench: legs forward, raised onto the seat */
     av.torso.scale.y = 1 + 0.022 * Math.sin(t * 2.2 + av.seed);
     av.headG.position.y = 1.85 + 0.014 * Math.sin(t * 2.2 + av.seed + 0.6);
     const bl = ((t + av.seed) % 3.7) < 0.14;
@@ -2453,8 +2453,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { name: '신진 작가관', note: '친구들이 그린 그림이 걸린 곳', x: 0, z: 31, h: 0 },
     { name: '산 전망대', note: '눈 덮인 봉우리를 바라보며', x: 85, z: -41, h: Math.PI, pitch: 0.22 },
     { name: '바닷가', note: '모래사장과 수평선, 등대', x: 134, z: 0, h: Math.PI / 2, pitch: 0.22 },
-    { name: '호숫가', note: '잔잔한 물, 수련, 작은 배', x: 72, z: 19.5, h: 0, pitch: 0.22 },
-    { name: '풍차 들판', note: '꽃밭 너머로 돌아가는 풍차', x: 112, z: 24, h: 0, pitch: 0.25 },
+    { name: '호숫가', note: '잔잔한 물, 수련, 작은 배', x: 51, z: 40, h: Math.PI / 2, pitch: 0.22 },
+    { name: '풍차 들판', note: '꽃밭 너머로 돌아가는 풍차', x: 112, z: 30.5, h: 0, pitch: 0.25 },
     { name: '별관 전시관', note: '전시관 끝 큰 문 너머 두 번째 전시장', x: 0, z: GZ1 + 4, h: 0 },
     { name: '야외 전시 정원', note: '하늘 아래 액자가 둘러선 정원', x: GARD.x, z: GARD.z + 9, h: Math.PI, pitch: 0.3 },
     { name: '서쪽 전시관 1', note: '전시관 서쪽 큰 문 너머 넓은 방', x: -GX - 5, z: WZ, h: -Math.PI / 2 },
@@ -2551,19 +2551,89 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       boat.position.set(178, 0.05 + 0.1 * Math.sin(t * 1.3), z); boat.rotation.set(0, Math.PI / 2 + dir, 0.05 * Math.sin(t * 1.1));
     });
 
-    /* mountains (far, fading in the fog), snow caps, green foothills */
-    const near = new T.Color(0x6f9c8a), far = new T.Color(0xa7bdd2);
-    for (let i = 2; i < 15; i++) {
-      const x = 20 + i * 17 + (rnd() - 0.5) * 8, z = -100 - rnd() * 45, h = 24 + rnd() * 22, r = 15 + rnd() * 9;
-      const col = near.clone().lerp(far, (-z - 100) / 45);
-      at(new T.Mesh(new T.ConeGeometry(r, h, 7), L(col.getHex())), x, h / 2, z);
-      /* the snow cap shares the mountain's slope; push it slightly out and pull it towards the camera so the two surfaces never fight (flicker) */
-      const cap = at(new T.Mesh(new T.ConeGeometry(r * 0.4 * 1.05, h * 0.4 * 1.02, 7), L(0xffffff, { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })), x, h * 0.8 + 0.1, z);
-      cap.rotation.y = 0;
+    /* the Alps: three ranges of jagged, faceted peaks (meadow and dark pines low down, bare rock, then snow) and a village with a church, cows and fences in the green foothills */
+    const nh = (i, j, sd) => { const v = Math.sin(i * 127.1 + j * 311.7 + sd * 17.3) * 43758.5453; return v - Math.floor(v); };
+    const vnz = (x, z, sd) => { const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j, ux = fx * fx * (3 - 2 * fx), uz = fz * fz * (3 - 2 * fz); return (nh(i, j, sd) * (1 - ux) + nh(i + 1, j, sd) * ux) * (1 - uz) + (nh(i, j + 1, sd) * (1 - ux) + nh(i + 1, j + 1, sd) * ux) * uz; };
+    const ridge = (x, z, sd) => { let a = 0, fq = 1, k = 0.55; for (let o = 0; o < 4; o++) { const r = 1 - Math.abs(2 * vnz(x * fq, z * fq, sd + o) - 1); a += r * r * k; fq *= 2.1; k *= 0.5; } return a; };
+    function alps(x0, x1, zFront, depth, hmax, sd, haze, green) {
+      const SX = 5, nx = Math.round((x1 - x0) / SX), nz = 20, HZ = new T.Color(0xa7bdd2), col = new T.Color(), pos = [], cols = [];
+      const Y = (i, j) => {
+        const x = x0 + i * SX, tz = j / nz, z = zFront - tz * depth, e = tz < 0.6 ? Math.pow(tz / 0.6, 1.4) : 1, ex = Math.min(1, i / (nx * 0.12), (nx - i) / (nx * 0.12)), mass = 0.45 + 0.55 * vnz(x * 0.011, 3.1, sd);
+        return Math.min(hmax * 1.12, hmax * e * ex * mass * (0.22 + 0.95 * ridge(x * 0.014, z * 0.014, sd))) - 0.6;
+      };
+      for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+        const q = [[i, j], [i + 1, j], [i, j + 1], [i + 1, j + 1]].map(a => [x0 + a[0] * SX, Y(a[0], a[1]), zFront - a[1] / nz * depth]);
+        [[q[0], q[1], q[2]], [q[1], q[3], q[2]]].forEach((tri, ti) => {
+          const ax = tri[1][0] - tri[0][0], ay = tri[1][1] - tri[0][1], az = tri[1][2] - tri[0][2], bx_ = tri[2][0] - tri[0][0], by = tri[2][1] - tri[0][1], bz = tri[2][2] - tri[0][2];
+          let nxv = ay * bz - az * by, nyv = az * bx_ - ax * bz, nzv = ax * by - ay * bx_; const ln = Math.hypot(nxv, nyv, nzv) || 1; const ny = nyv / ln;
+          const hy = (tri[0][1] + tri[1][1] + tri[2][1]) / 3, h = (hy + 0.6) / hmax, jit = nh(i * 2 + ti, j, sd + 9);
+          const snowL = 0.5 + (jit - 0.5) * 0.14 - (green ? 9 : 0);
+          if (h > snowL && ny > 0.4) col.setHex(jit > 0.5 ? 0xffffff : 0xf1f6ff);
+          else if (h > 0.36 || ny < 0.5) col.setHex(ny < 0.5 ? (jit > 0.5 ? 0x6f6b67 : 0x7d7873) : (jit > 0.5 ? 0x8e8a84 : 0x9b968e));
+          else if (h > 0.15) col.setHex(jit > 0.62 ? 0x6cab57 : 0x376f42);
+          else col.setHex(jit > 0.5 ? 0x86b862 : 0x79ad5a);
+          col.multiplyScalar(0.94 + jit * 0.1).lerp(HZ, haze);
+          tri.forEach(p => { pos.push(p[0], p[1], p[2]); cols.push(col.r, col.g, col.b); });
+        });
+      }
+      const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new T.Float32BufferAttribute(cols, 3)); g.computeVertexNormals();
+      const m = new T.Mesh(g, L(0xffffff, { vertexColors: true })); m.userData.noShadow = true; scene.add(m); return m;
     }
-    for (let i = 2; i < 9; i++) {
-      const hill = new T.Mesh(new T.SphereGeometry(16, 14, 8), L(0x7fb35d)); hill.scale.set(1.7 + rnd() * 0.6, 0.65, 1);
-      at(hill, 20 + i * 18 + rnd() * 6, -3, -78 - rnd() * 8);
+    alps(-40, 232, -90, 36, 20, 1, 0.04, true);
+    alps(-70, 262, -136, 62, 62, 2, 0.2, false);
+    alps(-130, 300, -216, 72, 108, 3, 0.4, false);
+    {
+      /* the village on the plain at the foot of the foothills: seen from the mountain viewpoint, beyond the fence */
+      const V = new T.Group(); scene.add(V);
+      const plaster = L(0xf1e6d0), timber = L(0x8a5a34), timberL = L(0xb07a46), roofR = L(0x8f3b2b), roofB = L(0x5e3a26), glass = L(0x7fa9cc), door = L(0x5a3a22), geran = L(0xd9342b), leaf = L(0x4f9a46);
+      function chalet(x, z, ry, w, d, h, roofMat) {
+        const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry; V.add(g);
+        put(g, new T.Mesh(bx(w, 1.5, d), plaster), 0, 0.75, 0);
+        put(g, new T.Mesh(bx(w - 0.1, h - 1.5, d - 0.1), timber), 0, 1.5 + (h - 1.5) / 2, 0);
+        const rh = d * 0.3, sh = new T.Shape(); sh.moveTo(-d / 2 - 0.8, 0); sh.lineTo(d / 2 + 0.8, 0); sh.lineTo(0, rh); sh.lineTo(-d / 2 - 0.8, 0);
+        const rg = new T.ExtrudeGeometry(sh, { depth: w + 1.6, bevelEnabled: false }); rg.rotateY(Math.PI / 2); rg.translate(-(w + 1.6) / 2, 0, 0);
+        put(g, new T.Mesh(rg, roofMat), 0, h, 0);
+        put(g, new T.Mesh(bx(d * 0.7, h * 0.34, 0.08), timberL), 0, h + rh * 0.28, 0);
+        put(g, new T.Mesh(bx(0.8, 2.0, 0.12), door), -w * 0.28, 1.0, d / 2 + 0.04);
+        for (let k = 0; k < 3; k++) { const wx = -w * 0.06 + k * w * 0.26; put(g, new T.Mesh(bx(0.9, 1.05, 0.1), glass), wx, 3.4, d / 2 + 0.04); put(g, new T.Mesh(bx(1.2, 0.28, 0.4), geran), wx, 2.75, d / 2 + 0.2); put(g, new T.Mesh(bx(1.1, 0.14, 0.34), leaf), wx, 3.0, d / 2 + 0.2); }
+        put(g, new T.Mesh(bx(w * 0.9, 0.14, 1.1), timberL), 0, 2.3, d / 2 + 0.6);
+        put(g, new T.Mesh(bx(0.7, 1.6, 0.7), L(0xb9ada0)), w * 0.25, h + rh * 0.6, -d * 0.15);
+        return g;
+      }
+      chalet(64, -76, 0.25, 9, 7, 4.6, roofB); chalet(72, -88, -0.2, 8, 6.4, 4.4, roofR); chalet(98, -77, -0.3, 9.4, 7.2, 4.8, roofB); chalet(106, -90, 0.15, 8.2, 6.6, 4.4, roofR); chalet(112, -76, -0.1, 7.6, 6.2, 4.2, roofR); chalet(58, -90, 0.4, 7.4, 6, 4.2, roofB); chalet(121, -86, -0.35, 8, 6.4, 4.4, roofB);
+      /* the church: white nave, red roof, a tall tower with a clock and a slate spire */
+      { const cx = 85, cz = -82, g = new T.Group(); g.position.set(cx, 0, cz); V.add(g);
+        put(g, new T.Mesh(bx(8, 6.4, 14), L(0xf6f0e4)), 0, 3.2, 0);
+        const sh = new T.Shape(); sh.moveTo(-4.6, 0); sh.lineTo(4.6, 0); sh.lineTo(0, 3.6); sh.lineTo(-4.6, 0);
+        const rg = new T.ExtrudeGeometry(sh, { depth: 14.6, bevelEnabled: false }); rg.translate(0, 0, -7.3); put(g, new T.Mesh(rg, L(0xa6402c)), 0, 6.4, 0);
+        put(g, new T.Mesh(bx(4.2, 14, 4.2), L(0xf6f0e4)), 0, 7, 8.4);
+        put(g, new T.Mesh(new T.ConeGeometry(3.2, 9.5, 8), L(0x4a5f7a)), 0, 18.7, 8.4);
+        put(g, new T.Mesh(bx(0.18, 1.8, 0.18), L(0xd9b35a)), 0, 24.4, 8.4); put(g, new T.Mesh(bx(1.0, 0.18, 0.18), L(0xd9b35a)), 0, 24.8, 8.4);
+        const face = put(g, new T.Mesh(new T.CircleGeometry(1.2, 20), L(0xffffff)), 0, 12.4, 10.52); put(g, new T.Mesh(new T.RingGeometry(1.1, 1.3, 20), L(0x2a2118)), 0, 12.4, 10.53);
+        put(g, new T.Mesh(bx(0.1, 0.8, 0.05), L(0x2a2118)), 0, 12.6, 10.55); put(g, new T.Mesh(bx(0.6, 0.1, 0.05), L(0x2a2118)), 0.25, 12.4, 10.55);
+        put(g, new T.Mesh(bx(1.6, 3.2, 0.1), glass), 0, 8.2, 10.52); [-2.7, 2.7].forEach(dx => [-3, 3].forEach(dz => put(g, new T.Mesh(bx(0.1, 2.4, 1.0), glass), dx * 1.5, 3.6, dz + 0.0)));
+      }
+      /* fences round a meadow and the cows grazing in it */
+      const fenceL = (x0, z0, x1, z1) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 3)); for (let i = 0; i <= n; i++) put(V, new T.Mesh(bx(0.22, 1.3, 0.22), timber), x0 + (x1 - x0) * i / n, 0.65, z0 + (z1 - z0) * i / n); const r = put(V, new T.Mesh(bx(Math.hypot(x1 - x0, z1 - z0), 0.16, 0.14), timberL), (x0 + x1) / 2, 1.0, (z0 + z1) / 2); r.rotation.y = -Math.atan2(z1 - z0, x1 - x0); };
+      fenceL(66, -68, 108, -68); fenceL(66, -68, 62, -100); fenceL(108, -68, 124, -98);
+      const cowM = L(0xf6f2ea), patch = L(0x2b2b2b), cowHeads = [];
+      [[74, -72], [81, -75], [92, -70], [99, -72], [106, -72], [86, -92], [96, -94], [70, -96], [114, -94], [78, -84]].forEach((q, i) => {
+        const g = new T.Group(); g.position.set(q[0], 0, q[1]); g.rotation.y = (nh(i, 7, 5) - 0.5) * 6; V.add(g);
+        put(g, new T.Mesh(bx(2.3, 1.2, 0.95), cowM), 0, 1.25, 0); put(g, new T.Mesh(bx(0.9, 0.6, 1.0), patch), 0.2 + nh(i, 3, 1) * 0.3, 1.45, 0); put(g, new T.Mesh(bx(0.5, 0.5, 0.97), patch), -0.7, 1.2, 0);
+        [[-0.85, 0.3], [-0.85, -0.3], [0.85, 0.3], [0.85, -0.3]].forEach(l => put(g, new T.Mesh(bx(0.2, 0.75, 0.2), cowM), l[0], 0.4, l[1]));
+        const hd = new T.Group(); hd.position.set(1.2, 1.5, 0); g.add(hd); put(hd, new T.Mesh(bx(0.55, 0.55, 0.6), cowM), 0.25, 0, 0); put(hd, new T.Mesh(bx(0.25, 0.3, 0.45), L(0xe9b7b0)), 0.55, -0.1, 0); put(hd, new T.Mesh(bx(0.18, 0.18, 0.2), L(0xd9b35a)), 0.1, -0.45, 0);
+        cowHeads.push({ hd: hd, ph: nh(i, 5, 2) * 6.28 });
+      });
+      anim.push((dt, t) => { for (let i = 0; i < cowHeads.length; i++) { const c = cowHeads[i]; c.hd.rotation.z = -0.15 - 0.55 * Math.max(0, Math.sin(t * 0.35 + c.ph)); } });
+      /* dark pines on the foothills and along the village edges */
+      const PN = 140, pines = new T.InstancedMesh(new T.ConeGeometry(2.2, 8, 7), L(0xffffff), PN), pd = new T.Object3D(), pc = new T.Color(); let pi = 0;
+      for (let k = 0; k < PN; k++) {
+        const x = -20 + nh(k, 1, 4) * 230, z = -96 - nh(k, 2, 4) * 26 - (k % 3 === 0 ? 0 : 0); if (z > -94 && x > 56 && x < 128) continue;
+        const sc = 0.8 + nh(k, 3, 4) * 1.1; pd.position.set(x, 4 * sc, z); pd.scale.set(sc, sc * (1 + nh(k, 4, 4) * 0.4), sc); pd.updateMatrix(); pines.setMatrixAt(pi, pd.matrix);
+        pc.setHex(0x2d5f3a).lerp(new T.Color(0x3f7a45), nh(k, 5, 4)); pines.setColorAt(pi, pc); pi++;
+      }
+      pines.count = pi; pines.instanceMatrix.needsUpdate = true; pines.instanceColor.needsUpdate = true; pines.frustumCulled = false; pines.userData.noShadow = true; pines.userData.noChunk = true; V.add(pines);
+      V.traverse(o => { o.userData.noShadow = true; });
     }
     /* clouds */
     const cloudM = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.92, fog: false });
@@ -2576,11 +2646,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     }
 
     /* trees (instanced): kept off the paths, the plaza and the drawing spots */
-    const SPOTS = [{ x: 85, z: -46, r: 16 }, { x: LAKE.x, z: LAKE.z, r: 21 }, { x: MILL.x, z: MILL.z, r: 22 }];
+    const SPOTS = [{ x: 85, z: -46, r: 16 }, { x: 85, z: -37, r: 17 }, { x: LAKE.x, z: LAKE.z, r: 21 }, { x: LAKE.x - LAKE.r - 7, z: LAKE.z, r: 12 }, { x: MILL.x, z: MILL.z, r: 22 }, { x: MILL.x - 14, z: MILL.z - 4, r: 9 }, { x: MILL.x + 14, z: MILL.z - 4, r: 9 }, { x: 134, z: -12, r: 10 }];
     function free(x, z) {
       if (Math.abs(z) < 4.5 && x < 140) return false;
       if (x > 54 && x < 146 && z > -14 && z < 4.5) return false;             /* the broad promenade and a lawn margin either side */
       if (Math.abs(x - 85) < 8 && z < 4 && z > -50) return false;
+      if (x > 48 && x < 128 && z < -50) return false;                          /* the open view north to the Alps: no trees in the way */
       if (Math.abs(x - 92) < 8.5 && z > 0 && z < 112) return false;            /* the south road */
       if (Math.hypot(x - 92, z - 112) < 14) return false;                    /* the rest ring under the big tree */            /* keep a wide clear lane along the branch paths so the view is never blocked */
       if (Math.abs(x - LAKE.x) < 9 && z < 26 && z > 0) return false;
@@ -2602,9 +2673,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (free(x, z) && !treePts.some(q => Math.hypot(q.x - x, q.z - z) < 4.5)) treePts.push({ x: x, z: z, s: 0.85 + rnd() * 0.6 });
     }
     treePts.push({ x: 92, z: 114, s: 1.55, round: true });                                  /* the old giant tree of the rest ring */
-    for (let x = OUT.x0 + 3; x < 130; x += 5) { treePts.push({ x: x, z: OUT.z1 - 2.5 - rnd() * 3, s: 1.1 + rnd() * 0.6 }); if (rnd() < 0.5) treePts.push({ x: x + 2, z: OUT.z0 + 2.5 + rnd() * 3, s: 1.1 + rnd() * 0.6 }); }   /* a wooded edge to the south and north */
+    for (let x = OUT.x0 + 3; x < 130; x += 5) { treePts.push({ x: x, z: OUT.z1 - 2.5 - rnd() * 3, s: 1.1 + rnd() * 0.6 }); if (rnd() < 0.5 && (x < 44 || x > 126)) treePts.push({ x: x + 2, z: OUT.z0 + 2.5 + rnd() * 3, s: 1.1 + rnd() * 0.6 }); }   /* a wooded edge to the south and north */
     for (let a = 0; a < 6.28; a += 0.42) {              /* trees ringing the lake, leaving the north shore (the easels) open */
-      if (Math.sin(a) < -0.5) continue;
+      if (Math.sin(a) < -0.5 || (Math.cos(a) < -0.45 && Math.abs(Math.sin(a)) < 0.75)) continue;                      /* and the west shore: benches and painters look east over the water */
       const rr2 = LAKE.r + 4 + rnd() * 3; treePts.push({ x: LAKE.x + Math.cos(a) * rr2, z: LAKE.z + Math.sin(a) * rr2, s: 0.9 + rnd() * 0.6, round: true });
     }
     const dm = new T.Object3D(), gc = new T.Color(), pine = [], round = [];
@@ -2728,15 +2799,33 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const pl = makeNamePlate(text); pl.sprite.scale.set(5, 1.25, 1); pl.sprite.position.set(x, 5.6, z); scene.add(pl.sprite);
     }
 
+    /* a wooden bench or a picnic blanket looking at the view: tap to sit, like the benches in the halls. ry: 0 faces north, PI/2 west, -PI/2 east, PI south */
+    const benchW = L(0xb98a55), benchD = L(0x6b4a2f), blanketA = [L(0xd9534f), L(0x3f7fbf), L(0xe3b33a), L(0x4aa06a)], blanketW = L(0xfff6e0);
+    function outBench(x, z, ry) {
+      const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g);
+      put(g, new T.Mesh(bx(3.4, 0.16, 1.1), benchW), 0, 0.95, 0); put(g, new T.Mesh(bx(3.4, 0.9, 0.14), benchW), 0, 1.55, 0.5).rotation.x = -0.12;
+      [-1.4, 1.4].forEach(dx => { put(g, new T.Mesh(bx(0.18, 0.95, 0.9), benchD), dx, 0.47, 0); put(g, new T.Mesh(bx(0.18, 1.7, 0.16), benchD), dx, 0.85, 0.5); });
+      colliders.push({ x: x, z: z, r: 1.3 });
+      const hb = put(g, new T.Mesh(bx(3.8, 1.8, 1.6), hitMat), 0, 0.9, 0); hb.userData.bench = benches.length; hitList.push(hb); benches.push({ x: x, z: z, ry: ry });
+    }
+    function blanketAt(x, z, ry, k) {
+      const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g);
+      put(g, new T.Mesh(bx(3.0, 0.05, 2.4), blanketA[k % 4]), 0, 0.045, 0); put(g, new T.Mesh(bx(2.5, 0.06, 0.4), blanketW), 0, 0.05, -0.7); put(g, new T.Mesh(bx(2.5, 0.06, 0.4), blanketW), 0, 0.05, 0.7);
+      const bk = put(g, new T.Mesh(cyl(0.32, 0.32, 0.12, 12), L(0xa8764a)), 0.9, 0.16, 0.3); put(g, new T.Mesh(new T.SphereGeometry(0.2, 8, 6), L(0xd9342b)), 0.9, 0.3, 0.3);
+      const hb = put(g, new T.Mesh(bx(3.2, 1.0, 2.6), hitMat), 0, 0.5, 0); hb.userData.bench = benches.length; hitList.push(hb); benches.push({ x: x, z: z, ry: ry, low: true });
+    }
+
     /* spot 1: mountain viewpoint (looking north) */
     at(new T.Mesh(cyl(15, 15, 0.3, 32), L(0xa89f90)), 85, 0.15, -46);
     for (let x = 69; x <= 101.01; x += 4) at(new T.Mesh(cyl(0.18, 0.18, 1.8, 6), woodD2), x, 0.9, -53);
     at(new T.Mesh(bx(32, 0.2, 0.2), woodD2), 85, 1.7, -53);
     for (let i = 0; i < 4; i++) addEaselAt(85 + (i - 1.5) * 7, -48, Math.PI / 2);
+    outBench(72.5, -39, 0); outBench(97.5, -39, 0); blanketAt(80, -36.5, 0, 0); blanketAt(90, -36.5, 0, 1);
     sign('산 전망대', 80, -33);
 
     /* spot 2: beach (looking east, out to sea) */
-    for (let i = 0; i < 4; i++) addEaselAt(141, (i - 1.5) * 7, Math.PI);
+    for (let i = 0; i < 4; i++) addEaselAt(141, (i - 3.5) * 6, Math.PI);          /* north of the sculpture pavilion */
+    outBench(133, -19, -Math.PI / 2); outBench(133, -8, -Math.PI / 2); blanketAt(135.5, -13.5, -Math.PI / 2, 2); blanketAt(135.5, -2, -Math.PI / 2, 3);
     sign('바닷가', 127, -5);
     sign('야외 그림터', 40, -8);
 
@@ -2805,8 +2894,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     put(rowboat, new T.Mesh(bx(3.6, 0.7, 1.5), wood), 0, 0.25, 0);
     put(rowboat, new T.Mesh(bx(0.12, 0.12, 3.2), woodD2), 0.4, 0.8, 0).rotation.y = 0.5;
     anim.push((dt, t) => { rowboat.position.set(LAKE.x + 4 + 2 * Math.sin(t * 0.15), 0.06 + 0.05 * Math.sin(t * 1.2), LAKE.z + 3 + 1.5 * Math.cos(t * 0.11)); rowboat.rotation.set(0, 0.6 + 0.2 * Math.sin(t * 0.2), 0.03 * Math.sin(t * 1.1)); });
-    for (let i = 0; i < 4; i++) addEaselAt(LAKE.x + (i - 1.5) * 7, LAKE.z - LAKE.r - 3, -Math.PI / 2);
-    sign('호숫가', LAKE.x - 6.5, 12);
+    for (let i = 0; i < 4; i++) addEaselAt(LAKE.x - LAKE.r - 3, LAKE.z + (i - 1.5) * 6, Math.PI);          /* on the west shore, the painter looks east over the water (the north shore is the sculpture pavilion) */
+    outBench(LAKE.x - LAKE.r - 7.5, LAKE.z - 8, -Math.PI / 2); outBench(LAKE.x - LAKE.r - 7.5, LAKE.z + 8, -Math.PI / 2); blanketAt(LAKE.x - LAKE.r - 6.5, LAKE.z, -Math.PI / 2, 0); blanketAt(LAKE.x - LAKE.r - 6.5, LAKE.z + 15, -Math.PI / 2, 1);
+    sign('호숫가', LAKE.x - LAKE.r - 3, LAKE.z - 9);
 
     /* spot 4: windmill field (looking south over the flowers) */
     const wm = new T.Group(); wm.position.set(MILL.x, 0, MILL.z); scene.add(wm);
@@ -2855,8 +2945,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       }
       st2.count = hd2.count = n2; st2.frustumCulled = hd2.frustumCulled = false; scene.add(st2); scene.add(hd2);
     }
-    for (let i = 0; i < 4; i++) addEaselAt(MILL.x + (i - 1.5) * 7, 29, -Math.PI / 2);
-    sign('풍차 들판', MILL.x - 6.5, 12);
+    for (let i = 0; i < 4; i++) addEaselAt(MILL.x + (i - 1.5) * 7, MILL.z - 11.5, -Math.PI / 2);          /* between the pavilion and the flowers, the painter looks south at the mill */
+    outBench(MILL.x - 17, MILL.z - 6, 2.1); outBench(MILL.x + 17, MILL.z - 6, -2.1); blanketAt(MILL.x - 11, MILL.z - 2, 2.4, 2); blanketAt(MILL.x + 11, MILL.z - 2, -2.4, 3);   /* turned to face the mill */
+    sign('풍차 들판', MILL.x - 15, MILL.z - 11);
     /* signposts on the field: wooden arrows that point to each place, with the walking distance */
     function signpost(x, z, names) {
       const eol = names.length;
@@ -3122,7 +3213,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (!goal) benches.forEach((b, bi) => { for (let side = 0; side < 2; side++) { const q = seatXY(bi, side), d = Math.hypot(pos.x - q.x, pos.z - q.z); if (d < nbd && !seatTaken(bi * 2 + side)) { nbd = d; nb = bi * 2 + side; } } });
     if (nb >= 0) {
       nearIdx = -1; benchNear = nb; sitBtn.hidden = false; sitBtn.disabled = false; sitBtn.dataset.mode = 'bench';
-      sitBtn.textContent = '🪑 벤치에 앉기'; return;
+      sitBtn.textContent = benches[nb >> 1].low ? '🧺 돗자리에 앉기' : '🪑 벤치에 앉기'; return;
     }
     if (best < 0) { sitBtn.hidden = true; return; }
     sitBtn.hidden = false;
@@ -5026,7 +5117,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (curSp > 0.3 && started && !pad.open && !watch.open) { tryMove(wdx * curSp * dt, wdz * curSp * dt); walkPhase += dt * (6 + curSp * 0.9); walkAmp = lerp(walkAmp, Math.min(1, curSp / SPEED + 0.1), Math.min(1, dt * 10)); }
       else { curSp = 0; walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10)); }
     }
-    animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0, mySeat >= 0);
+    animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0, mySeat >= 0 ? (benches[mySeat >> 1].low ? 2 : 1) : 0);
     player.position.set(pos.x, 0.0 + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp + me.lift, pos.z);
     player.rotation.y = heading; player.rotation.x = 0.11 * walkAmp;
     if (walkAmp > 0.6 && !player.userData.hidden) { puffT -= dt; if (puffT <= 0) { puffT = 0.17; puff(pos.x - Math.sin(heading) * 0.2, pos.z - Math.cos(heading) * 0.2); } }
@@ -5039,7 +5130,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const moving = Math.hypot(dx, dz) > 0.05 || r.w === 1;
       r.x += dx * f2; r.z += dz * f2; r.h += angDiff(r.h, r.th) * Math.min(1, dt * 12);
       r.amp = lerp(r.amp, moving ? 1 : 0, Math.min(1, dt * 10)); if (r.amp > 0.05) r.phase += dt * 10;
-      animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0, r.s >= 0);
+      animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0, r.s >= 0 ? (benches[r.s >> 1].low ? 2 : 1) : 0);
       r.av.group.position.set(r.x, Math.abs(Math.sin(r.phase)) * 0.09 * r.amp + r.av.lift, r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp;
       if (r.amp > 0.6) { r.puffT = (r.puffT || 0) - dt; if (r.puffT <= 0) { r.puffT = 0.25; puff(r.x, r.z); } }
       r.plate.sprite.visible = Math.hypot(r.x - pos.x, r.z - pos.z) < 28;
