@@ -15,6 +15,6 @@ const { start, until, check, done } = require('./lib');
   await p.waitForTimeout(3500);
   check(await until(p, () => window.__hw.area() === '조각 전시관', null, 40), 'the sculpture pavilion has its own area name');
   check(await p.evaluate(() => ['bust_1.glb', 'bust_2.glb', 'statue_1.glb', 'vase_1.glb'].every(f => window.__hw.props().some(q => q[0] === f))), 'the four real statues are placed in the pavilion');
-  check(await p.evaluate(() => window.__hw.props().length === 29), 'and no other models are placed elsewhere (29 in all: 12 statues, 14 columns, 3 abstract pieces)');
+  check(await p.evaluate(() => window.__hw.props().length === 34), 'and no other models are placed elsewhere (34 in all: 12 statues, 14 columns, 3 abstract pieces, 5 in the central hall)');
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

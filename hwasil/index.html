@@ -277,6 +277,22 @@ body.padOpen #hud { visibility: hidden; }
 .roomRow .rk { font: 400 28px/1 var(--font-display); min-width: 38px; text-align: center; }
 .roomRow .l { flex: 1; min-width: 0; }
 .roomRow .th { width: 64px; height: 64px; flex: none; border: 2px solid var(--ink); border-radius: 8px; background: #efe9dc; }
+#fame .sheet { height: 92%; max-height: 92%; }
+#fameList { flex: 1; min-height: 0; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+#fameList.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-rows: max-content; gap: 10px; align-content: start; }
+#fameList .roomRow.card { position: relative; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; padding: 0; overflow: hidden; }
+#fameList .roomRow.card.first { grid-column: 1 / -1; }
+#fameList .card .th { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; background: #efe9dc; }
+#fameList .card.first .th { aspect-ratio: 16 / 10; }
+#fameList .card .rk { position: absolute; top: 8px; left: 8px; min-width: 36px; height: 36px; padding: 0 6px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; background: var(--paper); border: 2px solid var(--ink); border-radius: 999px; z-index: 1; }
+#fameList .card .rk[hidden] { display: none; }
+#fameList .card .l { padding: 8px 10px 2px; }
+#fameList .card .n { font-size: 19px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#fameList .card .c { font-size: 12.5px; line-height: 1.35; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#fameList .card .rc { display: inline-block; margin-top: 4px; padding: 1px 8px; border: 1.5px solid var(--ink); border-radius: 999px; font-size: 13px; background: #fff3c8; }
+#fameList .card .btn { margin: 8px 10px 10px; min-height: 44px; font-size: 16px; }
+#fameTabs { flex: none; }
+#fameTabs .btn { flex: 1; min-height: 42px; font-size: 16px; }
 #fameNote { margin: 0; font-size: 13px; color: #6f665a; }
 #placesTabs, #fameTabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
 #placesTabs .btn, #fameTabs .btn { padding: 6px 12px; font-size: 15px; }
@@ -885,19 +901,79 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     put(g, new T.Mesh(archWallGeo(), wallMat), 0, 0, 0);
   })();
 
+  /* stained glass, painted once: leaded diamond panes in jewel colours, rosettes of wedges and petals, a rose in the arch */
+  const LEAD = '#1a1620', JEWEL = { blue: ['#1f3f9e', '#2b58c4', '#17306f', '#3a73d9'], red: ['#a3202b', '#c8333b', '#7d1823', '#d9503f'], gold: ['#e0a823', '#f3c94a', '#c98a1c', '#f7dc7a'], green: ['#1f7a4a', '#2f9a5f', '#176146'], violet: ['#5d2f8c', '#7b46b0'] };
+  function glassWedge(g, cx, cy, r0, r1, a0, a1, col) { g.beginPath(); g.arc(cx, cy, r1, a0, a1); g.arc(cx, cy, r0, a1, a0, true); g.closePath(); g.fillStyle = col; g.fill(); g.lineWidth = 4; g.strokeStyle = LEAD; g.stroke(); }
+  function glassRose(g, cx, cy, R, n, r) {
+    const pick = a => a[(r() * a.length) | 0], disc = (x, y, rad, col, lw) => { g.beginPath(); g.arc(x, y, rad, 0, 6.2832); g.fillStyle = col; g.fill(); g.lineWidth = lw; g.strokeStyle = LEAD; g.stroke(); };
+    disc(cx, cy, R, LEAD, 1);
+    for (let k = 0; k < n; k++) { const a0 = k / n * 6.2832, a1 = (k + 1) / n * 6.2832; glassWedge(g, cx, cy, R * 0.62, R * 0.96, a0, a1, pick(k % 2 ? JEWEL.blue : JEWEL.red)); glassWedge(g, cx, cy, R * 0.3, R * 0.62, a0 + 0.02, a1 - 0.02, pick(k % 2 ? JEWEL.gold : JEWEL.green)); }
+    for (let k = 0; k < n; k++) { const a = (k + 0.5) / n * 6.2832; disc(cx + Math.cos(a) * R * 0.79, cy + Math.sin(a) * R * 0.79, R * 0.075, pick(JEWEL.gold), 3); }
+    disc(cx, cy, R * 0.3, pick(JEWEL.gold), 5); disc(cx, cy, R * 0.12, pick(JEWEL.red), 4);
+    g.beginPath(); g.arc(cx, cy, R * 0.96, 0, 6.2832); g.lineWidth = 6; g.strokeStyle = LEAD; g.stroke();
+  }
+  function lancetCanvas(seed) {                      /* a tall pointed window, 256 x 604 for a 7 x 16.5 m opening */
+    const W = 256, H = 604, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), r = mulberry32(seed), pick = a => a[(r() * a.length) | 0];
+    g.fillStyle = LEAD; g.fillRect(0, 0, W, H);
+    const cw = W / 6, chh = cw * 1.5;
+    for (let row = 0; row * chh / 2 < H + chh; row++) for (let col = -1; col < 8; col++) {
+      const cx = col * cw + (row & 1 ? cw / 2 : 0), cy = row * chh / 2, t = cy / H;
+      const pool = t < 0.25 ? (r() < 0.5 ? JEWEL.gold : JEWEL.red) : t < 0.55 ? (row % 4 < 2 ? JEWEL.red : JEWEL.blue) : t < 0.85 ? (row % 4 < 2 ? JEWEL.blue : JEWEL.green) : (r() < 0.5 ? JEWEL.blue : JEWEL.violet);
+      g.beginPath(); g.moveTo(cx, cy - chh / 2); g.lineTo(cx + cw / 2, cy); g.lineTo(cx, cy + chh / 2); g.lineTo(cx - cw / 2, cy); g.closePath(); g.fillStyle = pick(pool); g.fill(); g.lineWidth = 3.4; g.strokeStyle = LEAD; g.stroke();
+    }
+    [0.47, 0.66, 0.85].forEach(fy => glassRose(g, W / 2, H * fy, W * 0.21, 6, r));
+    glassRose(g, W / 2, H * 0.212, W * 0.4, 8, r);
+    const gl = g.createRadialGradient(W / 2, H * 0.45, 10, W / 2, H * 0.45, H * 0.5); gl.addColorStop(0, 'rgba(255,255,255,0.22)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gl; g.fillRect(0, 0, W, H);
+    g.lineWidth = 12; g.strokeStyle = LEAD; g.strokeRect(0, 0, W, H); return c;
+  }
+  function roseCanvas(seed) {                        /* the big round rose window */
+    const S = 512, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d'), r = mulberry32(seed);
+    g.fillStyle = LEAD; g.fillRect(0, 0, S, S); glassRose(g, S / 2, S / 2, S / 2 - 4, 16, r);
+    const gl = g.createRadialGradient(S / 2, S / 2, 10, S / 2, S / 2, S / 2); gl.addColorStop(0, 'rgba(255,255,255,0.28)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gl; g.fillRect(0, 0, S, S); return c;
+  }
+
   /* north windows + light on the floor */
   (function () {
     const g = new T.Group(); g.position.set(0, 0, -RM.hz + 0.04); scene.add(g); hang(g, 'z', -RM.hz, 1);
     const f = L(0xf8f5ee);
-    [-18, -9, 9, 18].forEach(x => {
+    const lan = [lancetCanvas(11), lancetCanvas(29)];
+    [-18, -9, 9, 18].forEach((x, wi) => {
       const wy = 4.2, wr = 3.5, wh = 13;                                  /* arched window: straight part wh, arch of radius wr on top */
-      const glass = new T.Mesh(new T.ShapeGeometry(archShape(wr, wh), 18), B(0xfff3c8)); put(g, glass, x, wy, 0); winMats.push(glass.material);
+      const gt = new T.CanvasTexture(lan[wi & 1]); gt.repeat.set(1 / (wr * 2), 1 / (wh + wr)); gt.offset.set(0.5, 0);
+      const glass = new T.Mesh(new T.ShapeGeometry(archShape(wr, wh), 18), B(0xffffff, { map: gt })); put(g, glass, x, wy, 0); winMats.push(glass.material);
       const fs = archShape(wr + 0.3, wh); fs.holes.push(archShape(wr, wh));
       const fg = new T.ExtrudeGeometry(fs, { depth: 0.5, bevelEnabled: false, curveSegments: 18 }); put(g, new T.Mesh(fg, f), x, wy, -0.05);
       put(g, new T.Mesh(bx(0.2, wh + wr, 0.3), f), x, wy + (wh + wr) / 2, 0.1);
       [wh * 0.45, wh].forEach(yy => put(g, new T.Mesh(bx(wr * 2, 0.18, 0.3), f), x, wy + yy, 0.1));
       put(g, new T.Mesh(bx(wr * 2 + 1.2, 0.35, 0.8), f), x, wy - 0.15, 0.25);
     });
+    /* the rose windows over the north and south doors */
+    const roseAtWall = (grp, seed) => {
+      const rg = new T.Mesh(new T.CircleGeometry(4.2, 56), B(0xffffff, { map: new T.CanvasTexture(roseCanvas(seed)) })); put(grp, rg, 0, 16.2, 0); winMats.push(rg.material);
+      put(grp, new T.Mesh(new T.TorusGeometry(4.35, 0.3, 8, 56), f), 0, 16.2, 0.1);
+      for (let k = 0; k < 8; k++) { const sp = new T.Mesh(bx(0.14, 8.4, 0.2), f); sp.rotation.z = k / 8 * Math.PI; put(grp, sp, 0, 16.2, 0.08); }
+      put(grp, new T.Mesh(new T.TorusGeometry(1.35, 0.1, 8, 28), f), 0, 16.2, 0.1);
+    };
+    roseAtWall(g, 5);
+    { const gs = new T.Group(); gs.position.set(0, 0, RM.hz - 0.04); gs.rotation.y = Math.PI; scene.add(gs); hang(gs, 'z', RM.hz, -1); seam.push(gs); roseAtWall(gs, 8); }
+    /* coloured sunlight: the windows are projected onto the floor, with soft shafts in between */
+    {
+      const SK = 8, SN = 1.62, ZN = -RM.hz + 3.65, ZF = -6, pm = [], lp = [], lc = [], li = [];
+      const tint = [[0.55, 0.7, 1.0], [1.0, 0.62, 0.5], [1.0, 0.86, 0.5], [0.6, 1.0, 0.75]];
+      [-18, -9, 9, 18].forEach((wx, wi) => {
+        const pos = new Float32Array([wx - 3.5 + SN, 0, ZN, wx + 3.5 + SN, 0, ZN, wx + 3.5 + SK, 0, ZF, wx - 3.5 + SK, 0, ZF]), uv = new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]);
+        const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.BufferAttribute(uv, 2)); geo.setIndex([0, 1, 2, 0, 2, 3]);
+        const m = new T.Mesh(geo, new T.MeshBasicMaterial({ map: new T.CanvasTexture(lan[wi & 1]), transparent: true, depthWrite: false, blending: T.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -8, opacity: 0.55 }));
+        m.position.y = 0.07; m.userData.noShadow = true; m.frustumCulled = false; scene.add(m); pm.push(m.material);
+        const zw = -RM.hz + 0.2, TL = [wx - 3.5, 20.7, zw], TR = [wx + 3.5, 20.7, zw], BL = [wx - 3.5, 4.2, zw], BR = [wx + 3.5, 4.2, zw];
+        const FL = [wx - 3.5 + SK, 0.1, ZF], FR = [wx + 3.5 + SK, 0.1, ZF], NL = [wx - 3.5 + SN, 0.1, ZN], NR = [wx + 3.5 + SN, 0.1, ZN], tn = tint[wi];
+        const quad = (a, b, c, d) => { const o = lp.length / 3; [a, b, c, d].forEach((p, i) => { lp.push(p[0], p[1], p[2]); const k = i < 2 ? 0.16 : 0.03; lc.push(tn[0] * k, tn[1] * k, tn[2] * k); }); li.push(o, o + 1, o + 2, o, o + 2, o + 3); };
+        quad(TL, TR, FR, FL); quad(BL, BR, NR, NL); quad(BL, TL, FL, NL); quad(BR, TR, FR, NR);
+      });
+      const lg = new T.BufferGeometry(); lg.setAttribute('position', new T.Float32BufferAttribute(lp, 3)); lg.setAttribute('color', new T.Float32BufferAttribute(lc, 3)); lg.setIndex(li);
+      const lm = new T.Mesh(lg, new T.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide })); lm.userData.noShadow = true; lm.frustumCulled = false; scene.add(lm);
+      atmHooks.push(A => { const k = (1 - A.night) * (1 - A.cloud * 0.65) * (1 - A.rain * 0.5); pm.forEach(q => { q.opacity = 0.6 * k; }); lm.material.opacity = k; lm.visible = k > 0.02; });
+    }
     const sh = new T.Shape(); sh.moveTo(-26, 24); sh.lineTo(26, 24); sh.lineTo(34, 6); sh.lineTo(-18, 6); sh.closePath();
     const m = new T.Mesh(new T.ShapeGeometry(sh), B(0xfff0b8, { transparent: true, opacity: 0.2, depthWrite: false })); beamMat = m.material;
     m.rotation.x = -Math.PI / 2; m.position.y = 0.04; scene.add(m);
@@ -1341,7 +1417,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     starsMesh.material.opacity = sk; starsMesh.visible = sk > 0.02;
     moonSprite.material.opacity = clamp((nk - 0.5) * 2, 0, 1) * (1 - ck * 0.75); moonSprite.visible = moonSprite.material.opacity > 0.02;
     winMats.forEach(m => m.color.copy(WIN_DAY).lerp(WIN_NIGHT, nk));
-    if (beamMat) { beamMat.color.copy(BEAM_DAY).lerp(BEAM_NIGHT, nk); beamMat.opacity = 0.2 * (1 - nk) * (1 - ck * 0.6) + 0.07 * nk; }
+    if (beamMat) { beamMat.color.copy(BEAM_DAY).lerp(BEAM_NIGHT, nk); beamMat.opacity = 0.09 * (1 - nk) * (1 - ck * 0.6) + 0.05 * nk; }
     for (let i = 0; i < atmHooks.length; i++) atmHooks[i](ATM, fog);
     /* rain and snow */
     const showR = ATM.rain * outK > 0.03, showS = ATM.snow * outK > 0.03;
@@ -1435,36 +1511,62 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const show = p.state === 2 && d < 36 * kf; p.g.visible = show; if (p.standIn) p.standIn.visible = !show;
   }));
   (function () {
-    const rug = new T.Mesh(new T.CircleGeometry(6.2, 40), L(0xd8cfbf)); rug.rotation.x = -Math.PI / 2; rug.position.y = 0.02; scene.add(rug);
-    const rug2 = new T.Mesh(new T.RingGeometry(5.0, 5.4, 40), L(0xb9ad98)); rug2.rotation.x = -Math.PI / 2; rug2.position.y = 0.03; scene.add(rug2);
-    for (let i = 0; i < 130; i++) {
+    /* the floor of the central hall: a marble medallion with a compass star, and a red runner from door to door; one calm focal point instead of scattered bits */
+    const marbleP = L(0xf1ede4), brassP = L(0xd9b35a);
+    const inlay = (geo, col, y, k) => { const m = L(col); m.polygonOffset = true; m.polygonOffsetFactor = -k; m.polygonOffsetUnits = -k; const o = new T.Mesh(geo, m); o.rotation.x = -Math.PI / 2; o.position.y = y; o.userData.noShadow = true; scene.add(o); return o; };
+    inlay(new T.CircleGeometry(10.2, 64), 0xefe7d6, 0.02, 1);
+    inlay(new T.RingGeometry(9.5, 10.2, 64), 0x2f5d4a, 0.03, 2);
+    inlay(new T.RingGeometry(9.2, 9.5, 64), 0xd9b35a, 0.04, 3);
+    inlay(new T.CircleGeometry(7.0, 64), 0x27386a, 0.03, 2);
+    inlay(new T.RingGeometry(6.5, 6.8, 64), 0xd9b35a, 0.04, 3);
+    {
+      const st = new T.Shape();
+      for (let i = 0; i < 32; i++) { const a = i / 32 * Math.PI * 2, r = i % 4 === 0 ? 6.0 : i % 4 === 2 ? 4.2 : 2.4; if (i) st.lineTo(Math.cos(a) * r, Math.sin(a) * r); else st.moveTo(r, 0); }
+      st.closePath(); inlay(new T.ShapeGeometry(st), 0xefe7d6, 0.045, 4);
+      inlay(new T.RingGeometry(3.7, 3.95, 48), 0xd9b35a, 0.05, 5);
+    }
+    [-1, 1].forEach(sd => {
+      const zc = sd * 16.9;
+      const r1 = new T.Mesh(new T.PlaneGeometry(3.4, 13.4), L(0x9a2b2b)); r1.rotation.x = -Math.PI / 2; r1.position.set(0, 0.025, zc); r1.userData.noShadow = true; r1.material.polygonOffset = true; r1.material.polygonOffsetFactor = -2; r1.material.polygonOffsetUnits = -2; scene.add(r1);
+      [-1.45, 1.45].forEach(dx => { const e = new T.Mesh(new T.PlaneGeometry(0.16, 13.4), L(0xd9b35a)); e.rotation.x = -Math.PI / 2; e.position.set(dx, 0.03, zc); e.userData.noShadow = true; e.material.polygonOffset = true; e.material.polygonOffsetFactor = -3; e.material.polygonOffsetUnits = -3; scene.add(e); });
+    });
+    for (let i = 0; i < 52; i++) {
       const x = (rnd() * 2 - 1) * (RM.hx - 2), z = (rnd() * 2 - 1) * (RM.hz - 2);
-      if (Math.hypot(x, z) < 5) continue;
+      if (Math.hypot(x, z) < 11 || Math.abs(x) < 2.8) continue;
       const s = new T.Mesh(new T.CircleGeometry(0.12 + rnd() * 0.4, 9), B(PAL[(rnd() * PAL.length) | 0]));
       s.rotation.x = -Math.PI / 2; s.position.set(x, 0.035, z); scene.add(s);
     }
-    /* centre: four plinths around the models */
-    plinth(0, 0, 2.3, 2.0);
-    put(scene, makeTwist(1.9), 0, 2.0, 0);
-    plinth(-3.5, 1.5, 1.0, 1.1);
-    const b1 = put(scene, makeBust(1.1), -3.5, 1.1, 1.5); b1.rotation.y = 0.8;
-    plinth(3.5, -1.3, 1.0, 1.1);
-    const r1 = put(scene, makeRing(1), 3.5, 1.1, -1.3); r1.rotation.y = 0.5;
-    plinth(0.7, 3.8, 0.95, 0.9);
-    put(scene, new T.Mesh(new T.SphereGeometry(0.8, 14, 10), plaster), 0.2, 1.7, 3.8);
-    const cube = put(scene, new T.Mesh(bx(1.0, 1.0, 1.0), plaster), 1.4, 1.4, 3.6); cube.rotation.y = 0.5;
-    put(scene, new T.Mesh(new T.ConeGeometry(0.36, 0.8, 10), L(0xd9342b)), 1.4, 2.3, 3.6);
+    /* centre: one strong focal point, a statue on a stepped marble podium in a pool of light, with four matching stands around it */
+    {
+      const glow0 = glbGlow; glbGlow = true;
+      [[3.7, 0.2], [3.2, 0.4], [2.7, 0.6]].forEach(q => put(scene, new T.Mesh(cyl(q[0], q[0] + 0.12, 0.2, 40), marbleP), 0, q[1] - 0.1, 0));
+      put(scene, new T.Mesh(bx(2.3, 1.7, 2.3), marbleP), 0, 1.45, 0); put(scene, new T.Mesh(bx(2.6, 0.16, 2.6), brassP), 0, 2.38, 0);
+      const heart = put(scene, makeTwist(1.9), 0, 2.46, 0); glbProp('statue_1.glb', 0, 2.46, 0, 5.4, Math.PI, heart);
+      colliders.push({ x: 0, z: 0, r: 3.5 });
+      const pool = new T.Mesh(new T.CircleGeometry(7.5, 40), new T.MeshBasicMaterial({ map: dotTex, color: 0xffe2a0, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }));
+      pool.rotation.x = -Math.PI / 2; pool.position.y = 0.06; pool.userData.noShadow = true; scene.add(pool);
+      const stand4 = (x, z, kind) => {
+        put(scene, new T.Mesh(bx(1.7, 0.3, 1.7), marbleP), x, 0.15, z); put(scene, new T.Mesh(bx(1.2, 1.1, 1.2), marbleP), x, 0.85, z); put(scene, new T.Mesh(bx(1.7, 0.18, 1.7), brassP), x, 1.5, z);
+        const ry = Math.atan2(-x, -z); colliders.push({ x: x, z: z, r: 1.2 });
+        if (kind === 0) { const sb = put(scene, makeBust(1.1), x, 1.59, z); sb.rotation.y = ry; glbProp('bust_1.glb', x, 1.59, z, 2.1, ry, sb); }
+        else if (kind === 1) { const sb = put(scene, makeBust(1.1), x, 1.59, z); sb.rotation.y = ry; glbProp('bust_2.glb', x, 1.59, z, 2.1, ry, sb); }
+        else if (kind === 2) { const sr = put(scene, makeRing(1), x, 1.59, z); sr.rotation.y = ry; glbProp('vase_1.glb', x, 1.59, z, 2.4, ry, sr); }
+        else { const sl = put(scene, new T.Mesh(new T.SphereGeometry(0.8, 14, 10), plaster), x, 2.3, z); glbProp('lion_head.glb', x, 1.59, z, 2.0, ry, sl); }
+      };
+      stand4(-6.4, -6.4, 0); stand4(6.4, -6.4, 1); stand4(-6.4, 6.4, 2); stand4(6.4, 6.4, 3);
+      glbGlow = glow0;
+    }
     /* entrance: two tall plinths with big busts, facing into the room */
     [-1, 1].forEach(sd => {
       const x = sd * 8.2, z = RM.hz - 3;
-      put(scene, new T.Mesh(bx(2.0, 3.6, 2.0), woodD), x, 1.8, z);
+      put(scene, new T.Mesh(bx(2.3, 0.4, 2.3), marbleP), x, 0.2, z); put(scene, new T.Mesh(bx(1.7, 2.9, 1.7), marbleP), x, 1.85, z); put(scene, new T.Mesh(bx(2.3, 0.3, 2.3), brassP), x, 3.45, z);
       const bb = put(scene, makeBust(2.5), x, 3.6, z); bb.rotation.y = Math.PI - sd * 0.4;
       colliders.push({ x: x, z: z, r: 1.7 });
     });
     /* four corner sculptures */
     [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach((c, i) => {
       const x = c[0] * (RM.hx - 4), z = c[1] * (RM.hz - 4);
-      put(scene, new T.Mesh(bx(2.2, 0.9, 2.2), woodD), x, 0.45, z);
+      put(scene, new T.Mesh(bx(2.4, 0.3, 2.4), marbleP), x, 0.15, z); put(scene, new T.Mesh(bx(1.9, 0.5, 1.9), marbleP), x, 0.55, z); put(scene, new T.Mesh(bx(2.4, 0.1, 2.4), brassP), x, 0.85, z);
       const s = put(scene, i % 2 ? makeRing(2.3) : makeTwist(1.7), x, 0.9, z); s.rotation.y = i;
       colliders.push({ x: x, z: z, r: 1.7 });
     });
@@ -4666,7 +4768,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     });
   }
   /* ---------- hall of fame: the most-reacted works, one tap to walk to them ---------- */
-  const fame = { tab: 'work', seq: 0, cache: {} };
+  const fame = { tab: 'work', seq: 0, cache: {}, thumbs: {} };
   function standFor(sl) {                               /* a spot in front of a frame, facing it */
     const fx = Math.sin(sl.ry), fz = Math.cos(sl.ry);
     for (const d of [sl.D + 2.4, sl.D + 1.4, 3.4, 2.4]) { const x = sl.x + fx * d, z = sl.z + fz * d; if (walkable(x, z)) return { x: x, z: z, h: sl.ry + Math.PI }; }
@@ -4677,18 +4779,19 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (tab === 'art') return slots.filter(q => q.reserved && q.cat).map((q, i) => ({ key: 'c:' + q.cat.id, cat: q.cat, title: q.cat.title, sub: (q.cat.artist || '') + (ROOM_NAME[q.room] ? ' · ' + ROOM_NAME[q.room] : ''), at: -i, pl: Object.assign({ name: q.cat.title, pitch: 0.3 }, standFor(q)) }));
     return extraSlots.filter(q => q.cat && String(q.id).indexOf('sculpt:') === 0).map((q, i) => ({ key: 'c:' + q.cat.id, cat: q.cat, sculpt: true, title: q.cat.title, sub: '조각 전시관', at: -i, pl: { name: q.cat.title, x: q.sx, z: q.sz - q.w / 2 - 3.6, h: 0, pitch: 0.35 } }));
   }
-  function fameThumb(it) {                              /* a small picture for each row: the drawing itself, the masterpiece's photo, or a plain tile while there is none */
-    const cv = document.createElement('canvas'); cv.className = 'th'; cv.width = cv.height = 128; const g = cv.getContext('2d');
-    const tile = () => { g.fillStyle = it.sculpt ? '#e4e0d6' : '#f3ecdb'; g.fillRect(0, 0, 128, 128); g.fillStyle = '#8f8368'; g.font = '56px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(it.sculpt ? '🗿' : '🖼', 64, 68); };
+  function fameThumb(it) {                              /* the picture itself: a friend's drawing (its lines are fetched on demand), the masterpiece's photo, or a plain tile while there is none */
+    const hit = fame.thumbs[it.key]; if (hit) return hit;
+    const cv = document.createElement('canvas'); cv.className = 'th'; cv.width = 320; cv.height = it.first ? 200 : 240; const g = cv.getContext('2d'); fame.thumbs[it.key] = cv;
+    const tile = () => { g.fillStyle = it.sculpt ? '#e4e0d6' : '#f3ecdb'; g.fillRect(0, 0, cv.width, cv.height); g.fillStyle = '#8f8368'; g.font = '64px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(it.sculpt ? '🗿' : '🖼', cv.width / 2, cv.height / 2 + 4); };
     tile();
     try {
-      if (it.work && it.work.strokes) paintWork(cv, it.work, '#f6f1e6');
-      else if (it.cat && it.cat.img) catImage(it.cat, im => { try { const k = Math.max(128 / im.naturalWidth, 128 / im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k; g.drawImage(im, (128 - w) / 2, (128 - h) / 2, w, h); } catch (e) {} });
+      if (it.work) ensureStrokes(it.work).then(st => { paintWork(cv, Object.assign({}, it.work, { strokes: st }), '#e9e2d2'); }).catch(() => {});
+      else if (it.cat && it.cat.img) catImage(it.cat, im => { try { g.fillStyle = '#e9e2d2'; g.fillRect(0, 0, cv.width, cv.height); const k = Math.min((cv.width - 16) / im.naturalWidth, (cv.height - 16) / im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k; g.drawImage(im, (cv.width - w) / 2, (cv.height - h) / 2, w, h); } catch (e) {} });
     } catch (e) { tile(); }
     return cv;
   }
   function renderFame() {
-    const list = $('#fameList'), tabs = $('#fameTabs'); tabs.textContent = ''; list.textContent = '';
+    const list = $('#fameList'), tabs = $('#fameTabs'); tabs.textContent = ''; list.textContent = ''; list.className = 'grid';
     [['work', '친구들 작품'], ['art', '명화'], ['sc', '조각']].forEach(t => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (fame.tab === t[0] ? ' on' : ''); b.textContent = t[1];
       b.addEventListener('click', () => { fame.tab = t[0]; renderFame(); }); tabs.appendChild(b);
@@ -4700,11 +4803,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (my !== fame.seq) return; list.textContent = '';
       const rows = items.slice().sort((a, b) => total(b.key) - total(a.key) || b.at - a.at).slice(0, 20), top = total(rows[0].key) > 0;
       rows.forEach((it, i) => {
-        const row = document.createElement('div'); row.className = 'roomRow';
-        const rk = document.createElement('div'); rk.className = 'rk'; rk.textContent = top && total(it.key) > 0 ? (['🥇', '🥈', '🥉'][i] || String(i + 1)) : '·';
+        const row = document.createElement('div'); row.className = 'roomRow card' + (i === 0 && top ? ' first' : ''); it.first = i === 0 && top;
+        const rk = document.createElement('div'); rk.className = 'rk'; rk.textContent = top && total(it.key) > 0 ? (['🥇', '🥈', '🥉'][i] || String(i + 1)) : '·'; if (rk.textContent === '·') rk.hidden = true;
         const left = document.createElement('div'); left.className = 'l';
         const nm = document.createElement('div'); nm.className = 'n'; nm.textContent = it.title; left.appendChild(nm);
-        const ct = document.createElement('div'); ct.className = 'c'; ct.textContent = it.sub + (total(it.key) ? ' · 반응 ' + total(it.key) : ''); left.appendChild(ct);
+        const ct = document.createElement('div'); ct.className = 'c'; ct.textContent = it.sub; left.appendChild(ct);
+        if (total(it.key)) { const rc = document.createElement('span'); rc.className = 'rc'; rc.textContent = '♥ 반응 ' + total(it.key); left.appendChild(rc); }
         const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn primary'; bt.textContent = '보러 가기';
         bt.addEventListener('click', () => { $('#fame').hidden = true; goPlace(it.pl); });
         row.appendChild(rk); row.appendChild(fameThumb(it)); row.appendChild(left); row.appendChild(bt); list.appendChild(row);
