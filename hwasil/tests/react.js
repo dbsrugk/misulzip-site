@@ -22,8 +22,8 @@ const { start, vis, until, check, done } = require('./lib');
   /* the sculptures in the pavilion open the same docent view and take reactions */
   check(await a.evaluate(() => window.__hw.sculpts()) === 15, 'fifteen sculpture pieces can be tapped');
   await a.evaluate(() => window.__hw.tapSculpt(14)); await a.waitForTimeout(500);
-  check(await vis(a, '#art') && /백마/.test(await a.textContent('#artTitle')) && (await a.textContent('#artText')).length > 30, 'tapping the centre horse opens its description');
-  check(/Rico Cilliers/.test(await a.textContent('#artMeta')), 'the artist is shown');
+  check(await vis(a, '#art') && /피에타/.test(await a.textContent('#artTitle')) && (await a.textContent('#artText')).length > 30, 'tapping the centre Pieta opens its description');
+  check(/미켈란젤로/.test(await a.textContent('#artMeta')), 'the artist is shown');
   const f2 = await b.evaluate(() => window.__hw.fx()); await a.locator('#rxBarA .rxBtn').nth(1).click();
   check(await until(b, f => window.__hw.fx() > f, f2, 20), 'a friend sees the reaction left on a sculpture');
   await a.click('#artClose').catch(() => {}); await a.waitForTimeout(300);
