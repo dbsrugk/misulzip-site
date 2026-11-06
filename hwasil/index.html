@@ -1378,10 +1378,45 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const m = new T.Points(g, new T.PointsMaterial({ size: 0.42, map: dotTex, color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, fog: false }));
     m.frustumCulled = false; m.visible = false; m.userData.noShadow = true; scene.add(m); return { n: n, a: a, rx: rx, ry: ry, rz: rz, m: m, g: g };
   })();
+  /* the big instanced fields (grass, flowers, trees...) are split into square patches: a three.js instanced mesh is drawn whole or not at all, so one field of grass cost the whole world's triangles every frame, even indoors */
+  const chunkList = [], chunkFr = new T.Frustum(), chunkPM = new T.Matrix4(), chunkInv = new T.Matrix4(), chunkSph = new T.Sphere();
+  function chunkInstanced() {
+    const CELL = 48, list = [], m4 = new T.Matrix4(), col = new T.Color();
+    scene.traverse(o => { if (o.isInstancedMesh && o.count >= 120 && !o.userData.noChunk) list.push(o); });
+    list.forEach(o => {
+      const bins = new Map(), g = o.geometry; if (!g.boundingSphere) g.computeBoundingSphere();
+      for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); const e = m4.elements, k = Math.floor(e[12] / CELL) + ',' + Math.floor(e[14] / CELL); let b = bins.get(k); if (!b) bins.set(k, b = []); b.push(i); }
+      if (bins.size < 2) return;
+      const gc = g.boundingSphere.center, gr = g.boundingSphere.radius, small = gr < 2;
+      bins.forEach(ids => {
+        const c = new T.InstancedMesh(g, o.material, ids.length); c.castShadow = o.castShadow; c.receiveShadow = o.receiveShadow; c.frustumCulled = false; c.renderOrder = o.renderOrder; c.userData = Object.assign({}, o.userData);
+        let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9, rr = 0;
+        ids.forEach((id, j) => {
+          o.getMatrixAt(id, m4); c.setMatrixAt(j, m4); if (o.instanceColor) { o.getColorAt(id, col); c.setColorAt(j, col); }
+          const e = m4.elements, sc = Math.max(Math.hypot(e[0], e[1], e[2]), Math.hypot(e[4], e[5], e[6]), Math.hypot(e[8], e[9], e[10]));
+          x0 = Math.min(x0, e[12]); x1 = Math.max(x1, e[12]); y0 = Math.min(y0, e[13]); y1 = Math.max(y1, e[13]); z0 = Math.min(z0, e[14]); z1 = Math.max(z1, e[14]); rr = Math.max(rr, (gr + Math.hypot(gc.x, gc.y, gc.z)) * sc);
+        });
+        c.instanceMatrix.needsUpdate = true; if (c.instanceColor) c.instanceColor.needsUpdate = true;
+        c.userData.ck = { x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: (z0 + z1) / 2, r: Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + rr, cut: small ? 105 : 190 };
+        scene.add(c); chunkList.push(c);
+      });
+      scene.remove(o);
+    });
+  }
+  function chunkCull() {
+    if (!chunkList.length) return;
+    camera.updateMatrixWorld(); chunkPM.multiplyMatrices(camera.projectionMatrix, chunkInv.copy(camera.matrixWorld).invert()); chunkFr.setFromProjectionMatrix(chunkPM);
+    const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z;
+    for (let i = 0; i < chunkList.length; i++) {
+      const c = chunkList[i], k = c.userData.ck, dx = k.x - cx, dy = k.y - cy, dz = k.z - cz, d = Math.sqrt(dx * dx + dy * dy + dz * dz) - k.r;
+      chunkSph.center.set(k.x, k.y, k.z); chunkSph.radius = k.r;
+      c.visible = d < k.cut && chunkFr.intersectsSphere(chunkSph);
+    }
+  }
   /* small and middling decorations far out in the fog are not drawn: the world is wide and the phone is small */
   const farList = []; let farBuilt = 0, farNext = 0, farNear = 0, farNearAll = 0;
   function farCull(t) {
-    if (!farBuilt) { if (t < 5) return; farBuilt = 1;
+    if (!farBuilt) { if (t < 5) return; farBuilt = 1; if (!window.__noChunk) chunkInstanced();
       scene.traverse(o => {
         if (!o.isMesh || o.isSkinnedMesh || o.isInstancedMesh || !o.visible || !o.geometry || Object.keys(o.userData).length) return;
         if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
@@ -1657,6 +1692,49 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     for (let k = 0; k <= A.w; k += 2) colliders.push({ x: x0 + k, z: z1, r: 0.8 });
     for (let k = 1; k <= A.d; k += 2) { colliders.push({ x: x0, z: z0 + k, r: 0.8 }); colliders.push({ x: x1, z: z0 + k, r: 0.8 }); }
   })();
+  /* candlelight in the central hall: a sconce on each pilaster, a ring of candlesticks round the podium, dust turning in the window shafts */
+  (function () {
+    const gold = L(0xd9b35a), wax = L(0xfff6e0), flames = [];
+    const flameMat = B(0xffd98a), glowM = new T.SpriteMaterial({ map: dotTex, color: 0xffc86a, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 0.7, fog: false });
+    function candle(g, x, y, z, h, glowSize) {
+      put(g, new T.Mesh(cyl(0.055, 0.06, h, 8), wax), x, y + h / 2, z);
+      const fl = put(g, new T.Mesh(new T.ConeGeometry(0.045, 0.16, 6), flameMat), x, y + h + 0.1, z); fl.userData.noShadow = true;
+      const gl = new T.Sprite(glowM); gl.scale.set(glowSize, glowSize, 1); gl.position.set(x, y + h + 0.12, z); g.add(gl);
+      flames.push({ fl: fl, gl: gl, ph: Math.random() * 6.28, gs: glowSize });
+    }
+    function sconce(x, z, ry) {
+      const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g); g.userData.noShadow = true;
+      put(g, new T.Mesh(bx(0.16, 0.5, 0.06), gold), 0, 6.0, 0.03);
+      put(g, new T.Mesh(bx(0.08, 0.08, 0.5), gold), 0, 5.85, 0.25);
+      put(g, new T.Mesh(cyl(0.14, 0.09, 0.1, 10), gold), 0, 5.85, 0.5);
+      candle(g, 0, 5.9, 0.5, 0.34, 2.0);
+    }
+    [-22.5, -13.5, 13.5, 22.5].forEach(x => sconce(x, -RM.hz + 1.05, 0));
+    [-20, -13, 13, 20].forEach(z => sconce(RM.hx - 1.05, z, -Math.PI / 2));
+    [-21, 21].forEach(z => sconce(-RM.hx + 1.05, z, Math.PI / 2));
+    for (let k = 0; k < 8; k++) {                                            /* candlesticks standing round the podium */
+      const a = k / 8 * Math.PI * 2 + Math.PI / 8, x = Math.cos(a) * 4.7, z = Math.sin(a) * 4.7, g = new T.Group(); g.position.set(x, 0, z); scene.add(g); g.userData.noShadow = true;
+      put(g, new T.Mesh(cyl(0.28, 0.34, 0.12, 12), gold), 0, 0.06, 0); put(g, new T.Mesh(cyl(0.05, 0.09, 1.7, 8), gold), 0, 0.97, 0);
+      put(g, new T.Mesh(new T.SphereGeometry(0.12, 8, 6), gold), 0, 0.7, 0); put(g, new T.Mesh(cyl(0.18, 0.08, 0.1, 10), gold), 0, 1.85, 0);
+      candle(g, 0, 1.9, 0, 0.5, 2.6);
+    }
+    anim.push((dt, t) => { for (let i = 0; i < flames.length; i++) { const q = flames[i], k = 0.88 + Math.sin(t * 9 + q.ph) * 0.07 + Math.sin(t * 23 + q.ph * 2) * 0.05; q.fl.scale.set(k, 0.9 + (k - 0.88) * 3, k); q.gl.scale.set(q.gs * k, q.gs * k, 1); } });
+    atmHooks.push(A => { glowM.opacity = 0.16 + 0.6 * A.night; });
+    {                                                                        /* dust in the shafts of the four north windows */
+      const N = HI ? 220 : 90, pa = new Float32Array(N * 3), base = [], SK = 8, SN = 1.62;
+      for (let i = 0; i < N; i++) {
+        const wx = [-18, -9, 9, 18][i & 3], u = (Math.random() * 2 - 1) * 3.5, sp = Math.random(), top = 20.7 * (1 - sp) + 4.2 * sp * 0;
+        const y = 1 + Math.random() * 18, sd = (20.7 - y) / 20.7, x = wx + u + SN + (SK - SN) * sd, z = -RM.hz + 0.6 + (18 - 0.6) * sd * 0.98;
+        base.push([x, y, z, Math.random() * 6.28]); pa[i * 3] = x; pa[i * 3 + 1] = y; pa[i * 3 + 2] = z;
+      }
+      const pg = new T.BufferGeometry(); pg.setAttribute('position', new T.BufferAttribute(pa, 3));
+      const pm = new T.PointsMaterial({ size: 0.2, map: dotTex, color: 0xfff0c0, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending, fog: false });
+      const pts = new T.Points(pg, pm); pts.frustumCulled = false; pts.userData.noShadow = true; scene.add(pts);
+      anim.push((dt, t) => { if (!pts.visible) return; for (let i = 0; i < N; i++) { const b = base[i]; pa[i * 3] = b[0] + Math.sin(t * 0.3 + b[3]) * 0.5; pa[i * 3 + 1] = b[1] + Math.sin(t * 0.22 + b[3] * 2) * 0.6; } pg.attributes.position.needsUpdate = true; });
+      atmHooks.push(A => { const k = (1 - A.night) * (1 - A.cloud * 0.65) * (1 - A.rain * 0.5); pm.opacity = 0.55 * k; pts.visible = k > 0.03; });
+    }
+  })();
+
   /* the sculpture pavilion (조각 전시관): a marble colonnade on the field beside the main path. The real 3D statues from the lobby stand here around a hand-built Pieta. */
   const SCULPT = { x: 102, z: 14.5, w: 76, d: 25 };
   function makePieta() {
@@ -4779,6 +4857,30 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (tab === 'art') return slots.filter(q => q.reserved && q.cat).map((q, i) => ({ key: 'c:' + q.cat.id, cat: q.cat, title: q.cat.title, sub: (q.cat.artist || '') + (ROOM_NAME[q.room] ? ' · ' + ROOM_NAME[q.room] : ''), at: -i, pl: Object.assign({ name: q.cat.title, pitch: 0.3 }, standFor(q)) }));
     return extraSlots.filter(q => q.cat && String(q.id).indexOf('sculpt:') === 0).map((q, i) => ({ key: 'c:' + q.cat.id, cat: q.cat, sculpt: true, title: q.cat.title, sub: '조각 전시관', at: -i, pl: { name: q.cat.title, x: q.sx, z: q.sz - q.w / 2 - 3.6, h: 0, pitch: 0.35 } }));
   }
+  /* a sculpture's card shows the real 3D model, photographed once into a small picture when its card scrolls into view */
+  const SCULPT_FILE = { lion: 'lion_head.glb', lion2: 'lion_head.glb', bust_a: 'bust_1.glb', bull: 'bull_head.glb', gothic: 'statue_1.glb', horsehead: 'horse_head/horse_head.gltf', bird: 'bird.glb', moore: 'reclining.glb', ray: 'bronze_ray_statue/bronze_ray_statue.gltf', whale: 'bronze_whale_statue/bronze_whale_statue.gltf', cat: 'concrete_cat_statue/concrete_cat_statue.gltf', vase: 'vase_1.glb', bust_b: 'bust_2.glb', knot: 'knot.glb', horse: 'horse_statue_01.glb' };
+  let shotRT = null, shotQ = Promise.resolve();
+  function sculptShot(file, cv) {
+    if (!gltfLoader) return;
+    const pr = (glbCache[file] = glbCache[file] || new Promise((res, rej) => gltfLoader.load('models/' + file, res, undefined, rej)));
+    shotQ = shotQ.then(() => pr).then(gltf => {
+      const W = cv.width, H = cv.height; shotRT = shotRT || new T.WebGLRenderTarget(W, H);
+      const sc = new T.Scene(), o = gltf.scene.clone(true); sc.add(new T.HemisphereLight(0xffffff, 0x9a8b70, 0.62)); const dl = new T.DirectionalLight(0xfff4e0, 0.62); dl.position.set(3, 5, 4); sc.add(dl);
+      o.traverse(m => { if (m.isMesh && m.material) { m.material = m.material.clone(); if ('metalness' in m.material) { m.material.metalness = Math.min(m.material.metalness, 0.15); m.material.roughness = Math.max(m.material.roughness, 0.65); } if (m.material.emissive && m.material.color) m.material.emissive.copy(m.material.color).multiplyScalar(0.4); } });
+      const box = new T.Box3().setFromObject(o), size = box.getSize(new T.Vector3()), mid = box.getCenter(new T.Vector3()); o.position.sub(mid); sc.add(o);
+      const r = size.length() / 2, dist = r / Math.sin(15 * Math.PI / 180) * 0.92, cam = new T.PerspectiveCamera(30, W / H, dist * 0.05, dist * 4);
+      cam.position.set(0.5, 0.22, 0.84).setLength(dist); cam.lookAt(0, 0, 0);
+      const oc = new T.Color(), oa = renderer.getClearAlpha(); renderer.getClearColor(oc);
+      renderer.setRenderTarget(shotRT); renderer.setClearColor(0xe9e2d2, 1); renderer.clear(); renderer.render(sc, cam); renderer.setRenderTarget(null); renderer.setClearColor(oc, oa);
+      const px = new Uint8Array(W * H * 4); renderer.readRenderTargetPixels(shotRT, 0, 0, W, H, px);
+      const id = new ImageData(W, H); for (let y = 0; y < H; y++) id.data.set(px.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);
+      cv.getContext('2d').putImageData(id, 0, 0);
+    }).catch(() => {});
+  }
+  function whenSeen(el, fn) {
+    if (!('IntersectionObserver' in window)) { fn(); return; }
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); fn(); } }, { root: $('#fameList'), rootMargin: '240px' }); io.observe(el);
+  }
   function fameThumb(it) {                              /* the picture itself: a friend's drawing (its lines are fetched on demand), the masterpiece's photo, or a plain tile while there is none */
     const hit = fame.thumbs[it.key]; if (hit) return hit;
     const cv = document.createElement('canvas'); cv.className = 'th'; cv.width = 320; cv.height = it.first ? 200 : 240; const g = cv.getContext('2d'); fame.thumbs[it.key] = cv;
@@ -4786,6 +4888,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     tile();
     try {
       if (it.work) ensureStrokes(it.work).then(st => { paintWork(cv, Object.assign({}, it.work, { strokes: st }), '#e9e2d2'); }).catch(() => {});
+      else if (it.sculpt && it.cat && SCULPT_FILE[it.cat.id]) whenSeen(cv, () => sculptShot(SCULPT_FILE[it.cat.id], cv));
       else if (it.cat && it.cat.img) catImage(it.cat, im => { try { g.fillStyle = '#e9e2d2'; g.fillRect(0, 0, cv.width, cv.height); const k = Math.min((cv.width - 16) / im.naturalWidth, (cv.height - 16) / im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k; g.drawImage(im, (cv.width - w) / 2, (cv.height - h) / 2, w, h); } catch (e) {} });
     } catch (e) { tile(); }
     return cv;
@@ -4987,6 +5090,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (split) { renderer.setScissorTest(true); renderer.setViewport(0, H - sh, W, sh); renderer.setScissor(0, H - sh, W, sh); }
       else { renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H); }
       if (Math.abs(camera.aspect - asp) > 1e-4 || camera.fov !== fov) { camera.aspect = asp; camera.fov = fov; camera.updateProjectionMatrix(); }
+      chunkCull();
       renderer.render(scene, camera);
     }
     requestAnimationFrame(frame);
