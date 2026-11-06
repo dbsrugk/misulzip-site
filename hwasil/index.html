@@ -276,6 +276,7 @@ body.padOpen #hud { visibility: hidden; }
 .roomRow[hidden], #placesList[hidden] { display: none !important; }
 .roomRow .rk { font: 400 28px/1 var(--font-display); min-width: 38px; text-align: center; }
 .roomRow .l { flex: 1; min-width: 0; }
+.roomRow .th { width: 64px; height: 64px; flex: none; border: 2px solid var(--ink); border-radius: 8px; background: #efe9dc; }
 #fameNote { margin: 0; font-size: 13px; color: #6f665a; }
 #placesTabs, #fameTabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
 #placesTabs .btn, #fameTabs .btn { padding: 6px 12px; font-size: 15px; }
@@ -769,7 +770,7 @@ body.padOpen #hud { visibility: hidden; }
   const gapZ = i => GGS - 32 * GGAPW[i] - GGAP * i - GGAP / 2;                  /* z of the middle of round hall i */
   const wingAt = z => { for (let k = 0; k < NW; k++) if (z <= wingZ(k) && z > wingZ(k) - 32) return k; return z <= GGZ + 0.01 ? NW - 1 : -1; };   /* -1 inside a round hall */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
-  const OUT = { x0: RM.hx + 1, x1: 146, z0: -56, z1: 56 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 58, z: -29, r: 19 }, GARD2 = { x: 112, z: -26, r: 19 };   /* GARD: the open-air exhibition garden */
+  const OUT = { x0: RM.hx + 1, x1: 146, z0: -68, z1: 150 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 58, z: -29, r: 19 }, GARD2 = { x: 112, z: -26, r: 19 };   /* GARD: the open-air exhibition garden */
   const colliders = [];
   function plankTexture() {
     const c = document.createElement('canvas'); c.width = c.height = 512;
@@ -794,15 +795,15 @@ body.padOpen #hud { visibility: hidden; }
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
   /* ground outside the building, seen when the far camera looks in over a wall */
   function grassTexture() {
-    const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'), r = mulberry32(31);
-    x.fillStyle = '#93bd6a'; x.fillRect(0, 0, 256, 256);
-    for (let i = 0; i < 280; i++) {
-      const px = r() * 256, py = r() * 256, rad = 8 + r() * 26; x.fillStyle = r() < 0.5 ? 'rgba(170,208,112,0.22)' : 'rgba(110,158,84,0.2)';
-      for (let dx = -256; dx <= 256; dx += 256) for (let dy = -256; dy <= 256; dy += 256) { x.beginPath(); x.arc(px + dx, py + dy, rad, 0, 6.2832); x.fill(); }
-    }
-    x.strokeStyle = 'rgba(78,128,58,0.35)'; x.lineWidth = 1.4;
-    for (let i = 0; i < 520; i++) { const px = r() * 256, py = r() * 256; x.beginPath(); x.moveTo(px, py); x.lineTo(px + (r() - 0.5) * 4, py - 3 - r() * 4); x.stroke(); }
-    const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(650 / 16, 1000 / 16); t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    const S = 512, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d'), r = mulberry32(31);
+    x.fillStyle = '#8fbc68'; x.fillRect(0, 0, S, S);
+    const wrap = (px, py, rad, col) => { x.fillStyle = col; for (let dx = -S; dx <= S; dx += S) for (let dy = -S; dy <= S; dy += S) { x.beginPath(); x.arc(px + dx, py + dy, rad, 0, 6.2832); x.fill(); } };
+    for (let i = 0; i < 40; i++) wrap(r() * S, r() * S, 50 + r() * 80, r() < 0.5 ? 'rgba(190,214,110,0.16)' : 'rgba(86,142,86,0.16)');      /* broad sunny and shady lawns */
+    for (let i = 0; i < 560; i++) wrap(r() * S, r() * S, 8 + r() * 26, r() < 0.5 ? 'rgba(170,208,112,0.2)' : 'rgba(104,154,82,0.2)');
+    x.strokeStyle = 'rgba(70,122,56,0.38)'; x.lineWidth = 1.5;
+    for (let i = 0; i < 2400; i++) { const px = r() * S, py = r() * S; x.beginPath(); x.moveTo(px, py); x.lineTo(px + (r() - 0.5) * 5, py - 3 - r() * 5); x.stroke(); }
+    for (let i = 0; i < 90; i++) { x.fillStyle = ['rgba(255,255,255,0.75)', 'rgba(255,214,90,0.7)', 'rgba(247,170,200,0.65)'][i % 3]; x.beginPath(); x.arc(r() * S, r() * S, 1.6 + r() * 1.2, 0, 6.2832); x.fill(); }   /* tiny clover flowers */
+    const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(650 / 32, 1000 / 32); t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
     return t;
   }
   const ground = new T.Mesh(new T.PlaneGeometry(650, 1000), new T.MeshLambertMaterial({ map: grassTexture() }));
@@ -2278,7 +2279,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { name: '둥근 홀 (뒤)', note: '복도 뒤쪽 두 번째 쉼터', x: 0, z: gapZ(1) + 8, h: Math.PI, pitch: 0.2 },
     { name: '중앙 로툰다', note: '분수와 기둥이 있는 둥근 홀', x: 0, z: -RM.hz - 6, h: Math.PI, pitch: 0.3 },
     { name: '화실', note: '이젤이 놓인 나무 오두막. 앉아서 그려요', x: 50, z: 3.5, h: 0, pitch: 0.4 },
-    { name: '조각 전시관', note: '거대한 조각들을 따라 걷는 15점 코스', x: SCULPT.x, z: 0.5, h: 0, pitch: 0.35 }
+    { name: '조각 전시관', note: '거대한 조각들을 따라 걷는 15점 코스', x: SCULPT.x, z: 0.5, h: 0, pitch: 0.35 },
+    { name: '남쪽 꽃들판', note: '끝없이 펼쳐진 들꽃 초원과 숲', x: 92, z: 62, h: 0, pitch: 0.2 },
+    { name: '숲속 쉼터', note: '커다란 나무 아래 돌 마당', x: 92, z: 98, h: 0, pitch: 0.25 }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
@@ -2318,6 +2321,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     }
     strip(RM.hx, 0, 138, 0, 3.4); strip(85, 0, 85, -46, 3); strip(LAKE.x, 0, LAKE.x, 21, 3); strip(MILL.x, 0, MILL.x, 25, 3);
     flat(new T.CircleGeometry(6.5, 32), pathM, 40, 0.031, 0);
+    strip(92, 1.5, 92, 112, 3.4);
+    flat(new T.CircleGeometry(9, 40), pathM, 92, 0.031, 112); flat(new T.RingGeometry(9, 9.5, 40), L(0xa89f90), 92, 0.035, 112);
     /* the great promenade in front of the sculpture pavilion: a broad paved plaza instead of a thin path */
     { const PZ = { x0: 58, x1: 140, z0: -8, z1: 1.5 };
       const pc = document.createElement('canvas'); pc.width = pc.height = 256; const pq = pc.getContext('2d');
@@ -2389,7 +2394,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     function free(x, z) {
       if (Math.abs(z) < 4.5 && x < 140) return false;
       if (x > 54 && x < 146 && z > -14 && z < 4.5) return false;             /* the broad promenade and a lawn margin either side */
-      if (Math.abs(x - 85) < 8 && z < 4 && z > -50) return false;            /* keep a wide clear lane along the branch paths so the view is never blocked */
+      if (Math.abs(x - 85) < 8 && z < 4 && z > -50) return false;
+      if (Math.abs(x - 92) < 8.5 && z > 0 && z < 112) return false;            /* the south road */
+      if (Math.hypot(x - 92, z - 112) < 14) return false;                    /* the rest ring under the big tree */            /* keep a wide clear lane along the branch paths so the view is never blocked */
       if (Math.abs(x - LAKE.x) < 9 && z < 26 && z > 0) return false;
       if (Math.abs(x - MILL.x) < 9 && z < 30 && z > 0) return false;
       if (Math.hypot(x - 40, z) < 9) return false;
@@ -2403,10 +2410,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       return x > OUT.x0 + 2 && x < 130 && z > OUT.z0 + 2 && z < OUT.z1 - 2;
     }
     const treePts = [];
-    for (let tries = 0; tries < 400 && treePts.length < 70; tries++) {
+    for (let tries = 0; tries < 3000 && treePts.length < 165; tries++) {
       const x = OUT.x0 + 2 + rnd() * (130 - OUT.x0 - 2), z = OUT.z0 + 2 + rnd() * (OUT.z1 - OUT.z0 - 4);
+      if (z > 52 && Math.sin(x * 0.09 + 1.3) * Math.cos(z * 0.07 - 0.8) < -0.1 && rnd() < 0.85) continue;      /* the south is groves with open meadows between them */
       if (free(x, z) && !treePts.some(q => Math.hypot(q.x - x, q.z - z) < 4.5)) treePts.push({ x: x, z: z, s: 0.85 + rnd() * 0.6 });
     }
+    treePts.push({ x: 92, z: 114, s: 1.55, round: true });                                  /* the old giant tree of the rest ring */
+    for (let x = OUT.x0 + 3; x < 130; x += 5) { treePts.push({ x: x, z: OUT.z1 - 2.5 - rnd() * 3, s: 1.1 + rnd() * 0.6 }); if (rnd() < 0.5) treePts.push({ x: x + 2, z: OUT.z0 + 2.5 + rnd() * 3, s: 1.1 + rnd() * 0.6 }); }   /* a wooded edge to the south and north */
     for (let a = 0; a < 6.28; a += 0.42) {              /* trees ringing the lake, leaving the north shore (the easels) open */
       if (Math.sin(a) < -0.5) continue;
       const rr2 = LAKE.r + 4 + rnd() * 3; treePts.push({ x: LAKE.x + Math.cos(a) * rr2, z: LAKE.z + Math.sin(a) * rr2, s: 0.9 + rnd() * 0.6, round: true });
@@ -2457,18 +2467,24 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       gc.setHex(pick < 0.45 ? 0x62b955 : pick < 0.7 ? 0x45a255 : pick < 0.82 ? 0x9bd653 : pick < 0.92 ? 0xf6aec8 : 0xefae44).offsetHSL((rnd() - 0.5) * 0.04, 0, (rnd() - 0.5) * 0.08); crown.setColorAt(i, gc);
     });
 
+    {
+      const AO = new T.InstancedMesh(new T.CircleGeometry(1, 16).rotateX(-Math.PI / 2), new T.MeshBasicMaterial({ color: 0x1d3a1f, transparent: true, opacity: 0.2, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), treePts.length);
+      AO.frustumCulled = false; AO.userData.noShadow = true; treePts.forEach((q, i) => { dm.rotation.set(0, 0, 0); dm.scale.setScalar(q.s * 2.7); dm.position.set(q.x, 0.06, q.z); dm.updateMatrix(); AO.setMatrixAt(i, dm.matrix); }); scene.add(AO);
+    }
     /* wind-blown grass, bushes and rocks */
     function offPaths(x, z) {
       if (Math.abs(z) < 2.6 && x < 139) return false;
       if (x > 56 && x < 141 && z > -8.5 && z < 2) return false;
       if (Math.abs(x - 85) < 2.6 && z < 1 && z > -47) return false;
+      if (Math.abs(x - 92) < 2.6 && z > -1 && z < 112) return false;
+      if (Math.hypot(x - 92, z - 112) < 9.6) return false;
       if (Math.abs(x - LAKE.x) < 2.6 && z > -1 && z < 22) return false;
       if (Math.abs(x - MILL.x) < 2.6 && z > -1 && z < 26) return false;
       if (Math.hypot(x - 40, z) < 7) return false;
       if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 1.5 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 1.5) return false;
       if (Math.abs(x - ATELIER.x) < ATELIER.w / 2 + 1 && Math.abs(z - ATELIER.z) < ATELIER.d / 2 + 1) return false;
       if (Math.hypot(x - GARD.x, z - GARD.z) < GARD.r) return false;
-      if (Math.hypot(x - GARD2.x, z - GARD2.z) < GARD2.r) return false;
+      if (Math.hypot(x - GARD2.x, z - GARD2.z) < GARD2.r + 6) return false;
       return Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 2.4;
     }
     function bladeClump() {                              /* four thin blades leaning outwards, merged into one geometry */
@@ -2482,7 +2498,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       parts.forEach(g => { pos.set(g.attributes.position.array, vo * 3); nor.set(g.attributes.normal.array, vo * 3); col.set(g.attributes.color.array, vo * 3); const ia = g.index.array; for (let i = 0; i < ia.length; i++) idx[io + i] = ia[i] + vo; vo += g.attributes.position.count; io += ia.length; });
       const m = new T.BufferGeometry(); m.setAttribute('position', new T.BufferAttribute(pos, 3)); m.setAttribute('normal', new T.BufferAttribute(nor, 3)); m.setAttribute('color', new T.BufferAttribute(col, 3)); m.setIndex(new T.BufferAttribute(idx, 1)); return m;
     }
-    const GN = HI ? 2600 : 700, tuftG = bladeClump();
+    const GN = HI ? 3800 : 1000, tuftG = bladeClump();
     const tufts = instMesh(tuftG, sway(L(0xffffff, { vertexColors: true }), 0.16, 0), GN); tufts.castShadow = false;
     for (let i = 0, n = 0; n < GN && i < GN * 6; i++) {
       const x = OUT.x0 + 0.5 + rnd() * (133 - OUT.x0), z = OUT.z0 + 0.5 + rnd() * (OUT.z1 - OUT.z0 - 1);
@@ -2492,18 +2508,18 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     }
     /* wild flowers in loose patches: thin stems with little faceted heads */
     {
-      const FN = HI ? 420 : 120, stems = instMesh(cyl(0.012, 0.016, 0.4, 3).translate(0, 0.2, 0), L(0x4f9a46), FN), heads = instMesh(new T.IcosahedronGeometry(0.1, 0).translate(0, 0.43, 0), L(0xffffff), FN);
+      const FN = HI ? 1000 : 250, stems = instMesh(cyl(0.012, 0.016, 0.4, 3).translate(0, 0.2, 0), L(0x4f9a46), FN), heads = instMesh(new T.IcosahedronGeometry(0.1, 0).translate(0, 0.43, 0), L(0xffffff), FN);
       stems.castShadow = heads.castShadow = false; const FC = [0xffffff, 0xf7b6cf, 0xffd95a, 0xc6a8f0, 0xff8f8f], centres = [];
-      for (let i = 0; i < 40 && centres.length < 28; i++) { const x = OUT.x0 + 3 + rnd() * (124 - OUT.x0), z = OUT.z0 + 3 + rnd() * (OUT.z1 - OUT.z0 - 6); if (offPaths(x, z) && free(x, z)) centres.push({ x: x, z: z, c: FC[Math.floor(rnd() * FC.length)] }); }
+      for (let i = 0; i < 260 && centres.length < 64; i++) { const x = OUT.x0 + 3 + rnd() * (124 - OUT.x0), z = OUT.z0 + 3 + rnd() * (OUT.z1 - OUT.z0 - 6); if (offPaths(x, z) && free(x, z)) centres.push({ x: x, z: z, c: FC[Math.floor(rnd() * FC.length)] }); }
       let n = 0;
-      for (let i = 0; i < centres.length && n < FN; i++) for (let k = 0; k < FN / 24 && n < FN; k++) {
+      for (let i = 0; i < centres.length && n < FN; i++) for (let k = 0; k < FN / 40 && n < FN; k++) {
         const q = centres[i], a = rnd() * 6.28, r = Math.sqrt(rnd()) * 2.4, x = q.x + Math.cos(a) * r, z = q.z + Math.sin(a) * r; if (!offPaths(x, z)) continue;
         dm.rotation.set((rnd() - 0.5) * 0.3, rnd() * 6, (rnd() - 0.5) * 0.3); dm.scale.setScalar(0.8 + rnd() * 0.7); dm.position.set(x, 0, z); dm.updateMatrix(); stems.setMatrixAt(n, dm.matrix); heads.setMatrixAt(n, dm.matrix);
         gc.setHex(rnd() < 0.8 ? q.c : FC[Math.floor(rnd() * FC.length)]); heads.setColorAt(n, gc); n++;
       }
       stems.count = heads.count = n;
     }
-    const BN = HI ? 70 : 30, bushes = instMesh(new T.IcosahedronGeometry(0.9, 1), sway(L(0xffffff), 0.02, 0, 'inst'), BN);
+    const BN = HI ? 160 : 60, bushes = instMesh(new T.IcosahedronGeometry(0.9, 1), sway(L(0xffffff), 0.02, 0, 'inst'), BN);
     for (let i = 0, n = 0; n < BN && i < BN * 12; i++) {
       const x = OUT.x0 + 2 + rnd() * (128 - OUT.x0), z = OUT.z0 + 2 + rnd() * (OUT.z1 - OUT.z0 - 4);
       if (!offPaths(x, z) || !free(x, z)) continue;
@@ -2511,7 +2527,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       gc.setHex(rnd() < 0.2 ? 0xe58aa6 : 0x4aa64f).offsetHSL((rnd() - 0.5) * 0.05, 0, (rnd() - 0.5) * 0.12); bushes.setColorAt(n, gc); n++;
     }
     bushes.count = Math.min(BN, bushes.count);
-    const RK = 44, rocks = instMesh(new T.IcosahedronGeometry(1, 0), L(0xffffff), RK);
+    const RK = 70, rocks = instMesh(new T.IcosahedronGeometry(1, 0), L(0xffffff), RK);
     for (let i = 0, n = 0; n < RK && i < RK * 20; i++) {
       const beach = n < 16, x = beach ? 127 + rnd() * 9 : OUT.x0 + 4 + rnd() * 100, z = beach ? OUT.z0 + rnd() * (OUT.z1 - OUT.z0) : OUT.z0 + 1 + rnd() * (OUT.z1 - OUT.z0 - 2);
       if (!offPaths(x, z) || (!beach && !free(x, z))) continue;
@@ -2637,6 +2653,22 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const bale = new T.Mesh(cyl(1.1, 1.1, 1.5, 12), L(0xe6c36a)); bale.rotation.z = Math.PI / 2; at(bale, q[0], 1.1, q[1]);
       colliders.push({ x: q[0], z: q[1], r: 1.5 });
     });
+    /* the flower-road garden: flower beds around the pedestal, along the inside of the posts and a wide wreath outside, with the south approach left open */
+    {
+      const GN2 = HI ? 760 : 360, st2 = new T.InstancedMesh(cyl(0.04, 0.05, 0.9, 4), sway(L(0x4f9a46), 0.18, 0.45), GN2), hd2 = new T.InstancedMesh(new T.SphereGeometry(0.3, 6, 5), sway(L(0xffffff), 0.2, 0, 'inst'), GN2), d2 = new T.Object3D(), c2 = new T.Color();
+      let n2 = 0;
+      for (let tries = 0; tries < 6000 && n2 < GN2; tries++) {
+        const a = rnd() * 6.2832, band = rnd(), r = band < 0.25 ? 3.6 + rnd() * 3.4 : band < 0.5 ? 14.7 + rnd() * 2.6 : 18.6 + rnd() * 5.4;
+        const x = GARD2.x + Math.cos(a) * r, z = GARD2.z + Math.sin(a) * r;
+        if (Math.abs(x - GARD2.x) < 3.4 && z > GARD2.z) continue;                                  /* the open road to the south */
+        if (z > -2.5 && x > 54 && x < 141) continue;                                              /* not onto the promenade */
+        d2.rotation.set(0, 0, 0); d2.scale.setScalar(0.85 + rnd() * 0.6);
+        d2.position.set(x, 0.45 * d2.scale.y, z); d2.updateMatrix(); st2.setMatrixAt(n2, d2.matrix);
+        d2.position.set(x, 0.95 * d2.scale.y, z); d2.updateMatrix(); hd2.setMatrixAt(n2, d2.matrix);
+        c2.setHex(PAL[(rnd() * PAL.length) | 0]); hd2.setColorAt(n2, c2); n2++;
+      }
+      st2.count = hd2.count = n2; st2.frustumCulled = hd2.frustumCulled = false; scene.add(st2); scene.add(hd2);
+    }
     for (let i = 0; i < 4; i++) addEaselAt(MILL.x + (i - 1.5) * 7, 29, -Math.PI / 2);
     sign('풍차 들판', MILL.x - 6.5, 12);
     /* signposts on the field: wooden arrows that point to each place, with the walking distance */
@@ -4522,7 +4554,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function docentTalk() { const l = DOCENT_LINES[docentLine++ % DOCENT_LINES.length]; showCard(l[0], l[1], [['dtClose', '고마워요', true, () => {}]]); }
 
   /* ---------- where am I: a name banner pops up every time I step into another place ---------- */
-  const AREA_NOTE = { '둥근 홀': '벤치에 앉아 잠깐 쉬어 가는 둥근 홀', '중앙 홀': '북쪽 미술관 · 동쪽 화실과 조각 전시관 · 남쪽 친구들 전시', '화실': '이젤을 눌러 앉아서 그려요', '조각 전시관': '거대한 조각들을 따라 걷는 15점 코스, 한가운데에는 18m 백마', '중앙 로툰다': '분수와 기둥이 있는 둥근 홀', '신진 작가관': '친구들이 그린 그림이 걸려 있어요', '별관': '신진 작가관의 두 번째 전시장', '서쪽 전시관 1': '친구들이 그린 그림', '서쪽 전시관 2': '친구들이 그린 그림', '야외 전시 정원': '하늘 아래 액자가 둘러선 정원', '꽃길 정원': '양쪽에 그림이 걸린 둥근 꽃길', '산 전망대': '눈 덮인 봉우리를 바라보며', '바닷가': '모래사장과 수평선, 등대', '호숫가': '잔잔한 물, 수련, 작은 배', '풍차 들판': '꽃밭 너머로 돌아가는 풍차', '들판 산책길': '중앙 홀 동쪽 문 밖의 넓은 들판' };
+  const AREA_NOTE = { '둥근 홀': '벤치에 앉아 잠깐 쉬어 가는 둥근 홀', '중앙 홀': '북쪽 미술관 · 동쪽 화실과 조각 전시관 · 남쪽 친구들 전시', '화실': '이젤을 눌러 앉아서 그려요', '조각 전시관': '거대한 조각들을 따라 걷는 15점 코스, 한가운데에는 18m 백마', '중앙 로툰다': '분수와 기둥이 있는 둥근 홀', '신진 작가관': '친구들이 그린 그림이 걸려 있어요', '별관': '신진 작가관의 두 번째 전시장', '서쪽 전시관 1': '친구들이 그린 그림', '서쪽 전시관 2': '친구들이 그린 그림', '야외 전시 정원': '하늘 아래 액자가 둘러선 정원', '꽃길 정원': '양쪽에 그림이 걸린 둥근 꽃길', '산 전망대': '눈 덮인 봉우리를 바라보며', '바닷가': '모래사장과 수평선, 등대', '호숫가': '잔잔한 물, 수련, 작은 배', '풍차 들판': '꽃밭 너머로 돌아가는 풍차', '남쪽 꽃들판': '끝없이 펼쳐진 들꽃 초원과 숲', '숲속 쉼터': '커다란 나무 아래 돌 마당', '들판 산책길': '중앙 홀 동쪽 문 밖의 넓은 들판' };
   function areaNameAt(x, z) {
     if (x > RM.hx - 0.5) {
       if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 3 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 3) return '조각 전시관';
@@ -4533,6 +4565,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (x > 128) return '바닷가';
       if (Math.hypot(x - LAKE.x, z - LAKE.z) < 22) return '호숫가';
       if (Math.hypot(x - MILL.x, z - MILL.z) < 24) return '풍차 들판';
+      if (Math.hypot(x - 92, z - 112) < 16) return '숲속 쉼터';
+      if (z > 60) return '남쪽 꽃들판';
       return '들판 산책길';
     }
     if (z > RM.hz - 1) return x < W1X ? '서쪽 전시관 2' : x < -GX ? '서쪽 전시관 1' : z > GZ1 + 0.5 ? '별관' : '신진 작가관';
@@ -4577,7 +4611,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   /* places are grouped into three kinds: exhibition halls, outdoors, and making/resting; the sheet can filter by kind or show a map */
   const PCAT = { ex: '전시관', out: '야외', mk: '화실·쉼터' }, PCOL = { ex: '#8a4a47', out: '#3f7a4f', mk: '#3f6fa8' };
-  const catOf = pl => ['산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
+  const catOf = pl => ['산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원', '남쪽 꽃들판', '숲속 쉼터'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
   let placesTab = 'all';
   function drawPlacesMap() {
     const cv = $('#placesMap'), W = Math.max(240, Math.min(420, ($('#placesList').parentNode.clientWidth || 340) - 40));
@@ -4639,9 +4673,19 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     return { x: sl.x + fx * 3, z: sl.z + fz * 3, h: sl.ry + Math.PI };
   }
   function fameItems(tab) {
-    if (tab === 'work') return slots.filter(q => !q.reserved && q.ex).map(q => ({ key: 'w:' + q.ex.id, title: q.ex.title || '제목 없는 그림', sub: (q.ex.artist || '이름 없는 화가') + ' · ' + (ROOM_NAME[q.room] || ''), at: q.ex.at || 0, pl: Object.assign({ name: q.ex.title || '그림', pitch: 0.3 }, standFor(q)) }));
-    if (tab === 'art') return slots.filter(q => q.reserved && q.cat).map((q, i) => ({ key: 'c:' + q.cat.id, title: q.cat.title, sub: (q.cat.artist || '') + (ROOM_NAME[q.room] ? ' · ' + ROOM_NAME[q.room] : ''), at: -i, pl: Object.assign({ name: q.cat.title, pitch: 0.3 }, standFor(q)) }));
-    return extraSlots.filter(q => q.cat && String(q.id).indexOf('sculpt:') === 0).map((q, i) => ({ key: 'c:' + q.cat.id, title: q.cat.title, sub: '조각 전시관', at: -i, pl: { name: q.cat.title, x: q.sx, z: q.sz - q.w / 2 - 3.6, h: 0, pitch: 0.35 } }));
+    if (tab === 'work') return slots.filter(q => !q.reserved && q.ex).map(q => ({ key: 'w:' + q.ex.id, work: q.ex, title: q.ex.title || '제목 없는 그림', sub: (q.ex.artist || '이름 없는 화가') + ' · ' + (ROOM_NAME[q.room] || ''), at: q.ex.at || 0, pl: Object.assign({ name: q.ex.title || '그림', pitch: 0.3 }, standFor(q)) }));
+    if (tab === 'art') return slots.filter(q => q.reserved && q.cat).map((q, i) => ({ key: 'c:' + q.cat.id, cat: q.cat, title: q.cat.title, sub: (q.cat.artist || '') + (ROOM_NAME[q.room] ? ' · ' + ROOM_NAME[q.room] : ''), at: -i, pl: Object.assign({ name: q.cat.title, pitch: 0.3 }, standFor(q)) }));
+    return extraSlots.filter(q => q.cat && String(q.id).indexOf('sculpt:') === 0).map((q, i) => ({ key: 'c:' + q.cat.id, cat: q.cat, sculpt: true, title: q.cat.title, sub: '조각 전시관', at: -i, pl: { name: q.cat.title, x: q.sx, z: q.sz - q.w / 2 - 3.6, h: 0, pitch: 0.35 } }));
+  }
+  function fameThumb(it) {                              /* a small picture for each row: the drawing itself, the masterpiece's photo, or a plain tile while there is none */
+    const cv = document.createElement('canvas'); cv.className = 'th'; cv.width = cv.height = 128; const g = cv.getContext('2d');
+    const tile = () => { g.fillStyle = it.sculpt ? '#e4e0d6' : '#f3ecdb'; g.fillRect(0, 0, 128, 128); g.fillStyle = '#8f8368'; g.font = '56px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(it.sculpt ? '🗿' : '🖼', 64, 68); };
+    tile();
+    try {
+      if (it.work && it.work.strokes) paintWork(cv, it.work, '#f6f1e6');
+      else if (it.cat && it.cat.img) catImage(it.cat, im => { try { const k = Math.max(128 / im.naturalWidth, 128 / im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k; g.drawImage(im, (128 - w) / 2, (128 - h) / 2, w, h); } catch (e) {} });
+    } catch (e) { tile(); }
+    return cv;
   }
   function renderFame() {
     const list = $('#fameList'), tabs = $('#fameTabs'); tabs.textContent = ''; list.textContent = '';
@@ -4663,7 +4707,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         const ct = document.createElement('div'); ct.className = 'c'; ct.textContent = it.sub + (total(it.key) ? ' · 반응 ' + total(it.key) : ''); left.appendChild(ct);
         const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn primary'; bt.textContent = '보러 가기';
         bt.addEventListener('click', () => { $('#fame').hidden = true; goPlace(it.pl); });
-        row.appendChild(rk); row.appendChild(left); row.appendChild(bt); list.appendChild(row);
+        row.appendChild(rk); row.appendChild(fameThumb(it)); row.appendChild(left); row.appendChild(bt); list.appendChild(row);
       });
     };
     draw();

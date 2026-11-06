@@ -45,7 +45,8 @@ async function start(opts) {
   async function client(name, query, vp) {
     const i = pages.length, ctx = await browser.newContext({ viewport: vp || { width: 390, height: 800 } });
     const p = await ctx.newPage(); pages.push(p); p.name = name || ('p' + i);
-    await p.addInitScript(() => { window.__hwInstant = true; });          /* tests jump between places; the walking test turns this off */
+    await p.addInitScript(() => { window.__hwInstant = true; });
+    if (process.env.HW_LO) await p.addInitScript(() => { try { localStorage.setItem('hw-q', 'lo'); } catch (e) {} });   /* the networking and pen tests need no pretty scenery; two software-rendered clients at full quality crawl */          /* tests jump between places; the walking test turns this off */
     p.on('pageerror', e => errors.push(p.name + ': ' + e));
     p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(p.name + ' console: ' + m.text().slice(0, 240)); });   /* WebGL shader errors show up here */
     await p.exposeFunction('__busSend', (n, e, pl) => { pages.forEach((q, j) => { if (j !== i) q.evaluate(([a, b, c]) => window.__busRecv(a, b, c), [n, e, pl]).catch(() => {}); }); });

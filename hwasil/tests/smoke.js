@@ -48,7 +48,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.evaluate(() => { const r = document.querySelector('#volRange'); r.value = 25; r.dispatchEvent(new Event('input')); });
   check(await p.evaluate(() => window.__hw.music().vol === 0.25 && localStorage.getItem('hw-vol') === '0.25'), 'volume slider sets and remembers the volume');
   const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 22, 'easels: ' + n);                    /* the lobby keeps six easels (an atelier corner); the outdoor spots keep theirs */
-  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 17, 'seventeen places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
+  await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 19, 'nineteen places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
   /* the gallery has no partitions any more; the annex and the garden can be visited */
   await place(6, 'annex.png'); await place(7, 'garden.png'); await place(8, 'west1.png'); await place(9, 'west2.png'); await place(10, 'orchard.png');
   /* a place is reached on foot now: from the studio to the annex through both doors, then out to the garden through the east door */
@@ -186,7 +186,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.evaluate(j => window.__hw.tapSlot(j), gj); await p.waitForTimeout(500);
   check((await p.locator('#viewerAct .btn').count()) === 1, 'admin sees a take-down button on another painter\'s frame');
   await p.locator('#viewerAct .btn').click(); await p.waitForTimeout(200); await p.locator('#viewerAct .btn').click(); await p.waitForTimeout(1500);
-  check(await p.evaluate(j => !window.__hw.slots[j].ex && !window.__db.gallery['zz_other'], gj), 'the admin takes the frame down');
+  check(await until(p, j => !window.__hw.slots[j].ex && !window.__db.gallery['zz_other'], gj, 40), 'the admin takes the frame down');
   /* the admin vault keeps what was taken down; the visit mark was sent on entry */
   check(await p.evaluate(() => (window.__rpcs || []).includes('hwasil_ping')), 'a visit mark is sent on entry');
   await p.click('#worksBtn'); await p.waitForTimeout(300); await p.evaluate(() => { document.querySelector('#adBox').open = true; });
