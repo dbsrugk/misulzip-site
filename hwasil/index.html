@@ -277,6 +277,10 @@ body.padOpen #hud { visibility: hidden; }
 .roomRow .rk { font: 400 28px/1 var(--font-display); min-width: 38px; text-align: center; }
 .roomRow .l { flex: 1; min-width: 0; }
 .roomRow .th { width: 64px; height: 64px; flex: none; border: 2px solid var(--ink); border-radius: 8px; background: #efe9dc; }
+.roomRow.wing { flex-direction: column; align-items: stretch; gap: 8px; border-left-width: 10px; }
+.roomRow.wing .strip { display: flex; gap: 6px; }
+.roomRow.wing .strip .mini { flex: 1; min-width: 0; height: auto; aspect-ratio: 1; border: 2px solid var(--ink); border-radius: 8px; background: #efe9dc; }
+.roomRow.wing .btn { min-height: 44px; font-size: 16px; }
 #fame .sheet { height: 92%; max-height: 92%; }
 #fameList { flex: 1; min-height: 0; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 #fameList.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-rows: max-content; gap: 10px; align-content: start; }
@@ -412,6 +416,8 @@ body.padOpen #hud { visibility: hidden; }
 #nameBox > .btn { width: 100%; }
 #renameMsg { margin-top: 8px; font-weight: 500; }
 #keyMsg.bad { color: var(--danger); }
+/* narrow phones: the top buttons fit in two rows instead of three, leaving more of the picture */
+@media (max-width: 440px) { #hud > .row, #hud .row { gap: 6px; } #hud .chip { padding: 6px 9px; font-size: 13.5px; gap: 3px; } #hud .chip b { font-size: 13px; padding: 0 6px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -4827,12 +4833,29 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function renderPlaces() {
     const list = $('#placesList'); list.textContent = '';
     const tabs = $('#placesTabs'); tabs.textContent = '';
-    [['all', '전체'], ['ex', '전시관'], ['out', '야외'], ['mk', '화실·쉼터'], ['map', '🗺 지도']].forEach(t => {
+    [['all', '전체'], ['ex', '전시관'], ['wings', '🖼 명화관'], ['out', '야외'], ['mk', '화실·쉼터'], ['map', '🗺 지도']].forEach(t => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (placesTab === t[0] ? ' on' : ''); b.textContent = t[1];
       b.addEventListener('click', () => { placesTab = t[0]; renderPlaces(); }); tabs.appendChild(b);
     });
     $('#placesMap').hidden = placesTab !== 'map'; list.hidden = placesTab === 'map';
     if (placesTab === 'map') drawPlacesMap();
+    if (placesTab === 'wings') {
+      const WG = window.MUSEUM_WINGS || [], CT = window.MUSEUM_CATALOG || [];
+      WG.forEach((wg, k) => {
+        const row = document.createElement('div'); row.className = 'roomRow wing'; row.style.borderLeftColor = '#' + (wg.wall || 0x8c7a5a).toString(16).padStart(6, '0');
+        const strip = document.createElement('div'), mine = CT.slice(k * 4, k * 4 + 4); strip.className = 'strip';
+        mine.forEach(c => {
+          const cv = document.createElement('canvas'); cv.className = 'mini'; cv.width = cv.height = 120; strip.appendChild(cv); const g = cv.getContext('2d'); g.fillStyle = '#efe9dc'; g.fillRect(0, 0, 120, 120);
+          catImage(c, im => { try { const q = Math.min(112 / im.naturalWidth, 112 / im.naturalHeight), w = im.naturalWidth * q, h = im.naturalHeight * q; g.drawImage(im, (120 - w) / 2, (120 - h) / 2, w, h); } catch (e) {} });
+        });
+        const left = document.createElement('div'); left.className = 'l';
+        const nm = document.createElement('div'); nm.className = 'n'; nm.textContent = wg.name; left.appendChild(nm);
+        const ct = document.createElement('div'); ct.className = 'c'; ct.textContent = wg.note + ' · ' + mine.length + '점'; left.appendChild(ct);
+        const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn primary'; bt.textContent = '이 전시구역으로 가기';
+        bt.addEventListener('click', () => goPlace({ name: wg.name, x: 0, z: wingZ(k) - 4, h: Math.PI, pitch: 0.2 }));
+        row.appendChild(strip); row.appendChild(left); row.appendChild(bt); list.appendChild(row);
+      });
+    }
     PLACES.forEach(pl => {
       const row = document.createElement('div'); row.className = 'roomRow'; const pc = catOf(pl); if (placesTab !== 'all' && placesTab !== 'map' && placesTab !== pc) row.hidden = true;
       const left = document.createElement('div'); left.className = 'l';
