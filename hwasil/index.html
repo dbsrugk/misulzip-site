@@ -1853,7 +1853,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         pq.font = '46px ' + FONT_UI; pq.fillStyle = '#6d655b'; let st = sub; if (pq.measureText(st).width > 700) st = st.slice(0, 16) + '…'; pq.fillText(st, 384, 143); pt.needsUpdate = true;
       }
       drawPlate(); if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', label + sub).then(drawPlate).catch(() => {});
-      put(g, new T.Mesh(new T.PlaneGeometry(2.6, 0.65), new T.MeshBasicMaterial({ map: pt })), 0, 0.48, 0.96);
+      put(g, new T.Mesh(new T.PlaneGeometry(3.2, 0.8), new T.MeshBasicMaterial({ map: pt })), 0, 0.5, 0.97);
+      { const bk = put(g, new T.Mesh(new T.PlaneGeometry(4.0, 1.0), new T.MeshBasicMaterial({ map: pt })), 0, 0.66 + H * 0.5, -0.29); bk.rotation.y = Math.PI; }          /* the back carries the name card too */
       light(x + 0, z + face * 2.6, W * 0.55);
       [-0.28, 0.28].forEach(k => colliders.push({ x: x + k * W, z: z, r: 1.5 }));
       const hh = H + 1.4, hb = new T.Mesh(new T.BoxGeometry(W + 0.8, hh, 2.8), new T.MeshBasicMaterial({ visible: false })); hb.position.set(x, hh / 2, z + face * 0.3); scene.add(hb);
