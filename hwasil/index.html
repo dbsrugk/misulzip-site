@@ -3940,8 +3940,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (pad.tool === 'i') { doPick(e); return; }
     pad.pid = e.pointerId; try { padCv.setPointerCapture(e.pointerId); } catch (x) {}
     const p = pt(e);
-    pad.cur = { k: pad.tool, c: pad.color, w: pad.size, p: [p[0], p[1]] };
-    if (e.pointerType === 'pen' && e.pressure > 0 && pad.tool === 'p') pad.cur.q = [pressureOf(e, 0)];
+    pad.cur = { k: pad.tool, c: pad.color, w: pad.size, p: [p[0], p[1]] }; pad.qs = 0;
+    if (e.pointerType === 'pen' && pad.tool === 'p') pad.cur.q = [pressureOf(e, 0)];          /* a pencil on an iPad may report 0 on the first touch: still a pen, the pressure follows with the next moves */
     pad.sentOff = 0;
     if (pad.confirmClose) { pad.confirmClose = false; $('#padClose').textContent = '닫기'; setStatus(''); }
     schedule();
@@ -3953,6 +3953,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     for (let i = 0; i < evs.length; i++) {
       if (arr.length > 8000) break;
       const p = pt(evs[i]), dx = p[0] - arr[arr.length - 2], dy = p[1] - arr[arr.length - 1];
+      if (pad.cur.q && pad.cur.q.length === 1 && evs[i].pressure > 0 && evs[i].pointerType === 'pen' && !pad.qs) { pad.cur.q[0] = pressureOf(evs[i], 0); pad.qs = 1; }      /* the first point takes the first real reading */
       if (dx * dx + dy * dy >= 6) { arr.push(p[0], p[1]); if (pad.cur.q) pad.cur.q.push(pressureOf(evs[i], pad.cur.q[pad.cur.q.length - 1])); }
     }
     schedule(); scheduleStream();
