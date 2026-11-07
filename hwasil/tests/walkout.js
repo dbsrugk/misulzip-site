@@ -1,7 +1,7 @@
 /* Fast travel out of the grand gallery walks around the rotunda fountain instead of getting stuck and jumping. */
 const { start, until, check, done } = require('./lib');
 (async () => {
-  const t = await start(); const p = await t.client('A'); await t.enter(p, '걷는이'); await p.evaluate(() => { window.__hwInstant = false; });
+  const t = await start(); const p = await t.client('A'); await t.enter(p, '걷는이'); await p.evaluate(() => { window.__hwInstant = false; window.__hwWalk = true; });
   for (const [from, label] of [[[0, -150], 'from deep in the gallery'], [[0, -60], 'from just north of the rotunda'], [[0, -90], 'from the second wing']]) {
     await p.evaluate(([x, z]) => { window.__hw.pos.x = x; window.__hw.pos.z = z; }, from); await p.waitForTimeout(1500);
     await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(7).click();   /* the garden: far away, through the lobby door */

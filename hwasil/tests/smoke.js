@@ -53,19 +53,19 @@ const { start, vis, until, check, done } = require('./lib');
   await place(6, 'annex.png'); await place(7, 'garden.png'); await place(8, 'west1.png'); await place(9, 'west2.png'); await place(10, 'orchard.png');
   /* a place is reached on foot now: from the studio to the annex through both doors, then out to the garden through the east door */
   await place(0, 'studio.png');
-  await p.evaluate(() => { window.__hwInstant = false; });
+  await p.evaluate(() => { window.__hwInstant = false; window.__hwWalk = true; });
   const walkTo = async idx => { await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(idx).click(); await p.waitForTimeout(400); const w0 = await p.evaluate(() => window.__hw.walking()); const ok = await until(p, () => !window.__hw.walking(), null, 240); return { w0, ok }; };
   let wk = await walkTo(6);
   const near = (x, z) => p.evaluate(([x, z]) => Math.hypot(window.__hw.pos.x - x, window.__hw.pos.z - z) < 2.5, [x, z]);
   check(wk.w0 && wk.ok && await near(0, 58), 'a place is walked to (studio -> gallery -> annex), not jumped to');
   await p.evaluate(() => { window.__hwInstant = true; });
   await place(1, 'gallery.png');                                             /* back to the gallery, then on foot through the west doors */
-  await p.evaluate(() => { window.__hwInstant = false; });
+  await p.evaluate(() => { window.__hwInstant = false; window.__hwWalk = true; });
   wk = await walkTo(9);
   check(wk.ok && await near(-49, 39), 'and on foot from the gallery through both west doors to west hall 2');
   await p.evaluate(() => { window.__hwInstant = true; });
   await place(14, 'rotunda.png');                                           /* just inside the rotunda: the way north leads around the fountain */
-  await p.evaluate(() => { window.__hwInstant = false; });
+  await p.evaluate(() => { window.__hwInstant = false; window.__hwWalk = true; });
   wk = await walkTo(11);
   check(wk.ok && await near(0, -78), 'on foot from the rotunda around the fountain to the grand gallery');
   await p.evaluate(() => { window.__hwInstant = true; });

@@ -101,6 +101,16 @@ button.chip { pointer-events: auto; cursor: pointer; }
   text-align: center;
 }
 #miniMap { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(108px + env(safe-area-inset-top, 0px)); width: 104px; height: 104px; border-radius: 50%; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); pointer-events: auto; cursor: pointer; }
+#walkOpt { display: block; margin: 6px 2px 8px; font-size: 15px; color: var(--ink); }
+#teleFx { position: fixed; inset: 0; z-index: 60; background: #fff8e6; opacity: 0; pointer-events: none; transition: opacity 0.28s ease; }
+#teleFx.on { opacity: 1; }
+#timeGauge { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(216px + env(safe-area-inset-top, 0px)); width: 104px; padding: 4px 6px 5px; border-radius: 10px; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); font-size: 13px; color: var(--ink); text-align: center; pointer-events: auto; cursor: pointer; }
+#rankBox { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(268px + env(safe-area-inset-top, 0px)); width: 150px; padding: 6px 8px; border-radius: 10px; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.94); font-size: 14px; color: var(--ink); }
+#rankBox div { display: flex; justify-content: space-between; gap: 6px; padding: 1px 0; }
+#rankBox div.me { font-weight: bold; color: #b5651d; }
+#rankBox small { display: block; margin-top: 3px; color: #6d655b; font-size: 12px; }
+#timeGauge i { display: block; height: 6px; margin-top: 3px; border-radius: 3px; background: rgba(36, 32, 28, 0.15); overflow: hidden; }
+#timeGauge b { display: block; height: 100%; width: 0; background: #e0a02f; border-radius: 3px; }
 .sitBtn {
   position: absolute;
   right: max(16px, env(safe-area-inset-right, 0px));
@@ -442,6 +452,8 @@ body.padOpen #hud { visibility: hidden; }
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
   <button class="sitBtn" id="viewBtn" type="button" hidden>작품 크게 보기</button>
   <button class="sitBtn" id="tourBtn" type="button" hidden>🚶 15점 코스 걷기</button>
+  <div id="timeGauge" aria-label="접속 시간"><span id="timeTxt">접속 0분</span><i><b id="timeBar"></b></i></div>
+  <div id="rankBox" hidden></div>
   <canvas id="miniMap" width="208" height="208" aria-label="미니맵: 누르면 큰 지도"></canvas>
   <div id="inspectBar" hidden>
     <div class="isText"><b id="isTitle"></b><span id="isHint">손가락으로 끌어서 돌려 보세요 · 두 손가락으로 크게·작게</span></div>
@@ -599,10 +611,12 @@ body.padOpen #hud { visibility: hidden; }
   </div>
 </div>
 
+<div id="teleFx"></div>
 <div id="places" hidden>
   <div class="sheet" role="dialog" aria-label="장소 이동">
     <div class="sheetHead"><h2>장소 이동</h2><button class="btn" id="placesClose" type="button">닫기</button></div>
     <div id="placesTabs"></div>
+    <label id="walkOpt"><input type="checkbox" id="walkChk"> 걸어서 가기 (끄면 ✨ 순간이동)</label>
     <canvas id="placesMap" hidden></canvas>
     <div id="placesList"></div>
   </div>
@@ -4589,6 +4603,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const lc = lookOf(pr).join(''); if (lc !== r.look) rebuildRemote(r, lc);
       const mt = Number(pr.mt) || 0;                                         /* a new emote counter = play it (but not the old one when I just arrived) */
       if (r.mt === undefined) r.mt = mt; else if (mt !== r.mt) { r.mt = mt; const em = EMOTES.find(q => q.id === pr.m); if (em) startEmote(r.av, em); }
+      r.pt = Math.max(0, Math.min(99999, Number(pr.pt) || 0));
       const rn = Number(pr.rn) || 0;
       if (r.rn === undefined) r.rn = rn; else if (rn !== r.rn) { r.rn = rn; if (typeof pr.rs === 'string') spawnRx(slots.find(q => q.id === pr.rs) || extraSlots.find(q => q.id === pr.rs), Number(pr.rx)); }
       const nx = clamp(pr.x, -RM.hx, OUT.x1 + 2), nz = clamp(pr.z, OUT.z0 - 2, Math.max(GZ2, OUT.z1)), nt = performance.now();
@@ -4615,8 +4630,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function pushPresence(force) {
     if (!roomNS || !started) return;
     const now = performance.now();
-    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n, rx: myRx.i, rs: myRx.s, rn: myRx.n };
-    const k = patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.s + ',' + patch.a + ',' + patch.mt + ',' + patch.rn;
+    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n, rx: myRx.i, rs: myRx.s, rn: myRx.n, pt: playMin() };
+    const k = patch.pt + ',' + patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.s + ',' + patch.a + ',' + patch.mt + ',' + patch.rn;
     if (!force && (k === lastSent || now - lastSend < 100 + Math.min(200, (inRoomCount - 1) * 12))) return;
     lastSend = now; lastSent = k;
     roomNS.presence(patch).catch(function () {});
@@ -4909,12 +4924,19 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     heading = pl.h; camAim = { yaw: pl.h + Math.PI, pitch: pl.pitch || 0.5, t: 1.6 };
     pushPresence(true); toast(pl.name + '에 왔어요', 3000);
   }
+  const walkChk = $('#walkChk'); try { walkChk.checked = localStorage.getItem('hw-walk') === '1'; } catch (e) {}
+  walkChk.addEventListener('change', () => { try { localStorage.setItem('hw-walk', walkChk.checked ? '1' : '0'); } catch (e) {} });
   function goPlace(pl) {
     if (!started || pad.open || watch.open) return;
     $('#places').hidden = true; goal = null;
     if (window.__hwInstant) { snapTo(pl); toast(pl.name + '에 왔어요', 3000); return; }
     myEasel = -1; mySeat = -1;
     if (Math.hypot(pl.x - pos.x, pl.z - pos.z) < 1) { arrivePlace(pl); return; }
+    if (!walkChk.checked && !window.__hwWalk && Math.hypot(pl.x - pos.x, pl.z - pos.z) > 6) {       /* teleport: the screen goes bright, I appear there, it clears */
+      const fx = $('#teleFx'); fx.classList.add('on');
+      setTimeout(() => { snapTo(pl); arrivePlace(pl); setTimeout(() => fx.classList.remove('on'), 120); }, 300);
+      return;
+    }
     goal = { x: pl.x, z: pl.z, place: pl, stuck: 0 };
     toast(pl.name + '(으)로 걸어가요. 조이스틱을 움직이면 멈춰요', 4000);
   }
@@ -4953,6 +4975,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const mx = X(clamp(pos.x, x0, x1)), my = clamp(ZU(pos.z), 8, H - 8); g.fillStyle = '#e0453a'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(mx, my, 6, 0, 6.2832); g.fill(); g.stroke();
     cv.onclick = e => { const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; let b = null, bd = 28; hit.forEach(h => { const d = Math.hypot(h.x - x, h.y - y); if (d < bd) { bd = d; b = h; } }); if (b) goPlace(b.pl); };
   }
+  let t0Play = 0, gaugeT = 0; const playMin = () => t0Play ? Math.floor((Date.now() - t0Play) / 60000) : 0, rankBox = $('#rankBox');
+  function drawRank() {
+    const rows = [{ n: myName || '나', m: playMin(), me: true }]; remotes.forEach(r => rows.push({ n: r.name || '화가', m: r.pt || 0 }));
+    rows.sort((a, b) => b.m - a.m); const fm = m => (m >= 60 ? Math.floor(m / 60) + '시간 ' : '') + (m % 60) + '분';
+    rankBox.textContent = ''; const hd = document.createElement('b'); hd.textContent = '🏆 접속 랭킹'; rankBox.appendChild(hd);
+    rows.slice(0, 6).forEach((r, i) => { const d = document.createElement('div'), x = document.createElement('span'), y = document.createElement('span'); if (r.me) d.className = 'me'; x.textContent = (i + 1) + ' ' + r.n; y.textContent = fm(r.m); d.append(x, y); rankBox.appendChild(d); });
+    const sm = document.createElement('small'); sm.textContent = '지금 같이 있는 사람끼리'; rankBox.appendChild(sm);
+  }
+  $('#timeGauge').addEventListener('click', () => { rankBox.hidden = !rankBox.hidden; if (!rankBox.hidden) drawRank(); }); const timeTxt = $('#timeTxt'), timeBar = $('#timeBar');
   const miniEl = $('#miniMap'), miniG = miniEl.getContext('2d'); let miniT = 0;
   function drawMini() {
     const g = miniG, W = 208, R = 70, k = (W / 2 - 6) / R, c0 = W / 2, X = x => c0 + (x - pos.x) * k, Z = z => c0 + (z - pos.z) * k;
@@ -5133,6 +5164,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const m = Math.min(1, len);
     lodT -= dt; if (lodT <= 0) { lodT = 0.5; slotLOD(); }
     miniT -= dt; if (miniT <= 0 && started) { miniT = 0.2; drawMini(); }
+    if (started) { if (!t0Play) t0Play = Date.now(); gaugeT -= dt; if (gaugeT <= 0) { gaugeT = 1; const sec = Math.floor((Date.now() - t0Play) / 1000), h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60; timeTxt.textContent = '접속 ' + (h ? h + '시간 ' : '') + m + '분'; timeBar.style.width = (sec % 3600) / 36 + '%'; if (!rankBox.hidden) drawRank(); } }
     if (goal && m > 0.08) goal = null;
     if (mySeat >= 0 && m > 0.08) standUp();
     if (camAim) { camYaw += angDiff(camYaw, camAim.yaw) * Math.min(1, dt * 3); camPitch += (camAim.pitch - camPitch) * Math.min(1, dt * 3); camAim.t -= dt; if (camAim.t <= 0) camAim = null; }
