@@ -76,22 +76,39 @@ function gameOver(){
 }
 function sx(i){return W/2+steps[i].x}
 function sy(i){return H*0.65-i*SH+camY}
+let hop=0,lastIdx=0;
+const PAL=[['#ffb3ba','#e8808c'],['#ffe08a','#e0b445'],['#a8e6b4','#62c07a'],['#9ad4ff','#5aa2e6'],['#d4b8ff','#a07ae6']];
+function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()}
 function draw(){
   ctx.clearRect(0,0,W,H);
   const target=idx*SH;camY+=(target-camY)*.2;
-  for(let i=Math.max(0,idx-6);i<Math.min(steps.length,idx+18);i++){
-    const x=sx(i)-SW/2,y=sy(i);
-    ctx.fillStyle=i%2?'#e07a5f':'#f2cc8f';
-    ctx.fillRect(x,y,SW,SH-6);
-    ctx.fillStyle='rgba(0,0,0,.25)';
-    ctx.fillRect(x,y+SH-10,SW,4);
+  // 별
+  ctx.fillStyle='rgba(255,255,255,.75)';
+  for(let i=0;i<32;i++){const x=(i*97)%W,y=((i*53)+camY*.12*(1+i%3))%H;ctx.fillRect(x,y,2,2)}
+  // 계단
+  for(let i=Math.min(steps.length-1,idx+18);i>=Math.max(0,idx-6);i--){
+    const x=sx(i)-SW/2,y=sy(i),p=PAL[i%PAL.length];
+    ctx.fillStyle='rgba(0,0,0,.25)';rr(x+4,y+SH-4,SW,6,3);
+    ctx.fillStyle=p[1];rr(x,y+8,SW,SH-14,7);
+    ctx.fillStyle=p[0];rr(x,y,SW,SH-14,7);
+    ctx.fillStyle='rgba(255,255,255,.45)';rr(x+6,y+4,SW-12,3,2);
   }
   // 캐릭터
-  const cx=sx(idx),cy=sy(idx);
+  const cx=sx(idx);let cy=sy(idx);
   px+=(cx-px)*.4||0;if(!px)px=cx;
-  ctx.fillStyle='#3d405b';ctx.fillRect(px-12,cy-34,24,34);
-  ctx.fillStyle='#ffd7ba';ctx.beginPath();ctx.arc(px,cy-42,11,0,7);ctx.fill();
-  ctx.fillStyle='#000';ctx.fillRect(px+dir*4-2,cy-44,4,4);
+  if(idx!==lastIdx){hop=1;lastIdx=idx}
+  hop=Math.max(0,hop-.08);
+  cy-=Math.sin(hop*Math.PI)*14;
+  const f=dir,leg=hop>0?4:0;
+  ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(px,sy(idx)+2,13,4,0,0,7);ctx.fill();
+  ctx.fillStyle='#3a3f6b';rr(px-9,cy-9,7,9+leg*0,3);rr(px+2,cy-9-leg,7,9,3);       // 다리
+  ctx.fillStyle='#ff7e6b';rr(px-f*15-4,cy-28,9,16,4);                              // 가방
+  ctx.fillStyle='#4ecdc4';rr(px-11,cy-30,22,24,8);                                 // 몸
+  ctx.fillStyle='#ffd7ba';ctx.beginPath();ctx.arc(px,cy-41,12,0,7);ctx.fill();     // 머리
+  ctx.fillStyle='#5a3825';ctx.beginPath();ctx.arc(px,cy-43,12.5,Math.PI,0);ctx.fill(); // 머리카락
+  ctx.fillRect(px-f*10-3,cy-45,6,8);
+  ctx.fillStyle='#222';ctx.beginPath();ctx.arc(px+f*5,cy-40,2,0,7);ctx.fill();      // 눈
+  ctx.fillStyle='rgba(255,120,120,.55)';ctx.beginPath();ctx.arc(px+f*8,cy-36,2.5,0,7);ctx.fill(); // 볼
 }
 function loop(t){
   const dt=Math.min(.05,(t-lastT)/1000||0);lastT=t;
