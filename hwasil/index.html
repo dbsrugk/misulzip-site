@@ -1758,7 +1758,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   })();
 
   /* the sculpture pavilion (조각 전시관): a marble colonnade on the field beside the main path. The real 3D statues from the lobby stand here around a hand-built Pieta. */
-  const SCULPT = { x: 102, z: 14.5, w: 76, d: 25 };
+  const SCULPT = { x: 102, z: 14.5, w: 84, d: 25 };
   function makePieta() {
     const g = new T.Group(), m = L(0xf2efe8), m2 = L(0xe4dfd4);
     const add = (geo, mat, x, y, z, rx, ry, rz) => { const o = new T.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx || 0, ry || 0, rz || 0); g.add(o); return o; };
@@ -1788,8 +1788,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     put(scene, new T.Mesh(bx(S.w + 0.8, 0.12, S.d + 0.8), stone), S.x, -0.04, S.z);                  /* a thin step all around */
     /* columns: two rows with a wide gap in front, and three on each side */
     const cols = [], DH = 26;                                                                       /* a colossal hall: columns 33 m high */
-    [-36, -24, -12, 12, 24, 36].forEach(d => cols.push([S.x + d, z1 - 1.0]));                          /* back row: six, behind everything */
-    [-36, -27, -18, 18, 27, 36].forEach(d => cols.push([S.x + d, z0 + 1.0]));                    /* the front colonnade: a wide gap in the middle for the entrance */
+    [-40, -28, -16, 16, 28, 40].forEach(d => cols.push([S.x + d, z1 - 1.0]));                          /* back row: six, behind everything */
+    [-40, -30, -20, 20, 30, 40].forEach(d => cols.push([S.x + d, z0 + 1.0]));                    /* the front colonnade: a wide gap in the middle for the entrance */
     cols.push([x0 + 0.9, S.z], [x1 - 0.9, S.z]);
     cols.forEach(q => {
       const plain = put(scene, new T.Mesh(cyl(0.8, 0.95, 7.0 + DH, 14), marble), q[0], 0.05 + (7.0 + DH) / 2, q[1]);          /* a plain stand-in until the fluted column model has loaded */
@@ -1878,8 +1878,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       board.push({ x: x, z: z, c: c, cvs: cvs, tex: tex, done: false });
     }
     const PW = 5.6, PH = 8.0;
-    [['discobolus', -31], ['hermes', -24], ['venus', -17], ['nike', 17], ['laocoon', 24], ['apollo', 31]].forEach((p, i) => panel(XX + p[1], z0 + 5.5, 1, PW, PH, p[0], '\u2460\u2461\u2462\u2463\u2464\u2465'[i]));
-    [['augustus', 31], ['dondavid', 24], ['david', 17], ['moses', 10], ['perseus', -10], ['daphne', -17], ['kiss', -24], ['thinker', -31]].forEach((p, i) => panel(XX + p[1], z1 - 4.5, -1, PW, PH, p[0], '\u2466\u2467\u2468\u2469\u246a\u246b\u246c\u246d'[i]));
+    [['discobolus', -37], ['hermes', -26], ['venus', -15], ['nike', 15], ['laocoon', 26], ['apollo', 37]].forEach((p, i) => panel(XX + p[1], z0 + 5.5, 1, PW, PH, p[0], '\u2460\u2461\u2462\u2463\u2464\u2465'[i]));
+    [['augustus', 36.75], ['dondavid', 26.25], ['david', 15.75], ['moses', 5.25], ['perseus', -5.25], ['daphne', -15.75], ['kiss', -26.25], ['thinker', -36.75]].forEach((p, i) => panel(XX + p[1], z1 - 4.5, -1, PW, PH, p[0], '\u2466\u2467\u2468\u2469\u246a\u246b\u246c\u246d'[i]));
     panel(XX, ZZ, -1, 8.6, 7.8, 'pieta', '\u246e');                                              /* the finale: the Pieta in the middle */
     anim.push(() => {                                                                          /* the photographs are fetched when somebody comes near the hall */
       if (Math.abs(pos.x - XX) > 90 || Math.abs(pos.z - ZZ) > 60) return;
