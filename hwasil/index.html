@@ -102,8 +102,8 @@ button.chip { pointer-events: auto; cursor: pointer; }
 }
 #miniMap { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(108px + env(safe-area-inset-top, 0px)); width: 104px; height: 104px; border-radius: 50%; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); pointer-events: auto; cursor: pointer; }
 #walkOpt { display: block; margin: 6px 2px 8px; font-size: 15px; color: var(--ink); }
-#teleFx { position: fixed; inset: 0; z-index: 60; background: #fff8e6; opacity: 0; pointer-events: none; transition: opacity 0.28s ease; }
-#teleFx.on { opacity: 1; }
+#teleFx { position: fixed; inset: 0; z-index: 60; background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(150, 225, 255, 0.55)); opacity: 0; pointer-events: none; transition: opacity 0.18s ease; }
+#teleFx.on { opacity: 0.85; }
 #timeGauge { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(216px + env(safe-area-inset-top, 0px)); width: 104px; padding: 4px 6px 5px; border-radius: 10px; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); font-size: 13px; color: var(--ink); text-align: center; pointer-events: auto; cursor: pointer; }
 #rankBox { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(268px + env(safe-area-inset-top, 0px)); width: 150px; padding: 6px 8px; border-radius: 10px; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.94); font-size: 14px; color: var(--ink); }
 #rankBox div { display: flex; justify-content: space-between; gap: 6px; padding: 1px 0; }
@@ -2270,12 +2270,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const SKINS = [0xffe0c4, 0xf7c9a6, 0xe8b08a, 0xcf9468, 0xb07a52, 0x8a5e40];
   const HAIRCOLS = [0x2a2233, 0x5a3a28, 0xa66a3c, 0xe3b45a, 0xd9534f, 0x7a4fd1, 0x3aa0c8, 0xf2a0c0];
   const COATS = [0xff7a59, 0x4a8fd8, 0x6dbd63, 0xf2c14e, 0xc79bff, 0xff8fb1, 0x4ecdc4, 0xe84b4b, 0xf5f0e6, 0x3a3f6b];
-  const HAIR_NAMES = ['민머리', '짧은 머리', '단발', '긴 머리', '똥머리', '곱슬', '말총머리'];
-  const HAT_NAMES = ['없음', '베레모', '밀짚모자', '벙거지', '비니', '화가 모자'];
-  const ACC_NAMES = ['없음', '스카프', '팔레트', '배낭', '안경'];
-  const FACE_NAMES = ['방긋', '활짝', '졸린 눈', '반짝'];
-  const LOOK_MAX = [6, 7, 8, 6, 10, 5, 4];            /* options per slot: skin, hair, hair colour, hat, coat, accessory, face */
-  function parseLook(s) { if (typeof s !== 'string' || !/^\d{7}$/.test(s)) return null; const a = s.split('').map(Number); for (let i = 0; i < 7; i++) if (a[i] >= LOOK_MAX[i]) return null; return a; }
+  const HAIR_NAMES = ['민머리', '짧은 머리', '단발', '긴 머리', '똥머리', '곱슬', '말총머리', '양갈래', '포니테일'];
+  const HAT_NAMES = ['없음', '베레모', '밀짚모자', '벙거지', '비니', '화가 모자', '도토리 모자', '왕관', '고양이 귀', '꽃 머리띠'];
+  const ACC_NAMES = ['없음', '스카프', '팔레트', '배낭', '안경', '날개', '헤드폰', '붓 꽂기', '별 지팡이', '도토리 가방'];
+  const OUTFIT_NAMES = ['화가 옷', '멜빵바지', '망토', '도토리 조끼', '앞치마'], SHOE_NAMES = ['부츠', '운동화', '장화', '맨발'];
+  const FACE_NAMES = ['방긋', '활짝', '졸린 눈', '반짝', '윙크', '별눈'];
+  const LOOK_MAX = [6, 9, 8, 10, 10, 10, 6, 5, 4];     /* options per slot: skin, hair, hair colour, hat, coat, accessory, face, outfit, shoes */
+  function parseLook(s) { if (typeof s !== 'string' || !/^\d{7}(\d\d)?$/.test(s)) return null; const a = s.split('').map(Number); while (a.length < 9) a.push(0); for (let i = 0; i < 9; i++) if (a[i] >= LOOK_MAX[i]) return null; return a; }
   function randomLook() { return LOOK_MAX.map(n => (Math.random() * n) | 0); }
   const toonCache = {};
   const TN = (c, o) => { const k = c + (o ? JSON.stringify(o) : ''); return toonCache[k] || (toonCache[k] = new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: toonGrad }, o || {}))); };
@@ -2288,12 +2289,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     x.fillStyle = 'rgba(255,120,140,0.5)'; [56, 200].forEach(bx0 => { x.beginPath(); x.ellipse(bx0, 86, 18, 10, 0, 0, 6.2832); x.fill(); });
     x.strokeStyle = ink; x.fillStyle = ink; x.lineCap = 'round'; x.lineWidth = 7;
     [84, 172].forEach(ex => {
-      if (blink || style === 2) { x.beginPath(); x.arc(ex, 52, 13, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke(); }
+      if (blink || style === 2 || (style === 4 && ex === 84)) { x.beginPath(); x.arc(ex, 52, 13, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke(); }
+      else if (style === 5) { x.fillStyle = '#ffcf3a'; x.lineWidth = 4; x.beginPath(); for (let k = 0; k < 10; k++) { const rr = k % 2 ? 7 : 18, aa = -Math.PI / 2 + k * Math.PI / 5; x[k ? 'lineTo' : 'moveTo'](ex + Math.cos(aa) * rr, 58 + Math.sin(aa) * rr); } x.closePath(); x.fill(); x.stroke(); x.fillStyle = ink; x.lineWidth = 7; }
       else if (style === 3) { x.beginPath(); x.ellipse(ex, 58, 13, 17, 0, 0, 6.2832); x.fill(); x.fillStyle = '#fff'; x.beginPath(); x.arc(ex - 4, 51, 5.5, 0, 6.2832); x.fill(); x.beginPath(); x.arc(ex + 4, 64, 3, 0, 6.2832); x.fill(); x.fillStyle = ink; }
       else { x.beginPath(); x.ellipse(ex, 58, 11, 16, 0, 0, 6.2832); x.fill(); x.fillStyle = '#fff'; x.beginPath(); x.arc(ex - 3, 52, 4.6, 0, 6.2832); x.fill(); x.beginPath(); x.arc(ex + 3.5, 65, 2.2, 0, 6.2832); x.fill(); x.fillStyle = ink; }
     });
-    if (style === 0) { x.beginPath(); x.arc(128, 84, 14, 0.2 * Math.PI, 0.8 * Math.PI); x.stroke(); }
-    else if (style === 1) { x.beginPath(); x.ellipse(128, 86, 16, 13, 0, 0, Math.PI); x.fill(); x.fillStyle = '#ff8fa3'; x.beginPath(); x.ellipse(128, 97, 8, 5, 0, 0, Math.PI); x.fill(); x.fillStyle = ink; }
+    if (style === 0 || style === 4) { x.beginPath(); x.arc(128, 84, 14, 0.2 * Math.PI, 0.8 * Math.PI); x.stroke(); }
+    else if (style === 1 || style === 5) { x.beginPath(); x.ellipse(128, 86, 16, 13, 0, 0, Math.PI); x.fill(); x.fillStyle = '#ff8fa3'; x.beginPath(); x.ellipse(128, 97, 8, 5, 0, 0, Math.PI); x.fill(); x.fillStyle = ink; }
     else if (style === 2) { x.beginPath(); x.ellipse(128, 92, 6, 7, 0, 0, 6.2832); x.stroke(); }
     else { x.beginPath(); x.arc(118, 88, 10, 0, Math.PI); x.stroke(); x.beginPath(); x.arc(138, 88, 10, 0, Math.PI); x.stroke(); }
     const t = new T.CanvasTexture(c); t.minFilter = T.LinearFilter; t.generateMipmaps = false;
@@ -2301,7 +2303,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   const blobGeo = new T.CircleGeometry(0.8, 18), blobMat = B(0x000000, { transparent: true, opacity: 0.22 });
   function makeAvatar(look) {
-    const skinC = SKINS[look[0]], hairC = HAIRCOLS[look[2]], coatC = COATS[look[4]], hairI = look[1], hatI = look[3], accI = look[5], faceI = look[6];
+    const skinC = SKINS[look[0]], hairC = HAIRCOLS[look[2]], coatC = COATS[look[4]], hairI = look[1], hatI = look[3], accI = look[5], faceI = look[6], outfitI = look[7] || 0, shoeI = look[8] || 0;
     const g = new T.Group(), av = { lift: 0, emote: null, group: g, look: look, seed: look.reduce((a, b, i) => a + b * (i + 3), 0) * 0.37, blinking: false };
     g.rotation.order = 'YXZ';                               /* yaw first, then lean forward */
     let rs = (av.seed * 9973 + 7) % 1; const rnd2 = () => { rs = (rs * 16807 + 0.318) % 1; return rs; };
@@ -2316,6 +2318,23 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const a = (rnd2() - 0.5) * 2.2, y = 0.62 + rnd2() * 0.6, r0 = 0.5 - 0.04 * Math.abs(y - 0.95);
       const sm = new T.Mesh(new T.SphereGeometry(0.07 + rnd2() * 0.05, 8, 6), TN(PAL[(rnd2() * PAL.length) | 0])); sm.scale.set(1, 1, 0.35);
       sm.position.set(Math.sin(a) * r0, y, Math.cos(a) * r0); sm.lookAt(sm.position.x * 2, y, sm.position.z * 2); torso.add(sm);
+    }
+    /* outfits */
+    if (outfitI === 1) {                                                    /* dungarees */
+      const dn = TN(0x4a6fa5), gold = TN(0xf2c14e), bib = new T.Mesh(new T.BoxGeometry(0.46, 0.42, 0.1), dn); bib.position.set(0, 1.05, 0.46); torso.add(bib);
+      [-1, 1].forEach(sd => { const st = new T.Mesh(new T.BoxGeometry(0.07, 0.5, 0.06), dn); st.position.set(sd * 0.19, 1.38, 0.37); st.rotation.x = 0.55; torso.add(st); const bt = new T.Mesh(new T.SphereGeometry(0.04, 6, 5), gold); bt.position.set(sd * 0.19, 1.22, 0.52); torso.add(bt); });
+      const pk = new T.Mesh(new T.BoxGeometry(0.2, 0.14, 0.04), TN(0x3a5a8c)); pk.position.set(0, 0.98, 0.52); torso.add(pk);
+    } else if (outfitI === 2) {                                             /* a cape */
+      const cp = new T.Mesh(new T.CylinderGeometry(0.58, 0.95, 1.15, 18, 1, true, Math.PI - 0.95, 1.9), new T.MeshToonMaterial({ color: accent, gradientMap: toonGrad, side: T.DoubleSide })); cp.position.set(0, 0.92, -0.03); torso.add(cp);
+      const cl = new T.Mesh(new T.SphereGeometry(0.06, 8, 6), TN(0xf2c14e)); cl.position.set(0, 1.44, 0.3); torso.add(cl);
+    } else if (outfitI === 3) {                                             /* acorn vest: a brown hem and an acorn badge */
+      const hem = new T.Mesh(new T.LatheGeometry([[0.37, 0.5], [0.5, 0.7], [0.545, 0.92], [0.515, 0.92], [0.475, 0.72], [0.35, 0.52]].map(q => new T.Vector2(q[0], q[1])), 22), new T.MeshToonMaterial({ color: 0xb07a4a, gradientMap: toonGrad, side: T.DoubleSide })); torso.add(hem);
+      const bd = new T.Mesh(new T.SphereGeometry(0.1, 10, 8), TN(0xc8964f)); bd.scale.set(1, 1.15, 0.5); bd.position.set(0.2, 1.12, 0.46); torso.add(bd);
+      const bc = new T.Mesh(new T.SphereGeometry(0.105, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), TN(0x6a4a2a)); bc.scale.set(1, 0.8, 0.5); bc.position.set(0.2, 1.17, 0.46); torso.add(bc);
+    } else if (outfitI === 4) {                                             /* an apron */
+      const ap = TN(0xf8f4ea), body = new T.Mesh(new T.BoxGeometry(0.54, 0.62, 0.1), ap); body.position.set(0, 0.86, 0.46); torso.add(body);
+      const pk = new T.Mesh(new T.BoxGeometry(0.3, 0.16, 0.04), TN(0xe6dfcb)); pk.position.set(0, 0.78, 0.52); torso.add(pk);
+      [-1, 1].forEach(sd => { const st = new T.Mesh(new T.BoxGeometry(0.06, 0.5, 0.05), ap); st.position.set(sd * 0.17, 1.28, 0.4); st.rotation.x = 0.5; torso.add(st); });
     }
     /* head */
     const headG = new T.Group(); headG.position.y = 1.85; g.add(headG); av.headG = headG;
@@ -2334,6 +2353,16 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (hairI === 4) { const bun = new T.Mesh(new T.SphereGeometry(0.27, 12, 10), hairM); bun.position.set(0, 0.74, -0.12); headG.add(bun); }
     if (hairI === 5) for (let i = 0; i < 9; i++) { const a = i / 9 * 6.2832, cl = new T.Mesh(new T.SphereGeometry(0.22, 8, 6), hairM); cl.position.set(Math.sin(a) * 0.55, 0.38 + (i % 2) * 0.12, Math.cos(a) * 0.5 - 0.08); headG.add(cl); }
     if (hairI === 6) { const kn = new T.Mesh(new T.SphereGeometry(0.15, 10, 8), hairM); kn.position.set(0, 0.28, -0.66); headG.add(kn); const tl = new T.Mesh(new T.ConeGeometry(0.17, 0.75, 8), hairM); tl.position.set(0, -0.18, -0.78); tl.rotation.x = Math.PI + 0.28; headG.add(tl); }
+    if (hairI === 7) [-1, 1].forEach(sd => {
+      const kn = new T.Mesh(new T.SphereGeometry(0.2, 10, 8), hairM); kn.position.set(sd * 0.66, 0.02, -0.08); headG.add(kn);
+      const tl = new T.Mesh(new T.ConeGeometry(0.2, 0.75, 8), hairM); tl.position.set(sd * 0.72, -0.4, -0.08); tl.rotation.z = Math.PI + sd * 0.12; headG.add(tl);
+      const rb = new T.Mesh(new T.SphereGeometry(0.09, 8, 6), TN(accent)); rb.position.set(sd * 0.64, 0.17, -0.02); headG.add(rb);
+    });
+    if (hairI === 8) {
+      const kn = new T.Mesh(new T.SphereGeometry(0.2, 10, 8), hairM); kn.position.set(0, 0.52, -0.55); headG.add(kn);
+      const tl = new T.Mesh(new T.ConeGeometry(0.2, 0.9, 8), hairM); tl.position.set(0, 0.15, -0.85); tl.rotation.x = Math.PI - 0.55; headG.add(tl);
+      const rb = new T.Mesh(new T.SphereGeometry(0.09, 8, 6), TN(accent)); rb.position.set(0, 0.55, -0.52); headG.add(rb);
+    }
     /* hats */
     const hatCol = TN(accent);
     if (hatI === 1) { const b = new T.Mesh(new T.SphereGeometry(0.58, 16, 10), hatCol); b.scale.set(1, 0.38, 1); b.position.set(0.08, 0.64, 0); b.rotation.z = -0.12; headG.add(b); const st = new T.Mesh(cyl(0.04, 0.04, 0.14, 5), hatCol); st.position.set(0.1, 0.84, 0); headG.add(st); }
@@ -2341,12 +2370,37 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (hatI === 3) { const bk = new T.Mesh(cyl(0.58, 0.7, 0.46, 20), TN(0xf3ead8)); bk.position.y = 0.72; headG.add(bk); const br = new T.Mesh(cyl(0.9, 0.9, 0.05, 24), TN(0xf3ead8)); br.position.y = 0.5; headG.add(br); }
     if (hatI === 4) { const bn = new T.Mesh(new T.SphereGeometry(0.64, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), hatCol); bn.position.y = 0.36; headG.add(bn); const cf = new T.Mesh(cyl(0.65, 0.65, 0.16, 20), TN(0xf5f0e6)); cf.position.y = 0.4; headG.add(cf); const pm = new T.Mesh(new T.SphereGeometry(0.16, 10, 8), TN(0xf5f0e6)); pm.position.y = 1.0; headG.add(pm); }
     if (hatI === 5) { const dm = new T.Mesh(new T.SphereGeometry(0.66, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), TN(0x3a3f6b)); dm.position.y = 0.28; dm.scale.y = 0.7; headG.add(dm); const vs = new T.Mesh(new T.CylinderGeometry(0.78, 0.78, 0.05, 16, 1, false, -0.95, 1.9), TN(0x3a3f6b)); vs.position.set(0, 0.42, 0.1); vs.rotation.x = 0.15; headG.add(vs); }
+    if (hatI === 6) {                                                       /* an acorn cap */
+      const dm = new T.Mesh(new T.SphereGeometry(0.68, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), TN(0xb07a4a)); dm.scale.y = 0.8; dm.position.y = 0.3; headG.add(dm);
+      const rm = new T.Mesh(cyl(0.69, 0.69, 0.07, 20), TN(0x8a5a30)); rm.position.y = 0.32; headG.add(rm);
+      const st = new T.Mesh(new T.ConeGeometry(0.08, 0.22, 6), TN(0x5a3a22)); st.position.y = 0.9; headG.add(st);
+      for (let i = 0; i < 6; i++) { const a = i / 6 * 6.2832, dt = new T.Mesh(new T.SphereGeometry(0.05, 6, 5), TN(0x9a6a3a)); dt.position.set(Math.sin(a) * 0.5, 0.6, Math.cos(a) * 0.5); headG.add(dt); }
+    }
+    if (hatI === 7) {                                                       /* a little gold crown */
+      const gd = new T.MeshToonMaterial({ color: 0xf2c14e, gradientMap: toonGrad, side: T.DoubleSide }), rg = new T.Mesh(new T.CylinderGeometry(0.5, 0.55, 0.2, 18, 1, true), gd); rg.position.y = 0.62; headG.add(rg);
+      for (let i = 0; i < 5; i++) { const a = i / 5 * 6.2832, sp = new T.Mesh(new T.ConeGeometry(0.1, 0.26, 6), gd); sp.position.set(Math.sin(a) * 0.52, 0.84, Math.cos(a) * 0.52); headG.add(sp); const gm = new T.Mesh(new T.SphereGeometry(0.045, 6, 5), TN(i % 2 ? 0xe84b4b : 0x4a8fd8)); gm.position.set(Math.sin(a) * 0.54, 0.66, Math.cos(a) * 0.54); headG.add(gm); }
+    }
+    if (hatI === 8) [-1, 1].forEach(sd => {                                 /* cat ears */
+      const ea = new T.Mesh(new T.ConeGeometry(0.22, 0.42, 4), TN(hairC)); ea.position.set(sd * 0.38, 0.66, 0.02); ea.rotation.z = -sd * 0.35; ea.rotation.y = Math.PI / 4; headG.add(ea);
+      const ei = new T.Mesh(new T.ConeGeometry(0.13, 0.28, 4), TN(0xff9fb5)); ei.position.set(sd * 0.38, 0.64, 0.1); ei.rotation.z = -sd * 0.35; ei.rotation.y = Math.PI / 4; headG.add(ei);
+    });
+    if (hatI === 9) {                                                       /* a flower band */
+      const bn = new T.Mesh(new T.TorusGeometry(0.7, 0.04, 6, 24, Math.PI), TN(0x5aa05a)); headG.add(bn);
+      [0.3, 0.5, 0.7].forEach((k, i) => { const a = Math.PI * k, fl = new T.Mesh(new T.SphereGeometry(0.11, 8, 6), TN([0xff8fb1, 0xffffff, 0xffd95a][i])); fl.position.set(Math.cos(a) * 0.71, Math.sin(a) * 0.71, 0.08); headG.add(fl); const ct = new T.Mesh(new T.SphereGeometry(0.05, 6, 5), TN(i === 2 ? 0xe84b4b : 0xffd95a)); ct.position.set(Math.cos(a) * 0.71, Math.sin(a) * 0.71, 0.17); headG.add(ct); });
+    }
     /* arms and legs */
     function limb(x, y, parts) { const l = new T.Group(); l.position.set(x, y, 0); parts.forEach(q => l.add(q)); g.add(l); return l; }
     const sleeve = (sx) => { const m = new T.Mesh(cyl(0.11, 0.1, 0.5, 8), coat); m.position.y = -0.25; return m; };
     const hand = () => { const m = new T.Mesh(new T.SphereGeometry(0.125, 10, 8), skin); m.position.y = -0.56; return m; };
-    const leg = () => { const m = new T.Mesh(cyl(0.14, 0.13, 0.32, 8), dark); m.position.y = -0.16; return m; };
-    const boot = () => { const m = new T.Mesh(new T.SphereGeometry(0.17, 10, 8), TN(0x6a4a3a)); m.scale.set(1, 0.78, 1.35); m.position.set(0, -0.38, 0.05); return m; };
+    const legM = outfitI === 1 ? TN(0x4a6fa5) : dark, leg = () => { const m = new T.Mesh(cyl(0.14, 0.13, 0.32, 8), legM); m.position.y = -0.16; return m; };
+    const boot = () => {
+      if (shoeI === 3) { const m = new T.Mesh(new T.SphereGeometry(0.15, 10, 8), skin); m.scale.set(1, 0.7, 1.3); m.position.set(0, -0.37, 0.05); return m; }
+      const sc = [0x6a4a3a, 0xf5f0e6, 0xf2c14e][shoeI], gp = new T.Group(), m = new T.Mesh(new T.SphereGeometry(0.17, 10, 8), TN(sc));
+      m.scale.set(1, 0.78, 1.35); m.position.set(0, -0.38, 0.05); gp.add(m);
+      if (shoeI === 1) { const tc = new T.Mesh(new T.SphereGeometry(0.1, 8, 6), TN(0xe84b4b)); tc.scale.set(1, 0.7, 0.9); tc.position.set(0, -0.37, 0.2); gp.add(tc); const sl = new T.Mesh(cyl(0.16, 0.16, 0.04, 10), TN(0xd8d0bd)); sl.scale.set(1, 1, 1.5); sl.position.set(0, -0.45, 0.06); gp.add(sl); }
+      if (shoeI === 2) { const sh = new T.Mesh(cyl(0.165, 0.155, 0.2, 8), TN(sc)); sh.position.y = -0.26; gp.add(sh); }
+      return gp;
+    };
     av.armL = limb(-0.56, 1.32, [sleeve(), hand()]); av.armR = limb(0.56, 1.32, [sleeve(), hand()]);
     av.legL = limb(-0.2, 0.62, [leg(), boot()]); av.legR = limb(0.2, 0.62, [leg(), boot()]);
     /* accessories */
@@ -2354,6 +2408,27 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (accI === 2) { const pal = new T.Group(); pal.position.set(0, -0.58, 0.16); pal.rotation.set(0.5, 0, 0); const base = new T.Mesh(cyl(0.34, 0.34, 0.04, 16), wood); base.scale.set(1, 1, 0.75); pal.add(base); [0xd9342b, 0xf3c431, 0x2c47c8, 0x3f9b4f].forEach((c, i) => { const d = new T.Mesh(cyl(0.05, 0.05, 0.06, 8), TN(c)); d.position.set(-0.18 + i * 0.12, 0.03, -0.06 + (i % 2) * 0.1); pal.add(d); }); av.armL.add(pal); }
     if (accI === 3) { const bp = new T.Mesh(new T.BoxGeometry(0.56, 0.66, 0.26), TN(new T.Color(coatC).multiplyScalar(0.75).getHex())); bp.position.set(0, 1.0, -0.52); g.add(bp); const rl = new T.Mesh(cyl(0.09, 0.09, 0.62, 8), TN(0xf3ead8)); rl.rotation.z = Math.PI / 2; rl.position.set(0, 1.42, -0.52); g.add(rl); }
     if (accI === 4) { const gm = TN(0x2a2233); [-1, 1].forEach(sd => { const rg = new T.Mesh(new T.TorusGeometry(0.15, 0.025, 6, 16), gm); rg.position.set(sd * 0.21, 0.04, 0.585); headG.add(rg); }); const br = new T.Mesh(cyl(0.015, 0.015, 0.14, 4), gm); br.rotation.z = Math.PI / 2; br.position.set(0, 0.07, 0.6); headG.add(br); }
+    if (accI === 5) {                                                       /* small white wings that flap */
+      av.wings = [-1, 1].map(sd => { const w = new T.Mesh(new T.SphereGeometry(0.3, 10, 8), TN(0xfdfaf0)); w.scale.set(0.3, 1, 0.12); w.position.set(sd * 0.3, 1.2, -0.52); w.rotation.z = sd * 0.45; g.add(w); return w; });
+    }
+    if (accI === 6) {                                                       /* headphones */
+      const hp = TN(0x3a3f6b), band = new T.Mesh(new T.TorusGeometry(0.67, 0.05, 6, 24, Math.PI), hp); headG.add(band);
+      [-1, 1].forEach(sd => { const cu = new T.Mesh(cyl(0.18, 0.18, 0.13, 12), hatCol); cu.rotation.z = Math.PI / 2; cu.position.set(sd * 0.66, 0, 0); headG.add(cu); });
+    }
+    if (accI === 7) {                                                       /* a brush tucked behind the ear */
+      const br = new T.Group(); br.position.set(0.52, 0.32, -0.12); br.rotation.set(0.15, 0, -0.55); headG.add(br);
+      const hd = new T.Mesh(cyl(0.025, 0.03, 0.75, 6), wood); hd.position.y = 0.2; br.add(hd); const tp = new T.Mesh(new T.ConeGeometry(0.05, 0.16, 6), TN(0xd9342b)); tp.position.y = 0.64; br.add(tp);
+    }
+    if (accI === 8) {                                                       /* a star wand in the right hand */
+      const wd = new T.Group(); wd.position.set(0, -0.56, 0.05); wd.rotation.x = -0.9; av.armR.add(wd);
+      const sk = new T.Mesh(cyl(0.03, 0.03, 0.8, 6), wood); sk.position.y = 0.35; wd.add(sk);
+      const sr = new T.Mesh(new T.DodecahedronGeometry(0.16), B(0xffe27a)); sr.scale.z = 0.4; sr.position.y = 0.82; wd.add(sr);
+    }
+    if (accI === 9) {                                                       /* an acorn backpack */
+      const bd = new T.Mesh(new T.SphereGeometry(0.3, 12, 10), TN(0xc8964f)); bd.scale.set(1, 1.1, 0.8); bd.position.set(0, 0.95, -0.55); g.add(bd);
+      const cp = new T.Mesh(new T.SphereGeometry(0.31, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), TN(0x6a4a2a)); cp.scale.set(1, 0.8, 0.8); cp.position.set(0, 1.06, -0.55); g.add(cp);
+      const st = new T.Mesh(new T.ConeGeometry(0.05, 0.14, 6), TN(0x4a3018)); st.position.set(0, 1.34, -0.55); g.add(st);
+    }
     if (HI) g.traverse(o => { if (o.isMesh && o.material !== inkM && o.material !== av.faceMat) o.castShadow = true; });
     return av;
   }
@@ -2385,6 +2460,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       av.legL.rotation.x = s; av.legR.rotation.x = -s; av.armL.rotation.x = -s * 0.9; av.armR.rotation.x = s * 0.9; av.armL.rotation.z = av.armR.rotation.z = 0;
     }
     if (sitting) { av.legL.rotation.x = av.legR.rotation.x = -1.45; av.lift = sitting === 2 ? -0.46 : 0.66; }                         /* on a bench: legs forward, raised onto the seat */
+    if (av.wings) av.wings.forEach((w, i) => { w.rotation.y = (i ? 1 : -1) * (0.3 + Math.sin(t * 4 + av.seed) * 0.14); });
     av.torso.scale.y = 1 + 0.022 * Math.sin(t * 2.2 + av.seed);
     av.headG.position.y = 1.85 + 0.014 * Math.sin(t * 2.2 + av.seed + 0.6);
     const bl = ((t + av.seed) % 3.7) < 0.14;
@@ -3101,7 +3177,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   /* ---------- dress-up sheet; the live preview is drawn by the main renderer into a small target ---------- */
   const DRESS_ROWS = [
     { i: 0, label: '피부', colors: SKINS }, { i: 1, label: '머리', names: HAIR_NAMES }, { i: 2, label: '머리 색', colors: HAIRCOLS },
-    { i: 3, label: '모자', names: HAT_NAMES }, { i: 4, label: '옷 색', colors: COATS }, { i: 5, label: '소품', names: ACC_NAMES }, { i: 6, label: '얼굴', names: FACE_NAMES }
+    { i: 3, label: '모자', names: HAT_NAMES }, { i: 4, label: '옷 색', colors: COATS }, { i: 7, label: '옷 모양', names: OUTFIT_NAMES }, { i: 5, label: '소품', names: ACC_NAMES }, { i: 8, label: '신발', names: SHOE_NAMES }, { i: 6, label: '얼굴', names: FACE_NAMES }
   ];
   let prev = null, dressT = 0;
   function initPreview() {
@@ -4568,7 +4644,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
 
   /* ---------- other people in the room ---------- */
   let roomNS = null, lastSend = 0, lastSent = '', inRoomCount = 1;
-  function lookOf(pr) { const l = parseLook(pr.a); if (l) return l; const c = clamp(Math.floor(Number(pr.c)) || 0, 0, COATS.length - 1); return [1, 1, 1, 1, c, 0, 0]; }
+  function lookOf(pr) { const l = parseLook(pr.a); if (l) return l; const c = clamp(Math.floor(Number(pr.c)) || 0, 0, COATS.length - 1); return [1, 1, 1, 1, c, 0, 0, 0, 0]; }
   function rebuildRemote(r, code) {
     const look = parseLook(code); if (!look) return;
     const old = r.av, nu = makeAvatar(look);
@@ -4924,6 +5000,64 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     heading = pl.h; camAim = { yaw: pl.h + Math.PI, pitch: pl.pitch || 0.5, t: 1.6 };
     pushPresence(true); toast(pl.name + '에 왔어요', 3000);
   }
+  /* teleport: a rune circle opens under my feet, a pillar of light lifts me away; at the other end the circle opens again and I step out of the light */
+  const portals = []; let teleOn = false, teleK = 1, teleSpin = 0, teleT0 = 0, teleStage = 0, telePl = null, runeTex = null;
+  function runeTexture() {
+    if (runeTex) return runeTex;
+    const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d'); g.translate(256, 256); g.lineCap = 'round';
+    const ring = (r, w, a) => { g.strokeStyle = 'rgba(190,240,255,' + a + ')'; g.lineWidth = w; g.beginPath(); g.arc(0, 0, r, 0, 6.2832); g.stroke(); };
+    ring(246, 7, 0.95); ring(228, 2, 0.8); ring(180, 4, 0.9); ring(150, 2, 0.7); ring(60, 3, 0.8);
+    g.strokeStyle = 'rgba(255,238,175,0.95)'; g.lineWidth = 4;
+    for (let k = 0; k < 2; k++) { g.beginPath(); for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + k * Math.PI / 3 + i * 2 * Math.PI / 3; g[i ? 'lineTo' : 'moveTo'](Math.cos(a) * 180, Math.sin(a) * 180); } g.closePath(); g.stroke(); }
+    let sd = 7; const rnd = () => { sd = (sd * 16807 + 11) % 2147483647; return sd / 2147483647; };
+    g.strokeStyle = 'rgba(210,244,255,0.95)'; g.lineWidth = 3;
+    for (let i = 0; i < 24; i++) {                                           /* invented runes: a few short strokes each */
+      g.save(); g.rotate(i / 24 * 6.2832); g.translate(0, -204);
+      g.beginPath(); g.moveTo(0, -13); g.lineTo(0, 13); for (let j = 0; j < 2; j++) { const y = -10 + rnd() * 20, d = rnd() * 16 - 8; g.moveTo(0, y); g.lineTo(d, y + 7 * (rnd() > 0.5 ? 1 : -1)); } g.stroke(); g.restore();
+    }
+    for (let i = 0; i < 48; i++) { g.save(); g.rotate(i / 48 * 6.2832); g.fillStyle = 'rgba(190,240,255,0.85)'; g.fillRect(-1.5, -246, 3, i % 4 ? 7 : 15); g.restore(); }
+    runeTex = new T.CanvasTexture(c); runeTex.minFilter = T.LinearFilter; runeTex.generateMipmaps = false; return runeTex;
+  }
+  function spawnPortal(x, z, kind) {
+    const grp = new T.Group(); grp.position.set(x, 0.07, z); scene.add(grp);
+    const circ = (sz, col) => { const m = new T.Mesh(new T.PlaneGeometry(sz, sz), new T.MeshBasicMaterial({ map: runeTexture(), color: col, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false })); m.rotation.x = -Math.PI / 2; grp.add(m); return m; };
+    const c1 = circ(5.2, 0xa8e8ff), c2 = circ(3.2, 0xffe9a8); c2.position.y = 0.02;
+    const pm = new T.MeshBasicMaterial({ color: 0xc8f2ff, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false, side: T.DoubleSide });
+    const pillar = new T.Mesh(new T.CylinderGeometry(1.15, 1.45, 8, 22, 1, true), pm); pillar.position.y = 4; grp.add(pillar);
+    const N = 46, pa = new Float32Array(N * 3), pg = new T.BufferGeometry(), ps = [];
+    for (let i = 0; i < N; i++) ps.push({ a: Math.random() * 6.2832, r: 0.3 + Math.random() * 1.5, v: 1.6 + Math.random() * 3.2, y: Math.random() * 1.5 });
+    pg.setAttribute('position', new T.BufferAttribute(pa, 3));
+    const pts = new T.Points(pg, new T.PointsMaterial({ size: 0.34, map: dotTexEarly, color: 0xe8fbff, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false })); pts.frustumCulled = false; grp.add(pts);
+    portals.push({ grp: grp, c1: c1, c2: c2, pillar: pillar, pm: pm, pts: pts, pa: pa, ps: ps, kind: kind, t0: tNow, life: kind === 'out' ? 1.15 : 1.5 });
+  }
+  const sstep = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
+  anim.push(dt => {
+    for (let i = portals.length - 1; i >= 0; i--) {
+      const p = portals[i], u = (tNow - p.t0) / p.life;
+      if (u >= 1) { scene.remove(p.grp); p.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); portals.splice(i, 1); continue; }
+      const out = p.kind === 'out', grow = sstep(0, 0.28, u), fade = 1 - sstep(out ? 0.82 : 0.6, 1, u);
+      p.c1.material.opacity = grow * fade * 0.95; p.c2.material.opacity = grow * fade * 0.9;
+      p.c1.scale.setScalar(0.25 + 0.75 * grow); p.c2.scale.setScalar(0.25 + 0.75 * grow); p.c1.rotation.z += dt * 2.0; p.c2.rotation.z -= dt * 3.4;
+      const pu = out ? sstep(0.2, 0.5, u) * (1 - sstep(0.72, 1, u)) : (1 - sstep(0.15, 0.7, u)) * sstep(0, 0.08, u);
+      p.pm.opacity = pu * 0.38; p.pillar.scale.set(out ? 1 - 0.55 * sstep(0.7, 1, u) : 0.5 + 0.5 * (1 - sstep(0.1, 0.7, u)), out ? 0.2 + 0.8 * sstep(0.15, 0.5, u) : 1, out ? 1 - 0.55 * sstep(0.7, 1, u) : 0.5 + 0.5 * (1 - sstep(0.1, 0.7, u))); p.pillar.position.y = 4 * p.pillar.scale.y;
+      p.pts.material.opacity = (out ? sstep(0.15, 0.4, u) * (1 - sstep(0.75, 1, u)) : (1 - sstep(0.45, 1, u)) * sstep(0, 0.06, u)); const t = tNow - p.t0;
+      for (let k = 0; k < p.ps.length; k++) { const q = p.ps[k], y = (q.y + t * q.v) % 6, rr = out ? q.r * (1 - 0.6 * y / 6) : q.r * (0.4 + y / 6 * 1.4), a = q.a + t * (out ? 2.5 : 1.2); p.pa[k * 3] = Math.cos(a) * rr; p.pa[k * 3 + 1] = y; p.pa[k * 3 + 2] = Math.sin(a) * rr; }
+      p.pts.geometry.attributes.position.needsUpdate = true;
+    }
+    if (!teleOn) return;
+    const u = tNow - teleT0;
+    if (teleStage === 0) {                                                   /* going: spin faster and shrink into the light */
+      teleSpin = u * u * 9; teleK = 1 - sstep(0.4, 0.95, u);
+      if (u >= 1.0) { snapTo(telePl); teleK = 0; teleSpin = 0; spawnPortal(telePl.x, telePl.z, 'in'); const fx = $('#teleFx'); fx.classList.add('on'); setTimeout(() => fx.classList.remove('on'), 140); teleStage = 1; teleT0 = tNow; }
+    } else {                                                                 /* arriving: the pillar flashes, then I step out of it */
+      const k = sstep(0.3, 0.95, u); teleK = k < 1 ? Math.min(1, k * (1 + 0.25 * Math.sin(k * Math.PI))) : 1; teleSpin = (1 - k) * 7;
+      if (u >= 1.25) { teleOn = false; teleK = 1; teleSpin = 0; arrivePlace(telePl); }
+    }
+  });
+  function startTeleport(pl) {
+    if (teleOn) return;
+    teleOn = true; teleStage = 0; teleT0 = tNow; telePl = pl; goal = null; spawnPortal(pos.x, pos.z, 'out');
+  }
   const walkChk = $('#walkChk'); try { walkChk.checked = localStorage.getItem('hw-walk') === '1'; } catch (e) {}
   walkChk.addEventListener('change', () => { try { localStorage.setItem('hw-walk', walkChk.checked ? '1' : '0'); } catch (e) {} });
   function goPlace(pl) {
@@ -4932,11 +5066,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (window.__hwInstant) { snapTo(pl); toast(pl.name + '에 왔어요', 3000); return; }
     myEasel = -1; mySeat = -1;
     if (Math.hypot(pl.x - pos.x, pl.z - pos.z) < 1) { arrivePlace(pl); return; }
-    if (!walkChk.checked && !window.__hwWalk && Math.hypot(pl.x - pos.x, pl.z - pos.z) > 6) {       /* teleport: the screen goes bright, I appear there, it clears */
-      const fx = $('#teleFx'); fx.classList.add('on');
-      setTimeout(() => { snapTo(pl); arrivePlace(pl); setTimeout(() => fx.classList.remove('on'), 120); }, 300);
-      return;
-    }
+    if (!walkChk.checked && !window.__hwWalk && Math.hypot(pl.x - pos.x, pl.z - pos.z) > 6) { startTeleport(pl); return; }
     goal = { x: pl.x, z: pl.z, place: pl, stuck: 0 };
     toast(pl.name + '(으)로 걸어가요. 조이스틱을 움직이면 멈춰요', 4000);
   }
@@ -5161,7 +5291,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     let ix = joy.x + ((keys['d'] || keys['arrowright']) ? 1 : 0) - ((keys['a'] || keys['arrowleft']) ? 1 : 0);
     let iy = joy.y + ((keys['w'] || keys['arrowup']) ? 1 : 0) - ((keys['s'] || keys['arrowdown']) ? 1 : 0);
     const len = Math.hypot(ix, iy); if (len > 1) { ix /= len; iy /= len; }
-    const m = Math.min(1, len);
+    const m = teleOn ? 0 : Math.min(1, len);
     lodT -= dt; if (lodT <= 0) { lodT = 0.5; slotLOD(); }
     miniT -= dt; if (miniT <= 0 && started) { miniT = 0.2; drawMini(); }
     if (started) { if (!t0Play) t0Play = Date.now(); gaugeT -= dt; if (gaugeT <= 0) { gaugeT = 1; const sec = Math.floor((Date.now() - t0Play) / 1000), h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60; timeTxt.textContent = '접속 ' + (h ? h + '시간 ' : '') + m + '분'; timeBar.style.width = (sec % 3600) / 36 + '%'; if (!rankBox.hidden) drawRank(); } }
@@ -5207,7 +5337,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     }
     animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0, mySeat >= 0 ? (benches[mySeat >> 1].low ? 2 : 1) : 0);
     player.position.set(pos.x, 0.0 + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp + me.lift, pos.z);
-    player.rotation.y = heading; player.rotation.x = 0.11 * walkAmp;
+    player.rotation.y = heading + teleSpin; player.rotation.x = 0.11 * walkAmp;
     if (walkAmp > 0.6 && !player.userData.hidden) { puffT -= dt; if (puffT <= 0) { puffT = 0.17; puff(pos.x - Math.sin(heading) * 0.2, pos.z - Math.cos(heading) * 0.2); } }
     blob.position.set(pos.x, 0.05, pos.z);
     updateAtmosphere(dt, tNow); sunFollow(pos.x, pos.z); swayT.value = tNow;
@@ -5254,6 +5384,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const dz = camTz + Math.cos(camYaw) * cp * camDist;
     const artist = pad.open && pad.view !== 'off' && pad.easel >= 0;
     player.visible = !artist && !inspect; blob.visible = !artist && !inspect; player.userData.hidden = artist;
+    if (teleOn || teleK !== 1) { const ks = Math.max(0.001, teleK); player.scale.set(ks, 1 + (1 - ks) * 1.2, ks); if (teleK < 0.02) { player.visible = false; blob.visible = false; } } else if (player.scale.x !== 1) player.scale.set(1, 1, 1);
     if (hiddenEasel >= 0 && (!artist || hiddenEasel !== pad.easel)) { easels[hiddenEasel].grp.visible = true; easels[hiddenEasel].ring.visible = true; hiddenEasel = -1; }
     if (artist && hiddenEasel !== pad.easel) { hiddenEasel = pad.easel; easels[hiddenEasel].grp.visible = false; easels[hiddenEasel].ring.visible = false; }   /* clear view past my own easel */
     if (artist) {                                       /* the artist's own eyes: from the seat, over the easel, towards the scenery */

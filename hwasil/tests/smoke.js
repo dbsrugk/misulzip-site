@@ -30,7 +30,7 @@ const { start, vis, until, check, done } = require('./lib');
   await (await p.$('#dressCanvas')).screenshot({ path: t.out('dress.png') });
   check(drawn > 4000, 'character preview is drawn (' + drawn + ' px)');
   await p.click('#dressRandom'); await p.waitForTimeout(300);
-  check(/^\d{7}$/.test(await p.evaluate(() => window.__hw.look())), 'random look is a valid look');
+  check(/^\d{9}$/.test(await p.evaluate(() => window.__hw.look())), 'random look is a valid look');
   await p.click('#dressClose'); await p.waitForTimeout(300);
   check(!(await vis(p, '#dress')), 'dress-up sheet closes');
   await p.reload(); await p.waitForTimeout(5000);          /* a reload must not ask to enter again */
