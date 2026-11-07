@@ -2044,7 +2044,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const w = Math.max(0.5, s.w * (s.k === 'p' ? 1 : 2) * sc);
     ctx.lineWidth = w; ctx.globalAlpha = s.k === 'b' ? 0.55 : 1;
     const pq = s.k === 'p' && Array.isArray(s.q) && s.q.length * 2 === p.length ? s.q : null;      /* a pen with pressure: the line gets thicker where it was pressed harder */
-    const pw = i => Math.max(0.5, w * (0.35 + 1.3 * pq[i] / 100));
+    const pw = i => Math.max(0.5, w * (0.25 + 1.6 * pq[i] / 100));
     if (p.length < 4) { ctx.beginPath(); ctx.arc(p[0] * sc, p[1] * sc, (pq ? pw(0) : w) / 2, 0, 6.2832); ctx.fill(); }
     else if (pq) {
       const n = p.length / 2; let px = p[0] * sc, py = p[1] * sc;
