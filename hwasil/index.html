@@ -4276,7 +4276,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     } catch (e) {
       const c = e && e.code;
       if (c === 'slot_taken') { try { if (window.hwasil.refresh) window.hwasil.refresh('gallery'); } catch (x) {} if (!quiet) toast('방금 다른 분이 먼저 걸었어요. 다른 빈 액자를 골라 주세요.', 6000); return 'taken'; }
-      toast(c === 'removed_banned' ? '관리자가 내렸던 작품이라 다시 걸 수 없어요.' : c === 'quota_exceeded' ? '전시는 한 사람당 10점까지예요. 다른 그림을 먼저 내려 주세요.' : '전시하지 못했어요. 잠시 뒤 다시 해 주세요.', 6000);
+      toast(c === 'removed_banned' ? '관리자가 내렸던 작품이라 다시 걸 수 없어요.' : c === 'quota_exceeded' ? '전시는 한 사람당 20점까지예요. 다른 그림을 먼저 내려 주세요.' : '전시하지 못했어요. 잠시 뒤 다시 해 주세요.', 6000);
       return 'fail';
     }
   }
@@ -4526,7 +4526,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     window.hwasil.mergeKey(raw).then(r => {
       if (r && r.same) { say('지금 쓰는 열쇠와 같아요.'); return; }
       const left = (r.works_left || 0) + (r.hung_left || 0);
-      say('합쳤어요. 그림 ' + r.works + '개, 전시 ' + r.hung + '개를 옮겼어요. 옛 열쇠를 쓰던 기기에서는 「이 열쇠로 바꾸기」로 지금 열쇠를 붙여넣어야 같은 그림이 보여요.' + (left ? ' 한도(그림 60개, 전시 10개)를 넘어서 ' + left + '개는 옛 열쇠에 남았어요.' : ''));
+      say('합쳤어요. 그림 ' + r.works + '개, 전시 ' + r.hung + '개를 옮겼어요. 옛 열쇠를 쓰던 기기에서는 「이 열쇠로 바꾸기」로 지금 열쇠를 붙여넣어야 같은 그림이 보여요.' + (left ? ' 한도(그림 60개, 전시 20개)를 넘어서 ' + left + '개는 옛 열쇠에 남았어요.' : ''));
     }, () => say('합치지 못했어요. 열쇠를 확인하고 다시 해 주세요.', true));
   });
 
