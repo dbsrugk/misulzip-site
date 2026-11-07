@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>무한의 계단</title>
+<style>
+html,body{margin:0;height:100%;background:#1b2a41;color:#fff;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;overflow:hidden;touch-action:manipulation;user-select:none}
+#wrap{position:relative;width:100%;max-width:420px;height:100%;margin:0 auto}
+canvas{width:100%;height:100%;display:block;background:linear-gradient(#0f2027,#2c5364)}
+#hud{position:absolute;top:10px;left:0;right:0;text-align:center;pointer-events:none}
+#score{font-size:48px;font-weight:800}
+#best{font-size:14px;opacity:.7}
+#bar{position:absolute;top:0;left:0;height:6px;background:#ffd166;width:100%}
+#msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.55);text-align:center;gap:8px}
+#msg h1{margin:0;font-size:34px}
+#msg p{margin:0;opacity:.85}
+.btns{position:absolute;bottom:16px;left:0;right:0;display:flex;gap:12px;padding:0 16px}
+.btns button{flex:1;height:84px;border:0;border-radius:16px;font-size:20px;font-weight:700;color:#fff;background:rgba(255,255,255,.18)}
+.btns button:active{background:rgba(255,255,255,.4)}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <div id="bar"></div>
+  <div id="hud"><div id="score">0</div><div id="best"></div></div>
+  <div class="btns"><button id="turn">↔ 방향 전환</button><button id="climb">⬆ 오르기</button></div>
+  <div id="msg"><h1>무한의 계단</h1><p>오르기: Space / → / 터치<br>방향 전환: Z / ← / 터치</p><p>탭하여 시작</p></div>
+</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const $=id=>document.getElementById(id);
+const W=360,H=640,SW=70,SH=44; // 계단 크기
+cv.width=W;cv.height=H;
+let steps,dir,idx,score,best=+localStorage.getItem('stairsBest')||0,time,alive=false,started=false,camY=0,lastT=0,px,py;
+$('best').textContent='최고 '+best;
+
+function reset(){
+  steps=[0]; // 각 계단의 방향 (-1,+1): 이전 계단 대비
+  let x=0;
+  // 계단 x 위치 배열 생성
+  steps=[{x:0}];
+  dirs=[1];
+  for(let i=0;i<60;i++)addStep();
+  idx=0;dir=1;score=0;time=1;alive=true;px=0;py=0;camY=0;
+  $('score').textContent=0;
+}
+let dirs=[];
+function addStep(){
+  const last=steps[steps.length-1];
+  let d=Math.random()<.35?-dirs[dirs.length-1]:dirs[dirs.length-1];
+  // 화면 밖으로 안 나가게
+  if(last.x+d*SW/2>W/2-SW)d=-1;
+  if(last.x+d*SW/2<-W/2+SW)d=1;
+  dirs.push(d);
+  steps.push({x:last.x+d*SW/2});
+}
+// dirs[i+1] = i번째 → i+1번째 계단으로 가는 방향
+function move(turn){
+  if(!alive)return;
+  const need=dirs[idx+1];
+  if(turn)dir=-dir;
+  if(dir!==need){gameOver();return;}
+  idx++;score++;
+  time=Math.min(1,time+.06);
+  $('score').textContent=score;
+  if(steps.length-idx<30)for(let i=0;i<30;i++)addStep();
+}
+function gameOver(){
+  alive=false;
+  if(score>best){best=score;localStorage.setItem('stairsBest',best)}
+  $('best').textContent='최고 '+best;
+  $('msg').style.display='flex';
+  $('msg').innerHTML='<h1>게임 오버</h1><p>점수 '+score+'</p><p>탭하여 재시작</p>';
+}
+function sx(i){return W/2+steps[i].x}
+function sy(i){return H*0.65-i*SH+camY}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const target=idx*SH;camY+=(target-camY)*.2;
+  for(let i=Math.max(0,idx-6);i<Math.min(steps.length,idx+18);i++){
+    const x=sx(i)-SW/2,y=sy(i);
+    ctx.fillStyle=i%2?'#e07a5f':'#f2cc8f';
+    ctx.fillRect(x,y,SW,SH-6);
+    ctx.fillStyle='rgba(0,0,0,.25)';
+    ctx.fillRect(x,y+SH-10,SW,4);
+  }
+  // 캐릭터
+  const cx=sx(idx),cy=sy(idx);
+  px+=(cx-px)*.4||0;if(!px)px=cx;
+  ctx.fillStyle='#3d405b';ctx.fillRect(px-12,cy-34,24,34);
+  ctx.fillStyle='#ffd7ba';ctx.beginPath();ctx.arc(px,cy-42,11,0,7);ctx.fill();
+  ctx.fillStyle='#000';ctx.fillRect(px+dir*4-2,cy-44,4,4);
+}
+function loop(t){
+  const dt=Math.min(.05,(t-lastT)/1000||0);lastT=t;
+  if(alive){
+    time-=dt*(.22+score*.004);
+    $('bar').style.width=Math.max(0,time*100)+'%';
+    if(time<=0)gameOver();
+  }
+  draw();requestAnimationFrame(loop);
+}
+function start(){$('msg').style.display='none';reset();px=sx(0)}
+$('msg').onclick=start;
+const press=(id,f)=>{$(id).addEventListener('pointerdown',e=>{e.preventDefault();f()})};
+press('climb',()=>move(false));
+press('turn',()=>move(true));
+addEventListener('keydown',e=>{
+  if(!alive){if(e.code==='Space'||e.code==='Enter')start();return}
+  if(e.code==='Space'||e.code==='ArrowRight')move(false);
+  else if(e.code==='KeyZ'||e.code==='ArrowLeft')move(true);
+});
+reset();alive=false;px=sx(0);requestAnimationFrame(loop);
+</script>
+</body>
+</html>
