@@ -113,13 +113,17 @@
       del: function (gid) { return rpc('hwasil_admin_del', { code: code, pw: store('hw-admin') || '', gid: gid }).then(function () { galleryChanged(); }); },
       removed: function () { return rpc('hwasil_admin_removed', { code: code, pw: store('hw-admin') || '' }).then(function (r) { return r || []; }); },
       removedGet: function (rid) { return rpc('hwasil_admin_removed_get', { code: code, pw: store('hw-admin') || '', rid: rid }); },
-      unban: function (rid) { return rpc('hwasil_admin_unban', { code: code, pw: store('hw-admin') || '', rid: rid }); }
+      unban: function (rid) { return rpc('hwasil_admin_unban', { code: code, pw: store('hw-admin') || '', rid: rid }); },
+      suggestions: function () { return rpc('hwasil_admin_suggestions', { code: code, pw: store('hw-admin') || '' }).then(function (r) { return r || []; }); },
+      suggestionDone: function (sid, flag) { return rpc('hwasil_admin_suggestion_done', { code: code, pw: store('hw-admin') || '', sid: sid, flag: !!flag }); }
     },
     /* a "I'm here" mark for the daily report (who came, how often); failures are ignored */
     ping: function (nm) { if (!sb || !code) return Promise.resolve(); return rpc('hwasil_ping', { code: code, token: token, nm: String(nm || '') }).then(function () {}, function () {}); },
     /* emoji reactions kept per artwork; if the database does not have them yet, both calls quietly do nothing */
     react: function (item, kind) { if (!sb || !code || rxOff) return Promise.resolve(); return rpc('hwasil_react', { code: code, item: String(item), kind: kind }).then(function () {}, function () { rxOff = true; }); },
     reactions: function (item) { if (!sb || !code || rxOff) return Promise.resolve({}); return rpc('hwasil_reactions', { code: code, item: String(item) }).then(function (r) { return r || {}; }, function () { rxOff = true; return {}; }); },
+    /* the suggestion box: a short note that only the admin can read */
+    suggest: function (nm, body) { if (!sb || !code) return Promise.reject(new Error('offline')); return rpc('hwasil_suggest', { code: code, nm: String(nm || ''), body: String(body || '') }).then(function () {}); },
     inviteLink: function () { return code ? location.origin + location.pathname + '#c=' + encodeURIComponent(code) : ''; }
   };
 

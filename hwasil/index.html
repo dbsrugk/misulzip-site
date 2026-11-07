@@ -111,6 +111,10 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #rankBox small { display: block; margin-top: 3px; color: #6d655b; font-size: 12px; }
 #timeGauge i { display: block; height: 6px; margin-top: 3px; border-radius: 3px; background: rgba(36, 32, 28, 0.15); overflow: hidden; }
 #timeGauge b { display: block; height: 100%; width: 0; background: #e0a02f; border-radius: 3px; }
+#suggestText { width: 100%; box-sizing: border-box; min-height: 120px; padding: 10px; font: inherit; font-size: 17px; color: var(--ink); background: #fffdf6; border: 2px solid var(--ink); border-radius: 12px; resize: vertical; }
+#suggestFoot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+#suggestCount { color: #6d655b; font-size: 14px; }
+#suggestOpen { margin-top: 10px; }
 .sitBtn {
   position: absolute;
   right: max(16px, env(safe-area-inset-right, 0px));
@@ -339,7 +343,7 @@ body.padOpen #hud { visibility: hidden; }
 .opt.on { background: var(--ink); color: var(--paper); }
 .dressFoot { display: flex; gap: 8px; }
 .dressFoot .btn { flex: 1; }
-#works, #rooms, #places, #fame {
+#works, #rooms, #places, #fame, #suggest {
   position: fixed;
   inset: 0;
   z-index: 25;
@@ -557,6 +561,7 @@ body.padOpen #hud { visibility: hidden; }
       <p class="empty" id="adMsg" hidden></p>
       <button class="btn" id="adOff" type="button" hidden>관리자 끄기</button>
       <button class="btn" id="adVault" type="button" hidden>내린 작품 보관함</button>
+      <button class="btn" id="adSug" type="button" hidden>📮 건의 보기</button>
       <div id="adList" hidden></div>
     </details>
     <details id="keyBox">
@@ -612,6 +617,15 @@ body.padOpen #hud { visibility: hidden; }
 </div>
 
 <div id="teleFx"></div>
+<div id="suggest" hidden>
+  <div class="sheet" role="dialog" aria-label="건의함">
+    <div class="sheetHead"><h2>📮 건의함</h2><button class="btn" id="suggestClose" type="button">닫기</button></div>
+    <p class="empty">불편한 점이나 바라는 점을 적어 주세요. 운영자만 읽어요.</p>
+    <textarea id="suggestText" maxlength="500" placeholder="여기에 적어 주세요 (500자까지)"></textarea>
+    <div id="suggestFoot"><span id="suggestCount">0 / 500</span><button class="btn primary" id="suggestSend" type="button">보내기</button></div>
+    <p class="empty" id="suggestMsg" hidden></p>
+  </div>
+</div>
 <div id="places" hidden>
   <div class="sheet" role="dialog" aria-label="장소 이동">
     <div class="sheetHead"><h2>장소 이동</h2><button class="btn" id="placesClose" type="button">닫기</button></div>
@@ -619,6 +633,7 @@ body.padOpen #hud { visibility: hidden; }
     <label id="walkOpt"><input type="checkbox" id="walkChk"> 걸어서 가기 (끄면 ✨ 순간이동)</label>
     <canvas id="placesMap" hidden></canvas>
     <div id="placesList"></div>
+    <button class="btn" id="suggestOpen" type="button">📮 건의함</button>
   </div>
 </div>
 
@@ -1876,6 +1891,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       sl.sx = x; sl.sz = z; sl.base = 0.66; sl.tall = H; sl.w = W; sl.panel = true; sl.face = face; hb.userData.sculpt = sl; hitList.push(hb); extraSlots.push(sl);
       stage.push({ id: sl.id, x: x, z: z, base: 0.66, tall: H, w: W, f: face }); route.push([x, z, W]);
       board.push({ x: x, z: z, c: c, cvs: cvs, tex: tex, done: false });
+      g.traverse(m => { if (m.isMesh && m.material) m.material = m.material.clone(); });                      /* own materials, so only this board fades */
+      addOccluder(g, x - W / 2 - 0.7, 0, z - 1.3, x + W / 2 + 0.7, H + 1.2, z + 1.3);                         /* a board between the camera and me turns see-through */
     }
     const PW = 5.6, PH = 8.0;
     [['discobolus', -37], ['hermes', -26], ['venus', -15], ['nike', 15], ['laocoon', 26], ['apollo', 37]].forEach((p, i) => panel(XX + p[1], z0 + 5.5, 1, PW, PH, p[0], '\u2460\u2461\u2462\u2463\u2464\u2465'[i]));
@@ -3625,7 +3642,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     mySeat = -1;
   }
   function onTap(cx, cy) {
-    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#fame').hidden || !$('#dress').hidden || !$('#hang').hidden || !$('#art').hidden) return;
+    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#suggest').hidden || !$('#fame').hidden || !$('#dress').hidden || !$('#hang').hidden || !$('#art').hidden) return;
     const r = cv.getBoundingClientRect();
     ray.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -((cy - r.top) / r.height) * 2 + 1 }, camera);
     const hits = ray.intersectObjects(hitList, false);
@@ -3642,6 +3659,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       }
       if (o.userData.bench !== undefined) { tapBench(o.userData.bench); return; }
       if (o.userData.spot === 'fountain') { wishAtFountain(); return; }
+      if (o.userData.spot === 'mailbox') { openSuggest(); return; }
       if (o.userData.sculpt) { if (o.userData.sculpt.panel) showDocent(o.userData.sculpt); else enterInspect(o.userData.sculpt); return; }
       if (o.userData.msg) { toast(o.userData.msg, 4500); return; }
       const sl = o.userData.slot;
@@ -4392,7 +4410,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     row.appendChild(yes); row.appendChild(no); m.textContent = ''; m.appendChild(q); m.appendChild(row);
   });
   function paintAdmin() {
-    $('#adRow').hidden = adminOn; $('#adOff').hidden = !adminOn; $('#adVault').hidden = !adminOn; if (!adminOn) $('#adList').hidden = true;
+    $('#adRow').hidden = adminOn; $('#adOff').hidden = !adminOn; $('#adVault').hidden = !adminOn; $('#adSug').hidden = !adminOn; if (!adminOn) $('#adList').hidden = true;
     $('#adNote').textContent = adminOn ? '관리자 모드가 켜져 있어요. 전시된 그림을 누르면 "관리자: 내리기"가 보여요.' : '관리자 비밀번호를 넣으면, 이 기기에서 부적절한 작품을 내릴 수 있어요.';
   }
   $('#adGo').addEventListener('click', async () => {
@@ -4426,6 +4444,34 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     });
   }
   $('#adVault').addEventListener('click', loadVault);
+  async function loadSuggestions() {
+    const box = $('#adList'); box.hidden = false; box.textContent = '불러오는 중…';
+    let list = null; try { list = await window.hwasil.admin.suggestions(); } catch (e) {}
+    if (!list) { box.textContent = '건의를 불러오지 못했어요.'; return; }
+    box.textContent = '';
+    if (!list.length) { box.textContent = '아직 건의가 없어요.'; return; }
+    list.forEach(q => {
+      const row = document.createElement('div'); row.className = 'nameRow'; row.style.marginBottom = '6px';
+      const t = document.createElement('span'); t.className = 'empty'; t.style.flex = '1'; t.style.whiteSpace = 'pre-wrap'; t.style.textDecoration = q.done ? 'line-through' : 'none';
+      t.textContent = (q.nm || '익명') + ' · ' + new Date(q.at).toLocaleString('ko-KR') + '\n' + q.body;
+      const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.textContent = q.done ? '되돌리기' : '처리됨';
+      b.addEventListener('click', async () => { try { await window.hwasil.admin.suggestionDone(q.id, !q.done); loadSuggestions(); } catch (e) { toast('처리하지 못했어요.', 2500); } });
+      row.append(t, b); box.appendChild(row);
+    });
+  }
+  $('#adSug').addEventListener('click', loadSuggestions);
+  /* the suggestion box: a note goes to the owner's database; visitors cannot read anyone's note */
+  function openSuggest() { $('#places').hidden = true; $('#suggestMsg').hidden = true; $('#suggest').hidden = false; setTimeout(() => $('#suggestText').focus(), 50); }
+  $('#suggestOpen').addEventListener('click', openSuggest);
+  $('#suggestClose').addEventListener('click', () => { $('#suggest').hidden = true; });
+  $('#suggestText').addEventListener('input', () => { $('#suggestCount').textContent = $('#suggestText').value.length + ' / 500'; });
+  $('#suggestSend').addEventListener('click', async () => {
+    const tx = $('#suggestText').value.trim(), m = $('#suggestMsg'); if (!tx) { m.hidden = false; m.className = 'empty bad'; m.textContent = '내용을 적어 주세요.'; return; }
+    $('#suggestSend').disabled = true; m.hidden = false; m.className = 'empty'; m.textContent = '보내는 중…';
+    try { await window.hwasil.suggest(myName, tx); $('#suggestText').value = ''; $('#suggestCount').textContent = '0 / 500'; m.textContent = '고마워요! 건의가 전달됐어요.'; toast('건의가 전달됐어요. 고마워요 💌', 3000); setTimeout(() => { $('#suggest').hidden = true; }, 1200); }
+    catch (e) { m.className = 'empty bad'; m.textContent = e && e.code === 'quota_exceeded' ? '지금 건의가 많아요. 잠시 뒤에 다시 보내 주세요.' : '보내지 못했어요. 잠시 뒤에 다시 해 주세요.'; }
+    $('#suggestSend').disabled = false;
+  });
   $('#worksClose').addEventListener('click', () => { $('#works').hidden = true; });
   $('#works').addEventListener('click', e => { if (e.target === $('#works')) $('#works').hidden = true; });
 
@@ -5187,6 +5233,20 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     return extraSlots.filter(q => q.cat && String(q.id).indexOf('sculpt:') === 0).map((q, i) => ({ key: 'c:' + q.cat.id, cat: q.cat, sculpt: true, title: q.cat.title, sub: '조각 전시관', at: -i, pl: { name: q.cat.title, x: q.sx, z: q.sz - q.w / 2 - 3.6, h: 0, pitch: 0.35 } }));
   }
   /* a sculpture's card shows the real 3D model, photographed once into a small picture when its card scrolls into view */
+  /* the suggestion box: a red post box in the central hall */
+  (function () {
+    const g = new T.Group(), red = L(0xd9463b), dk = L(0x3a3430), cream = L(0xf4efe4), bx0 = -12, bz0 = 15;
+    put(g, new T.Mesh(cyl(0.12, 0.14, 1.0, 8), dk), 0, 0.5, 0);
+    put(g, new T.Mesh(bx(1.0, 1.1, 0.7), red), 0, 1.55, 0);
+    const arc = new T.Mesh(new T.CylinderGeometry(0.35, 0.35, 1.0, 14, 1, false, 0, Math.PI), red); arc.rotation.z = Math.PI / 2; arc.rotation.y = Math.PI / 2; arc.position.set(0, 2.1, 0); g.add(arc);
+    put(g, new T.Mesh(bx(0.7, 0.07, 0.04), dk), 0, 1.85, 0.36);
+    const c = document.createElement('canvas'); c.width = 256; c.height = 96; const q = c.getContext('2d'), tex = new T.CanvasTexture(c); tex.minFilter = T.LinearFilter; tex.generateMipmaps = false;
+    const draw = () => { q.fillStyle = '#f4efe4'; q.fillRect(0, 0, 256, 96); q.strokeStyle = '#8f8368'; q.lineWidth = 5; q.strokeRect(3, 3, 250, 90); q.fillStyle = '#3a342c'; q.font = '52px "Gamja Flower", "Noto Sans KR", sans-serif'; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText('📮 건의함', 128, 50); tex.needsUpdate = true; };
+    draw(); if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '건의함').then(draw).catch(() => {});
+    put(g, new T.Mesh(new T.PlaneGeometry(0.9, 0.34), new T.MeshBasicMaterial({ map: tex })), 0, 1.35, 0.36);
+    const hb = put(g, new T.Mesh(bx(1.4, 2.8, 1.2), hitMat), 0, 1.4, 0); hb.userData.spot = 'mailbox'; hitList.push(hb);
+    g.position.set(bx0, 0, bz0); g.rotation.y = 0; scene.add(g); colliders.push({ x: bx0, z: bz0, r: 0.8 });
+  })();
   const SCULPT_FILE = {};                    /* the pavilion shows photographs now: its cards use the picture of the work */
   let shotRT = null, shotQ = Promise.resolve();
   function sculptShot(file, cv) {
