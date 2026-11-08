@@ -39,11 +39,11 @@ const { start, vis, until, check, done } = require('./lib');
   async function place(i, shot) { await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(i).click(); await p.waitForTimeout(1800); await p.screenshot({ path: t.out(shot) }); }
   await place(2, 'mountain.png'); await place(3, 'beach.png'); await place(4, 'lake.png'); await place(5, 'field.png'); await place(0, 'studio.png');
   /* music: a button turns it off and on, the volume is remembered */
-  check(await p.evaluate(() => window.__hw.music().on === true && document.querySelector('#musicBtn').textContent === '🎵'), 'music is on by default');
+  check(await p.evaluate(() => window.__hw.music().on === true && document.querySelector('#musicBtn').textContent.indexOf('🎵') === 0), 'music is on by default');
   check(await p.evaluate(() => window.__hw.music().ctx !== 'none'), 'the sound engine is already created by the entry tap (music starts at once)');
-  await p.click('#musicBtn'); await p.waitForTimeout(300);
-  check(await p.evaluate(() => window.__hw.music().on === false && document.querySelector('#musicBtn').textContent === '🔇' && localStorage.getItem('hw-music') === '0'), 'music button turns it off (and remembers)');
-  await p.click('#musicBtn'); await p.waitForTimeout(300);
+  await p.click('#moreBtn'); await p.click('#musicBtn'); await p.waitForTimeout(300);
+  check(await p.evaluate(() => window.__hw.music().on === false && document.querySelector('#musicBtn').textContent.indexOf('🔇') === 0 && localStorage.getItem('hw-music') === '0'), 'music button turns it off (and remembers)');
+  await p.click('#moreBtn'); await p.click('#musicBtn'); await p.waitForTimeout(300);
   check(await p.evaluate(() => window.__hw.music().on === true && window.__hw.music().ctx !== 'none'), 'music turns on again and the audio engine starts');
   await p.evaluate(() => { const r = document.querySelector('#volRange'); r.value = 25; r.dispatchEvent(new Event('input')); });
   check(await p.evaluate(() => window.__hw.music().vol === 0.25 && localStorage.getItem('hw-vol') === '0.25'), 'volume slider sets and remembers the volume');

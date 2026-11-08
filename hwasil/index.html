@@ -89,7 +89,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
   position: absolute;
   left: max(16px, env(safe-area-inset-left, 0px));
   right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(176px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(176px + var(--bar) + env(safe-area-inset-bottom, 0px));
   margin-inline: auto;
   max-width: 420px;
   padding: 10px 16px;
@@ -104,6 +104,13 @@ button.chip { pointer-events: auto; cursor: pointer; }
 .uiOff { display: none !important; }
 #gearBtn { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); padding: 7px 11px; }
 #hud > .row:first-child { padding-right: 52px; }
+:root { --bar: 58px; }
+#bottomBar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 5px; padding: 8px max(8px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); background: rgba(243, 236, 219, 0.94); border-top: 2px solid var(--ink); pointer-events: auto; z-index: 5; }
+#hud #bottomBar .chip { flex: 1 1 0; justify-content: center; min-width: 0; padding: 8px 2px; font-size: 14px; white-space: nowrap; gap: 3px; }
+#hud #bottomBar .chip b { font-size: 12.5px; padding: 0 5px; }
+#moreMenu { position: absolute; right: max(10px, env(safe-area-inset-right, 0px)); bottom: calc(var(--bar) + 8px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; border: 2px solid var(--ink); border-radius: 16px; background: rgba(255, 252, 244, 0.97); box-shadow: 0 3px 12px rgba(36, 32, 28, 0.25); z-index: 6; }
+#moreMenu[hidden] { display: none; }
+#hud #moreMenu .chip { justify-content: flex-start; pointer-events: auto; font-size: 16px; padding: 9px 14px; }
 #settings { position: fixed; inset: 0; z-index: 25; background: rgba(36, 32, 28, 0.55); display: flex; align-items: flex-end; }
 #settings h3 { margin: 14px 0 6px; font: 400 20px/1.2 var(--font-display); }
 #playStats { font-size: 16px; line-height: 1.6; }
@@ -127,7 +134,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 .sitBtn {
   position: absolute;
   right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(52px + var(--bar) + env(safe-area-inset-bottom, 0px));
   pointer-events: auto;
   padding: 16px 22px;
   border: 2px solid var(--ink);
@@ -140,12 +147,12 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #viewer { position: fixed; inset: 0; z-index: 26; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(28, 24, 20, 0.94); padding: 16px; }
 #viewerCanvas { display: block; background: var(--paper); border: 3px solid #3a2a1c; box-shadow: 0 0 0 8px #6b4a2f, 6px 8px 0 8px rgba(0,0,0,0.35); }
 #viewerCap { color: var(--chalk); font: 400 26px/1.2 var(--font-display); text-align: center; overflow-wrap: anywhere; }
-#tourBtn { bottom: calc(196px + env(safe-area-inset-bottom, 0px)); font-size: 20px; padding: 12px 18px; background: #fff; }
+#tourBtn { bottom: calc(196px + var(--bar) + env(safe-area-inset-bottom, 0px)); font-size: 20px; padding: 12px 18px; background: #fff; }
 .sitBtn[disabled] { background: var(--chalk); box-shadow: none; opacity: 0.85; cursor: default; }
 
 #inspectBar {
   position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
-  bottom: calc(168px + env(safe-area-inset-bottom, 0px)); z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  bottom: calc(168px + var(--bar) + env(safe-area-inset-bottom, 0px)); z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 10px 12px; border: 2px solid var(--ink); border-radius: 14px; background: rgba(255, 252, 244, 0.94); box-shadow: 0 3px 12px rgba(36, 32, 28, 0.25);
 }
 #inspectBar { pointer-events: auto; }
@@ -158,7 +165,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 .joy {
   position: absolute;
   left: max(16px, env(safe-area-inset-left, 0px));
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(24px + var(--bar) + env(safe-area-inset-bottom, 0px));
   width: 128px;
   height: 128px;
   border-radius: 50%;
@@ -451,14 +458,20 @@ body.padOpen #hud { visibility: hidden; }
 
 <div id="hud">
   <div class="row">
-    <button class="chip" id="worksBtn" type="button">내 그림 <b id="worksCount">0</b></button>
     <button class="chip" id="online" type="button">나 혼자 있는 중</button>
+  </div>
+  <div id="moreMenu" hidden>
     <button class="chip" id="fameBtn" type="button">🏆 명예의 전당</button>
+    <button class="chip" id="musicBtn" type="button" aria-label="음악 켜고 끄기">🎵 음악</button>
+    <button class="chip" id="moreSug" type="button">📮 건의함</button>
+  </div>
+  <nav id="bottomBar" aria-label="메뉴">
+    <button class="chip" id="worksBtn" type="button">내 그림 <b id="worksCount">0</b></button>
     <button class="chip" id="placesBtn" type="button">장소 이동</button>
     <button class="chip" id="dressBtn" type="button">꾸미기</button>
     <button class="chip" id="emoteBtn" type="button">표현</button>
-    <button class="chip" id="musicBtn" type="button" aria-label="음악 켜고 끄기">🎵</button>
-  </div>
+    <button class="chip" id="moreBtn" type="button" aria-expanded="false">⋯ 더보기</button>
+  </nav>
   <button class="chip" id="gearBtn" type="button" aria-label="설정">⚙️</button>
   <div class="row" id="hangRow" hidden><button class="chip" id="hangBanner" type="button"></button></div>
   <div class="row" id="emoteBar" hidden></div>
@@ -3665,7 +3678,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const nm = sanitize($('#nameInput').value).slice(0, 10);
     if (nm) { myName = nm; store('hw-name', nm); myPlate.set(myName); }
     started = true; $('#intro').hidden = true; store('hw-in', '1'); music.unlock(); setTimeout(() => music.hint(), 1600);
-    setTimeout(() => { if (!store('hw-fame')) { store('hw-fame', '1'); toast('🏆 위쪽 「명예의 전당」에서 인기 작품을 보고 바로 찾아갈 수 있어요', 6000); } }, 5000);   /* remembered: a reload goes straight back in */
+    setTimeout(() => { if (!store('hw-fame')) { store('hw-fame', '1'); toast('🏆 아래 「더보기」의 「명예의 전당」에서 인기 작품을 보고 바로 찾아갈 수 있어요', 6000); } }, 5000);   /* remembered: a reload goes straight back in */
     pushPresence(true);
     sendPing(); setInterval(() => { if (!document.hidden) sendPing(); }, 240000);   /* visit log for the daily report */
     toast('정면 큰 문은 미술관, 동쪽 문 밖은 그림 그리는 화실이에요', 7000);
@@ -5010,7 +5023,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   ['pointerdown', 'keydown', 'touchend'].forEach(ev => window.addEventListener(ev, () => music.unlock(), { passive: true }));
   (function () {
     const b = $('#musicBtn'), r = $('#volRange');
-    const paint = () => { b.textContent = music.on ? '🎵' : '🔇'; b.setAttribute('aria-pressed', music.on ? 'true' : 'false'); };
+    const paint = () => { b.textContent = music.on ? '🎵 음악 켜짐' : '🔇 음악 꺼짐'; b.setAttribute('aria-pressed', music.on ? 'true' : 'false'); };
     paint(); r.value = Math.round(music.vol * 100);
     b.addEventListener('click', () => { const o = music.toggle(); paint(); toast(o ? '음악을 켰어요 🎵' : '음악을 껐어요', 2000); });
     r.addEventListener('input', () => { music.setVol(r.value / 100); if (!music.on && r.value > 0) { music.toggle(); paint(); } });
@@ -5271,6 +5284,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       lb.append(cb, document.createTextNode(q[1])); bx2.appendChild(lb);
     });
   }
+  const moreMenu = $('#moreMenu'), moreBtn = $('#moreBtn');
+  const setMore = on => { moreMenu.hidden = !on; moreBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); };
+  moreBtn.addEventListener('click', e => { e.stopPropagation(); setMore(moreMenu.hidden); });
+  moreMenu.addEventListener('click', () => setMore(false));
+  document.addEventListener('pointerdown', e => { if (!moreMenu.hidden && !moreMenu.contains(e.target) && e.target !== moreBtn) setMore(false); });
+  $('#moreSug').addEventListener('click', () => { openSuggest(); });
   $('#gearBtn').addEventListener('click', () => { loadRankAll(); fillSettings(); $('#settings').hidden = false; });
   $('#settingsClose').addEventListener('click', () => { $('#settings').hidden = true; });
   $('#uiReset').addEventListener('click', () => { uiOff = []; store('hw-ui-off', '[]'); applyUi(); fillSettings(); });
