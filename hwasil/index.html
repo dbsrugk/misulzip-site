@@ -807,6 +807,53 @@ body.padOpen #hud { visibility: hidden; }
     const m = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(c), transparent: true, depthWrite: false, fog: false, opacity: 0 }));
     m.scale.set(46, 46, 1); m.position.set(0.45, 0.7, 0.5).normalize().multiplyScalar(320); m.renderOrder = -9; m.userData.noShadow = true; m.visible = false; sky.add(m); return m;
   })();
+  /* night sky shows: shooting stars now and then, and every few minutes (by the clock, so everybody sees the same one) an aurora or a meteor shower */
+  const skyFx = (function () {
+    const auroraMat = new T.ShaderMaterial({
+      transparent: true, depthWrite: false, side: T.DoubleSide, blending: T.AdditiveBlending, fog: false, uniforms: { time: { value: 0 }, k: { value: 0 } },
+      vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform float time; uniform float k; varying vec2 vUv; void main() { float u = vUv.x, v = vUv.y; float w = sin(u * 18.0 + time * 0.35) * 0.5 + sin(u * 41.0 - time * 0.55) * 0.3 + sin(u * 7.0 + time * 0.2) * 0.4; float edge = 0.2 + 0.1 * w; float band = smoothstep(edge, edge + 0.07, v) * (1.0 - smoothstep(edge + 0.1, 0.95, v)); float rays = 0.55 + 0.45 * sin(u * 120.0 + w * 3.0 + time * 0.8); vec3 c = mix(vec3(0.15, 1.0, 0.55), vec3(0.2, 0.8, 1.0), smoothstep(0.25, 0.6, v)); c = mix(c, vec3(0.72, 0.32, 0.95), smoothstep(0.6, 0.95, v)); float fu = smoothstep(0.0, 0.14, u) * (1.0 - smoothstep(0.86, 1.0, u)); gl_FragColor = vec4(c, band * rays * fu * k * 0.85); }'
+    });
+    const aurora = new T.Mesh(new T.CylinderGeometry(320, 320, 300, 64, 1, true, Math.PI - 1.9, 3.8), auroraMat);
+    aurora.position.y = 150; aurora.renderOrder = -8; aurora.frustumCulled = false; aurora.userData.noShadow = true; aurora.visible = false; sky.add(aurora);
+    const sc = document.createElement('canvas'); sc.width = 128; sc.height = 8; const sq = sc.getContext('2d'), sg = sq.createLinearGradient(0, 0, 128, 0);
+    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.7, 'rgba(210,230,255,0.55)'); sg.addColorStop(1, 'rgba(255,255,255,1)'); sq.fillStyle = sg; sq.fillRect(0, 2, 128, 4);
+    const streak = new T.CanvasTexture(sc), pool = [], seeds = { n: 7 };
+    const rnd = () => (seeds.n = (seeds.n * 16807 + Math.random() * 1000) % 2147483647) / 2147483647;
+    for (let i = 0; i < 8; i++) {
+      const m = new T.Mesh(new T.PlaneGeometry(46, 2.4), new T.MeshBasicMaterial({ map: streak, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false, side: T.DoubleSide }));
+      m.renderOrder = -8; m.frustumCulled = false; m.visible = false; m.userData = { noShadow: true, life: 0, t: 0, d: new T.Vector3() }; sky.add(m); pool.push(m);
+    }
+    const P = new T.Vector3(), F = new T.Vector3(), R = new T.Vector3(), U = new T.Vector3(), D = new T.Vector3(), Y = new T.Vector3(), Z = new T.Vector3(), MX = new T.Matrix4(), UP = new T.Vector3(0, 1, 0);
+    function launch() {
+      const m = pool.find(q => !q.visible); if (!m) return;
+      const az = rnd() * 6.2832, el = 0.35 + rnd() * 0.95, c = Math.cos(el);
+      P.set(Math.sin(az) * c, Math.sin(el), Math.cos(az) * c).multiplyScalar(300);
+      F.copy(P).normalize(); R.crossVectors(UP, F).normalize(); U.crossVectors(F, R).normalize();
+      const a = 0.35 + rnd() * 0.5, side = rnd() > 0.5 ? 1 : -1; D.copy(R).multiplyScalar(Math.cos(a) * side).addScaledVector(U, -Math.sin(a)).normalize();
+      Z.copy(F).negate(); Y.crossVectors(Z, D).normalize(); MX.makeBasis(D, Y, Z); m.setRotationFromMatrix(MX);
+      m.userData.p0 = P.clone(); m.userData.d.copy(D); m.userData.t = 0; m.userData.life = 0.7 + rnd() * 0.5; m.userData.sp = 190 + rnd() * 120; m.position.copy(P); m.material.opacity = 0; m.visible = true;
+    }
+    let next = 8, evSlot = -1, evKind = 'none', evEnv = 0;
+    function clockEvent() {
+      if (window.__hwSkyEv) return { kind: window.__hwSkyEv, env: 1, slot: -2 };
+      const T0 = Date.now() / 1000 / 300, s = Math.floor(T0), u = T0 - s; let h = Math.imul(s, 2654435761) >>> 0; h = (h ^ (h >>> 13)) >>> 0; h = Math.imul(h, 1274126177) >>> 0;
+      const k = h % 100; return { kind: k < 30 ? 'aurora' : k < 50 ? 'shower' : 'none', env: Math.min(1, u / 0.08, (1 - u) / 0.08), slot: s };
+    }
+    anim.push((dt, t) => {
+      const off = window.__skyFxOff, vis = ATM.night * ATM.night * (1 - ATM.cloud * 0.8), ev = clockEvent();
+      if (off || vis < 0.05) { aurora.visible = false; for (let i = 0; i < pool.length; i++) pool[i].visible = false; evSlot = ev.slot; return; }
+      if (ev.slot !== evSlot) { evSlot = ev.slot; evKind = ev.kind; if (evKind !== 'none' && ATM.night > 0.6 && typeof toast === 'function' && typeof started !== 'undefined' && started) toast(evKind === 'aurora' ? '🌌 밤하늘에 오로라가 나타났어요. 올려다보세요!' : '🌠 유성우가 시작됐어요. 하늘을 올려다보세요!', 5000); }
+      const au = ev.kind === 'aurora' ? ev.env * vis : 0; aurora.visible = au > 0.01; auroraMat.uniforms.k.value = au; auroraMat.uniforms.time.value = t;
+      next -= dt; if (next <= 0) { launch(); next = ev.kind === 'shower' ? 0.25 + Math.random() * 0.7 : (9 + Math.random() * 20) / Math.max(0.3, vis); if (ev.kind === 'shower') next /= Math.max(0.4, ev.env); }
+      for (let i = 0; i < pool.length; i++) {
+        const m = pool[i]; if (!m.visible) continue; const q = m.userData; q.t += dt; const u = q.t / q.life;
+        if (u >= 1) { m.visible = false; continue; }
+        m.position.copy(q.p0).addScaledVector(q.d, q.sp * q.t); m.material.opacity = Math.min(1, u * 8, (1 - u) * 2.2) * vis;
+      }
+    });
+    return { aurora: aurora };
+  })();
   const camera = new T.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 1, 400);
   function onResize() {
     const w = window.innerWidth, h = window.innerHeight;
@@ -5200,7 +5247,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   rankBox.addEventListener('click', () => { rankMode = rankMode === 'all' ? 'here' : 'all'; drawRank(); });
   $('#timeGauge').addEventListener('click', () => { rankBox.hidden = !rankBox.hidden; if (!rankBox.hidden) drawRank(); }); const timeTxt = $('#timeTxt'), timeBar = $('#timeBar');
   /* the settings sheet: play record, and switches for what shows on the screen; what is switched off is remembered on this device */
-  const UI_ITEMS = [['worksBtn', '내 그림'], ['online', '접속 인원'], ['fameBtn', '명예의 전당'], ['placesBtn', '장소 이동'], ['dressBtn', '꾸미기'], ['emoteBtn', '표현'], ['musicBtn', '음악 버튼'], ['miniMap', '미니맵'], ['timeGauge', '접속 시간 · 랭킹']];
+  const UI_ITEMS = [['worksBtn', '내 그림'], ['online', '접속 인원'], ['fameBtn', '명예의 전당'], ['placesBtn', '장소 이동'], ['dressBtn', '꾸미기'], ['emoteBtn', '표현'], ['musicBtn', '음악 버튼'], ['miniMap', '미니맵'], ['timeGauge', '접속 시간 · 랭킹'], ['skyFx', '밤하늘 효과 (별똥별·오로라)']];
   let uiOff = []; try { uiOff = JSON.parse(store('hw-ui-off') || '[]'); if (!Array.isArray(uiOff)) uiOff = []; } catch (e) { uiOff = []; }
   function layoutHud() {                                                        /* the right column sits right under the last row of buttons */
     const row = document.querySelector('#hud > .row'), col = $('#rightCol'); if (!row || !col) return;
@@ -5209,6 +5256,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function applyUi() {
     UI_ITEMS.forEach(q => { const el = document.getElementById(q[0]); if (el) el.classList.toggle('uiOff', uiOff.indexOf(q[0]) >= 0); });
     const gOff = uiOff.indexOf('timeGauge') >= 0; if (gOff) rankBox.hidden = true;
+    window.__skyFxOff = uiOff.indexOf('skyFx') >= 0;
     layoutHud();
   }
   function fillSettings() {
