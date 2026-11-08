@@ -2785,6 +2785,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       };
       for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
         const q = [[i, j], [i + 1, j], [i, j + 1], [i + 1, j + 1]].map(a => [x0 + a[0] * SX, Y(a[0], a[1]), zFront - a[1] / nz * depth]);
+        if (q.some(p => Math.abs(p[0]) < GGR + 8 && p[2] < GGS + 6 && p[2] > GGZ - 12)) continue;   /* the long gallery runs straight through the range: leave the mountain out there so it does not poke up through the floor */
         [[q[0], q[1], q[2]], [q[1], q[3], q[2]]].forEach((tri, ti) => {
           const ax = tri[1][0] - tri[0][0], ay = tri[1][1] - tri[0][1], az = tri[1][2] - tri[0][2], bx_ = tri[2][0] - tri[0][0], by = tri[2][1] - tri[0][1], bz = tri[2][2] - tri[0][2];
           let nxv = ay * bz - az * by, nyv = az * bx_ - ax * bz, nzv = ax * by - ay * bx_; const ln = Math.hypot(nxv, nyv, nzv) || 1; const ny = nyv / ln;
@@ -2850,7 +2851,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       /* dark pines on the foothills and along the village edges */
       const PN = 140, pines = new T.InstancedMesh(new T.ConeGeometry(2.2, 8, 7), L(0xffffff), PN), pd = new T.Object3D(), pc = new T.Color(); let pi = 0;
       for (let k = 0; k < PN; k++) {
-        const x = -20 + nh(k, 1, 4) * 230, z = -96 - nh(k, 2, 4) * 26 - (k % 3 === 0 ? 0 : 0); if (z > -94 && x > 56 && x < 128) continue;
+        const x = -20 + nh(k, 1, 4) * 230, z = -96 - nh(k, 2, 4) * 26 - (k % 3 === 0 ? 0 : 0); if (z > -94 && x > 56 && x < 128) continue; if (Math.abs(x) < GGR + 8) continue;   /* none inside the long gallery */
         const sc = 0.8 + nh(k, 3, 4) * 1.1; pd.position.set(x, 4 * sc, z); pd.scale.set(sc, sc * (1 + nh(k, 4, 4) * 0.4), sc); pd.updateMatrix(); pines.setMatrixAt(pi, pd.matrix);
         pc.setHex(0x2d5f3a).lerp(new T.Color(0x3f7a45), nh(k, 5, 4)); pines.setColorAt(pi, pc); pi++;
       }
