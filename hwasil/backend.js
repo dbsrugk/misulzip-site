@@ -122,6 +122,9 @@
     /* emoji reactions kept per artwork; if the database does not have them yet, both calls quietly do nothing */
     react: function (item, kind) { if (!sb || !code || rxOff) return Promise.resolve(); return rpc('hwasil_react', { code: code, item: String(item), kind: kind }).then(function () {}, function () { rxOff = true; }); },
     reactions: function (item) { if (!sb || !code || rxOff) return Promise.resolve({}); return rpc('hwasil_reactions', { code: code, item: String(item) }).then(function (r) { return r || {}; }, function () { rxOff = true; return {}; }); },
+    /* total play time kept per person: add the seconds not yet sent, read the top list */
+    playAdd: function (secs, nm) { if (!sb || !code) return Promise.reject(new Error('offline')); return rpc('hwasil_play_add', { code: code, token: token, nm: String(nm || ''), secs: Math.floor(secs) }); },
+    playTop: function () { if (!sb || !code) return Promise.resolve(null); return rpc('hwasil_play_top', { code: code, token: token }).then(function (r) { return r || []; }); },
     /* the suggestion box: a short note that only the admin can read */
     suggest: function (nm, body) { if (!sb || !code) return Promise.reject(new Error('offline')); return rpc('hwasil_suggest', { code: code, nm: String(nm || ''), body: String(body || '') }).then(function () {}); },
     inviteLink: function () { return code ? location.origin + location.pathname + '#c=' + encodeURIComponent(code) : ''; }
