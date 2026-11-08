@@ -983,6 +983,53 @@ body.padOpen #hud { visibility: hidden; }
       if (Math.abs(nk - o.k) > 0.004 || (o.k !== target && Math.abs(target - nk) < 0.004)) { o.k = Math.abs(target - nk) < 0.004 ? target : nk; setFade(o, o.k); }
     }
   }
+  /* anything solid and big that gets between the camera and me (a wall seen from its front side, a tree, a pillar, a frame) turns see-through while it is in the way;
+     found by a ray from the camera to my head every few frames, each such piece gets its own copy of the material so the others are not touched */
+  const los = { list: null, inst: [], fade: new Map(), hit: new Set(), ifade: new Map(), ihit: new Set(), ray: new T.Raycaster(), n: 0, dir: new T.Vector3() }, _lm = new T.Matrix4(), _ls = new T.Vector3();
+  function losBuild() {
+    const skip = new Set(), bb = new T.Box3(), sz = new T.Vector3(); los.list = [];
+    occluders.forEach(o => o.g.traverse(m => skip.add(m))); glbProps.forEach(q => { if (q.g) q.g.traverse(m => skip.add(m)); }); player.traverse(m => skip.add(m));
+    los.inst = [];
+    scene.traverse(o => {
+      if (o.isInstancedMesh && !skip.has(o) && o.count <= 800 && o.geometry && o.geometry.attributes.position && !o.userData.noLos) {      /* trees and the like: only the ones in the way shrink away */
+        o.geometry.computeBoundingBox(); o.geometry.boundingBox.getSize(sz); if (Math.max(sz.x, sz.y, sz.z) >= 2.5) los.inst.push(o);
+        return;
+      }
+      if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || skip.has(o)) return;
+      const m = o.material, g = o.geometry; if (!m || Array.isArray(m) || m.isShaderMaterial || m.transparent || m.side === T.BackSide || !g || !g.attributes.position) return;
+      if (g.attributes.position.count > 12000 || (m.vertexColors && g.attributes.position.count > 3000)) return;
+      for (let a = o; a; a = a.parent) if (a === sky || a.userData.noLos) return;
+      bb.setFromObject(o); bb.getSize(sz); if (Math.max(sz.x, sz.y, sz.z) < 2.2 || sz.y < 0.25) return;
+      los.list.push(o);
+    });
+  }
+  function updateLos(dt, camP, head) {
+    if (!started) return;
+    if (!los.list) { if (++los.n > 90) losBuild(); return; }
+    if ((los.n++ % 3) === 0) {
+      los.hit.clear(); los.dir.copy(head).sub(camP); const dist = los.dir.length();
+      if (dist > 1.5) {
+        los.ray.set(camP, los.dir.normalize()); los.ray.near = 0.3; los.ray.far = dist - 0.8;
+        los.ray.intersectObjects(los.list, false).forEach(h => { let v = true; for (let a = h.object; a; a = a.parent) if (!a.visible) { v = false; break; } if (v) los.hit.add(h.object); });
+      }
+      los.ihit.clear();
+      if (dist > 1.5) los.ray.intersectObjects(los.inst, false).forEach(h => {
+        if (h.instanceId === undefined) return; let v = true; for (let a = h.object; a; a = a.parent) if (!a.visible) { v = false; break; } if (!v) return;
+        const key = h.object.uuid + ':' + h.instanceId; los.ihit.add(key);
+        if (!los.ifade.has(key)) { const m0 = new T.Matrix4(); h.object.getMatrixAt(h.instanceId, m0); los.ifade.set(key, { o: h.object, id: h.instanceId, m: m0, k: 1 }); }
+      });
+      los.hit.forEach(o => { if (!los.fade.has(o)) { const orig = o.material, c = orig.clone(); c.transparent = true; c.depthWrite = false; o.material = c; los.fade.set(o, { k: 1, orig: orig }); } });
+    }
+    los.ifade.forEach((e, key) => {
+      const on = los.ihit.has(key); e.k += ((on ? 0.02 : 1) - e.k) * Math.min(1, dt * 9);
+      if (!on && e.k > 0.98) { e.o.setMatrixAt(e.id, e.m); e.o.instanceMatrix.needsUpdate = true; los.ifade.delete(key); return; }
+      _lm.copy(e.m).scale(_ls.set(e.k, e.k, e.k)); e.o.setMatrixAt(e.id, _lm); e.o.instanceMatrix.needsUpdate = true;
+    });
+    los.fade.forEach((e, o) => {
+      const target = los.hit.has(o) ? 0.13 : 1, f = Math.min(1, dt * 9); e.k += (target - e.k) * f; o.material.opacity = e.k;
+      if (!los.hit.has(o) && e.k > 0.99) { const c = o.material; o.material = e.orig; c.dispose(); los.fade.delete(o); }
+    });
+  }
   /* arched doorway = a wall piece with an arch-shaped hole + a wooden arch frame (the band between two arches) */
   function archShape(r, hs) { hs = hs === undefined ? DSH : hs; const sh = new T.Shape(); sh.moveTo(-r, 0); sh.lineTo(-r, hs); sh.absarc(0, hs, r, Math.PI, 0, true); sh.lineTo(r, 0); sh.lineTo(-r, 0); return sh; }
   function archWallGeo() {
@@ -5590,7 +5637,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       camera.position.copy(camPos); camera.lookAt(lookCur);
       const sB = (camPos.z > RM.hz) === (pos.z > RM.hz);
       if (sB !== seamShown) { seamShown = sB; seam.forEach(m => { m.visible = sB; }); }
-      for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax]; w.o.visible = w.inside > 0 ? c > w.lim : c < w.lim; }
+      for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax], pc = w.ax === 'x' ? camTx : camTz; w.o.visible = w.inside > 0 ? (c > w.lim && pc > w.lim - 1.5) : (c < w.lim && pc < w.lim + 1.5); }   /* only while I am on that side too, so a camera that swings through the wall behind me never has the next room's pictures in front of my face */
       return;
     }
     if (!camInit) { camPos.set(dx, dy, dz); camInit = true; } else camPos.lerp(_v.set(dx, dy, dz), 1 - Math.exp(-dt * 10));
@@ -5598,9 +5645,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     camera.lookAt(camTx, lookY, camTz);
     lookCur.set(camTx, lookY, camTz);
     updateOccluders(dt, camPos, inspect ? _v2.set(inspect.x, 2.0, inspect.z) : _v2.set(pos.x, 2.0, pos.z));
+    updateLos(dt, camPos, _v2);
     const seamOn = (camPos.z > RM.hz) === (camTz > RM.hz);
     if (seamOn !== seamShown) { seamShown = seamOn; seam.forEach(m => { m.visible = seamOn; }); }
-    for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax]; w.o.visible = w.inside > 0 ? c > w.lim : c < w.lim; }
+    for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax], pc = w.ax === 'x' ? camTx : camTz; w.o.visible = w.inside > 0 ? (c > w.lim && pc > w.lim - 1.5) : (c < w.lim && pc < w.lim + 1.5); }   /* only while I am on that side too, so a camera that swings through the wall behind me never has the next room's pictures in front of my face */
   }
   const camPos = new T.Vector3(), _v = new T.Vector3(), _v2 = new T.Vector3(), lookCur = new T.Vector3(0, 2, 0), look = { yaw: 0, pitch: 0, zoom: 1 }; let camInit = false, seamShown = true, hiddenEasel = -1;
   let last = performance.now(), fpsT0 = 0, fpsN = 0, slowWin = 0;
