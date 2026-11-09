@@ -18,6 +18,13 @@
 - 사용자가 보낸 참고 자료: 인스타 도슨트 릴스 1개(영상 파일로 받아 장면 확인함: 그림 속 디테일 4~5곳을 확대·이동하며 한 줄 자막으로 이야기 → 마지막에 액자에 걸린 전체 모습 + 긴 설명글). 내용은 그대로 쓰지 말고 형식만 참고해 새로 쓸 것(도슨트 투어 기능 TODO).
 - 사용자가 거부/보류한 것: **크로키 모드는 안 함**, **비 오는 날씨는 싫음(기본 맑음 고정, 비·눈·안개는 설정에서 직접 고를 때만)**, 낮/노을/밤은 좋음.
 
+
+## 게임 재미 층 (2026-11, 도감·도토리·퀴즈·점수·주간·투표·합작)
+- 코드: `index.html` 맨 끝쪽 `/* ---------- fun layer` 블록(도감·도토리·퀴즈·점수·주간·꾸미기 잠금)과 그 뒤 투표/합작 블록. 데이터: `quiz.js`(퀴즈), `catalog.js`(명화/조각). 개인 기록은 localStorage `hw-fun`, 합작 방 목록은 `hw-collabs`.
+- 테스트 훅 `window.__fun`(fun, acorns, stamp, score, stars, quiz, locks, locked, week, feat, add, vote, compose, works). 시험 `tests/fun.js`.
+- 서버: `sql/011_monthly_vote.sql`, `sql/012_collab.sql` — **아직 적용 안 함(승인 필요)**. 적용하기 전에는 클라이언트가 '곧 열려요'로 조용히 막힘(`backend.js`의 `voteOff`/`collabOff`). 임시 Postgres에서 함수 동작은 확인함(토글·3표 한도·내 작품 금지·칸 점유·한 사람 한 칸·방 3개 한도).
+- 아직 안 한 것: 따라 그리기 별 개수에 따라 전시 자리가 좋아지는 기능(서버 필요), 합작 칸 미리보기 그림(지금은 이름만 보임), 도감을 서버에 저장(지금은 폰마다 따로).
+
 ## 어디서 돌아가나
 - 주소: https://jakeun-hwasil.vercel.app/ (접속 주소 이름 변경은 사용자 결정 대기: 새 주소를 하나 더 추가할지)
 - 코드: 저장소 `dbsrugk/misulzip-site`, 브랜치 `claude/unclear-request-hkm49q`, 폴더 `hwasil/`. `main`에는 합치지 않음(합치면 misulzip 사이트에 노출).

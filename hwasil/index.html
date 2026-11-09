@@ -359,7 +359,7 @@ body.padOpen #hud { visibility: hidden; }
 .opt.on { background: var(--ink); color: var(--paper); }
 .dressFoot { display: flex; gap: 8px; }
 .dressFoot .btn { flex: 1; }
-#works, #rooms, #places, #fame, #suggest {
+#works, #rooms, #places, #fame, #fun, #suggest {
   position: fixed;
   inset: 0;
   z-index: 25;
@@ -449,6 +449,29 @@ body.padOpen #hud { visibility: hidden; }
 #keyMsg.bad { color: var(--danger); }
 /* narrow phones: the top buttons fit in two rows instead of three, leaving more of the picture */
 @media (max-width: 440px) { #hud > .row, #hud .row { gap: 6px; } #hud .chip { padding: 6px 9px; font-size: 13.5px; gap: 3px; } #hud .chip b { font-size: 13px; padding: 0 6px; } }
+#fun .sheet { height: 92%; max-height: 92%; }
+#funBody { flex: 1; min-height: 0; overscroll-behavior: contain; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+#funBody .card { border: 2px solid var(--ink); border-radius: 14px; padding: 10px 12px; background: #fff; }
+#funBody h3 { margin: 0 0 6px; font-size: 17px; }
+#funBody p { margin: 4px 0; }
+#funBody .sum { font-size: 19px; font-weight: 700; }
+#funBody .note { font-size: 14px; color: var(--muted); }
+#funBody .wingH { font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
+#funBody .stamps { display: flex; flex-wrap: wrap; gap: 6px; }
+#funBody .stamp { padding: 6px 10px; border: 2px dashed var(--line); border-radius: 10px; background: transparent; font: inherit; font-size: 13.5px; color: var(--muted); }
+#funBody .stamp.on { border: 2px solid var(--ink); background: var(--yellow); color: var(--ink); }
+#funBody button.stamp.on { cursor: pointer; }
+#funBody .bar { height: 10px; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; background: #fff; margin-top: 6px; }
+#funBody .bar b { display: block; height: 100%; background: var(--blue); }
+#funBody .btn { margin-top: 6px; }
+.artQuiz { margin: 10px 0; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 14px; background: #fff; }
+.artQuiz .qTxt { margin: 0 0 4px; font-weight: 700; }
+.artQuiz .qOpt { display: block; width: 100%; text-align: left; margin-top: 8px; }
+.artQuiz .qOpt.good { background: #bfe8b0; }
+.artQuiz .qOpt.bad { background: #f3c1bb; opacity: 0.7; }
+.artQuiz .qMsg { margin: 8px 0 0; min-height: 1.2em; }
+.artQuiz .qOpt:disabled { color: var(--ink); }
+#dressRows button.locked { opacity: 0.45; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -462,6 +485,7 @@ body.padOpen #hud { visibility: hidden; }
   </div>
   <div id="moreMenu" hidden>
     <button class="chip" id="fameBtn" type="button">🏆 명예의 전당</button>
+    <button class="chip" id="funBtn" type="button">📖 관람 도감</button>
     <button class="chip" id="musicBtn" type="button" aria-label="음악 켜고 끄기">🎵 음악</button>
     <button class="chip" id="moreSug" type="button">📮 건의함</button>
   </div>
@@ -532,6 +556,7 @@ body.padOpen #hud { visibility: hidden; }
         <label class="size" for="refOp">투명도 <input id="refOp" type="range" min="10" max="90" value="40"></label>
         <label class="size" for="refScale">크기 <input id="refScale" type="range" min="40" max="300" value="100"></label>
         <button class="btn" id="refMove" type="button">옮기기</button>
+        <button class="btn" id="refScore" type="button">⭐ 점수</button>
         <button class="btn" id="refOff" type="button">끄기</button>
       </span>
     </div>
@@ -628,8 +653,9 @@ body.padOpen #hud { visibility: hidden; }
     <h2 id="artTitle"></h2>
     <p class="artMeta" id="artMeta"></p>
     <p class="artText" id="artText"></p>
+    <div class="artQuiz" id="artQuiz" hidden></div>
     <div class="rxBar" id="rxBarA"></div>
-    <div class="artBtns"><button class="btn primary" id="artSpeak" type="button">🔊 도슨트 듣기</button><button class="btn" id="artZoomOff" type="button" hidden>원래 크기</button><button class="btn" id="artClose" type="button">닫기</button></div>
+    <div class="artBtns"><button class="btn primary" id="artSpeak" type="button">🔊 도슨트 듣기</button><button class="btn" id="artQuizBtn" type="button" hidden>❓ 퀴즈 풀기</button><button class="btn" id="artTrace" type="button" hidden>✏️ 따라 그리기</button><button class="btn" id="artZoomOff" type="button" hidden>원래 크기</button><button class="btn" id="artClose" type="button">닫기</button></div>
   </div>
 </div>
 
@@ -680,6 +706,13 @@ body.padOpen #hud { visibility: hidden; }
     <div id="fameTabs"></div>
     <p id="fameNote">반응을 많이 받은 순서예요. 「보러 가기」를 누르면 작품 앞까지 걸어가요.</p>
     <div id="fameList"></div>
+  </div>
+</div>
+
+<div id="fun" hidden>
+  <div class="sheet" role="dialog" aria-label="관람 도감">
+    <div class="sheetHead"><h2>📖 관람 도감</h2><button class="btn" id="funClose" type="button">닫기</button></div>
+    <div id="funBody"></div>
   </div>
 </div>
 
@@ -741,6 +774,7 @@ body.padOpen #hud { visibility: hidden; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="backend.js"></script>
 <script src="catalog.js"></script>
+<script src="quiz.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="vendor/GLTFLoader.js"></script>
 <script>
@@ -3368,6 +3402,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       }
       wrap.appendChild(opts); box.appendChild(wrap);
     });
+    funLockDress(box);
     markDress();
   }
   function openDress() { renderDress(); $('#dress').hidden = false; clearInterval(dressT); drawPreview(performance.now() / 1000); dressT = setInterval(() => drawPreview(performance.now() / 1000), 90); }
@@ -3381,7 +3416,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   $('#emoteBtn').addEventListener('click', () => { if (started) $('#emoteBar').hidden = !$('#emoteBar').hidden; });
   $('#introDress').addEventListener('click', openDress);
   $('#dressClose').addEventListener('click', closeDress);
-  $('#dressRandom').addEventListener('click', () => { myLook = randomLook(); applyMyLook(); });
+  $('#dressRandom').addEventListener('click', () => { myLook = funClean(randomLook()); applyMyLook(); });
   const blob = new T.Mesh(blobGeo, blobMat); blob.rotation.x = -Math.PI / 2; scene.add(blob);
 
   /* ---------- state & input ---------- */
@@ -3643,6 +3678,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     $('#artSpeak').hidden = !ttsOk; $('#artSpeak').onclick = () => { if (art.on) artSpeakStop(); else artSpeak(c.blurb || c.title, c.blurb || ''); };
     $('#artSpeak').textContent = '🔊 도슨트 듣기'; $('#art').hidden = false;
     document.querySelector('#art .artInfo').scrollTop = 0;
+    funOnArt(c);
   }
   function closeArt() { artSpeakStop(); $('#art').hidden = true; }
   $('#artClose').addEventListener('click', closeArt);
@@ -3774,7 +3810,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     mySeat = -1;
   }
   function onTap(cx, cy) {
-    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#suggest').hidden || !$('#settings').hidden || !$('#fame').hidden || !$('#dress').hidden || !$('#hang').hidden || !$('#art').hidden) return;
+    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#suggest').hidden || !$('#settings').hidden || !$('#fame').hidden || !$('#fun').hidden || !$('#dress').hidden || !$('#hang').hidden || !$('#art').hidden) return;
     const r = cv.getBoundingClientRect();
     ray.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -((cy - r.top) / r.height) * 2 + 1 }, camera);
     const hits = ray.intersectObjects(hitList, false);
@@ -4018,6 +4054,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     pushPresence(true);
     pad.sentOff = 0;
     if (pad.easel >= 0) enqueueFull(null);
+    funOnPad();
   }
   function finishEasel() {
     if (pad.easel >= 0 && pad.strokes.length) {
@@ -4076,10 +4113,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     $('#refOp').value = Math.round(ref.op * 100); $('#refScale').value = Math.round(ref.sc * 100);
   }
   function clearRef() { ref.img = ref.edge = null; ref.move = false; refDrag = null; paintRef(); paintRefUi(); }
-  function setRefImage(img) {
+  function setRefImage(img, sid) {
     const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    ref.img = c; ref.edge = makeEdges(c); ref.mode = 'img'; ref.op = 0.4; ref.sc = 1; ref.ox = ref.oy = 0; ref.move = false;
+    ref.img = c; ref.edge = makeEdges(c); ref.sid = sid || 'custom'; ref.mode = 'img'; ref.op = 0.4; ref.sc = 1; ref.ox = ref.oy = 0; ref.move = false;
     paintRef(); paintRefUi(); setStatus('참고 그림을 깔았어요. 투명도를 맞추고 그 위에 따라 그려 보세요. 내 그림에는 저장되지 않아요.');
   }
   $('#refBtn').addEventListener('click', () => { $('#refFile').value = ''; $('#refFile').click(); });
@@ -4354,7 +4391,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (doc.exh && galCol) { try { const ed = exhibitDoc(doc, ref.id); if (doc.sl) { ed.slot = doc.sl; await galCol.doc(uid + '_' + ref.id).hang(doc.sl, ed); strokeCache.set(uid + '_' + ref.id + ':' + ed.at, ed.strokes); } else await galCol.doc(uid + '_' + ref.id).set(ed); } catch (e) {} }
       pad.id = ref.id; pad.dirty = false; pad.confirmClose = false; $('#padClose').textContent = '닫기';
       setStatus(thinned ? '저장했어요. 그림이 커서 선을 조금 단순하게 줄였어요. 내 그림 목록에서 다시 열 수 있어요.' : '저장했어요. 내 그림 목록에서 다시 열 수 있어요.');
-      finishEasel();
+      finishEasel(); funOnSave(title);
       if (!doc.exh && galCol) askExhibit(Object.assign({ id: ref.id }, doc));            /* just saved a work that is not on a wall yet: offer to hang it */
     } catch (e) {
       const c = e && e.code;
@@ -5166,7 +5203,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     areaT -= dt; if (areaT > 0) return; areaT = 0.25;
     const nm = areaNameAt(pos.x, pos.z);
     if (nm !== areaCand) { areaCand = nm; areaStable = 0; } else areaStable += 0.25;
-    if (nm !== areaShown && (areaStable >= 0.5 || !areaShown)) { areaShown = nm; showAreaBanner(nm); }                  /* settled for half a second: no flicker on a doorstep */
+    if (nm !== areaShown && (areaStable >= 0.5 || !areaShown)) { areaShown = nm; showAreaBanner(nm); funArea(nm); }                  /* settled for half a second: no flicker on a doorstep */
   }
 
   /* ---------- fast travel ---------- */
@@ -5674,6 +5711,264 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     requestAnimationFrame(frame);
   }
   onResize();
+  /* ---------- fun layer: 관람 도감(stamps), hidden acorns, docent quiz, trace score, weekly theme, dress-up unlocks ----------
+     Everything here is kept on this phone (localStorage 'hw-fun'); nothing is sent to the server. */
+  const FUN_KEY = 'hw-fun';
+  const fun = (function () {
+    let o = null; try { o = JSON.parse(store(FUN_KEY) || 'null'); } catch (e) { o = null; }
+    if (!o || typeof o !== 'object' || Array.isArray(o)) o = {};
+    ['stamps', 'areas', 'acorns', 'quiz', 'stars', 'free', 'ms'].forEach(k => { if (!o[k] || typeof o[k] !== 'object') o[k] = {}; });
+    o.coin = Number(o.coin) || 0;
+    if (!o.wk || typeof o.wk !== 'object' || !o.wk.seen) o.wk = { w: -1, seen: {}, done: 0, draw: 0 };
+    return o;
+  })();
+  const funSave = () => store(FUN_KEY, JSON.stringify(fun));
+  const FUN_ART = window.MUSEUM_CATALOG || [], FUN_SC = window.SCULPTURE_CATALOG || [], FUN_ALL = FUN_ART.concat(FUN_SC);
+  const FUN_WINGS = window.MUSEUM_WINGS || [], FUN_NWING = Math.max(1, Math.ceil(FUN_ART.length / 4));
+  const FUN_MS = [[10, '초보 관람객', 3], [25, '단골 관람객', 5], [40, '미술관 박사', 8], [FUN_ALL.length, '도토리 큐레이터', 15]].filter((m, i, a) => m[0] > 0 && a.findIndex(q => q[0] === m[0]) === i);
+  const funTitle = () => { let t = ''; FUN_MS.forEach(m => { if (fun.ms[m[0]]) t = m[1]; }); return t; };
+
+  /* dress-up items that open with acorns: key 'slot:value' -> acorns needed */
+  const FUN_LOCKS = { '3:8': 8, '3:7': 15, '5:9': 6, '5:8': 12, '5:5': 20, '7:3': 6, '7:2': 10 };
+  const FUN_LOCK_NAME = { '3:8': '고양이 귀', '3:7': '왕관', '5:9': '도토리 가방', '5:8': '별 지팡이', '5:5': '날개', '7:3': '도토리 조끼', '7:2': '망토' };
+  if (!fun.init) { fun.init = 1; Object.keys(FUN_LOCKS).forEach(k => { const p = k.split(':').map(Number); if (myLook[p[0]] === p[1]) fun.free[k] = 1; }); funSave(); }   /* what I already wear stays mine */
+  const funLocked = k => FUN_LOCKS[k] != null && fun.coin < FUN_LOCKS[k] && !fun.free[k];
+  function funClean(look) { const a = look.slice(); Object.keys(FUN_LOCKS).forEach(k => { if (funLocked(k)) { const p = k.split(':').map(Number); if (a[p[0]] === p[1]) a[p[0]] = 0; } }); return a; }
+  function funLockDress(box) {
+    box.querySelectorAll('button[data-i]').forEach(b => { const k = b.dataset.i + ':' + b.dataset.v; if (funLocked(k)) { b.classList.add('locked'); b.textContent += ' 🔒' + FUN_LOCKS[k]; } });
+  }
+  $('#dressRows').addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('button[data-i]'); if (!b) return;
+    const k = b.dataset.i + ':' + b.dataset.v;
+    if (funLocked(k)) { e.stopPropagation(); toast('🔒 도토리를 ' + FUN_LOCKS[k] + '개 모으면 열려요 (지금 ' + fun.coin + '개)', 3500); }
+  }, true);
+
+  /* every acorn I get goes through here: counts it, and tells me when a new dress-up item opens */
+  function funAdd(n, why) {
+    const before = fun.coin; fun.coin += n; funSave();
+    const opened = Object.keys(FUN_LOCKS).filter(k => FUN_LOCKS[k] > before && FUN_LOCKS[k] <= fun.coin && !fun.free[k]).map(k => FUN_LOCK_NAME[k]);
+    return '🌰 +' + n + (why ? ' ' + why : '') + ' (모두 ' + fun.coin + '개)' + (opened.length ? ' 🎁 꾸미기에 새로 열림: ' + opened.join(', ') : '');
+  }
+
+  /* ----- stamps ----- */
+  function funStamp(c) {
+    if (!c || !c.id || fun.stamps[c.id]) return;
+    fun.stamps[c.id] = Date.now(); const n = Object.keys(fun.stamps).length; funSave();
+    let msg = '📖 도감에 「' + c.title + '」 도장! (' + n + '/' + FUN_ALL.length + ')';
+    const ms = FUN_MS.find(m => m[0] === n);
+    if (ms && !fun.ms[n]) { fun.ms[n] = 1; msg += ' 🎉 칭호 「' + ms[1] + '」 ' + funAdd(ms[2]); }
+    toast(msg, 5000);
+  }
+  const FUN_AREAS = ['중앙 홀', '신진 작가관', '별관', '서쪽 전시관 1', '서쪽 전시관 2', '중앙 로툰다', '둥근 홀', '조각 전시관', '화실', '야외 전시 정원', '꽃길 정원', '산 전망대', '바닷가', '호숫가', '풍차 들판', '숲속 쉼터', '남쪽 꽃들판', '들판 산책길'].concat(FUN_WINGS.slice(0, FUN_NWING).map(w => '대회랑 · ' + w.name));
+  function funArea(nm) { if (nm && !fun.areas[nm] && FUN_AREAS.indexOf(nm) >= 0) { fun.areas[nm] = 1; funSave(); } }
+
+  /* ----- weekly: a featured wing and a drawing theme (the same for everybody, by the calendar; weeks start on Monday, Korea time) ----- */
+  const FUN_DRAW = [
+    { t: '미소 짓는 얼굴', k: ['미소', '웃', '얼굴', '표정'] }, { t: '빛과 그림자가 있는 정물', k: ['정물', '그림자', '빛', '과일', '컵'] },
+    { t: '안개 낀 산', k: ['안개', '산', '구름'] }, { t: '물 위에 비친 빛', k: ['물', '호수', '연못', '빛', '수련', '반짝'] },
+    { t: '별이 빛나는 밤', k: ['별', '밤', '달'] }, { t: '먹으로 그린 산과 바위', k: ['먹', '산', '바위', '폭포'] },
+    { t: '눈 덮인 마을', k: ['눈', '마을', '겨울', '집'] }, { t: '촛불 하나', k: ['촛불', '불', '초', '등불'] },
+    { t: '펄럭이는 깃발', k: ['깃발', '바람', '기'] }, { t: '내 마음의 색', k: ['마음', '색', '기분', '감정'] }, { t: '우리 동네 풍경', k: ['동네', '풍경', '거리', '골목', '집'] }
+  ];
+  const funWeekNo = () => Math.floor((Math.floor((Date.now() + 9 * 3600000) / 86400000) + 3) / 7);
+  const funFeat = () => funWeekNo() % FUN_NWING;
+  const funTheme = () => FUN_DRAW[funFeat() % FUN_DRAW.length];
+  function funWeekState() { const w = funWeekNo(); if (fun.wk.w !== w) fun.wk = { w: w, seen: {}, done: 0, draw: 0 }; return fun.wk; }
+  function funWeekOnArt(c) {
+    const i = FUN_ART.findIndex(q => q.id === c.id); if (i < 0 || Math.floor(i / 4) !== funFeat()) return;
+    const wk = funWeekState(); wk.seen[c.id] = 1;
+    if (!wk.done && Object.keys(wk.seen).length >= 4) { wk.done = 1; funSave(); setTimeout(() => toast('🌟 이번 주 구역 완주! ' + funAdd(5), 5000), 600); } else funSave();
+  }
+  function funOnSave(title) {
+    const wk = funWeekState(), th = funTheme();
+    if (!wk.draw && th.k.some(k => title.indexOf(k) >= 0)) { wk.draw = 1; funSave(); toast('🎨 이번 주 주제 그림이에요! ' + funAdd(3), 5000); }
+  }
+
+  /* ----- docent card: stamp + quiz + "trace this painting" ----- */
+  function funOnArt(c) {
+    funStamp(c); funWeekOnArt(c);
+    const q = window.MUSEUM_QUIZ && window.MUSEUM_QUIZ[c.id], box = $('#artQuiz'); box.hidden = true; box.textContent = '';
+    const qb = $('#artQuizBtn'); qb.hidden = !q; qb.textContent = fun.quiz[c.id] ? '❓ 퀴즈 ✓' : '❓ 퀴즈 풀기'; qb.onclick = () => funQuiz(c, q);
+    const tb = $('#artTrace'); tb.hidden = !c.img; tb.onclick = () => funTrace(c);
+  }
+  function funQuiz(c, q) {
+    const box = $('#artQuiz'); box.textContent = ''; box.hidden = false;
+    const p = document.createElement('p'); p.className = 'qTxt'; p.textContent = q[0]; box.appendChild(p);
+    const msg = document.createElement('p'); msg.className = 'qMsg';
+    const opts = [q[1], q[2], q[3]].map((t, i) => ({ t: t, ok: i === 0 }));
+    for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)), x = opts[i]; opts[i] = opts[j]; opts[j] = x; }
+    const btns = [];
+    opts.forEach(o => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn qOpt'; b.textContent = o.t; btns.push(b);
+      b.addEventListener('click', () => {
+        if (o.ok) {
+          btns.forEach(x => { x.disabled = true; }); b.classList.add('good');
+          if (!fun.quiz[c.id]) { fun.quiz[c.id] = 1; msg.textContent = '정답이에요! 🎉'; toast('❓ 퀴즈 정답! ' + funAdd(2), 4500); } else msg.textContent = '정답이에요! (이미 도토리를 받은 문제예요)';
+          $('#artQuizBtn').textContent = '❓ 퀴즈 ✓'; funSave();
+        } else { b.disabled = true; b.classList.add('bad'); msg.textContent = '아쉬워요, 다시 골라 봐요 🙂'; }
+      });
+      box.appendChild(b);
+    });
+    box.appendChild(msg);
+    try { box.scrollIntoView({ block: 'nearest' }); } catch (e) {}
+  }
+  let funPendingRef = null;
+  function funTrace(c) {
+    funPendingRef = c; closeArt();
+    const pl = PLACES.find(q => q.name === '화실');
+    toast('화실로 가요. 이젤에 앉으면 「' + c.title + '」이(가) 깔려요 ✏️', 4500);
+    if (pl) goPlace(pl);
+  }
+  function funOnPad() {
+    const th = funTheme(); $('#padTitle').placeholder = '이번 주 주제: ' + th.t;
+    if (funPendingRef && pad.easel >= 0) {
+      const c = funPendingRef; funPendingRef = null; const im = new Image();
+      im.onload = () => { if (!pad.open) return; try { setRefImage(im, c.id); ref.op = 0.35; paintRef(); paintRefUi(); setStatus('「' + c.title + '」을(를) 깔았어요. 따라 그린 뒤 ⭐ 점수를 눌러 보세요.'); } catch (e) {} };
+      im.src = c.img;
+    }
+  }
+
+  /* ----- trace score: how well do my lines follow the outlines of the picture underneath? ----- */
+  function funDilate(m, w, h, r) {
+    const t = new Uint8Array(w * h), o = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let v = 0; for (let k = -r; k <= r && !v; k++) { const xx = x + k; if (xx >= 0 && xx < w && m[y * w + xx]) v = 1; } t[y * w + x] = v; }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let v = 0; for (let k = -r; k <= r && !v; k++) { const yy = y + k; if (yy >= 0 && yy < h && t[yy * w + x]) v = 1; } o[y * w + x] = v; }
+    return o;
+  }
+  function funScoreMasks(U, R, w, h) {
+    let nu = 0, nr = 0; for (let i = 0; i < w * h; i++) { nu += U[i]; nr += R[i]; }
+    if (nu < 25 || nr < 25) return { s: 0, p: 0, r: 0, nu: nu, nr: nr };
+    const dU = funDilate(U, w, h, 2), dR = funDilate(R, w, h, 2); let hu = 0, hr = 0;
+    for (let i = 0; i < w * h; i++) { if (U[i] && dR[i]) hu++; if (R[i] && dU[i]) hr++; }
+    const p = hu / nu, r = hr / nr; let s = 0.5 * p + 0.5 * Math.min(1, r * 2.5);
+    const dens = nu / (nr * 2.2); if (dens > 1) s /= dens;                                  /* scribbling everywhere does not pay */
+    return { s: s, p: p, r: r, nu: nu, nr: nr };
+  }
+  const funStars = s => s >= 0.7 ? 3 : s >= 0.5 ? 2 : s >= 0.3 ? 1 : 0;
+  function funDrawnEdges(w, h) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true });
+    x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(padCv, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data, g = new Float32Array(w * h), m = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) g[i] = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11;
+    for (let y = 1; y < h - 1; y++) for (let xx = 1; xx < w - 1; xx++) {
+      const i = y * w + xx, gx = -g[i - w - 1] - 2 * g[i - 1] - g[i + w - 1] + g[i - w + 1] + 2 * g[i + 1] + g[i + w + 1], gy = -g[i - w - 1] - 2 * g[i - w] - g[i - w + 1] + g[i + w - 1] + 2 * g[i + w] + g[i + w + 1];
+      if (Math.hypot(gx, gy) > 120) m[i] = 1;
+    }
+    return m;
+  }
+  function funRefEdges(w, h, k) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true });
+    const src = ref.edge, pw = padCv.width, ph = padCv.height, kk = Math.min(pw / src.width, ph / src.height) * ref.sc, dw = src.width * kk, dh = src.height * kk;
+    x.drawImage(src, ((pw - dw) / 2 + ref.ox * pw) * k, ((ph - dh) / 2 + ref.oy * ph) * k, dw * k, dh * k);
+    const d = x.getImageData(0, 0, w, h).data, m = new Uint8Array(w * h); for (let i = 0; i < w * h; i++) if (d[i * 4 + 3] > 70) m[i] = 1;
+    return m;
+  }
+  $('#refScore').addEventListener('click', () => {
+    if (!ref.img || !ref.edge) { setStatus('먼저 「따라 그리기」로 참고 그림을 깔아 주세요.', true); return; }
+    if (!pad.strokes.length && !pad.cur) { setStatus('먼저 참고 그림 위에 따라 그려 보세요.', true); return; }
+    const pw = padCv.width, ph = padCv.height, k = 160 / Math.max(pw, ph), w = Math.max(16, Math.round(pw * k)), h = Math.max(16, Math.round(ph * k));
+    const res = funScoreMasks(funDrawnEdges(w, h), funRefEdges(w, h, k), w, h), n = funStars(res.s);
+    const sid = ref.sid || 'custom', prev = fun.stars[sid] || 0; let extra = '';
+    if (n > prev) { fun.stars[sid] = n; funSave(); extra = ' ' + funAdd(n - prev, '별 ' + n + '개'); }
+    setStatus((n ? '⭐'.repeat(n) + ' 별 ' + n + '개! ' : '아직 별이 없어요. ') + (n >= 3 ? '윤곽을 아주 잘 따라갔어요.' : n ? '조금 더 윤곽선을 따라가 보면 별이 늘어요.' : '「윤곽선」 모양으로 바꿔서 굵은 선부터 따라가 보세요.') + extra);
+  });
+
+  /* ----- hidden acorns ----- */
+  const FUN_ACORNS = [];
+  (function () {
+    const add = (id, name, x, z, gold) => FUN_ACORNS.push({ id: id, name: name, x: x, z: z, gold: !!gold, got: !!fun.acorns[id], m: null });
+    PLACES.forEach((p, i) => { const a = 0.9 + i * 2.1; add('p' + i, p.name, p.x + Math.cos(a) * 2.4, p.z + Math.sin(a) * 2.4); });
+    ['산 전망대', '바닷가', '호숫가', '풍차 들판', '남쪽 꽃들판', '숲속 쉼터'].forEach((nm, j) => {
+      const p = PLACES.find(q => q.name === nm); if (!p) return;
+      add('q' + j, nm, p.x + Math.cos(3.6 + j) * 3.4, p.z + Math.sin(3.6 + j) * 3.4);
+      if (j < 3) add('g' + j, nm, p.x + Math.cos(5.4 + j) * 3.0, p.z + Math.sin(5.4 + j) * 3.0, true);       /* golden: only at night */
+    });
+    for (let k = 0; k < NW; k++) add('w' + k, '대회랑 · ' + ((FUN_WINGS[k] && FUN_WINGS[k].name) || ''), k % 2 ? 5.5 : -5.5, wingZ(k) - 20);
+  })();
+  (function () {
+    const body = new T.MeshLambertMaterial({ color: 0xb9803a, emissive: 0x2a1808 }), capM = new T.MeshLambertMaterial({ color: 0x6b4a2a });
+    const gBody = new T.MeshLambertMaterial({ color: 0xf5c542, emissive: 0x8a6a00 }), gCap = new T.MeshLambertMaterial({ color: 0xffe27a, emissive: 0x6a5200 });
+    const bGeo = new T.SphereGeometry(0.3, 10, 8), cGeo = new T.SphereGeometry(0.34, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), sGeo = new T.CylinderGeometry(0.03, 0.04, 0.16, 5);
+    const gc = document.createElement('canvas'); gc.width = gc.height = 64; const gx = gc.getContext('2d'), gr = gx.createRadialGradient(32, 32, 2, 32, 32, 31);
+    gr.addColorStop(0, 'rgba(255,240,170,0.9)'); gr.addColorStop(1, 'rgba(255,240,170,0)'); gx.fillStyle = gr; gx.fillRect(0, 0, 64, 64);
+    const glowTex = new T.CanvasTexture(gc);
+    FUN_ACORNS.forEach((a, n) => {
+      const g = new T.Group(), b = new T.Mesh(bGeo, a.gold ? gBody : body), c = new T.Mesh(cGeo, a.gold ? gCap : capM), s = new T.Mesh(sGeo, capM);
+      b.scale.set(1, 1.2, 1); c.position.y = 0.16; s.position.y = 0.5; [b, c, s].forEach(m => { m.userData.noShadow = true; g.add(m); });
+      const sp = new T.Sprite(new T.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: a.gold ? 0.8 : 0.4 })); sp.scale.setScalar(a.gold ? 2.6 : 1.7); sp.position.y = 0.2; g.add(sp);
+      g.position.set(a.x, 1.05, a.z); g.visible = false; scene.add(g); a.m = g; a.ph = n * 1.7;
+    });
+    anim.push((dt, t) => {
+      const near2 = 45 * 45, night = ATM.night > 0.55;
+      for (let i = 0; i < FUN_ACORNS.length; i++) {
+        const a = FUN_ACORNS[i]; if (a.got) continue;
+        const dx = a.x - pos.x, dz = a.z - pos.z, vis = (!a.gold || night) && dx * dx + dz * dz < near2;
+        if (a.m.visible !== vis) a.m.visible = vis;
+        if (vis) { a.m.position.y = 1.05 + Math.sin(t * 2 + a.ph) * 0.12; a.m.rotation.y = t * 1.3 + a.ph; }
+      }
+      if (!started || pad.open || watch.open || teleOn) return;
+      for (let i = 0; i < FUN_ACORNS.length; i++) {
+        const a = FUN_ACORNS[i]; if (a.got || (a.gold && !night)) continue;
+        const dx = a.x - pos.x, dz = a.z - pos.z; if (dx * dx + dz * dz > 4) continue;
+        a.got = true; a.m.visible = false; fun.acorns[a.id] = 1;
+        const left = FUN_ACORNS.filter(q => !q.got).length, total = FUN_ACORNS.length;
+        toast((a.gold ? '🌟 황금 도토리를 찾았어요! ' : '🌰 숨은 도토리를 찾았어요! ') + funAdd(a.gold ? 3 : 1) + ' · ' + (total - left) + '/' + total, 5000);
+      }
+    });
+  })();
+
+  /* ----- the 도감 sheet ----- */
+  function funRender() {
+    const box = $('#funBody'); box.textContent = '';
+    const el = (tag, cls, txt, par) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (par) par.appendChild(e); return e; };
+    const card = (title) => { const c = el('div', 'card', null, box); if (title) el('h3', '', title, c); return c; };
+    const bar = (par, a, b) => { const r = el('div', 'bar', null, par), i = el('b', '', null, r); i.style.width = Math.round(100 * a / Math.max(1, b)) + '%'; };
+    const stamped = FUN_ALL.filter(c => fun.stamps[c.id]).length;
+    let c = card(); el('div', 'sum', '🌰 도토리 ' + fun.coin + '개' + (funTitle() ? ' · 「' + funTitle() + '」' : ''), c);
+    el('p', 'note', '도장 ' + stamped + '/' + FUN_ALL.length + ' · 숨은 도토리 ' + FUN_ACORNS.filter(a => a.got).length + '/' + FUN_ACORNS.length, c); bar(c, stamped, FUN_ALL.length);
+    const nx = FUN_MS.find(m => stamped < m[0]); if (nx) el('p', 'note', '다음 칭호 「' + nx[1] + '」까지 도장 ' + (nx[0] - stamped) + '개', c);
+
+    const wk = funWeekState(), f = funFeat(), th = funTheme(), wg = FUN_WINGS[f];
+    c = card('📅 이번 주 (월요일마다 바뀌어요)');
+    el('p', '', '이번 주 구역: ' + (wg ? '「' + wg.name + '」' : '') + ' — 작품 4점 모두 보기 ' + Object.keys(wk.seen).length + '/4' + (wk.done ? ' ✓' : ' (완주하면 🌰 5)'), c);
+    el('p', '', '이번 주 그림 주제: 「' + th.t + '」' + (wk.draw ? ' ✓' : ' — 제목에 주제 단어를 넣어 저장하면 🌰 3'), c);
+    if (wg) { const gb = el('button', 'btn', '이번 주 구역으로 가기', c); gb.type = 'button'; gb.addEventListener('click', () => { $('#fun').hidden = true; goPlace({ name: wg.name, x: 0, z: wingZ(f) - 4, h: Math.PI, pitch: 0.2 }); }); }
+
+    c = card('🌰 숨은 도토리');
+    const rest = FUN_ACORNS.filter(a => !a.got && !a.gold), gold = FUN_ACORNS.filter(a => a.gold);
+    el('p', '', '황금 도토리 ' + gold.filter(a => a.got).length + '/' + gold.length + ' (밤하늘이 어두울 때만 나타나요 🌙)', c);
+    if (rest.length) { const names = [], nw = rest.filter(a => a.name.indexOf('대회랑 · ') === 0).length; rest.forEach(a => { if (a.name.indexOf('대회랑 · ') !== 0 && names.indexOf(a.name) < 0) names.push(a.name); }); if (nw) names.push('대회랑 (' + nw + '곳)'); el('p', 'note', '아직 못 찾은 곳: ' + names.join(', '), c); } else el('p', 'note', '숨은 도토리를 모두 찾았어요! 🎉', c);
+
+    c = card('📖 명화 도장');
+    for (let k = 0; k < FUN_NWING; k++) {
+      el('div', 'wingH', (FUN_WINGS[k] ? FUN_WINGS[k].name : '') + (k === f ? ' ⭐이번 주' : ''), c);
+      const row = el('div', 'stamps', null, c);
+      FUN_ART.slice(k * 4, k * 4 + 4).forEach(a => funChip(row, a));
+    }
+    if (FUN_SC.length) { c = card('🗿 조각 도장'); const row = el('div', 'stamps', null, c); FUN_SC.forEach(a => funChip(row, a)); }
+
+    c = card('🚶 다녀온 곳');
+    const row2 = el('div', 'stamps', null, c); FUN_AREAS.forEach(nm => { const b = el('span', 'stamp' + (fun.areas[nm] ? ' on' : ''), fun.areas[nm] ? nm : '???', row2); b.style.cursor = 'default'; });
+    el('p', 'note', FUN_AREAS.filter(nm => fun.areas[nm]).length + '/' + FUN_AREAS.length + '곳', c);
+
+    c = card('⭐ 따라 그리기 별');
+    const ids = Object.keys(fun.stars); let sum = 0; ids.forEach(i => { sum += fun.stars[i]; });
+    el('p', '', ids.length ? '별 ' + sum + '개 모았어요 (' + ids.length + '점)' : '명화 설명 카드의 「따라 그리기」로 화실에서 따라 그리고 ⭐ 점수를 눌러 보세요.', c);
+
+    c = card('🎁 꾸미기에 열리는 것');
+    Object.keys(FUN_LOCKS).sort((x, y) => FUN_LOCKS[x] - FUN_LOCKS[y]).forEach(k => el('p', 'note', (funLocked(k) ? '🔒 ' : '✅ ') + FUN_LOCK_NAME[k] + ' · 도토리 ' + FUN_LOCKS[k] + '개', c));
+  }
+  function funChip(row, a) {
+    const on = !!fun.stamps[a.id], b = document.createElement('button'); b.type = 'button'; b.className = 'stamp' + (on ? ' on' : '');
+    b.textContent = on ? a.title : '???'; if (on) b.addEventListener('click', () => { $('#fun').hidden = true; openArt(a); }); else b.disabled = true;
+    row.appendChild(b);
+  }
+  $('#funBtn').addEventListener('click', () => { if (!started) return; funRender(); $('#fun').hidden = false; });
+  $('#funClose').addEventListener('click', () => { $('#fun').hidden = true; });
+  $('#fun').addEventListener('click', e => { if (e.target === $('#fun')) $('#fun').hidden = true; });
+  { let welcomed = false; anim.push(() => { if (started && !welcomed) { welcomed = true; setTimeout(() => { const wg = FUN_WINGS[funFeat()]; toast('📖 이번 주 구역은 「' + (wg ? wg.name : '') + '」! 「더보기 → 관람 도감」에서 도장과 숨은 도토리를 확인해 보세요', 6500); }, 12000); } }); }
+  window.__fun = { fun: fun, acorns: FUN_ACORNS, stamp: funStamp, render: funRender, score: funScoreMasks, stars: funStars, quiz: funQuiz, locks: FUN_LOCKS, locked: funLocked, week: funWeekNo, feat: funFeat, add: funAdd };
+
   function finalizeShadows() {
     if (!HI) return;
     const ok = { BoxGeometry: 1, CylinderGeometry: 1, SphereGeometry: 1, ConeGeometry: 1, LatheGeometry: 1, TorusGeometry: 1, IcosahedronGeometry: 1, ExtrudeGeometry: 1 };
