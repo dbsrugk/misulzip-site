@@ -5901,7 +5901,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const FUN_ACORNS = [];
   (function () {
     const add = (id, name, x, z, gold) => FUN_ACORNS.push({ id: id, name: name, x: x, z: z, gold: !!gold, got: !!fun.acorns[id], m: null });
-    PLACES.forEach((p, i) => { const a = 0.9 + i * 2.1; add('p' + i, p.name, p.x + Math.cos(a) * 2.4, p.z + Math.sin(a) * 2.4); });
+    PLACES.forEach((p, i) => { const a = 0.9 + i * 2.1; if (p.name === '화실') add('p' + i, p.name, p.x + 6, p.z - 1.3); else add('p' + i, p.name, p.x + Math.cos(a) * 2.4, p.z + Math.sin(a) * 2.4); });   /* the atelier's front step stays clear: its acorn lies beside the hut, outside the walls */
     ['산 전망대', '바닷가', '호숫가', '풍차 들판', '남쪽 꽃들판', '숲속 쉼터'].forEach((nm, j) => {
       const p = PLACES.find(q => q.name === nm); if (!p) return;
       add('q' + j, nm, p.x + Math.cos(3.6 + j) * 3.4, p.z + Math.sin(3.6 + j) * 3.4);
