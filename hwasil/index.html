@@ -359,7 +359,7 @@ body.padOpen #hud { visibility: hidden; }
 .opt.on { background: var(--ink); color: var(--paper); }
 .dressFoot { display: flex; gap: 8px; }
 .dressFoot .btn { flex: 1; }
-#works, #rooms, #places, #fame, #fun, #suggest {
+#works, #rooms, #places, #fame, #fun, #collab, #suggest {
   position: fixed;
   inset: 0;
   z-index: 25;
@@ -449,7 +449,21 @@ body.padOpen #hud { visibility: hidden; }
 #keyMsg.bad { color: var(--danger); }
 /* narrow phones: the top buttons fit in two rows instead of three, leaving more of the picture */
 @media (max-width: 440px) { #hud > .row, #hud .row { gap: 6px; } #hud .chip { padding: 6px 9px; font-size: 13.5px; gap: 3px; } #hud .chip b { font-size: 13px; padding: 0 6px; } }
-#fun .sheet { height: 92%; max-height: 92%; }
+#fun .sheet, #collab .sheet { height: 92%; max-height: 92%; }
+#collabBody { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; overscroll-behavior: contain; padding-bottom: 8px; }
+#collabBody .card { border: 2px solid var(--ink); border-radius: 14px; padding: 10px 12px; background: #fff; }
+#collabBody h3 { margin: 0 0 6px; font-size: 17px; }
+#collabBody p { margin: 4px 0; }
+#collabBody .note { font-size: 14px; color: var(--muted); }
+#collabBody .field { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 12px; font: inherit; font-size: 17px; margin: 6px 0; background: var(--paper); }
+#collabBody .btn { margin-top: 6px; }
+#collabBody .cCode { font-size: 36px; letter-spacing: 8px; font-weight: 700; text-align: center; }
+#collabBody .cTiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+#collabBody .cTile { border: 2px dashed var(--line); border-radius: 12px; min-height: 96px; padding: 8px; display: flex; flex-direction: column; gap: 4px; justify-content: center; align-items: center; text-align: center; color: var(--muted); }
+#collabBody .cTile.on { border: 2px solid var(--ink); background: var(--yellow); color: var(--ink); }
+#collabBody .cTile .btn { padding: 6px 10px; font-size: 14px; margin: 0; }
+#fameList.plain { display: flex; flex-direction: column; gap: 8px; }
+#fameList.plain .roomRow { align-items: center; }
 #funBody { flex: 1; min-height: 0; overscroll-behavior: contain; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
 #funBody .card { border: 2px solid var(--ink); border-radius: 14px; padding: 10px 12px; background: #fff; }
 #funBody h3 { margin: 0 0 6px; font-size: 17px; }
@@ -486,6 +500,7 @@ body.padOpen #hud { visibility: hidden; }
   <div id="moreMenu" hidden>
     <button class="chip" id="fameBtn" type="button">🏆 명예의 전당</button>
     <button class="chip" id="funBtn" type="button">📖 관람 도감</button>
+    <button class="chip" id="collabBtn" type="button">🤝 합작 액자</button>
     <button class="chip" id="musicBtn" type="button" aria-label="음악 켜고 끄기">🎵 음악</button>
     <button class="chip" id="moreSug" type="button">📮 건의함</button>
   </div>
@@ -654,8 +669,9 @@ body.padOpen #hud { visibility: hidden; }
     <p class="artMeta" id="artMeta"></p>
     <p class="artText" id="artText"></p>
     <div class="artQuiz" id="artQuiz" hidden></div>
+    <div class="artBtns" id="artFun"><button class="btn" id="artQuizBtn" type="button" hidden>❓ 퀴즈 풀기</button><button class="btn" id="artTrace" type="button" hidden>✏️ 따라 그리기</button></div>
     <div class="rxBar" id="rxBarA"></div>
-    <div class="artBtns"><button class="btn primary" id="artSpeak" type="button">🔊 도슨트 듣기</button><button class="btn" id="artQuizBtn" type="button" hidden>❓ 퀴즈 풀기</button><button class="btn" id="artTrace" type="button" hidden>✏️ 따라 그리기</button><button class="btn" id="artZoomOff" type="button" hidden>원래 크기</button><button class="btn" id="artClose" type="button">닫기</button></div>
+    <div class="artBtns"><button class="btn primary" id="artSpeak" type="button">🔊 도슨트 듣기</button><button class="btn" id="artZoomOff" type="button" hidden>원래 크기</button><button class="btn" id="artClose" type="button">닫기</button></div>
   </div>
 </div>
 
@@ -713,6 +729,13 @@ body.padOpen #hud { visibility: hidden; }
   <div class="sheet" role="dialog" aria-label="관람 도감">
     <div class="sheetHead"><h2>📖 관람 도감</h2><button class="btn" id="funClose" type="button">닫기</button></div>
     <div id="funBody"></div>
+  </div>
+</div>
+
+<div id="collab" hidden>
+  <div class="sheet" role="dialog" aria-label="합작 액자">
+    <div class="sheetHead"><h2>🤝 합작 액자</h2><button class="btn" id="collabClose" type="button">닫기</button></div>
+    <div id="collabBody"></div>
   </div>
 </div>
 
@@ -3810,7 +3833,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     mySeat = -1;
   }
   function onTap(cx, cy) {
-    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#suggest').hidden || !$('#settings').hidden || !$('#fame').hidden || !$('#fun').hidden || !$('#dress').hidden || !$('#hang').hidden || !$('#art').hidden) return;
+    if (!started || pad.open || watch.open || !viewerEl.hidden || !$('#works').hidden || !$('#rooms').hidden || !$('#places').hidden || !$('#suggest').hidden || !$('#settings').hidden || !$('#fame').hidden || !$('#fun').hidden || !$('#collab').hidden || !$('#dress').hidden || !$('#hang').hidden || !$('#art').hidden) return;
     const r = cv.getBoundingClientRect();
     ray.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -((cy - r.top) / r.height) * 2 + 1 }, camera);
     const hits = ray.intersectObjects(hitList, false);
@@ -5505,10 +5528,11 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   function renderFame() {
     const list = $('#fameList'), tabs = $('#fameTabs'); tabs.textContent = ''; list.textContent = ''; list.className = 'grid';
-    [['work', '친구들 작품'], ['art', '명화'], ['sc', '조각']].forEach(t => {
+    [['work', '친구들 작품'], ['art', '명화'], ['sc', '조각'], ['vote', '🗳 이달의 투표']].forEach(t => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (fame.tab === t[0] ? ' on' : ''); b.textContent = t[1];
       b.addEventListener('click', () => { fame.tab = t[0]; renderFame(); }); tabs.appendChild(b);
     });
+    if (fame.tab === 'vote') { list.className = 'plain'; renderVote(list); return; }
     const items = fameItems(fame.tab), my = ++fame.seq;
     if (!items.length) { const e = document.createElement('p'); e.className = 'empty'; e.textContent = fame.tab === 'work' ? '아직 전시된 작품이 없어요. 내 그림을 걸어 보세요!' : '작품을 불러오는 중이에요.'; list.appendChild(e); return; }
     const total = k => { const c = fame.cache[k]; return c ? Object.keys(c).reduce((a, x) => a + (Number(c[x]) || 0), 0) : 0; };
@@ -5934,6 +5958,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     el('p', '', '이번 주 그림 주제: 「' + th.t + '」' + (wk.draw ? ' ✓' : ' — 제목에 주제 단어를 넣어 저장하면 🌰 3'), c);
     if (wg) { const gb = el('button', 'btn', '이번 주 구역으로 가기', c); gb.type = 'button'; gb.addEventListener('click', () => { $('#fun').hidden = true; goPlace({ name: wg.name, x: 0, z: wingZ(f) - 4, h: Math.PI, pitch: 0.2 }); }); }
 
+    if (vote.last) { c = card('🏅 지난달 이달의 작품'); el('p', '', '「' + (vote.last.title || '제목 없음') + '」 · ' + (vote.last.artist || '이름 없는 화가') + ' (' + vote.last.n + '표)', c); }
+
     c = card('🌰 숨은 도토리');
     const rest = FUN_ACORNS.filter(a => !a.got && !a.gold), gold = FUN_ACORNS.filter(a => a.gold);
     el('p', '', '황금 도토리 ' + gold.filter(a => a.got).length + '/' + gold.length + ' (밤하늘이 어두울 때만 나타나요 🌙)', c);
@@ -5963,11 +5989,141 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     b.textContent = on ? a.title : '???'; if (on) b.addEventListener('click', () => { $('#fun').hidden = true; openArt(a); }); else b.disabled = true;
     row.appendChild(b);
   }
-  $('#funBtn').addEventListener('click', () => { if (!started) return; funRender(); $('#fun').hidden = false; });
+  $('#funBtn').addEventListener('click', () => { if (!started) return; funRender(); $('#fun').hidden = false; loadVote(() => { if (!$('#fun').hidden) funRender(); }); });
   $('#funClose').addEventListener('click', () => { $('#fun').hidden = true; });
   $('#fun').addEventListener('click', e => { if (e.target === $('#fun')) $('#fun').hidden = true; });
   { let welcomed = false; anim.push(() => { if (started && !welcomed) { welcomed = true; setTimeout(() => { const wg = FUN_WINGS[funFeat()]; toast('📖 이번 주 구역은 「' + (wg ? wg.name : '') + '」! 「더보기 → 관람 도감」에서 도장과 숨은 도토리를 확인해 보세요', 6500); }, 12000); } }); }
   window.__fun = { fun: fun, acorns: FUN_ACORNS, stamp: funStamp, render: funRender, score: funScoreMasks, stars: funStars, quiz: funQuiz, locks: FUN_LOCKS, locked: funLocked, week: funWeekNo, feat: funFeat, add: funAdd };
+
+  /* ---------- monthly vote (이달의 작품): a tab in the hall of fame ---------- */
+  const vote = { month: '', mine: [], n: {}, last: null, off: false };
+  const kstNow = () => new Date(Date.now() + 9 * 3600000);
+  const monthKey = () => kstNow().toISOString().slice(0, 7);
+  const prevMonthKey = () => { const d = kstNow(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - 1); return d.toISOString().slice(0, 7); };
+  function loadVote(done) {
+    const hw = window.hwasil; vote.month = monthKey();
+    if (!hw || !hw.voteTop) { vote.off = true; if (done) done(); return; }
+    Promise.all([hw.voteTop(vote.month), hw.voteTop(prevMonthKey())]).then(r => {
+      if (!r[0]) vote.off = true; else { vote.off = false; vote.mine = r[0].mine || []; vote.n = {}; (r[0].top || []).forEach(t => { vote.n[t.id] = t.n; }); }
+      const pt = r[1] && r[1].top && r[1].top[0]; vote.last = pt && pt.n >= 2 ? pt : null;
+      if (done) done();
+    }).catch(() => { vote.off = true; if (done) done(); });
+  }
+  function drawVote(list) {
+    list.textContent = '';
+    const el = (tag, cls, txt, par) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (par) par.appendChild(e); return e; };
+    if (vote.off) { el('p', 'empty', '이달의 투표는 곧 열려요 🛠 (준비 중이에요)', list); return; }
+    el('p', 'empty', vote.month.replace('-', '년 ') + '월 투표 · 마음에 드는 친구 작품에 3표까지 줄 수 있어요 (남은 표 ' + (3 - vote.mine.length) + '). 이미 준 표를 다시 누르면 취소돼요. 내 작품에는 누를 수 없고, 달이 바뀌면 새로 시작해요.', list);
+    if (vote.last) el('p', 'empty', '🏅 지난달 이달의 작품: 「' + (vote.last.title || '제목 없음') + '」 · ' + (vote.last.artist || '이름 없는 화가') + ' (' + vote.last.n + '표)', list);
+    const items = fameItems('work').sort((a, b) => (vote.n[b.work.id] || 0) - (vote.n[a.work.id] || 0) || b.at - a.at).slice(0, 40);
+    if (!items.length) el('p', 'empty', '아직 전시된 작품이 없어요.', list);
+    items.forEach(it => {
+      const id = it.work.id, mineWork = isMine(it.work), voted = vote.mine.indexOf(id) >= 0, n = vote.n[id] || 0;
+      const row = el('div', 'roomRow', null, list), l = el('div', 'l', null, row);
+      el('div', 'n', it.title, l); el('div', 'c', it.sub + (n ? ' · 🗳 ' + n + '표' : ''), l);
+      const go = el('button', 'btn', '보러 가기', row); go.type = 'button'; go.addEventListener('click', () => { $('#fame').hidden = true; goPlace(it.pl); });
+      const vb = el('button', 'btn' + (voted ? ' primary' : ''), mineWork ? '내 작품' : voted ? '✓ 투표함' : '투표하기', row); vb.type = 'button'; vb.disabled = mineWork;
+      vb.addEventListener('click', () => {
+        vb.disabled = true;
+        window.hwasil.vote(vote.month, id).then(r => { vote.mine = r.mine || []; vote.n[id] = r.n; if (fame.tab === 'vote') drawVote(list); }).catch(e => {
+          vb.disabled = false;
+          const c = e && e.code; toast(c === 'quota_exceeded' ? '한 달에 3표까지예요. 이미 준 표를 눌러 취소할 수 있어요.' : c === 'own_work' ? '내 작품에는 투표할 수 없어요.' : c === 'off' ? '투표는 곧 열려요.' : '투표하지 못했어요. 잠시 뒤 다시 해 주세요.', 4000);
+        });
+      });
+    });
+  }
+  function renderVote(list) {
+    list.textContent = ''; const p = document.createElement('p'); p.className = 'empty'; p.textContent = '불러오는 중…'; list.appendChild(p);
+    loadVote(() => { if (fame.tab === 'vote' && !$('#fame').hidden) drawVote(list); });
+  }
+
+  /* ---------- collab frame (합작 액자): up to four friends each put one picture in a tile; the maker joins them into one picture and hangs it like any other ---------- */
+  function composeCollab(tiles, title) {
+    const W = 1000, H = 750, tw = W / 2, th = H / 2, ink = '#3a342c', strokes = [];
+    strokes.push({ k: 'p', c: ink, w: 6, p: [tw, 0, tw, H] }); strokes.push({ k: 'p', c: ink, w: 6, p: [0, th, W, th] });          /* the cross comes first, so paint-bucket fills stop at it */
+    tiles.forEach((t, i) => {
+      const d = t && t.doc; if (!d || !Array.isArray(d.strokes) || !(d.w > 0) || !(d.h > 0)) return;
+      const s = Math.min((tw - 10) / d.w, (th - 10) / d.h), ox = (i % 2) * tw + (tw - d.w * s) / 2, oy = Math.floor(i / 2) * th + (th - d.h * s) / 2, x1 = ox + d.w * s, y1 = oy + d.h * s;
+      strokes.push({ k: 'p', c: ink, w: 1.5, p: [ox, oy, x1, oy, x1, y1, ox, y1, ox, oy] });                                       /* a thin frame keeps the fills inside the picture */
+      d.strokes.forEach(st => { if (!st || !Array.isArray(st.p)) return; strokes.push(Object.assign({}, st, { p: st.p.map((v, j) => Math.round((j % 2 ? v * s + oy : v * s + ox) * 10) / 10), w: Math.max(0.6, (Number(st.w) || 1) * s) })); });
+    });
+    return { kind: 'work', title: String(title || '합작').slice(0, 24), w: W, h: H, at: Date.now(), n: strokes.length, strokes: strokes };
+  }
+  const COLLAB_KEY = 'hw-collabs';
+  const cList = () => { try { const a = JSON.parse(store(COLLAB_KEY) || '[]'); return Array.isArray(a) ? a.filter(x => x && /^[A-Z0-9]{4}$/.test(x.cc)).slice(0, 8) : []; } catch (e) { return []; } };
+  const cRemember = (cc, title) => { const a = cList().filter(x => x.cc !== cc); a.unshift({ cc: cc, title: String(title || '').slice(0, 24) }); store(COLLAB_KEY, JSON.stringify(a.slice(0, 8))); };
+  const cErr = e => { const c = e && e.code; return c === 'off' ? '합작 액자는 곧 열려요 🛠' : c === 'quota_exceeded' ? '합작 방은 한 번에 3개까지 열 수 있어요.' : c === 'slot_taken' ? '그 칸은 이미 다른 친구가 차지했어요.' : c === 'too_big' ? '그림이 너무 커서 넣을 수 없어요.' : c === 'invalid_argument' ? '코드를 확인해 주세요. 이미 마감된 방일 수도 있어요.' : '지금은 안 돼요. 잠시 뒤 다시 해 주세요.'; };
+  const cEl = (tag, cls, txt, par) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (par) par.appendChild(e); return e; };
+  function collabHome(msg) {
+    const box = $('#collabBody'); box.textContent = '';
+    let c = cEl('div', 'card', null, box); cEl('h3', '', '✨ 새 합작 만들기', c);
+    cEl('p', 'note', '친구 셋까지, 각자 그린 그림 하나씩을 2×2 칸에 모아 한 장의 큰 그림으로 만들어요.', c);
+    const ti = cEl('input', 'field', null, c); ti.id = 'cTitle'; ti.maxLength = 24; ti.placeholder = '합작 제목 (예: 우리 동네)';
+    const mk = cEl('button', 'btn primary', '합작 방 만들기', c); mk.type = 'button';
+    mk.addEventListener('click', () => { mk.disabled = true; window.hwasil.collabCreate(ti.value.trim() || '합작').then(cc => { cRemember(cc, ti.value.trim() || '합작'); collabRoom(cc); }).catch(e => { mk.disabled = false; collabHome(cErr(e)); }); });
+    c = cEl('div', 'card', null, box); cEl('h3', '', '🔑 코드로 참여', c);
+    const ci = cEl('input', 'field', null, c); ci.id = 'cCode'; ci.maxLength = 4; ci.placeholder = '친구가 알려 준 4글자 코드'; ci.autocapitalize = 'characters'; ci.autocomplete = 'off';
+    const jn = cEl('button', 'btn', '참여하기', c); jn.type = 'button';
+    jn.addEventListener('click', () => { const cc = ci.value.trim().toUpperCase(); if (!/^[A-Z0-9]{4}$/.test(cc)) { collabHome('코드는 영어·숫자 4글자예요.'); return; } collabRoom(cc); });
+    const mine = cList();
+    if (mine.length) { c = cEl('div', 'card', null, box); cEl('h3', '', '📂 내가 들어간 방', c); mine.forEach(x => { const b = cEl('button', 'btn', x.cc + ' · ' + (x.title || '합작'), c); b.type = 'button'; b.style.display = 'block'; b.style.width = '100%'; b.addEventListener('click', () => collabRoom(x.cc)); }); }
+    if (msg) cEl('p', 'note', msg, box);
+  }
+  function collabRoom(cc, msg) {
+    const box = $('#collabBody'); box.textContent = ''; cEl('p', 'note', '불러오는 중…', box);
+    window.hwasil.collabGet(cc, false).then(d => {
+      box.textContent = '';
+      if (!d) { collabHome('그 코드의 방을 찾지 못했어요.'); return; }
+      cRemember(d.cc, d.title);
+      const c = cEl('div', 'card', null, box); cEl('h3', '', d.title || '합작', c); cEl('div', 'cCode', d.cc, c);
+      cEl('p', 'note', d.done ? '이 방은 마감됐어요.' : '친구에게 이 코드를 알려 주세요. 칸은 4개, 한 사람이 한 칸이에요.', c);
+      const grid = cEl('div', 'cTiles', null, c), haveMine = d.tiles.some(t => t && t.mine), filled = d.tiles.filter(t => t).length;
+      d.tiles.forEach((t, i) => {
+        const tile = cEl('div', 'cTile' + (t ? ' on' : ''), null, grid); cEl('b', '', (i + 1) + '번 칸', tile);
+        if (t) { cEl('span', '', t.mine ? '🖼 내 그림' : '🖼 ' + (t.nm || '친구'), tile); if (t.mine && !d.done) { const b = cEl('button', 'btn', '바꾸기', tile); b.type = 'button'; b.addEventListener('click', () => collabPick(cc, i)); } }
+        else if (!d.done) { const b = cEl('button', 'btn', haveMine ? '여기로 옮기기' : '내 그림 넣기', tile); b.type = 'button'; b.addEventListener('click', () => collabPick(cc, i)); }
+        else cEl('span', '', '비어 있어요', tile);
+      });
+      const rf = cEl('button', 'btn', '🔄 새로고침', c); rf.type = 'button'; rf.addEventListener('click', () => collabRoom(cc));
+      if (d.me && !d.done) {
+        const mg = cEl('button', 'btn primary', '🎨 한 장으로 합치기 (' + filled + '/4)', c); mg.type = 'button'; mg.disabled = filled < 2;
+        mg.addEventListener('click', () => { mg.disabled = true; collabMerge(cc); });
+        if (filled < 2) cEl('p', 'note', '두 칸 이상 채워지면 합칠 수 있어요.', c);
+      }
+      const bk = cEl('button', 'btn', '← 처음으로', box); bk.type = 'button'; bk.addEventListener('click', () => collabHome());
+      if (msg) cEl('p', 'note', msg, box);
+    }).catch(e => collabHome(cErr(e)));
+  }
+  function collabPick(cc, slot) {
+    const box = $('#collabBody'); box.textContent = '';
+    const c = cEl('div', 'card', null, box); cEl('h3', '', (slot + 1) + '번 칸에 넣을 내 그림', c);
+    const list = works.filter(w => Array.isArray(w.strokes) && w.strokes.length);
+    if (!list.length) cEl('p', 'note', '저장된 내 그림이 아직 없어요. 화실에서 그림을 그리고 저장한 뒤 다시 와 주세요.', c);
+    list.forEach(w => {
+      const b = cEl('button', 'btn', (w.title || '제목 없음') + ' · 선 ' + w.strokes.length + '개', c); b.type = 'button'; b.style.display = 'block'; b.style.width = '100%';
+      b.addEventListener('click', () => {
+        const fit = fitDoc({ kind: 'work', title: w.title || '', w: w.w, h: w.h, at: Date.now(), n: w.strokes.length, strokes: w.strokes });
+        if (!fit) { collabRoom(cc, '그림이 너무 커서 넣을 수 없어요.'); return; }
+        b.disabled = true;
+        window.hwasil.collabPut(cc, slot, myName, fit.doc).then(() => { toast('칸에 넣었어요 🖼', 2500); collabRoom(cc); }).catch(e => collabRoom(cc, cErr(e)));
+      });
+    });
+    const bk = cEl('button', 'btn', '← 돌아가기', box); bk.type = 'button'; bk.addEventListener('click', () => collabRoom(cc));
+  }
+  function collabMerge(cc) {
+    window.hwasil.collabGet(cc, true).then(d => {
+      if (!d || !d.me) throw new Error('x');
+      const doc = composeCollab((d.tiles || []).map(t => t && t.doc ? { doc: t.doc } : null), d.title), fit = fitDoc(doc);
+      if (!fit) { collabRoom(cc, '합친 그림이 너무 커서 저장할 수 없어요. 칸의 그림을 줄여서 다시 넣어 주세요.'); return; }
+      if (!dbNS || !myCol_) { collabRoom(cc, '이 화면에서는 저장할 수 없어요.'); return; }
+      const ref = myCol_.doc();
+      return ref.set(fit.doc).then(() => { window.hwasil.collabDone(cc).catch(() => {}); $('#collab').hidden = true; toast('합작이 「내 그림」에 저장됐어요 🎉', 4000); askExhibit(Object.assign({ id: ref.id }, fit.doc)); });
+    }).catch(e => collabRoom(cc, cErr(e)));
+  }
+  $('#collabBtn').addEventListener('click', () => { if (!started) return; collabHome(); $('#collab').hidden = false; });
+  $('#collabClose').addEventListener('click', () => { $('#collab').hidden = true; });
+  $('#collab').addEventListener('click', e => { if (e.target === $('#collab')) $('#collab').hidden = true; });
+  Object.assign(window.__fun, { vote: vote, loadVote: loadVote, compose: composeCollab, works: () => works, collabHome: collabHome });
 
   function finalizeShadows() {
     if (!HI) return;

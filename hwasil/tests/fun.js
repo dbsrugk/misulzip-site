@@ -99,6 +99,65 @@ const { start, vis, until, check, done } = require('./lib');
   check(await p.locator('#dressRows button.locked').count() === 0, 'with enough acorns nothing is locked');
   await p.click('#dressClose');
 
+
+  /* --- monthly vote (fake server calls: the real ones need sql 011) --- */
+  await p.evaluate(() => {
+    const mine = []; window.__votes = { n: {} };
+    window.hwasil.voteTop = async () => ({ mine: mine.slice(), top: Object.keys(window.__votes.n).map(id => ({ id, n: window.__votes.n[id], title: 't', artist: 'a' })) });
+    window.hwasil.vote = async (m, id) => { const i = mine.indexOf(id); if (i >= 0) { mine.splice(i, 1); window.__votes.n[id]--; } else { if (mine.length >= 3) { const e = new Error('q'); e.code = 'quota_exceeded'; throw e; } mine.push(id); window.__votes.n[id] = (window.__votes.n[id] || 0) + 1; } return { mine: mine.slice(), n: window.__votes.n[id] }; };
+  });
+  await p.evaluate(() => { document.querySelector('#fame').hidden = false; window.__fameOpen(); });
+  check(await p.locator('#fameTabs .btn').count() === 4, 'the hall of fame has a fourth tab for the monthly vote');
+  await p.locator('#fameTabs .btn').nth(3).click(); await p.waitForTimeout(600);
+  check(/이달|투표/.test(await p.textContent('#fameList')), 'the vote tab explains the rules');
+  await p.evaluate(() => { document.querySelector('#fame').hidden = true; });
+
+  /* --- collab frame (fake server) --- */
+  const comp = await p.evaluate(() => {
+    const st = (k, c, w, pts) => ({ k, c, w, p: pts });
+    const d1 = { w: 1000, h: 750, strokes: [st('p', '#112233', 6, [10, 10, 400, 300]), st('f', '#ff0000', 1, [200, 100])] };
+    const d2 = { w: 750, h: 1000, strokes: [st('b', '#00aa00', 10, [10, 10, 300, 900, 500, 500])] };
+    const r = window.__fun.compose([{ doc: d1 }, null, { doc: d2 }, null], '우리 합작');
+    const bad = r.strokes.filter(s => !/^#[0-9a-f]{6}$/i.test(s.c) || !Array.isArray(s.p) || s.p.some(v => !isFinite(v))).length;
+    const xs = r.strokes.flatMap(s => s.p.filter((_, i) => i % 2 === 0)), ys = r.strokes.flatMap(s => s.p.filter((_, i) => i % 2 === 1));
+    const fills = r.strokes.filter(s => s.k === 'f');
+    return { n: r.strokes.length, bad, maxX: Math.max(...xs), maxY: Math.max(...ys), minX: Math.min(...xs), w: r.w, h: r.h, title: r.title, fill: fills[0] && fills[0].p };
+  });
+  console.log('compose', JSON.stringify(comp));
+  check(comp.bad === 0 && comp.maxX <= 1000 && comp.maxY <= 750 && comp.minX >= 0, 'joined pictures stay inside the sheet and every stroke is valid');
+  check(comp.w === 1000 && comp.h === 750 && comp.title === '우리 합작' && comp.n >= 2 + 2 + 3, 'the joined picture has the sheet size, a title and all strokes: ' + comp.n);
+  check(comp.fill && comp.fill[0] > 0 && comp.fill[0] < 500 && comp.fill[1] < 375, 'a paint-bucket fill from tile 1 lands inside tile 1');
+  await p.evaluate(() => {
+    const rooms = {}; window.__rooms = rooms;
+    const hw = window.hwasil;
+    hw.collabCreate = async t => { rooms.ABCD = { cc: 'ABCD', title: t, me: true, done: false, tiles: [null, null, null, null], docs: [] }; return 'ABCD'; };
+    hw.collabGet = async (cc, full) => { const r = rooms[cc]; if (!r) return null; return { cc: r.cc, title: r.title, me: true, done: r.done, tiles: r.tiles.map((t, i) => t && Object.assign({}, t, full ? { doc: r.docs[i] } : {})) }; };
+    hw.collabPut = async (cc, slot, nm, d) => { const r = rooms[cc]; r.tiles[slot] = { nm, mine: true }; r.docs[slot] = d; };
+    hw.collabDone = async cc => { rooms[cc].done = true; };
+    window.__fun.works().push({ id: 'w1', title: '내 그림', w: 1000, h: 750, strokes: [{ k: 'p', c: '#112233', w: 6, p: [10, 10, 400, 300] }], at: 1 });
+    window.__fun.works().push({ id: 'w2', title: '내 그림 둘', w: 1000, h: 750, strokes: [{ k: 'p', c: '#223311', w: 6, p: [50, 50, 300, 600] }], at: 2 });
+  });
+  await p.click('#moreBtn'); await p.click('#collabBtn'); await p.waitForTimeout(400);
+  check(await vis(p, '#collab') && await p.locator('#collabBody .card').count() >= 2, 'the collab sheet opens with create and join cards');
+  await p.fill('#cTitle', '우리 동네'); await p.locator('#collabBody .btn.primary').first().click(); await p.waitForTimeout(500);
+  check(/ABCD/.test(await p.textContent('#collabBody')) && await p.locator('#collabBody .cTile').count() === 4, 'a new room shows its 4-letter code and four tiles');
+  await p.locator('#collabBody .cTile .btn').first().click(); await p.waitForTimeout(300);
+  await p.locator('#collabBody .card .btn', { hasText: '내 그림 둘' }).click(); await p.waitForTimeout(500);
+  check(await p.locator('#collabBody .cTile.on').count() === 1, 'my picture fills the chosen tile');
+  check(await p.evaluate(() => window.__rooms.ABCD.docs.filter(Boolean).length) === 1, 'the server got exactly one picture from me');
+  /* a friend's tile (fake) so that two tiles are filled, then join them */
+  await p.evaluate(() => { const r = window.__rooms.ABCD; r.tiles[1] = { nm: '친구', mine: false }; r.docs[1] = { w: 1000, h: 750, strokes: [{ k: 'p', c: '#334455', w: 5, p: [20, 20, 500, 400] }] }; });
+  await p.locator('#collabBody .btn', { hasText: '새로고침' }).click(); await p.waitForTimeout(400);
+  const dbBefore = await p.evaluate(() => Object.keys(window.__db ? window.__db.works : {}).length);
+  const mg = p.locator('#collabBody .btn.primary', { hasText: '합치기' }); check(await mg.isEnabled(), 'two filled tiles let the maker join them');
+  await mg.click(); await p.waitForTimeout(1200);
+  const dbAfter = await p.evaluate(() => Object.keys(window.__db ? window.__db.works : {}).length);
+  check(dbAfter === dbBefore + 1 && await p.evaluate(() => window.__rooms.ABCD.done), 'the joined picture is saved as a new work and the room is closed: ' + dbBefore + ' -> ' + dbAfter);
+  check(!(await vis(p, '#collab')) && await p.locator('#exAuto').isVisible().catch(() => false), 'the usual "hang it?" question follows');
+  await p.locator('#exNo').click().catch(() => {});
+  await p.screenshot({ path: t.out('fun_collab.png') });
+  await p.evaluate(() => { document.querySelector('#collab').hidden = true; });
+
   /* --- trace this painting --- */
   await p.evaluate(i => window.__hw.tapSlot(i), si); await p.waitForTimeout(400);
   await p.click('#artTrace'); await p.waitForTimeout(1200);

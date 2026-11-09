@@ -21,7 +21,7 @@
 
   function rpc(fn, args) {
     return sb.rpc(fn, args).then(function (r) {
-      if (r.error) { var m = r.error.message || ''; var e = new Error(m); e.code = /quota_exceeded/.test(m) ? 'quota_exceeded' : /too_big/.test(m) ? 'too_big' : /bad_code/.test(m) ? 'bad_code' : /slot_taken/.test(m) ? 'slot_taken' : /removed_banned/.test(m) ? 'removed_banned' : /bad_admin/.test(m) ? 'bad_admin' : /invalid_argument|bad_token/.test(m) ? 'invalid_argument' : 'error'; throw e; }
+      if (r.error) { var m = r.error.message || ''; var e = new Error(m); e.code = /quota_exceeded/.test(m) ? 'quota_exceeded' : /too_big/.test(m) ? 'too_big' : /bad_code/.test(m) ? 'bad_code' : /slot_taken/.test(m) ? 'slot_taken' : /own_work/.test(m) ? 'own_work' : /removed_banned/.test(m) ? 'removed_banned' : /bad_admin/.test(m) ? 'bad_admin' : /invalid_argument|bad_token/.test(m) ? 'invalid_argument' : 'error'; throw e; }
       return r.data;
     });
   }
@@ -47,7 +47,12 @@
   window.addEventListener('error', function (e) { diag('jserr=' + (e && e.message)); });
 
   /* ---------- entry code ---------- */
-  var rxOff = false;
+  var rxOff = false, voteOff = false, collabOff = false;
+  function missing(e) { return !!e && /Could not find the function|PGRST202|does not exist/i.test(e.message || ''); }
+  function collab(fn, args) {
+    if (!sb || !code || collabOff) { var e0 = new Error('off'); e0.code = 'off'; return Promise.reject(e0); }
+    return rpc(fn, args).catch(function (e) { if (missing(e)) { collabOff = true; e.code = 'off'; } throw e; });
+  }
   var hw = window.hwasil = {
     stats: stats,
     savedCode: function () {
@@ -122,6 +127,16 @@
     /* emoji reactions kept per artwork; if the database does not have them yet, both calls quietly do nothing */
     react: function (item, kind) { if (!sb || !code || rxOff) return Promise.resolve(); return rpc('hwasil_react', { code: code, item: String(item), kind: kind }).then(function () {}, function () { rxOff = true; }); },
     reactions: function (item) { if (!sb || !code || rxOff) return Promise.resolve({}); return rpc('hwasil_reactions', { code: code, item: String(item) }).then(function (r) { return r || {}; }, function () { rxOff = true; return {}; }); },
+    /* monthly vote (sql 011) and collab frames (sql 012): until the database has them, reads give null and writes reject with code 'off' */
+    voteTop: function (month) { if (!sb || !code || voteOff) return Promise.resolve(null); return rpc('hwasil_vote_top', { code: code, token: token, month: String(month) }).then(function (r) { return r || null; }, function (e) { if (missing(e)) voteOff = true; return null; }); },
+    vote: function (month, item) {
+      if (!sb || !code || voteOff) { var e0 = new Error('off'); e0.code = 'off'; return Promise.reject(e0); }
+      return rpc('hwasil_vote', { code: code, token: token, month: String(month), item: String(item) }).catch(function (e) { if (missing(e)) { voteOff = true; e.code = 'off'; } throw e; });
+    },
+    collabCreate: function (title) { return collab('hwasil_collab_create', { code: code, token: token, title: String(title || '') }); },
+    collabGet: function (cc, withDocs) { return collab('hwasil_collab_get', { code: code, token: token, cc: String(cc), with_docs: !!withDocs }); },
+    collabPut: function (cc, slot, nm, doc) { return collab('hwasil_collab_put', { code: code, token: token, cc: String(cc), slot: slot, nm: String(nm || ''), d: doc }); },
+    collabDone: function (cc) { return collab('hwasil_collab_done', { code: code, token: token, cc: String(cc) }); },
     /* total play time kept per person: add the seconds not yet sent, read the top list */
     playAdd: function (secs, nm) { if (!sb || !code) return Promise.reject(new Error('offline')); return rpc('hwasil_play_add', { code: code, token: token, nm: String(nm || ''), secs: Math.floor(secs) }); },
     playTop: function () { if (!sb || !code) return Promise.resolve(null); return rpc('hwasil_play_top', { code: code, token: token }).then(function (r) { return r || []; }); },
