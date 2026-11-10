@@ -293,6 +293,17 @@ body.padOpen #hud { visibility: hidden; }
   box-shadow: 4px 4px 0 var(--ink);
 }
 .padTools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+/* the paper gets small on a phone once every tool is out: the tools fold away, and "크게 그리기" gives the paper the whole screen */
+.padFoldRow { display: flex; gap: 8px; justify-content: center; }
+.padFoldRow .btn { padding: 6px 14px; font-size: 15px; }
+#pad.fold .padTools, #pad.fold .padStatus { display: none; }
+#pad.full .padTop, #pad.full .padView, #pad.full .padTools, #pad.full .padStatus, #pad.full .swatches, #pad.full .padFoldRow { display: none; }
+#pad.full .padMain { margin: 0; padding: 0; border: 0; border-radius: 0; }
+#pad.full { padding: 6px; }
+#pad.full:not(.ghost) { background: var(--chalk); }
+.padFullBar { display: none; position: absolute; z-index: 6; right: max(10px, env(safe-area-inset-right, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); gap: 6px; }
+#pad.full .padFullBar { display: flex; }
+.padFullBar .btn { padding: 6px 12px; font-size: 15px; opacity: 0.92; box-shadow: 0 2px 8px rgba(36, 32, 28, 0.35); }
 .seg { display: inline-flex; border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; }
 .seg button { border: 0; background: var(--paper); padding: 9px 14px; font: 400 18px/1 var(--font-display); cursor: pointer; }
 .seg button + button { border-left: 2px solid var(--ink); }
@@ -403,6 +414,7 @@ body.padOpen #hud { visibility: hidden; }
 #keyBox .btn { width: 100%; margin-top: 8px; }
 #keyMsg { margin-top: 8px; font-weight: 500; }
 #emoteBar { margin-top: 8px; }
+#hangRow, #emoteBar { margin-right: 132px; flex-wrap: wrap; }   /* these rows sit beside the map now: they stop short of it and wrap instead of sliding under it */
 #emoteBar .emo { pointer-events: auto; width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--ink); background: var(--paper); font-size: 25px; line-height: 1; cursor: pointer; box-shadow: 0 2px 0 var(--ink); }
 .nameRow { display: flex; gap: 8px; align-items: stretch; }
 .nameRow input { flex: 1; min-width: 0; }
@@ -413,7 +425,7 @@ body.padOpen #hud { visibility: hidden; }
 #mBox input[type=range] { width: 100%; margin-top: 10px; }
 #exAsk { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(28, 24, 20, 0.55); padding: 16px; }
 #exAsk .card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: 18px; max-width: 340px; text-align: center; display: flex; flex-direction: column; gap: 10px; font: 400 24px/1.3 var(--font-display); box-shadow: 5px 6px 0 rgba(0,0,0,0.35); }
-#areaBanner { width: max-content; position: fixed; top: 118px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; text-align: center; background: rgba(255, 253, 247, 0.95); border: 3px solid var(--ink); border-radius: 18px; padding: 8px 22px 9px; box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.28); display: flex; flex-direction: column; gap: 2px; max-width: 86vw; box-sizing: border-box; }
+#areaBanner { width: max-content; position: fixed; top: calc(190px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; text-align: center; background: rgba(255, 253, 247, 0.95); border: 3px solid var(--ink); border-radius: 18px; padding: 8px 22px 9px; box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.28); display: flex; flex-direction: column; gap: 2px; max-width: 86vw; box-sizing: border-box; }
 #areaBanner b { font: 400 28px/1.15 var(--font-display); color: var(--ink); white-space: nowrap; }
 #areaBanner small { font: 400 16px/1.2 var(--font-display); color: var(--muted); }
 #areaBanner.show { animation: areaPop 3.4s ease forwards; }
@@ -542,9 +554,11 @@ body.padOpen #hud { visibility: hidden; }
     <button class="btn primary" id="padSave" type="button">저장</button>
   </div>
   <div class="padView" id="padView" aria-label="풍경 둘러보기"><span class="lookHint" id="lookHint">끌어서 둘러보기 · 두 번 누르면 처음 방향</span></div>
+  <div class="padFullBar"><button class="btn" id="padFullUndo" type="button">되돌리기</button><button class="btn" id="padFullExit" type="button">↙ 작게</button></div>
   <div class="padMain" id="padMain">
   <div class="padStatus" id="padStatus" role="status" aria-live="polite"></div>
   <div class="padBoard" id="padBoard"><canvas id="padCanvas" aria-label="그림판"></canvas><canvas id="refCanvas" class="refCanvas" hidden aria-hidden="true"></canvas><div class="sizeFloat" id="sizeFloat" hidden aria-hidden="true"><i></i><b></b></div><div class="heartLayer" id="padHearts"></div><div class="likeBadge" id="padLikes" hidden>♥ 0</div></div>
+  <div class="padFoldRow"><button class="btn" id="padFold" type="button" aria-expanded="true">도구 접기 ▾</button><button class="btn" id="padFull" type="button">⛶ 크게 그리기</button></div>
   <div class="padTools">
     <button class="btn" id="zoomReset" type="button" hidden>🔍 원래 크기</button>
     <button class="btn" id="padOptsBtn" type="button" aria-expanded="false">종이·풍경 ▾</button>
@@ -969,7 +983,7 @@ body.padOpen #hud { visibility: hidden; }
   const gapZ = i => GGS - 32 * GGAPW[i] - GGAP * i - GGAP / 2;                  /* z of the middle of round hall i */
   const wingAt = z => { for (let k = 0; k < NW; k++) if (z <= wingZ(k) && z > wingZ(k) - 32) return k; return z <= GGZ + 0.01 ? NW - 1 : -1; };   /* -1 inside a round hall */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
-  const OUT = { x0: RM.hx + 1, x1: 146, z0: -68, z1: 372 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 92, z: 205, r: 43, R: 31 }, GARD2 = { x: 92, z: 310, r: 43, R: 31 };   /* GARD: the open-air exhibition garden */
+  const OUT = { x0: RM.hx + 1, x1: 146, z0: -68, z1: 372 }, SEA_X = 150, LAKE = { x: 72, z: 54, r: 13 }, MILL = { x: 112, z: 59 }, GARD = { x: 92, z: 205, r: 43, R: 31 }, GARD2 = { x: 92, z: 310, r: 43, R: 31 };   /* GARD: the open-air exhibition garden */
   const colliders = [];
   function plankTexture() {
     const c = document.createElement('canvas'); c.width = c.height = 512;
@@ -1912,7 +1926,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const deckT = plankTexture(); deckT.repeat.set(A.w / 3, A.d / 3);
     const deck = new T.Mesh(new T.PlaneGeometry(A.w, A.d), new T.MeshLambertMaterial({ map: deckT })); deck.rotation.x = -Math.PI / 2; deck.position.set(A.x, 0.045, A.z); scene.add(deck);
     put(scene, new T.Mesh(bx(A.w, 1.5, 0.4), wood), A.x, 0.75, z1);                       /* low walls: the camera always sees in */
-    put(scene, new T.Mesh(bx(0.4, 1.5, A.d), wood), x0, 0.75, A.z); put(scene, new T.Mesh(bx(0.4, 1.5, A.d), wood), x1, 0.75, A.z);
+    put(scene, new T.Mesh(bx(0.4, 1.5, A.d), wood), x0, 0.75, A.z);
+    put(scene, new T.Mesh(bx(0.4, 1.5, 18 - z0), wood), x1, 0.75, (z0 + 18) / 2); put(scene, new T.Mesh(bx(0.4, 1.5, z1 - 22), wood), x1, 0.75, (22 + z1) / 2);   /* the east wall has a doorway (z 18 to 22): straight through to the sculpture hall next door */
+    [18, 22].forEach(z => put(scene, new T.Mesh(bx(0.5, 2.6, 0.5), dark), x1, 1.3, z)); put(scene, new T.Mesh(bx(0.5, 0.4, 4.5), dark), x1, 2.8, 20);
     [[x0, z0], [x1, z0], [x0, z1], [x1, z1]].forEach(q => put(scene, new T.Mesh(bx(0.6, 4.4, 0.6), dark), q[0], 2.2, q[1]));
     put(scene, new T.Mesh(bx(A.w + 0.8, 0.5, 0.6), dark), A.x, 4.4, z0);
     const sc = document.createElement('canvas'); sc.width = 768; sc.height = 192; const g = sc.getContext('2d');
@@ -1934,7 +1950,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     colliders.push({ x: x1 - 2.2, z: z1 - 2.2, r: 1.3 });
     [x0 + 2.4, x1 - 6.5].forEach(x => { put(scene, new T.Mesh(bx(3.2, 0.5, 0.8), wood), x, 0.45, z1 - 1.6); colliders.push({ x: x, z: z1 - 1.6, r: 0.9 }); });   /* against the shelf wall, clear of the easel aisles */
     for (let k = 0; k <= A.w; k += 2) colliders.push({ x: x0 + k, z: z1, r: 0.8 });
-    for (let k = 1; k <= A.d; k += 2) { colliders.push({ x: x0, z: z0 + k, r: 0.8 }); colliders.push({ x: x1, z: z0 + k, r: 0.8 }); }
+    for (let k = 1; k <= A.d; k += 2) { colliders.push({ x: x0, z: z0 + k, r: 0.8 }); if (z0 + k < 18.5 || z0 + k > 21.5) colliders.push({ x: x1, z: z0 + k, r: 0.8 }); }
   })();
   /* candlelight in the central hall: a sconce on each pilaster, a ring of candlesticks round the podium, dust turning in the window shafts */
   (function () {
@@ -1980,7 +1996,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   })();
 
   /* the sculpture pavilion (조각 전시관): a marble colonnade on the field beside the main path. The real 3D statues from the lobby stand here around a hand-built Pieta. */
-  const SCULPT = { x: 102, z: 14.5, w: 84, d: 25 };
+  const SCULPT = { x: 102, z: 20.5, w: 84, d: 37 };   /* three rows now (it was two), so the pieces stand about twice as far apart; the lake and the windmill moved south to make room */
   function makePieta() {
     const g = new T.Group(), m = L(0xf2efe8), m2 = L(0xe4dfd4);
     const add = (geo, mat, x, y, z, rx, ry, rz) => { const o = new T.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx || 0, ry || 0, rz || 0); g.add(o); return o; };
@@ -2012,7 +2028,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const cols = [], DH = 26;                                                                       /* a colossal hall: columns 33 m high */
     [-40, -28, -16, 16, 28, 40].forEach(d => cols.push([S.x + d, z1 - 1.0]));                          /* back row: six, behind everything */
     [-40, -30, -20, 20, 30, 40].forEach(d => cols.push([S.x + d, z0 + 1.0]));                    /* the front colonnade: a wide gap in the middle for the entrance */
-    cols.push([x0 + 0.9, S.z], [x1 - 0.9, S.z]);
+    cols.push([x0 + 0.9, S.z - 8], [x1 - 0.9, S.z - 8]);                    /* clear of the doorway to the atelier */
     cols.forEach(q => {
       const plain = put(scene, new T.Mesh(cyl(0.8, 0.95, 7.0 + DH, 14), marble), q[0], 0.05 + (7.0 + DH) / 2, q[1]);          /* a plain stand-in until the fluted column model has loaded */
       const cp = glbProp('column.glb', q[0], 0.05, q[1], 7.0 + DH, 0, plain); cp.far = 5; cp.fade = true;                                  /* fluted shaft, rounded base, leafy capital with scrolls */
@@ -2102,8 +2118,11 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       addOccluder(g, x - W / 2 - 0.7, 0, z - 1.3, x + W / 2 + 0.7, H + 1.2, z + 1.3);                         /* a board between the camera and me turns see-through */
     }
     const PW = 5.6, PH = 8.0;
-    [['discobolus', -37], ['hermes', -26], ['venus', -15], ['nike', 15], ['laocoon', 26], ['apollo', 37]].forEach((p, i) => panel(XX + p[1], z0 + 5.5, 1, PW, PH, p[0], '\u2460\u2461\u2462\u2463\u2464\u2465'[i]));
-    [['augustus', 36.75], ['dondavid', 26.25], ['david', 15.75], ['moses', 5.25], ['perseus', -5.25], ['daphne', -15.75], ['kiss', -26.25], ['thinker', -36.75]].forEach((p, i) => panel(XX + p[1], z1 - 4.5, -1, PW, PH, p[0], '\u2466\u2467\u2468\u2469\u246a\u246b\u246c\u246d'[i]));
+    const NUM = '\u2460\u2461\u2462\u2463\u2464\u2465\u2466\u2467\u2468\u2469\u246a\u246b\u246c\u246d';
+    /* front row looks into the hall, the middle row (with the Pieta) looks back at the entrance, the back row looks at the middle one: 16.6 apart where it was 11 */
+    [['discobolus', -33.2], ['hermes', -16.6], ['venus', 16.6], ['nike', 33.2]].forEach((p, i) => panel(XX + p[1], z0 + 5.5, 1, PW, PH, p[0], NUM[i]));
+    [['laocoon', 33.2], ['apollo', 16.6], ['augustus', -16.6], ['dondavid', -33.2]].forEach((p, i) => panel(XX + p[1], ZZ, -1, PW, PH, p[0], NUM[4 + i]));
+    [['david', -36.5], ['moses', -21.9], ['perseus', -7.3], ['daphne', 7.3], ['kiss', 21.9], ['thinker', 36.5]].forEach((p, i) => panel(XX + p[1], z1 - 4.5, -1, PW, PH, p[0], NUM[8 + i]));
     panel(XX, ZZ, -1, 8.6, 7.8, 'pieta', '\u246e');                                              /* the finale: the Pieta in the middle */
     anim.push(() => {                                                                          /* the photographs are fetched when somebody comes near the hall */
       if (Math.abs(pos.x - XX) > 90 || Math.abs(pos.z - ZZ) > 60) return;
@@ -2798,8 +2817,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { name: '신진 작가관', note: '친구들이 그린 그림이 걸린 곳', x: 0, z: 31, h: 0 },
     { name: '산 전망대', note: '눈 덮인 봉우리를 바라보며', x: 85, z: -41, h: Math.PI, pitch: 0.22 },
     { name: '바닷가', note: '모래사장과 수평선, 등대', x: 134, z: 0, h: Math.PI / 2, pitch: 0.22 },
-    { name: '호숫가', note: '잔잔한 물, 수련, 작은 배', x: 51, z: 40, h: Math.PI / 2, pitch: 0.22 },
-    { name: '풍차 들판', note: '꽃밭 너머로 돌아가는 풍차', x: 112, z: 30.5, h: 0, pitch: 0.25 },
+    { name: '호숫가', note: '잔잔한 물, 수련, 작은 배', x: LAKE.x - 21, z: LAKE.z, h: Math.PI / 2, pitch: 0.22 },
+    { name: '풍차 들판', note: '꽃밭 너머로 돌아가는 풍차', x: MILL.x, z: MILL.z - 14.5, h: 0, pitch: 0.25 },
     { name: '별관 전시관', note: '전시관 끝 큰 문 너머 두 번째 전시장', x: 0, z: GZ1 + 4, h: 0 },
     { name: '야외 전시 정원', note: '하늘 아래 액자가 둘러선 정원', x: GARD.x, z: GARD.z + 20, h: Math.PI, pitch: 0.3 },
     { name: '서쪽 전시관 1', note: '전시관 서쪽 큰 문 너머 넓은 방', x: -GX - 5, z: WZ, h: -Math.PI / 2 },
@@ -4150,7 +4169,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   function closePad() {
     finishEasel(); clearRef();
-    pad.open = false; padEl.hidden = true; pad.easel = -1; myEasel = -1; mySeat = -1; applyView();
+    pad.open = false; padEl.hidden = true; padEl.classList.remove('full'); pad.easel = -1; myEasel = -1; mySeat = -1; applyView();
     clearTimeout(closeTimer); clearTimeout(clearTimer);
     pushPresence(true);
   }
@@ -4346,6 +4365,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   padCv.addEventListener('pointerup', endStroke);
   padCv.addEventListener('pointercancel', endStroke);
+  $('#padFold').addEventListener('click', () => { const f = padEl.classList.toggle('fold'); $('#padFold').textContent = f ? '도구 펴기 ▴' : '도구 접기 ▾'; $('#padFold').setAttribute('aria-expanded', f ? 'false' : 'true'); fitPad(); });
+  const padFullSet = on => { padEl.classList.toggle('full', on); fitPad(); };
+  $('#padFull').addEventListener('click', () => padFullSet(true)); $('#padFullExit').addEventListener('click', () => padFullSet(false));
+  $('#padFullUndo').addEventListener('click', () => $('#padUndo').click());
   $('#padOptsBtn').addEventListener('click', () => { const on = padEl.classList.toggle('optsOpen'); $('#padOptsBtn').setAttribute('aria-expanded', String(on)); $('#padOptsBtn').textContent = on ? '종이·풍경 ▴' : '종이·풍경 ▾'; fitPad(); });
   $('#padUndo').addEventListener('click', () => {
     if (pad.cur || !pad.strokes.length) return;
