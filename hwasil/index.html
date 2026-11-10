@@ -122,12 +122,12 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #walkOpt { display: block; margin: 6px 2px 8px; font-size: 15px; color: var(--ink); }
 #teleFx { position: fixed; inset: 0; z-index: 60; background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(150, 225, 255, 0.55)); opacity: 0; pointer-events: none; transition: opacity 0.18s ease; }
 #teleFx.on { opacity: 0.85; }
-#timeGauge { width: 104px; box-sizing: border-box; min-height: 38px; display: flex; flex-direction: column; justify-content: center; padding: 3px 8px 5px; border-radius: 14px; box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); font-size: 13px; color: var(--ink); text-align: center; pointer-events: auto; cursor: pointer; }
+#timeGauge { width: 104px; box-sizing: border-box; min-height: 38px; display: flex; flex-direction: column; justify-content: center; padding: 3px 10px; border-radius: 999px; font-size: 14.5px; white-space: nowrap;   /* just the words '누적 N분': the hour bar is hidden */ box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); font-size: 13px; color: var(--ink); text-align: center; pointer-events: auto; cursor: pointer; }
 #rankBox { pointer-events: auto; width: 150px; padding: 6px 8px; border-radius: 10px; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.94); font-size: 14px; color: var(--ink); }
 #rankBox div { display: flex; justify-content: space-between; gap: 6px; padding: 1px 0; }
 #rankBox div.me { font-weight: bold; color: #b5651d; }
 #rankBox small { display: block; margin-top: 3px; color: #6d655b; font-size: 12px; }
-#timeGauge i { display: block; height: 6px; margin-top: 3px; border-radius: 3px; background: rgba(36, 32, 28, 0.15); overflow: hidden; }
+#timeGauge i { display: none; height: 6px; margin-top: 3px; border-radius: 3px; background: rgba(36, 32, 28, 0.15); overflow: hidden; }
 #timeGauge b { display: block; height: 100%; width: 0; background: #e0a02f; border-radius: 3px; }
 #suggestText { width: 100%; box-sizing: border-box; min-height: 120px; padding: 10px; font: inherit; font-size: 17px; color: var(--ink); background: #fffdf6; border: 2px solid var(--ink); border-radius: 12px; resize: vertical; }
 #suggestFoot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
