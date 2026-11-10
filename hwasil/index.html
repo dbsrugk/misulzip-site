@@ -118,7 +118,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #playStats { font-size: 16px; line-height: 1.6; }
 #uiToggles label { display: flex; align-items: center; gap: 10px; padding: 6px 2px; font-size: 17px; }
 #uiToggles input { width: 22px; height: 22px; }
-#miniMap { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(14px + var(--bar) + env(safe-area-inset-bottom, 0px)); width: 116px; height: 116px; border-radius: 50%; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); pointer-events: auto; cursor: pointer; }
+#miniMap { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(20px + var(--bar) + env(safe-area-inset-bottom, 0px)); width: 120px; height: 120px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); pointer-events: auto; cursor: pointer; }
 #walkOpt { display: block; margin: 6px 2px 8px; font-size: 15px; color: var(--ink); }
 #teleFx { position: fixed; inset: 0; z-index: 60; background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(150, 225, 255, 0.55)); opacity: 0; pointer-events: none; transition: opacity 0.18s ease; }
 #teleFx.on { opacity: 0.85; }
@@ -168,9 +168,10 @@ button.chip { pointer-events: auto; cursor: pointer; }
 .joy {
   position: absolute;
   left: max(16px, env(safe-area-inset-left, 0px));
-  bottom: calc(24px + var(--bar) + env(safe-area-inset-bottom, 0px));
-  width: 128px;
-  height: 128px;
+  bottom: calc(20px + var(--bar) + env(safe-area-inset-bottom, 0px));
+  width: 120px;
+  height: 120px;
+  box-sizing: border-box;
   border-radius: 50%;
   background: rgba(255, 253, 247, 0.5);
   border: 2px solid var(--ink);
@@ -3634,7 +3635,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   let started = false, walkPhase = 0, walkAmp = 0, tNow = 0, myEasel = -1, mySeat = -1, curSp = 0, wdx = 0, wdz = 0, puffT = 0;
   const joy = { x: 0, y: 0 }, keys = {};
   const SPEED = 7.5; let runHinted = false;
-  const joyEl = $('#joy'), knob = $('#knob'), JR = 46;
+  const joyEl = $('#joy'), knob = $('#knob'), JR = 42;
   let joyId = null;
   function moveJoy(e) {
     const r = joyEl.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
