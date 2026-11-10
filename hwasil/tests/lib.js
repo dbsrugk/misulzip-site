@@ -42,8 +42,8 @@ async function start(opts) {
   opts = opts || {};
   const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
   const pages = [], errors = [];
-  async function client(name, query, vp) {
-    const i = pages.length, ctx = await browser.newContext({ viewport: vp || { width: 390, height: 800 } });
+  async function client(name, query, vp, opts) {   /* opts: extra browser-context options, e.g. { isMobile: true } to get a phone's layout-viewport behaviour */
+    const i = pages.length, ctx = await browser.newContext(Object.assign({ viewport: vp || { width: 390, height: 800 } }, opts || {}));
     const p = await ctx.newPage(); pages.push(p); p.name = name || ('p' + i);
     await p.addInitScript(() => { window.__hwInstant = true; });
     if (process.env.HW_LO) await p.addInitScript(() => { try { localStorage.setItem('hw-q', 'lo'); } catch (e) {} });   /* the networking and pen tests need no pretty scenery; two software-rendered clients at full quality crawl */          /* tests jump between places; the walking test turns this off */

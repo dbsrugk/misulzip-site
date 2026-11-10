@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="description" content="산, 바다, 호숫가, 풍차 들판에서 친구들과 함께 그림을 그리는 작은 가상 화실">
 <meta property="og:type" content="website">
@@ -42,6 +42,7 @@
 }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
+html { touch-action: pan-x pan-y; overflow: hidden; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }   /* no pinch or double-tap zoom anywhere: two thumbs on the joystick and the menu used to zoom the page, cutting off its right side; lists still scroll */
 body {
   margin: 0;
   background: var(--bg);
@@ -410,7 +411,7 @@ body.padOpen #hud { visibility: hidden; }
 #mBox input[type=range] { width: 100%; margin-top: 10px; }
 #exAsk { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(28, 24, 20, 0.55); padding: 16px; }
 #exAsk .card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: 18px; max-width: 340px; text-align: center; display: flex; flex-direction: column; gap: 10px; font: 400 24px/1.3 var(--font-display); box-shadow: 5px 6px 0 rgba(0,0,0,0.35); }
-#areaBanner { width: max-content; position: fixed; top: 118px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; text-align: center; background: rgba(255, 253, 247, 0.95); border: 3px solid var(--ink); border-radius: 18px; padding: 8px 22px 9px; box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.28); display: flex; flex-direction: column; gap: 2px; max-width: 86vw; }
+#areaBanner { width: max-content; position: fixed; top: 118px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; text-align: center; background: rgba(255, 253, 247, 0.95); border: 3px solid var(--ink); border-radius: 18px; padding: 8px 22px 9px; box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.28); display: flex; flex-direction: column; gap: 2px; max-width: 86vw; box-sizing: border-box; }
 #areaBanner b { font: 400 28px/1.15 var(--font-display); color: var(--ink); white-space: nowrap; }
 #areaBanner small { font: 400 16px/1.2 var(--font-display); color: var(--muted); }
 #areaBanner.show { animation: areaPop 3.4s ease forwards; }
@@ -3069,6 +3070,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (Math.abs(x - ATELIER.x) < ATELIER.w / 2 + 1 && Math.abs(z - ATELIER.z) < ATELIER.d / 2 + 1) return false;
       if (Math.hypot(x - GARD.x, z - GARD.z) < GARD.r) return false;
       if (Math.hypot(x - GARD2.x, z - GARD2.z) < GARD2.r + 6) return false;
+      if (Math.abs(x - GARD.x) < 3.6 && z > 111 && z < GARD2.z) return false;                 /* no grass growing through the stone road */
       return Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 2.4;
     }
     function bladeClump() {                              /* four thin blades leaning outwards, merged into one geometry */
@@ -3164,8 +3166,6 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       flat(new T.RingGeometry(GARD.R - 4, GARD.R + 4, 64), stone, GARD.x, 0.03, GARD.z);
       flat(new T.RingGeometry(GARD.R - 4.5, GARD.R - 4, 64), L(0xa89f90), GARD.x, 0.035, GARD.z); flat(new T.RingGeometry(GARD.R + 4, GARD.R + 4.5, 64), L(0xa89f90), GARD.x, 0.035, GARD.z);
       flat(new T.PlaneGeometry(4, GARD.R - 11 - 4), stone, GARD.x + 0, 0.03, GARD.z + (11 + GARD.R - 4) / 2);   /* a spoke to the south, the open side */
-      flat(new T.PlaneGeometry(5, GARD.z - GARD.r - 112), stone, GARD.x, 0.03, (112 + GARD.z - GARD.r) / 2);
-      flat(new T.PlaneGeometry(5, GARD2.z - GARD2.r - GARD.z - GARD.r + 2), stone, GARD.x, 0.03, (GARD.z + GARD.r + GARD2.z - GARD2.r) / 2);   /* the stone road: south from the rest ring, then on to the second garden */
       const ped = new T.Group(); ped.position.set(GARD.x, 0, GARD.z); scene.add(ped);
       put(ped, new T.Mesh(cyl(1.5, 1.8, 1.6, 12), plaster2), 0, 0.8, 0); put(ped, new T.Mesh(bx(2.4, 0.3, 2.4), plaster), 0, 1.75, 0);
       const bust = makeBust(1.7); bust.position.y = 1.9; ped.add(bust); colliders.push({ x: GARD.x, z: GARD.z, r: 2 });
@@ -3180,7 +3180,6 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         put(pg, new T.Mesh(bx(hw * 2 + 0.3, 0.14, 0.34), post), 0, 0.5, -0.3);
         [-hw, hw].forEach(dx => colliders.push({ x: px + Math.cos(ry) * dx, z: pz - Math.sin(ry) * dx, r: 0.35 }));
       });
-      sign('야외 전시 정원', GARD.x - 6, GARD.z - GARD.r - 6);
     })();
     /* flower-road garden: a ring of posts with a picture on each side (24 frames), open to the south */
     (function () {
@@ -3206,7 +3205,47 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         put(pg, new T.Mesh(bx(hw * 2 + 0.3, 0.14, 0.5), post), 0, 0.5, 0);
         [-hw, hw].forEach(dx => colliders.push({ x: px + Math.cos(ry) * dx, z: pz - Math.sin(ry) * dx, r: 0.35 }));
       });
-      sign('꽃길 정원', C.x - 6, C.z - C.r - 6);
+    })();
+    /* garden polish: the stone road now reaches each ring walk and runs on to the middle; kerbs along the road, a gate with the garden's name where you walk in,
+       lanterns that glow at night, benches facing the pictures, and clipped trees on the first garden's lawn */
+    (function () {
+      const stone = L(0xd8cfba), kerb = L(0xa89f90), wood = L(0x6b4a2f), iron = L(0x3b3f47), leafA = L(0x3f8f45), leafB = L(0x5aa84f), X = GARD.x;
+      const n1 = GARD.z - GARD.R - 4, s1 = GARD.z + GARD.R + 4, n2 = GARD2.z - GARD2.R - 3.5;
+      const road = (z0, z1, w) => { flat(new T.PlaneGeometry(w, z1 - z0), stone, X, 0.03, (z0 + z1) / 2); [-1, 1].forEach(k => flat(new T.PlaneGeometry(0.45, z1 - z0), kerb, X + k * (w / 2 + 0.2), 0.034, (z0 + z1) / 2)); };
+      road(112, n1 + 0.3, 5); road(s1 - 0.3, n2 + 0.3, 5);
+      flat(new T.PlaneGeometry(4, GARD.R - 4 - 11), stone, X, 0.03, GARD.z - (11 + GARD.R - 4) / 2);                     /* north spokes: from the gate straight to the statue */
+      flat(new T.PlaneGeometry(4.4, GARD2.R - 3.5 - 9), stone, X, 0.03, GARD2.z - (9 + GARD2.R - 3.5) / 2);
+      const gcv = document.createElement('canvas'); gcv.width = gcv.height = 64; const g2 = gcv.getContext('2d'), gr = g2.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, 'rgba(255,226,150,1)'); gr.addColorStop(0.35, 'rgba(255,200,110,0.45)'); gr.addColorStop(1, 'rgba(255,190,90,0)'); g2.fillStyle = gr; g2.fillRect(0, 0, 64, 64);
+      const glowM = new T.SpriteMaterial({ map: new T.CanvasTexture(gcv), transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, opacity: 0 }), paneM = new T.MeshBasicMaterial({ color: 0xfff1c4 });
+      function lantern(x, z) {
+        at(new T.Mesh(cyl(0.3, 0.36, 0.25, 8), iron), x, 0.12, z); at(new T.Mesh(cyl(0.11, 0.16, 3.6, 8), iron), x, 1.8, z);
+        at(new T.Mesh(bx(0.6, 0.7, 0.6), paneM), x, 3.95, z).userData.noShadow = true;
+        at(new T.Mesh(new T.ConeGeometry(0.62, 0.45, 4), iron), x, 4.52, z).rotation.y = Math.PI / 4;
+        const sp = new T.Sprite(glowM); sp.scale.set(7, 7, 1); sp.position.set(x, 3.95, z); scene.add(sp);
+        colliders.push({ x: x, z: z, r: 0.35 });
+      }
+      atmHooks.push(A => { glowM.opacity = 0.85 * A.night; glowM.visible = A.night > 0.03; paneM.color.setHex(0xfff1c4).multiplyScalar(0.6 + 0.4 * A.night); });
+      for (let z = 124, k = 0; z < n1 - 8; z += 14, k++) lantern(X + (k % 2 ? 4.3 : -4.3), z);
+      for (let z = s1 + 5, k = 0; z < n2 - 4; z += 12, k++) lantern(X + (k % 2 ? 4.3 : -4.3), z);
+      function gate(G, zEdge, name) {
+        [-3.6, 3.6].forEach(dx => { at(new T.Mesh(cyl(0.24, 0.3, 5.4, 8), wood), X + dx, 2.7, zEdge); at(new T.Mesh(bx(0.9, 0.3, 0.9), kerb), X + dx, 0.15, zEdge); colliders.push({ x: X + dx, z: zEdge, r: 0.5 }); });
+        at(new T.Mesh(bx(8.6, 0.34, 0.5), wood), X, 5.3, zEdge); at(new T.Mesh(bx(7.6, 0.24, 0.4), wood), X, 4.6, zEdge);
+        const pl = makeNamePlate(name); pl.sprite.scale.set(6.4, 1.6, 1); pl.sprite.position.set(X, 6.5, zEdge); scene.add(pl.sprite);
+      }
+      gate(GARD, n1 - 1.2, '야외 전시 정원'); gate(GARD2, n2 - 1.2, '꽃길 정원');
+      [GARD, GARD2].forEach((G, gi) => {
+        const ro = G.R + (gi ? 5 : 5.5);
+        [0.5, 2.5, 4.5, 6.5, 8.5, 10.5].forEach(i => { const a = (-145 + i * 290 / 11) * Math.PI / 180; lantern(G.x + Math.sin(a) * ro, G.z - Math.cos(a) * ro); });
+        [-163, 163].forEach(d => { const a = d * Math.PI / 180; lantern(G.x + Math.sin(a) * G.R, G.z - Math.cos(a) * G.R); });                    /* two more where the ring opens to the south */
+        [-118, -52, 52, 118].forEach(d => { const a = d * Math.PI / 180, rb = G.R - 8.5; outBench(G.x + Math.sin(a) * rb, G.z - Math.cos(a) * rb, -a); });   /* sit and look at the pictures */
+      });
+      [-150, -90, -30, 30, 90, 150].forEach(d => {                                                                             /* clipped trees round the statue */
+        const a = d * Math.PI / 180, x = GARD.x + Math.sin(a) * 17, z = GARD.z - Math.cos(a) * 17;
+        at(new T.Mesh(cyl(1.5, 1.7, 0.5, 10), kerb), x, 0.25, z); at(new T.Mesh(cyl(0.22, 0.28, 2.2, 7), wood), x, 1.5, z);
+        at(new T.Mesh(new T.IcosahedronGeometry(1.7, 1), leafA), x, 3.4, z); at(new T.Mesh(new T.IcosahedronGeometry(1.15, 1), leafB), x, 5.3, z);
+        colliders.push({ x: x, z: z, r: 1.6 });
+      });
     })();
 
     /* spot 3: lakeside (looking south over the water) */
@@ -3269,7 +3308,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       for (let tries = 0; tries < 20000 && n2 < GN2; tries++) {
         const a = rnd() * 6.2832, band = rnd(), r = band < 0.25 ? 5 + rnd() * 8 : band < 0.5 ? 33 + rnd() * 5 : 41 + rnd() * 11;
         const x = GARD2.x + Math.cos(a) * r, z = GARD2.z + Math.sin(a) * r;
-        if (Math.abs(x - GARD2.x) < 4.5 && z > GARD2.z) continue;                                  /* the open road to the south */
+        if (Math.abs(x - GARD2.x) < 4.5) continue;                                  /* the open road to the south */
         if (x < OUT.x0 + 1 || x > 142 || z > OUT.z1 - 3 || (Math.abs(x - GARD.x) < 4.5 && z < GARD2.z - GARD2.r)) continue;      /* keep to the field and off the stone road */
         d2.rotation.set(0, 0, 0); d2.scale.setScalar(0.85 + rnd() * 0.6);
         d2.position.set(x, 0.45 * d2.scale.y, z); d2.updateMatrix(); st2.setMatrixAt(n2, d2.matrix);
