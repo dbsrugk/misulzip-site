@@ -101,11 +101,11 @@ button.chip { pointer-events: auto; cursor: pointer; }
   line-height: 1.5;
   text-align: center;
 }
-#rightCol { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }   /* top right: play time, then the gear, on one line; the map right under them, all sharing the right edge */
+#rightCol { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }   /* top right: play time, then the gear, on one line; the map right under them, all sharing the right edge */
 #topRight { display: flex; align-items: stretch; gap: 8px; }
 .uiOff { display: none !important; }
-#hud #gearBtn { padding: 0 10px; min-height: 38px; justify-content: center; }
-#hud > .row:first-child { padding-right: 170px; }
+#hud #gearBtn { width: 38px; padding: 0; justify-content: center; }
+#hud > .row:first-child { padding-right: 140px; }
 :root { --bar: 58px; }
 #bottomBar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 5px; padding: 8px max(8px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); background: rgba(243, 236, 219, 0.94); border-top: 2px solid var(--ink); pointer-events: auto; z-index: 5; }
 #hud #bottomBar .chip { flex: 1 1 0; justify-content: center; min-width: 0; padding: 8px 2px; font-size: 14px; white-space: nowrap; gap: 3px; }
@@ -118,11 +118,12 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #playStats { font-size: 16px; line-height: 1.6; }
 #uiToggles label { display: flex; align-items: center; gap: 10px; padding: 6px 2px; font-size: 17px; }
 #uiToggles input { width: 22px; height: 22px; }
-#miniMap { width: 104px; height: 104px; border-radius: 50%; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); pointer-events: auto; cursor: pointer; }
+#miniMap { width: 116px; height: 116px; border-radius: 50%; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); pointer-events: auto; cursor: pointer; }
 #walkOpt { display: block; margin: 6px 2px 8px; font-size: 15px; color: var(--ink); }
 #teleFx { position: fixed; inset: 0; z-index: 60; background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(150, 225, 255, 0.55)); opacity: 0; pointer-events: none; transition: opacity 0.18s ease; }
 #teleFx.on { opacity: 0.85; }
-#timeGauge { width: 104px; box-sizing: border-box; min-height: 38px; display: flex; flex-direction: column; justify-content: center; padding: 3px 10px; border-radius: 999px; font-size: 14.5px; white-space: nowrap;   /* just the words '누적 N분': the hour bar is hidden */ box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); font-size: 13px; color: var(--ink); text-align: center; pointer-events: auto; cursor: pointer; }
+#hud #timeGauge { justify-content: center; min-width: 74px; white-space: nowrap; pointer-events: auto; cursor: pointer; }   /* just the words '누적 N분': the hour bar is hidden. With the gear it is exactly as wide as the map below */
+#hud #online, #hud #timeGauge, #hud #gearBtn { box-sizing: border-box; height: 38px; min-height: 38px; padding-top: 0; padding-bottom: 0; box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); }   /* the whole top line shares one height, one type size and one shadow */
 #rankBox { pointer-events: auto; width: 150px; padding: 6px 8px; border-radius: 10px; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.94); font-size: 14px; color: var(--ink); }
 #rankBox div { display: flex; justify-content: space-between; gap: 6px; padding: 1px 0; }
 #rankBox div.me { font-weight: bold; color: #b5651d; }
@@ -521,7 +522,7 @@ body.padOpen #hud { visibility: hidden; }
   <button class="sitBtn" id="tourBtn" type="button" hidden>🚶 15점 코스 걷기</button>
   <div id="rightCol">
     <div id="topRight">
-      <div id="timeGauge" aria-label="접속 시간"><span id="timeTxt">누적 0분</span><i><b id="timeBar"></b></i></div>
+      <div class="chip" id="timeGauge" aria-label="접속 시간"><span id="timeTxt">누적 0분</span><i><b id="timeBar"></b></i></div>
       <button class="chip" id="gearBtn" type="button" aria-label="설정">⚙️</button>
     </div>
     <canvas id="miniMap" width="208" height="208" aria-label="미니맵: 누르면 큰 지도"></canvas>
