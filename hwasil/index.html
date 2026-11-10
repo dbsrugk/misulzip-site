@@ -90,7 +90,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
   position: absolute;
   left: max(16px, env(safe-area-inset-left, 0px));
   right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(176px + var(--bar) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(214px + var(--bar) + env(safe-area-inset-bottom, 0px));
   margin-inline: auto;
   max-width: 420px;
   padding: 10px 16px;
@@ -101,7 +101,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
   line-height: 1.5;
   text-align: center;
 }
-#rightCol { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }   /* top right: play time, then the gear, on one line; the map right under them, all sharing the right edge */
+#rightCol { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }   /* top right: play time, then the gear, on one line. The map moved to the bottom right corner, out of the view */
 #topRight { display: flex; align-items: stretch; gap: 8px; }
 .uiOff { display: none !important; }
 #hud #gearBtn { width: 38px; padding: 0; justify-content: center; }
@@ -118,7 +118,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #playStats { font-size: 16px; line-height: 1.6; }
 #uiToggles label { display: flex; align-items: center; gap: 10px; padding: 6px 2px; font-size: 17px; }
 #uiToggles input { width: 22px; height: 22px; }
-#miniMap { width: 116px; height: 116px; border-radius: 50%; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); pointer-events: auto; cursor: pointer; }
+#miniMap { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(14px + var(--bar) + env(safe-area-inset-bottom, 0px)); width: 116px; height: 116px; border-radius: 50%; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); pointer-events: auto; cursor: pointer; }
 #walkOpt { display: block; margin: 6px 2px 8px; font-size: 15px; color: var(--ink); }
 #teleFx { position: fixed; inset: 0; z-index: 60; background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(150, 225, 255, 0.55)); opacity: 0; pointer-events: none; transition: opacity 0.18s ease; }
 #teleFx.on { opacity: 0.85; }
@@ -137,7 +137,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 .sitBtn {
   position: absolute;
   right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(52px + var(--bar) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(146px + var(--bar) + env(safe-area-inset-bottom, 0px));   /* above the map, which now sits in the bottom right corner */
   pointer-events: auto;
   padding: 16px 22px;
   border: 2px solid var(--ink);
@@ -150,7 +150,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #viewer { position: fixed; inset: 0; z-index: 26; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(28, 24, 20, 0.94); padding: 16px; }
 #viewerCanvas { display: block; background: var(--paper); border: 3px solid #3a2a1c; box-shadow: 0 0 0 8px #6b4a2f, 6px 8px 0 8px rgba(0,0,0,0.35); }
 #viewerCap { color: var(--chalk); font: 400 26px/1.2 var(--font-display); text-align: center; overflow-wrap: anywhere; }
-#tourBtn { bottom: calc(196px + var(--bar) + env(safe-area-inset-bottom, 0px)); font-size: 20px; padding: 12px 18px; background: #fff; }
+#tourBtn { bottom: calc(216px + var(--bar) + env(safe-area-inset-bottom, 0px)); font-size: 20px; padding: 12px 18px; background: #fff; }
 .sitBtn[disabled] { background: var(--chalk); box-shadow: none; opacity: 0.85; cursor: default; }
 
 #inspectBar {
@@ -414,7 +414,7 @@ body.padOpen #hud { visibility: hidden; }
 #keyBox .btn { width: 100%; margin-top: 8px; }
 #keyMsg { margin-top: 8px; font-weight: 500; }
 #emoteBar { margin-top: 8px; }
-#hangRow, #emoteBar { margin-right: 132px; flex-wrap: wrap; }   /* these rows sit beside the map now: they stop short of it and wrap instead of sliding under it */
+#hangRow, #emoteBar { flex-wrap: wrap; }
 #emoteBar .emo { pointer-events: auto; width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--ink); background: var(--paper); font-size: 25px; line-height: 1; cursor: pointer; box-shadow: 0 2px 0 var(--ink); }
 .nameRow { display: flex; gap: 8px; align-items: stretch; }
 .nameRow input { flex: 1; min-width: 0; }
@@ -425,7 +425,7 @@ body.padOpen #hud { visibility: hidden; }
 #mBox input[type=range] { width: 100%; margin-top: 10px; }
 #exAsk { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(28, 24, 20, 0.55); padding: 16px; }
 #exAsk .card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: 18px; max-width: 340px; text-align: center; display: flex; flex-direction: column; gap: 10px; font: 400 24px/1.3 var(--font-display); box-shadow: 5px 6px 0 rgba(0,0,0,0.35); }
-#areaBanner { width: max-content; position: fixed; top: calc(190px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; text-align: center; background: rgba(255, 253, 247, 0.95); border: 3px solid var(--ink); border-radius: 18px; padding: 8px 22px 9px; box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.28); display: flex; flex-direction: column; gap: 2px; max-width: 86vw; box-sizing: border-box; }
+#areaBanner { width: max-content; position: fixed; top: calc(112px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; text-align: center; background: rgba(255, 253, 247, 0.95); border: 3px solid var(--ink); border-radius: 18px; padding: 8px 22px 9px; box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.28); display: flex; flex-direction: column; gap: 2px; max-width: 86vw; box-sizing: border-box; }
 #areaBanner b { font: 400 28px/1.15 var(--font-display); color: var(--ink); white-space: nowrap; }
 #areaBanner small { font: 400 16px/1.2 var(--font-display); color: var(--muted); }
 #areaBanner.show { animation: areaPop 3.4s ease forwards; }

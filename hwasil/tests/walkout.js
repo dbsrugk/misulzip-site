@@ -6,7 +6,7 @@ const { start, until, check, done } = require('./lib');
     await p.evaluate(([x, z]) => { window.__hw.pos.x = x; window.__hw.pos.z = z; }, from); await p.waitForTimeout(1500);
     await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(7).click();   /* the garden: far away, through the lobby door */
     let maxJump = 0, last = await p.evaluate(() => [window.__hw.pos.x, window.__hw.pos.z]), arrived = false;
-    for (let i = 0; i < 400 && !arrived; i++) {
+    for (let i = 0; i < 800 && !arrived; i++) {   /* the garden is 200 m further south than it was */
       await p.waitForTimeout(250);
       const q = await p.evaluate(() => [window.__hw.pos.x, window.__hw.pos.z, window.__hw.area()]);
       maxJump = Math.max(maxJump, Math.hypot(q[0] - last[0], q[1] - last[1])); last = q;
