@@ -101,10 +101,11 @@ button.chip { pointer-events: auto; cursor: pointer; }
   line-height: 1.5;
   text-align: center;
 }
-#rightCol { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(108px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
+#rightCol { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }   /* top right: play time, then the gear, on one line; the map right under them, all sharing the right edge */
+#topRight { display: flex; align-items: stretch; gap: 8px; }
 .uiOff { display: none !important; }
-#gearBtn { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); padding: 7px 11px; }
-#hud > .row:first-child { padding-right: 52px; }
+#hud #gearBtn { padding: 0 10px; min-height: 38px; justify-content: center; }
+#hud > .row:first-child { padding-right: 170px; }
 :root { --bar: 58px; }
 #bottomBar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 5px; padding: 8px max(8px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); background: rgba(243, 236, 219, 0.94); border-top: 2px solid var(--ink); pointer-events: auto; z-index: 5; }
 #hud #bottomBar .chip { flex: 1 1 0; justify-content: center; min-width: 0; padding: 8px 2px; font-size: 14px; white-space: nowrap; gap: 3px; }
@@ -121,7 +122,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #walkOpt { display: block; margin: 6px 2px 8px; font-size: 15px; color: var(--ink); }
 #teleFx { position: fixed; inset: 0; z-index: 60; background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(150, 225, 255, 0.55)); opacity: 0; pointer-events: none; transition: opacity 0.18s ease; }
 #teleFx.on { opacity: 0.85; }
-#timeGauge { width: 104px; padding: 4px 6px 5px; border-radius: 10px; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); font-size: 13px; color: var(--ink); text-align: center; pointer-events: auto; cursor: pointer; }
+#timeGauge { width: 104px; box-sizing: border-box; min-height: 38px; display: flex; flex-direction: column; justify-content: center; padding: 3px 8px 5px; border-radius: 14px; box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); font-size: 13px; color: var(--ink); text-align: center; pointer-events: auto; cursor: pointer; }
 #rankBox { pointer-events: auto; width: 150px; padding: 6px 8px; border-radius: 10px; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.94); font-size: 14px; color: var(--ink); }
 #rankBox div { display: flex; justify-content: space-between; gap: 6px; padding: 1px 0; }
 #rankBox div.me { font-weight: bold; color: #b5651d; }
@@ -512,7 +513,6 @@ body.padOpen #hud { visibility: hidden; }
     <button class="chip" id="emoteBtn" type="button">표현</button>
     <button class="chip" id="moreBtn" type="button" aria-expanded="false">⋯ 더보기</button>
   </nav>
-  <button class="chip" id="gearBtn" type="button" aria-label="설정">⚙️</button>
   <div class="row" id="hangRow" hidden><button class="chip" id="hangBanner" type="button"></button></div>
   <div class="row" id="emoteBar" hidden></div>
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
@@ -520,8 +520,11 @@ body.padOpen #hud { visibility: hidden; }
   <button class="sitBtn" id="viewBtn" type="button" hidden>작품 크게 보기</button>
   <button class="sitBtn" id="tourBtn" type="button" hidden>🚶 15점 코스 걷기</button>
   <div id="rightCol">
+    <div id="topRight">
+      <div id="timeGauge" aria-label="접속 시간"><span id="timeTxt">누적 0분</span><i><b id="timeBar"></b></i></div>
+      <button class="chip" id="gearBtn" type="button" aria-label="설정">⚙️</button>
+    </div>
     <canvas id="miniMap" width="208" height="208" aria-label="미니맵: 누르면 큰 지도"></canvas>
-    <div id="timeGauge" aria-label="접속 시간"><span id="timeTxt">누적 0분</span><i><b id="timeBar"></b></i></div>
     <div id="rankBox" hidden></div>
   </div>
   <div id="inspectBar" hidden>
@@ -5416,8 +5419,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const UI_ITEMS = [['worksBtn', '내 그림'], ['online', '접속 인원'], ['fameBtn', '명예의 전당'], ['placesBtn', '장소 이동'], ['dressBtn', '꾸미기'], ['emoteBtn', '표현'], ['musicBtn', '음악 버튼'], ['miniMap', '미니맵'], ['timeGauge', '접속 시간 · 랭킹'], ['skyFx', '밤하늘 효과 (별똥별·오로라)']];
   let uiOff = []; try { uiOff = JSON.parse(store('hw-ui-off') || '[]'); if (!Array.isArray(uiOff)) uiOff = []; } catch (e) { uiOff = []; }
   function layoutHud() {                                                        /* the right column sits right under the last row of buttons */
-    const row = document.querySelector('#hud > .row'), col = $('#rightCol'); if (!row || !col) return;
-    const b = Math.ceil(row.getBoundingClientRect().bottom) + 8; if (col.dataset.t !== String(b)) { col.dataset.t = String(b); col.style.top = b + 'px'; }
+    /* nothing to move any more: the column is pinned to the top right by the style sheet */
   }
   function applyUi() {
     UI_ITEMS.forEach(q => { const el = document.getElementById(q[0]); if (el) el.classList.toggle('uiOff', uiOff.indexOf(q[0]) >= 0); });
