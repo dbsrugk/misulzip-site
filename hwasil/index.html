@@ -1047,14 +1047,23 @@ body.padOpen #hud { visibility: hidden; }
   }
   /* anything solid and big that gets between the camera and me (a wall seen from its front side, a tree, a pillar, a frame) turns see-through while it is in the way;
      found by a ray from the camera to my head every few frames, each such piece gets its own copy of the material so the others are not touched */
-  const los = { list: null, inst: [], fade: new Map(), hit: new Set(), ifade: new Map(), ihit: new Set(), ray: new T.Raycaster(), n: 0, dir: new T.Vector3() }, _lm = new T.Matrix4(), _ls = new T.Vector3();
+  const los = { list: null, inst: [], fade: new Map(), hit: new Set(), ifade: new Map(), ihit: new Set(), ray: new T.Raycaster(), n: 0, dir: new T.Vector3() }, _lz = new T.Matrix4().makeScale(0, 0, 0);
   function losBuild() {
     const skip = new Set(), bb = new T.Box3(), sz = new T.Vector3(); los.list = [];
     occluders.forEach(o => o.g.traverse(m => skip.add(m))); glbProps.forEach(q => { if (q.g) q.g.traverse(m => skip.add(m)); }); player.traverse(m => skip.add(m));
     los.inst = [];
     scene.traverse(o => {
-      if (o.isInstancedMesh && !skip.has(o) && o.count <= 800 && o.geometry && o.geometry.attributes.position && !o.userData.noLos) {      /* trees and the like: only the ones in the way shrink away */
-        o.geometry.computeBoundingBox(); o.geometry.boundingBox.getSize(sz); if (Math.max(sz.x, sz.y, sz.z) >= 2.5) los.inst.push(o);
+      if (o.isInstancedMesh && !skip.has(o) && o.count <= 800 && o.geometry && o.geometry.attributes.position && !o.userData.noLos) {      /* trees and the like: only the ones in the way turn see-through */
+        o.geometry.computeBoundingBox(); o.geometry.boundingBox.getSize(sz);
+        if (Math.max(sz.x, sz.y, sz.z) >= 2.5) {                                  /* one ball per tree part, worked out once: the trees never move */
+          o.geometry.computeBoundingSphere(); const bs = o.geometry.boundingSphere; o.updateMatrixWorld();
+          for (let id = 0; id < o.count; id++) {
+            const m = new T.Matrix4(); o.getMatrixAt(id, m); const w = new T.Matrix4().multiplyMatrices(o.matrixWorld, m), r = bs.radius * w.getMaxScaleOnAxis();
+            if (r < 1.2) continue;
+            const wb = o.geometry.boundingBox.clone().applyMatrix4(w);         /* a standing tube round the part: a pine is tall and thin, a ball would miss its wide foot */
+            los.inst.push({ o: o, id: id, m: m, w: w, x: (wb.min.x + wb.max.x) / 2, z: (wb.min.z + wb.max.z) / 2, y0: wb.min.y, y1: wb.max.y, r: Math.max(wb.max.x - wb.min.x, wb.max.z - wb.min.z) / 2, k: 1, on: false, ghost: null });
+          }
+        }
         return;
       }
       if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || skip.has(o)) return;
@@ -1067,25 +1076,30 @@ body.padOpen #hud { visibility: hidden; }
   }
   function updateLos(dt, camP, head) {
     if (!started) return;
-    if (!los.list) { if (++los.n > 90) losBuild(); return; }
+    if (!los.list) { if (++los.n > 90 && farBuilt) losBuild(); return; }      /* only after the tree fields have been split into patches (chunkInstanced): before that the list would point at meshes that are about to leave the scene, and no tree ever faded */
     if ((los.n++ % 3) === 0) {
       los.hit.clear(); los.dir.copy(head).sub(camP); const dist = los.dir.length();
       if (dist > 1.5) {
         los.ray.set(camP, los.dir.normalize()); los.ray.near = 0.3; los.ray.far = dist - 0.8;
         los.ray.intersectObjects(los.list, false).forEach(h => { let v = true; for (let a = h.object; a; a = a.parent) if (!a.visible) { v = false; break; } if (v) los.hit.add(h.object); });
       }
-      los.ihit.clear();
-      if (dist > 1.5) los.ray.intersectObjects(los.inst, false).forEach(h => {
-        if (h.instanceId === undefined) return; let v = true; for (let a = h.object; a; a = a.parent) if (!a.visible) { v = false; break; } if (!v) return;
-        const key = h.object.uuid + ':' + h.instanceId; los.ihit.add(key);
-        if (!los.ifade.has(key)) { const m0 = new T.Matrix4(); h.object.getMatrixAt(h.instanceId, m0); los.ifade.set(key, { o: h.object, id: h.instanceId, m: m0, k: 1 }); }
-      });
+      /* trees: a tree is in the way when the line from the camera to my head passes through the tube round it, or the camera sits inside it (a ray would miss that, it starts inside the leaves) */
+      const ax = camP.x, ay = camP.y, az = camP.z, dx = head.x - ax, dy = head.y - ay, dz = head.z - az, d2 = dx * dx + dy * dy + dz * dz, tMax = dist > 1 ? Math.max(0, 1 - 0.8 / dist) : 0;
+      for (let i = 0; i < los.inst.length; i++) {
+        const e = los.inst[i], cx = e.x - ax, cz = e.z - az, h2 = dx * dx + dz * dz; let t = h2 > 1e-6 ? (cx * dx + cz * dz) / h2 : 0; t = t < 0 ? 0 : t > tMax ? tMax : t;
+        const qx = cx - dx * t, qz = cz - dz * t, rr = e.r * 0.8, y = ay + dy * t; e.on = qx * qx + qz * qz < rr * rr && y > e.y0 - 0.3 && y < e.y1 && e.o.visible;
+        if (e.on && !e.ghost) {                                                   /* the real one steps out, a see-through copy stands in its place */
+          const mt = e.o.material.clone(); mt.transparent = true; mt.depthWrite = false; mt.opacity = 1;
+          if (e.o.instanceColor) { const c = new T.Color(); e.o.getColorAt(e.id, c); mt.color.multiply(c); }
+          const g = new T.Mesh(e.o.geometry, mt); g.matrixAutoUpdate = false; g.matrix.copy(e.w); g.matrixWorld.copy(e.w); g.castShadow = false; g.receiveShadow = false; g.userData.noLos = true; g.renderOrder = 3; scene.add(g);
+          e.ghost = g; e.k = 1; e.o.setMatrixAt(e.id, _lz); e.o.instanceMatrix.needsUpdate = true; los.ifade.set(e, e);
+        }
+      }
       los.hit.forEach(o => { if (!los.fade.has(o)) { const orig = o.material, c = orig.clone(); c.transparent = true; c.depthWrite = false; o.material = c; los.fade.set(o, { k: 1, orig: orig }); } });
     }
-    los.ifade.forEach((e, key) => {
-      const on = los.ihit.has(key); e.k += ((on ? 0.02 : 1) - e.k) * Math.min(1, dt * 9);
-      if (!on && e.k > 0.98) { e.o.setMatrixAt(e.id, e.m); e.o.instanceMatrix.needsUpdate = true; los.ifade.delete(key); return; }
-      _lm.copy(e.m).scale(_ls.set(e.k, e.k, e.k)); e.o.setMatrixAt(e.id, _lm); e.o.instanceMatrix.needsUpdate = true;
+    los.ifade.forEach(e => {
+      e.k += ((e.on ? 0.3 : 1) - e.k) * Math.min(1, dt * 9); e.ghost.material.opacity = e.k;
+      if (!e.on && e.k > 0.98) { e.o.setMatrixAt(e.id, e.m); e.o.instanceMatrix.needsUpdate = true; scene.remove(e.ghost); e.ghost.material.dispose(); e.ghost = null; los.ifade.delete(e); }
     });
     los.fade.forEach((e, o) => {
       const target = los.hit.has(o) ? 0.13 : 1, f = Math.min(1, dt * 9); e.k += (target - e.k) * f; o.material.opacity = e.k;
