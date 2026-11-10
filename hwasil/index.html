@@ -964,7 +964,7 @@ body.padOpen #hud { visibility: hidden; }
   const gapZ = i => GGS - 32 * GGAPW[i] - GGAP * i - GGAP / 2;                  /* z of the middle of round hall i */
   const wingAt = z => { for (let k = 0; k < NW; k++) if (z <= wingZ(k) && z > wingZ(k) - 32) return k; return z <= GGZ + 0.01 ? NW - 1 : -1; };   /* -1 inside a round hall */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
-  const OUT = { x0: RM.hx + 1, x1: 146, z0: -68, z1: 350 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 92, z: 205, r: 43, R: 31 }, GARD2 = { x: 92, z: 310, r: 43, R: 31 };   /* GARD: the open-air exhibition garden */
+  const OUT = { x0: RM.hx + 1, x1: 146, z0: -68, z1: 372 }, SEA_X = 150, LAKE = { x: 72, z: 40, r: 13 }, MILL = { x: 112, z: 45 }, GARD = { x: 92, z: 205, r: 43, R: 31 }, GARD2 = { x: 92, z: 310, r: 43, R: 31 };   /* GARD: the open-air exhibition garden */
   const colliders = [];
   function plankTexture() {
     const c = document.createElement('canvas'); c.width = c.height = 512;
@@ -2988,7 +2988,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 8 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 8) return false;   /* the sculpture pavilion, with a wide lawn around it */
       if (Math.hypot(x - GARD.x, z - GARD.z) < GARD.r + 1) return false;
       if (Math.hypot(x - GARD2.x, z - GARD2.z) < GARD2.r + 1) return false;
-      if (Math.abs(x - GARD.x) < 8.5 && z >= 112 && z < GARD2.z + GARD2.r + 4) return false;      /* the road down to the two gardens */
+      if (Math.abs(x - GARD.x) < 8.5 && z >= 112 && z < GARD2.z + GARD2.r + 4) return false;
+      if (Math.hypot(x - GARD.x, z - (GARD.z + 22)) < 30 || Math.hypot(x - GARD2.x, z - (GARD2.z + 22)) < 30) return false;      /* a clear lawn where you arrive, so the camera never ends up inside a tree */      /* the road down to the two gardens */
       for (let i = 0; i < SPOTS.length; i++) if (Math.hypot(x - SPOTS[i].x, z - SPOTS[i].z) < SPOTS[i].r) return false;
       return x > OUT.x0 + 2 && x < 130 && z > OUT.z0 + 2 && z < OUT.z1 - 2;
     }
