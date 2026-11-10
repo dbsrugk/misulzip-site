@@ -1996,6 +1996,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   })();
 
   /* the sculpture pavilion (조각 전시관): a marble colonnade on the field beside the main path. The real 3D statues from the lobby stand here around a hand-built Pieta. */
+  const NORTH = { x: 92, sz: -134, sr: 19 }, critters = [];   /* the way north: through the alpine village (x 92), up a valley between the foothills, to a snowfield right under the snowy peaks; critters: every animal that walks about */
   const SCULPT = { x: 102, z: 20.5, w: 84, d: 37 };   /* three rows now (it was two), so the pieces stand about twice as far apart; the lake and the windmill moved south to make room */
   function makePieta() {
     const g = new T.Group(), m = L(0xf2efe8), m2 = L(0xe4dfd4);
@@ -2831,7 +2832,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { name: '화실', note: '이젤이 놓인 나무 오두막. 앉아서 그려요', x: 50, z: 3.5, h: 0, pitch: 0.4 },
     { name: '조각 전시관', note: '피에타·다비드·생각하는 사람… 조각 명작 15점 코스', x: SCULPT.x, z: 0.5, h: 0, pitch: 0.35 },
     { name: '남쪽 꽃들판', note: '끝없이 펼쳐진 들꽃 초원과 숲', x: 92, z: 62, h: 0, pitch: 0.2 },
-    { name: '숲속 쉼터', note: '커다란 나무 아래 돌 마당', x: 92, z: 98, h: 0, pitch: 0.25 }
+    { name: '숲속 쉼터', note: '커다란 나무 아래 돌 마당', x: 92, z: 98, h: 0, pitch: 0.25 },
+    { name: '알프스 마을', note: '소들이 풀을 뜯는 산골 마을. 교회와 통나무집', x: NORTH.x, z: -76, h: Math.PI, pitch: 0.2 },
+    { name: '눈밭', note: '눈 덮인 봉우리 바로 아래, 눈이 내리는 하얀 들판', x: NORTH.x, z: -124, h: Math.PI, pitch: 0.12 }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
@@ -2923,7 +2926,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const SX = 5, nx = Math.round((x1 - x0) / SX), nz = 20, HZ = new T.Color(0xa7bdd2), col = new T.Color(), pos = [], cols = [];
       const Y = (i, j) => {
         const x = x0 + i * SX, tz = j / nz, z = zFront - tz * depth, e = tz < 0.6 ? Math.pow(tz / 0.6, 1.4) : 1, ex = Math.min(1, i / (nx * 0.12), (nx - i) / (nx * 0.12)), mass = 0.45 + 0.55 * vnz(x * 0.011, 3.1, sd);
-        return Math.min(hmax * 1.12, hmax * e * ex * mass * (0.22 + 0.95 * ridge(x * 0.014, z * 0.014, sd))) - 0.6;
+        const sm = v => v <= 0 ? 0 : v >= 1 ? 1 : v * v * (3 - 2 * v);
+        const carve = Math.min(z > -130 ? sm((Math.abs(x - NORTH.x) - 6) / 14) : 1, sm((Math.hypot(x - NORTH.x, z - NORTH.sz) - NORTH.sr - 4) / 14));   /* a valley and a flat snowfield you can walk into */
+        const back = green && tz > 0.7 ? Math.max(0, (1 - tz) / 0.3) : 1;                                                                                 /* the foothills slope down again behind: you can stand behind them now */
+        return Math.min(hmax * 1.12, hmax * e * ex * mass * (0.22 + 0.95 * ridge(x * 0.014, z * 0.014, sd))) * carve * back - 0.6;
       };
       for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
         const q = [[i, j], [i + 1, j], [i, j + 1], [i + 1, j + 1]].map(a => [x0 + a[0] * SX, Y(a[0], a[1]), zFront - a[1] / nz * depth]);
@@ -2965,7 +2971,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         put(g, new T.Mesh(bx(0.7, 1.6, 0.7), L(0xb9ada0)), w * 0.25, h + rh * 0.6, -d * 0.15);
         return g;
       }
-      chalet(64, -76, 0.25, 9, 7, 4.6, roofB); chalet(72, -88, -0.2, 8, 6.4, 4.4, roofR); chalet(98, -77, -0.3, 9.4, 7.2, 4.8, roofB); chalet(106, -90, 0.15, 8.2, 6.6, 4.4, roofR); chalet(112, -76, -0.1, 7.6, 6.2, 4.2, roofR); chalet(58, -90, 0.4, 7.4, 6, 4.2, roofB); chalet(121, -86, -0.35, 8, 6.4, 4.4, roofB);
+      chalet(64, -76, 0.25, 9, 7, 4.6, roofB); chalet(72, -88, -0.2, 8, 6.4, 4.4, roofR); chalet(101.5, -78, -0.3, 9.4, 7.2, 4.8, roofB); chalet(106, -90, 0.15, 8.2, 6.6, 4.4, roofR); chalet(112, -76, -0.1, 7.6, 6.2, 4.2, roofR); chalet(58, -90, 0.4, 7.4, 6, 4.2, roofB); chalet(121, -86, -0.35, 8, 6.4, 4.4, roofB);
       /* the church: white nave, red roof, a tall tower with a clock and a slate spire */
       { const cx = 85, cz = -82, g = new T.Group(); g.position.set(cx, 0, cz); V.add(g);
         put(g, new T.Mesh(bx(8, 6.4, 14), L(0xf6f0e4)), 0, 3.2, 0);
@@ -2980,20 +2986,22 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       }
       /* fences round a meadow and the cows grazing in it */
       const fenceL = (x0, z0, x1, z1) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 3)); for (let i = 0; i <= n; i++) put(V, new T.Mesh(bx(0.22, 1.3, 0.22), timber), x0 + (x1 - x0) * i / n, 0.65, z0 + (z1 - z0) * i / n); const r = put(V, new T.Mesh(bx(Math.hypot(x1 - x0, z1 - z0), 0.16, 0.14), timberL), (x0 + x1) / 2, 1.0, (z0 + z1) / 2); r.rotation.y = -Math.atan2(z1 - z0, x1 - x0); };
-      fenceL(66, -68, 108, -68); fenceL(66, -68, 62, -100); fenceL(108, -68, 124, -98);
+      fenceL(66, -68, 89.4, -68); fenceL(94.6, -68, 108, -68); fenceL(66, -68, 62, -100); fenceL(108, -68, 124, -98);                 /* a gate in the front fence: the village is open now */
+      [89.4, 94.6].forEach(x => put(V, new T.Mesh(bx(0.4, 3.4, 0.4), timber), x, 1.7, -68)); put(V, new T.Mesh(bx(6.2, 0.36, 0.4), timber), 92, 3.4, -68);
+      { const pl = makeNamePlate('알프스 마을'); pl.sprite.scale.set(5.2, 1.3, 1); pl.sprite.position.set(92, 4.4, -68); V.add(pl.sprite); }
+      [[64, -76, 4.4], [72, -88, 4], [101.5, -78, 4.6], [106, -90, 4.1], [112, -76, 3.8], [121, -86, 4], [85, -86, 4.3], [85, -79.5, 4.3], [85, -73.6, 2.7]].forEach(q => colliders.push({ x: q[0], z: q[1], r: q[2] }));
       const cowM = L(0xf6f2ea), patch = L(0x2b2b2b), cowHeads = [];
       [[74, -72], [81, -75], [92, -70], [99, -72], [106, -72], [86, -92], [96, -94], [70, -96], [114, -94], [78, -84]].forEach((q, i) => {
         const g = new T.Group(); g.position.set(q[0], 0, q[1]); g.rotation.y = (nh(i, 7, 5) - 0.5) * 6; V.add(g);
         put(g, new T.Mesh(bx(2.3, 1.2, 0.95), cowM), 0, 1.25, 0); put(g, new T.Mesh(bx(0.9, 0.6, 1.0), patch), 0.2 + nh(i, 3, 1) * 0.3, 1.45, 0); put(g, new T.Mesh(bx(0.5, 0.5, 0.97), patch), -0.7, 1.2, 0);
-        [[-0.85, 0.3], [-0.85, -0.3], [0.85, 0.3], [0.85, -0.3]].forEach(l => put(g, new T.Mesh(bx(0.2, 0.75, 0.2), cowM), l[0], 0.4, l[1]));
+        const legs = [[-0.85, 0.3], [-0.85, -0.3], [0.85, 0.3], [0.85, -0.3]].map(l => put(g, new T.Mesh(bx(0.2, 0.75, 0.2).translate(0, -0.375, 0), cowM), l[0], 0.78, l[1]));
         const hd = new T.Group(); hd.position.set(1.2, 1.5, 0); g.add(hd); put(hd, new T.Mesh(bx(0.55, 0.55, 0.6), cowM), 0.25, 0, 0); put(hd, new T.Mesh(bx(0.25, 0.3, 0.45), L(0xe9b7b0)), 0.55, -0.1, 0); put(hd, new T.Mesh(bx(0.18, 0.18, 0.2), L(0xd9b35a)), 0.1, -0.45, 0);
-        cowHeads.push({ hd: hd, ph: nh(i, 5, 2) * 6.28 });
+        critters.push({ g: g, hd: hd, legs: legs, sp: 0.55, graze: 0.55, step: 2.4, wait: nh(i, 5, 2) * 8, ph: nh(i, 5, 2) * 6.28, ok: (x, z) => z < -70.5 && z > -91 && x > 67 + (-68 - z) * -0.125 && x < 106.5 + (-68 - z) * 0.533 && !colliders.some(q => Math.hypot(x - q.x, z - q.z) < q.r + 1.6) });   /* the cows stroll about their meadow now */
       });
-      anim.push((dt, t) => { for (let i = 0; i < cowHeads.length; i++) { const c = cowHeads[i]; c.hd.rotation.z = -0.15 - 0.55 * Math.max(0, Math.sin(t * 0.35 + c.ph)); } });
       /* dark pines on the foothills and along the village edges */
       const PN = 140, pines = new T.InstancedMesh(new T.ConeGeometry(2.2, 8, 7), L(0xffffff), PN), pd = new T.Object3D(), pc = new T.Color(); let pi = 0;
       for (let k = 0; k < PN; k++) {
-        const x = -20 + nh(k, 1, 4) * 230, z = -96 - nh(k, 2, 4) * 26 - (k % 3 === 0 ? 0 : 0); if (z > -94 && x > 56 && x < 128) continue; if (Math.abs(x) < GGR + 8) continue;   /* none inside the long gallery */
+        const x = -20 + nh(k, 1, 4) * 230, z = -96 - nh(k, 2, 4) * 26 - (k % 3 === 0 ? 0 : 0); if (z > -94 && x > 56 && x < 128) continue; if (Math.abs(x) < GGR + 8) continue; if (Math.abs(x - NORTH.x) < 9 || Math.hypot(x - NORTH.x, z - NORTH.sz) < NORTH.sr + 6) continue;   /* none inside the long gallery */
         const sc = 0.8 + nh(k, 3, 4) * 1.1; pd.position.set(x, 4 * sc, z); pd.scale.set(sc, sc * (1 + nh(k, 4, 4) * 0.4), sc); pd.updateMatrix(); pines.setMatrixAt(pi, pd.matrix);
         pc.setHex(0x2d5f3a).lerp(new T.Color(0x3f7a45), nh(k, 5, 4)); pines.setColorAt(pi, pc); pi++;
       }
@@ -3121,7 +3129,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       parts.forEach(g => { pos.set(g.attributes.position.array, vo * 3); nor.set(g.attributes.normal.array, vo * 3); col.set(g.attributes.color.array, vo * 3); const ia = g.index.array; for (let i = 0; i < ia.length; i++) idx[io + i] = ia[i] + vo; vo += g.attributes.position.count; io += ia.length; });
       const m = new T.BufferGeometry(); m.setAttribute('position', new T.BufferAttribute(pos, 3)); m.setAttribute('normal', new T.BufferAttribute(nor, 3)); m.setAttribute('color', new T.BufferAttribute(col, 3)); m.setIndex(new T.BufferAttribute(idx, 1)); return m;
     }
-    const GN = HI ? 3800 : 1000, tuftG = bladeClump();
+    const GN = HI ? 5200 : 1300, tuftG = bladeClump();
     const tufts = instMesh(tuftG, sway(L(0xffffff, { vertexColors: true }), 0.16, 0), GN); tufts.castShadow = false;
     for (let i = 0, n = 0; n < GN && i < GN * 6; i++) {
       const x = OUT.x0 + 0.5 + rnd() * (133 - OUT.x0), z = OUT.z0 + 0.5 + rnd() * (OUT.z1 - OUT.z0 - 1);
@@ -3131,11 +3139,11 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     }
     /* wild flowers in loose patches: thin stems with little faceted heads */
     {
-      const FN = HI ? 1000 : 250, stems = instMesh(cyl(0.012, 0.016, 0.4, 3).translate(0, 0.2, 0), L(0x4f9a46), FN), heads = instMesh(new T.IcosahedronGeometry(0.1, 0).translate(0, 0.43, 0), L(0xffffff), FN);
+      const FN = HI ? 3400 : 700, stems = instMesh(cyl(0.012, 0.016, 0.4, 3).translate(0, 0.2, 0), L(0x4f9a46), FN), heads = instMesh(new T.IcosahedronGeometry(0.1, 0).translate(0, 0.43, 0), L(0xffffff), FN);
       stems.castShadow = heads.castShadow = false; const FC = [0xffffff, 0xf7b6cf, 0xffd95a, 0xc6a8f0, 0xff8f8f], centres = [];
-      for (let i = 0; i < 260 && centres.length < 64; i++) { const x = OUT.x0 + 3 + rnd() * (124 - OUT.x0), z = OUT.z0 + 3 + rnd() * (OUT.z1 - OUT.z0 - 6); if (offPaths(x, z) && free(x, z)) centres.push({ x: x, z: z, c: FC[Math.floor(rnd() * FC.length)] }); }
+      for (let i = 0; i < 1200 && centres.length < 200; i++) { const x = OUT.x0 + 3 + rnd() * (124 - OUT.x0), z = OUT.z0 + 3 + rnd() * (OUT.z1 - OUT.z0 - 6); if (offPaths(x, z) && free(x, z)) centres.push({ x: x, z: z, c: FC[Math.floor(rnd() * FC.length)] }); }
       let n = 0;
-      for (let i = 0; i < centres.length && n < FN; i++) for (let k = 0; k < FN / 40 && n < FN; k++) {
+      for (let i = 0; i < centres.length && n < FN; i++) for (let k = 0; k < FN / 150 && n < FN; k++) {
         const q = centres[i], a = rnd() * 6.28, r = Math.sqrt(rnd()) * 2.4, x = q.x + Math.cos(a) * r, z = q.z + Math.sin(a) * r; if (!offPaths(x, z)) continue;
         dm.rotation.set((rnd() - 0.5) * 0.3, rnd() * 6, (rnd() - 0.5) * 0.3); dm.scale.setScalar(0.8 + rnd() * 0.7); dm.position.set(x, 0, z); dm.updateMatrix(); stems.setMatrixAt(n, dm.matrix); heads.setMatrixAt(n, dm.matrix);
         gc.setHex(rnd() < 0.8 ? q.c : FC[Math.floor(rnd() * FC.length)]); heads.setColorAt(n, gc); n++;
@@ -3183,8 +3191,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
 
     /* spot 1: mountain viewpoint (looking north) */
     at(new T.Mesh(cyl(15, 15, 0.3, 32), L(0xa89f90)), 85, 0.15, -46);
-    for (let x = 69; x <= 101.01; x += 4) at(new T.Mesh(cyl(0.18, 0.18, 1.8, 6), woodD2), x, 0.9, -53);
-    at(new T.Mesh(bx(32, 0.2, 0.2), woodD2), 85, 1.7, -53);
+    for (let x = 69; x <= 101.01; x += 4) if (x !== 93) at(new T.Mesh(cyl(0.18, 0.18, 1.8, 6), woodD2), x, 0.9, -53);
+    at(new T.Mesh(bx(20, 0.2, 0.2), woodD2), 79, 1.7, -53); at(new T.Mesh(bx(4, 0.2, 0.2), woodD2), 99, 1.7, -53);   /* the rail opens at x 89 to 97: the path to the village and the snow goes through */
     for (let i = 0; i < 4; i++) addEaselAt(85 + (i - 1.5) * 7, -48, Math.PI / 2);
     outBench(72.5, -39, 0); outBench(97.5, -39, 0); blanketAt(80, -36.5, 0, 0); blanketAt(90, -36.5, 0, 1);
     sign('산 전망대', 80, -33);
@@ -3282,6 +3290,101 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         at(new T.Mesh(cyl(1.5, 1.7, 0.5, 10), kerb), x, 0.25, z); at(new T.Mesh(cyl(0.22, 0.28, 2.2, 7), wood), x, 1.5, z);
         at(new T.Mesh(new T.IcosahedronGeometry(1.7, 1), leafA), x, 3.4, z); at(new T.Mesh(new T.IcosahedronGeometry(1.15, 1), leafB), x, 5.3, z);
         colliders.push({ x: x, z: z, r: 1.6 });
+      });
+    })();
+    /* the way north: a dirt path from the viewpoint through the village gate, up the valley, and a snowfield under the peaks where it snows */
+    (function () {
+      const X = NORTH.x, SZ = NORTH.sz, SR = NORTH.sr, dirt = L(0xcdb894), snow = L(0xf7fbff), snowB = L(0xe6eef7), wood = L(0x6b4a2f), pineM = L(0x2f6a40);
+      flat(new T.PlaneGeometry(3.6, 51), dirt, X, 0.032, -78.5);                                        /* viewpoint -> gate -> the foot of the valley */
+      flat(new T.PlaneGeometry(3.6, 14), dirt, X, 0.032, -99); flat(new T.PlaneGeometry(4.2, 12), snowB, X, 0.034, -111);
+      flat(new T.CircleGeometry(SR + 7, 40), snowB, X, 0.036, SZ); flat(new T.CircleGeometry(SR + 3.5, 40), snow, X, 0.04, SZ);
+      for (let k = 0; k < 26; k++) {                                                                  /* loose patches of snow down the valley, thinner towards the village */
+        const z = -96 - rnd() * 26, sd = rnd() < 0.5 ? -1 : 1, x = X + sd * (3 + rnd() * 7), r = 0.8 + rnd() * 2.2 * ((-96 - z) / 26 + 0.3);
+        flat(new T.CircleGeometry(r, 9), rnd() < 0.5 ? snow : snowB, x, 0.035 + rnd() * 0.004, z);
+      }
+      for (let k = 0; k < 13; k++) {                                                                  /* snowy pines round the field, open to the south where you walk in */
+        const a = (-125 + k * 250 / 12) * Math.PI / 180, r = SR + 1.5 + (k % 2) * 2.2, x = X + Math.sin(a) * r, z = SZ - Math.cos(a) * r, sc = 0.9 + rnd() * 0.5;
+        at(new T.Mesh(cyl(0.22, 0.3, 1.4, 6), wood), x, 0.7, z);
+        at(new T.Mesh(new T.ConeGeometry(2.0 * sc, 4.4 * sc, 7), pineM), x, 1.2 + 2.2 * sc, z); at(new T.Mesh(new T.ConeGeometry(1.25 * sc, 2.6 * sc, 7), snow), x, 1.2 + 3.8 * sc, z);
+        colliders.push({ x: x, z: z, r: 0.9 });
+      }
+      { const x = X + 8, z = SZ - 6;                                                                  /* a snowman */
+        at(new T.Mesh(new T.IcosahedronGeometry(1.0, 1), snow), x, 0.9, z); at(new T.Mesh(new T.IcosahedronGeometry(0.72, 1), snow), x, 2.2, z); at(new T.Mesh(new T.IcosahedronGeometry(0.5, 1), snow), x, 3.15, z);
+        at(new T.Mesh(new T.ConeGeometry(0.1, 0.5, 6).rotateX(Math.PI / 2), L(0xf08a2a)), x, 3.15, z + 0.6); [-0.17, 0.17].forEach(d => at(new T.Mesh(bx(0.09, 0.09, 0.06), L(0x2a2420)), x + d, 3.3, z + 0.46));
+        at(new T.Mesh(cyl(0.34, 0.34, 0.5, 10), L(0x2a2420)), x, 3.8, z); at(new T.Mesh(cyl(0.55, 0.55, 0.06, 12), L(0x2a2420)), x, 3.56, z);
+        [-1, 1].forEach(d => { const arm = at(new T.Mesh(bx(1.3, 0.08, 0.08), wood), x + d * 1.1, 2.4, z); arm.rotation.z = d * 0.5; });
+        colliders.push({ x: x, z: z, r: 1.1 });
+      }
+      outBench(X - 9, SZ + 4, 0); outBench(X + 9, SZ + 4, 0); sign('눈밭', X - 5.5, -113);
+      for (let i = 0; i < 3; i++) addEaselAt(X + (i - 1) * 7, SZ + 0.5, Math.PI / 2);                     /* paint the peaks from right under them */
+      /* snowfall over the field: a column of flakes that only runs while you are up here */
+      const FN = HI ? 420 : 160, fp = new Float32Array(FN * 3), fg = new T.BufferGeometry();
+      for (let i = 0; i < FN; i++) { const a = rnd() * 6.28, r = Math.sqrt(rnd()) * (SR + 14); fp[i * 3] = X + Math.cos(a) * r; fp[i * 3 + 1] = rnd() * 22; fp[i * 3 + 2] = SZ + Math.sin(a) * r; }
+      fg.setAttribute('position', new T.BufferAttribute(fp, 3));
+      const flakes = new T.Points(fg, new T.PointsMaterial({ color: 0xffffff, size: 0.3, transparent: true, opacity: 0.9, depthWrite: false, fog: false })); flakes.frustumCulled = false; flakes.visible = false; flakes.userData.noShadow = true; scene.add(flakes);
+      anim.push((dt, t) => {
+        const on = pos.z < -84 && pos.x > 40; flakes.visible = on; if (!on) return;
+        for (let i = 0; i < FN; i++) { let y = fp[i * 3 + 1] - dt * (1.6 + (i % 5) * 0.25); if (y < 0) y += 22; fp[i * 3 + 1] = y; fp[i * 3] += Math.sin(t * 0.7 + i) * dt * 0.25; }
+        fg.attributes.position.needsUpdate = true;
+      });
+    })();
+    /* animals that walk about: sheep, rabbits and deer on the field, ducks on the lake (the cows in the village are in the same list) */
+    (function () {
+      const mk = (x, z) => { const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = rnd() * 6.28; scene.add(g); return g; };
+      const P = (g, geo, mat, x, y, z) => { const m = new T.Mesh(geo, mat); m.position.set(x, y, z); m.userData.noShadow = true; g.add(m); return m; };
+      const leg = (g, mat, x, z, len, w) => P(g, bx(w, len, w).translate(0, -len / 2, 0), mat, x, len, z);
+      const inRing = (hx, hz, hr) => (x, z) => Math.hypot(x - hx, z - hz) < hr && walkable(x, z) && !(Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 2 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 2) && !(Math.abs(x - ATELIER.x) < ATELIER.w / 2 + 2 && Math.abs(z - ATELIER.z) < ATELIER.d / 2 + 2) && !colliders.some(q => Math.hypot(x - q.x, z - q.z) < q.r + 0.8);
+      const wool = L(0xf3efe6), dark = L(0x3a3531), fur = L(0xd9c6ae), white = L(0xffffff), tan = L(0xb07a46), tanD = L(0x8a5a34), horn = L(0x6b4a2f), beak = L(0xf0a030), drake = L(0x2f6f4a), hen = L(0x9a7a56);
+      [[60, 100], [63, 104], [57, 106], [66, 97], [61, 110]].forEach(q => {                           /* sheep */
+        const g = mk(q[0], q[1]); P(g, bx(1.3, 0.8, 0.85), wool, 0, 0.9, 0); P(g, bx(0.2, 0.2, 0.2), wool, -0.7, 1.0, 0);
+        const hd = new T.Group(); hd.position.set(0.7, 1.05, 0); g.add(hd); P(hd, bx(0.42, 0.4, 0.44), dark, 0.2, 0, 0); P(hd, bx(0.1, 0.12, 0.62), dark, 0.1, 0.12, 0);
+        const legs = [[-0.45, 0.25], [-0.45, -0.25], [0.45, 0.25], [0.45, -0.25]].map(l => leg(g, dark, l[0], l[1], 0.55, 0.14));
+        critters.push({ g: g, hd: hd, legs: legs, sp: 0.7, graze: 0.7, step: 3.6, wait: rnd() * 6, ph: rnd() * 6, ok: inRing(61, 103, 15) });
+      });
+      [[100, 78], [104, 74], [76, 100], [110, 150], [70, 182], [92, 258], [98, 80], [84, 290]].forEach((q, i) => {   /* rabbits: they hop, and scamper off when you come close */
+        const g = mk(q[0], q[1]), m = i % 3 === 0 ? white : fur; P(g, bx(0.5, 0.34, 0.32), m, 0, 0.27, 0); P(g, bx(0.26, 0.26, 0.26), m, 0.33, 0.45, 0); P(g, bx(0.12, 0.12, 0.12), white, -0.3, 0.33, 0);
+        [-0.07, 0.07].forEach(d => P(g, bx(0.06, 0.3, 0.08), m, 0.3, 0.72, d));
+        critters.push({ g: g, legs: [], sp: 2.2, hop: 0.32, shy: 4.5, step: 5.5, wait: rnd() * 5, ph: rnd() * 6, ok: inRing(q[0], q[1], 13) });
+      });
+      [[60, 150], [64, 154], [120, 240], [55, 300], [124, 236]].forEach((q, i) => {                   /* deer in the woods */
+        const g = mk(q[0], q[1]); P(g, bx(1.5, 0.7, 0.55), tan, 0, 1.3, 0); P(g, bx(0.16, 0.2, 0.16), white, -0.8, 1.45, 0);
+        const hd = new T.Group(); hd.position.set(0.7, 1.55, 0); g.add(hd); P(hd, bx(0.28, 0.8, 0.28), tan, 0.12, 0.35, 0).rotation.z = -0.35; P(hd, bx(0.5, 0.3, 0.3), tan, 0.45, 0.8, 0); P(hd, bx(0.14, 0.14, 0.2), dark, 0.72, 0.76, 0);
+        if (i % 2 === 0) [-0.12, 0.12].forEach(d => { P(hd, bx(0.05, 0.5, 0.05), horn, 0.35, 1.2, d); P(hd, bx(0.3, 0.05, 0.05), horn, 0.45, 1.35, d); });
+        const legs = [[-0.55, 0.18], [-0.55, -0.18], [0.55, 0.18], [0.55, -0.18]].map(l => leg(g, tanD, l[0], l[1], 0.98, 0.13));
+        critters.push({ g: g, hd: hd, legs: legs, sp: 0.9, graze: 1.0, shy: 6, run: 3.4, step: 5, wait: rnd() * 6, ph: rnd() * 6, ok: inRing(q[0], q[1], 17) });
+      });
+      for (let i = 0; i < 5; i++) {                                                                  /* ducks paddling round the lake */
+        const g = mk(LAKE.x, LAKE.z), m = i % 2 ? hen : white; P(g, bx(0.6, 0.3, 0.4), m, 0, 0.14, 0); P(g, bx(0.22, 0.26, 0.22), i % 2 ? hen : drake, 0.3, 0.42, 0); P(g, bx(0.16, 0.07, 0.14), beak, 0.47, 0.4, 0); P(g, bx(0.16, 0.14, 0.2), m, -0.36, 0.26, 0);
+        critters.push({ g: g, swim: { r: 3 + i * 1.5, w: (0.1 + rnd() * 0.07) * (i % 2 ? 1 : -1), a: rnd() * 6.28 }, ph: rnd() * 6 });
+      }
+      anim.push((dt, t) => {
+        for (let i = 0; i < critters.length; i++) {
+          const c = critters[i], g = c.g, dxp = g.position.x - pos.x, dzp = g.position.z - pos.z, dp = Math.hypot(dxp, dzp);
+          g.visible = dp < 120; if (!g.visible) continue;
+          if (c.swim) {
+            const s = c.swim; s.a += s.w * dt; const r = s.r + Math.sin(t * 0.13 + c.ph) * 1.2;
+            g.position.set(LAKE.x + Math.cos(s.a) * r, 0.03 + Math.sin(t * 1.6 + c.ph) * 0.02, LAKE.z + Math.sin(s.a) * r); g.rotation.y = -(s.a + (s.w > 0 ? 1.5708 : -1.5708)); continue;
+          }
+          if (c.shy && dp < c.shy && !c.flee) {                                                         /* off it goes, away from me */
+            for (let k = 0; k < 6; k++) { const a = Math.atan2(dzp, dxp) + (rnd() - 0.5) * 1.6, d = 5 + rnd() * 5, x = g.position.x + Math.cos(a) * d, z = g.position.z + Math.sin(a) * d; if (c.ok(x, z)) { c.tx = x; c.tz = z; c.wait = 0; c.flee = 1; break; } }
+          }
+          if (c.wait > 0) {
+            c.wait -= dt;
+            if (c.hd) c.hd.rotation.z = -0.1 - (c.graze || 0.5) * Math.max(0, Math.sin(t * 0.5 + c.ph));          /* head down to graze, up to look */
+            for (let k = 0; k < c.legs.length; k++) c.legs[k].rotation.z *= 0.85;
+            if (c.hop) g.position.y *= 0.8;
+            if (c.wait <= 0) { c.tx = undefined; for (let k = 0; k < 8; k++) { const a = rnd() * 6.28, d = 2 + rnd() * c.step, x = g.position.x + Math.cos(a) * d, z = g.position.z + Math.sin(a) * d; if (c.ok(x, z)) { c.tx = x; c.tz = z; break; } } if (c.tx === undefined) c.wait = 2; }
+            continue;
+          }
+          if (c.tx === undefined) { c.wait = 1; continue; }
+          const dx = c.tx - g.position.x, dz = c.tz - g.position.z, d = Math.hypot(dx, dz), sp = (c.flee ? (c.run || c.sp * 1.8) : c.sp) * dt;
+          if (d < 0.25 || d < sp) { c.wait = c.flee ? 0.6 : 2 + rnd() * 7; c.flee = 0; continue; }
+          g.position.x += dx / d * sp; g.position.z += dz / d * sp;
+          let dy = Math.atan2(-dz, dx) - g.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); g.rotation.y += dy * Math.min(1, dt * 5);
+          if (c.hd) c.hd.rotation.z += (0 - c.hd.rotation.z) * Math.min(1, dt * 4);
+          const sw = Math.sin(t * (c.flee ? 14 : 7) + c.ph) * 0.45; for (let k = 0; k < c.legs.length; k++) c.legs[k].rotation.z = (k === 0 || k === 3 ? sw : -sw);
+          if (c.hop) g.position.y = Math.abs(Math.sin(t * 9 + c.ph)) * c.hop;
+        }
       });
     })();
 
@@ -3591,6 +3694,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (x >= W1X + 1 && x <= -GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;                                                         /* west hall 1 */
     if (x >= W2X + 1 && x <= W1X - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;                                                         /* west hall 2 */
     if (Math.abs(z) <= DOOR - 0.5 && x > RM.hx - 1.01 && x <= OUT.x0 + 0.01) return true;     /* east doorway */
+    if (z < OUT.z0) {                                                                           /* north of the field: the village inside its fence, the valley trail, the snowfield */
+      if (Math.abs(x - NORTH.x) <= 2.1 && z >= -70.6) return true;                                                                   /* the gate */
+      if (z >= -92 && z <= -70.4 && x >= 67 + (-68 - z) * -0.125 && x <= 107 + (-68 - z) * 0.533) return true;
+      if (Math.abs(x - NORTH.x) <= 4.5 && z >= -128 && z < -91.9) return true;
+      return Math.hypot(x - NORTH.x, z - NORTH.sz) <= NORTH.sr;
+    }
     return x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1 && Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 0.5;   /* the field, minus the lake */
   }
   function tryMove(mx, mz) {
@@ -5006,7 +5115,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       r.pt = Math.max(0, Math.min(99999, Number(pr.pt) || 0));
       const rn = Number(pr.rn) || 0;
       if (r.rn === undefined) r.rn = rn; else if (rn !== r.rn) { r.rn = rn; if (typeof pr.rs === 'string') spawnRx(slots.find(q => q.id === pr.rs) || extraSlots.find(q => q.id === pr.rs), Number(pr.rx)); }
-      const nx = clamp(pr.x, -RM.hx, OUT.x1 + 2), nz = clamp(pr.z, OUT.z0 - 2, Math.max(GZ2, OUT.z1)), nt = performance.now();
+      const nx = clamp(pr.x, -RM.hx, OUT.x1 + 2), nz = clamp(pr.z, NORTH.sz - NORTH.sr - 2, Math.max(GZ2, OUT.z1)), nt = performance.now();
       if (r.init && (nx !== r.tx || nz !== r.tz)) {                           /* a new position: estimate the walking speed so the avatar glides on between updates */
         const dtp = (nt - r.lt) / 1000, jump = Math.hypot(nx - r.tx, nz - r.tz);
         if (dtp > 0.05 && dtp < 1.2 && pr.w === 1 && jump < 6) { r.vx = clamp((nx - r.tx) / dtp, -9, 9); r.vz = clamp((nz - r.tz) / dtp, -9, 9); } else { r.vx = 0; r.vz = 0; }
@@ -5281,6 +5390,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const AREA_NOTE = { '둥근 홀': '벤치에 앉아 잠깐 쉬어 가는 둥근 홀', '중앙 홀': '북쪽 미술관 · 동쪽 화실과 조각 전시관 · 남쪽 친구들 전시', '화실': '이젤을 눌러 앉아서 그려요', '조각 전시관': '피에타·다비드·생각하는 사람… 세계 조각 명작 15점, 한가운데에는 피에타', '중앙 로툰다': '분수와 기둥이 있는 둥근 홀', '신진 작가관': '친구들이 그린 그림이 걸려 있어요', '별관': '신진 작가관의 두 번째 전시장', '서쪽 전시관 1': '친구들이 그린 그림', '서쪽 전시관 2': '친구들이 그린 그림', '야외 전시 정원': '하늘 아래 액자가 둘러선 정원', '꽃길 정원': '양쪽에 그림이 걸린 둥근 꽃길', '산 전망대': '눈 덮인 봉우리를 바라보며', '바닷가': '모래사장과 수평선, 등대', '호숫가': '잔잔한 물, 수련, 작은 배', '풍차 들판': '꽃밭 너머로 돌아가는 풍차', '남쪽 꽃들판': '끝없이 펼쳐진 들꽃 초원과 숲', '숲속 쉼터': '커다란 나무 아래 돌 마당', '들판 산책길': '중앙 홀 동쪽 문 밖의 넓은 들판' };
   function areaNameAt(x, z) {
     if (x > RM.hx - 0.5) {
+      if (z < OUT.z0 - 0.5 && x > 55) return z < -100 ? '눈밭' : '알프스 마을';
       if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 3 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 3) return '조각 전시관';
       if (Math.abs(x - ATELIER.x) < ATELIER.w / 2 + 3 && Math.abs(z - ATELIER.z) < ATELIER.d / 2 + 6) return '화실';
       if (Math.hypot(x - GARD.x, z - GARD.z) < GARD.r + 3) return '야외 전시 정원';
@@ -5396,7 +5506,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   /* places are grouped into three kinds: exhibition halls, outdoors, and making/resting; the sheet can filter by kind or show a map */
   const PCAT = { ex: '전시관', out: '야외', mk: '화실·쉼터' }, PCOL = { ex: '#8a4a47', out: '#3f7a4f', mk: '#3f6fa8' };
-  const catOf = pl => ['산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원', '남쪽 꽃들판', '숲속 쉼터'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
+  const catOf = pl => ['알프스 마을', '눈밭', '산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원', '남쪽 꽃들판', '숲속 쉼터'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
   let placesTab = 'all';
   function drawPlacesMap() {
     const cv = $('#placesMap'), W = Math.max(240, Math.min(420, ($('#placesList').parentNode.clientWidth || 340) - 40));
@@ -5495,7 +5605,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, W); g.save(); g.beginPath(); g.arc(c0, c0, c0 - 2, 0, 6.2832); g.clip();
     g.fillStyle = '#efe6cf'; g.fillRect(0, 0, W, W);
     const box = (x0, z0, x1, z1, col) => { g.fillStyle = col; g.fillRect(X(x0), Z(z0), (x1 - x0) * k, (z1 - z0) * k); };
-    box(RM.hx, OUT.z0, OUT.x1, OUT.z1, 'rgba(110,170,100,0.55)');                                  /* the outdoors */
+    box(RM.hx, OUT.z0, OUT.x1, OUT.z1, 'rgba(110,170,100,0.55)');
+    box(64, -92, 122, OUT.z0, 'rgba(110,170,100,0.55)'); box(NORTH.x - 4.5, -128, NORTH.x + 4.5, -92, 'rgba(200,190,160,0.8)'); g.fillStyle = 'rgba(250,252,255,0.95)'; g.beginPath(); g.arc(X(NORTH.x), Z(NORTH.sz), NORTH.sr * k, 0, 6.2832); g.fill();   /* the village, the valley trail, the snowfield */                                  /* the outdoors */
     g.fillStyle = 'rgba(120,190,225,0.9)'; g.beginPath(); g.arc(X(LAKE.x), Z(LAKE.z), LAKE.r * k, 0, 6.2832); g.fill();
     g.fillStyle = 'rgba(80,150,200,0.55)'; g.fillRect(X(SEA_X), 0, W, W);
     g.fillStyle = 'rgba(205,184,138,0.9)'; g.fillRect(X(85) - 8 * k, Z(-50), 16 * k, 50 * k); g.fillRect(X(92) - 8 * k, Z(0), 16 * k, 112 * k);   /* the two long roads */
