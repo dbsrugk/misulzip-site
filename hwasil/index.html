@@ -255,6 +255,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 /* scenery above the pad / scenery behind a see-through sheet */
 #pad.split, #pad.ghost { background: transparent; }
 #pad.split .padView { display: block; flex: 0 0 calc(var(--sceneH, 240px) - 58px); }
+#pad.split .padBoard { background: var(--chalk); }
 #pad.split .padMain { background: var(--chalk); border: 2px solid var(--ink); border-bottom: 0; border-radius: 18px 18px 0 0; padding: 8px 12px 0; margin: 0 -14px -10px; }
 #pad.split .padTop .btn, #pad.ghost .padTop .btn { box-shadow: 0 2px 8px rgba(36, 32, 28, 0.35); }
 #pad.split .padTools { gap: 5px; }
@@ -282,7 +283,7 @@ body.padOpen #hud { visibility: hidden; }
 .sizeFloat { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: none; z-index: 3; }
 .sizeFloat i { display: block; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 3.5px rgba(36, 32, 28, 0.75); }
 .sizeFloat b { font: 400 22px/1 var(--font-display); background: rgba(36, 32, 28, 0.8); color: #fffdf7; padding: 5px 14px; border-radius: 999px; }
-.padBoard { position: relative; flex: 1 0 168px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.padBoard { position: sticky; top: 0; z-index: 3; flex: 1 0 168px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .watchTitle { flex: 1; min-width: 0; text-align: center; font: 400 26px/1.2 var(--font-display); overflow-wrap: anywhere; }
 #padCanvas, #watchCanvas {
   display: block;
