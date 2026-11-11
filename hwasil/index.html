@@ -6104,7 +6104,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const FUN_LOCKS = { '3:8': 8, '3:7': 15, '5:9': 6, '5:8': 12, '5:5': 20, '7:3': 6, '7:2': 10 };
   const FUN_LOCK_NAME = { '3:8': '고양이 귀', '3:7': '왕관', '5:9': '도토리 가방', '5:8': '별 지팡이', '5:5': '날개', '7:3': '도토리 조끼', '7:2': '망토' };
   if (!fun.init) { fun.init = 1; Object.keys(FUN_LOCKS).forEach(k => { const p = k.split(':').map(Number); if (myLook[p[0]] === p[1]) fun.free[k] = 1; }); funSave(); }   /* what I already wear stays mine */
-  const funLocked = k => FUN_LOCKS[k] != null && fun.coin < FUN_LOCKS[k] && !fun.free[k];
+  const funLocked = k => false;                       /* acorn collecting is gone: every dress-up item is open from the start */
   function funClean(look) { const a = look.slice(); Object.keys(FUN_LOCKS).forEach(k => { if (funLocked(k)) { const p = k.split(':').map(Number); if (a[p[0]] === p[1]) a[p[0]] = 0; } }); return a; }
   function funLockDress(box) {
     box.querySelectorAll('button[data-i]').forEach(b => { const k = b.dataset.i + ':' + b.dataset.v; if (funLocked(k)) { b.classList.add('locked'); b.textContent += ' 🔒' + FUN_LOCKS[k]; } });
@@ -6116,11 +6116,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }, true);
 
   /* every acorn I get goes through here: counts it, and tells me when a new dress-up item opens */
-  function funAdd(n, why) {
-    const before = fun.coin; fun.coin += n; funSave();
-    const opened = Object.keys(FUN_LOCKS).filter(k => FUN_LOCKS[k] > before && FUN_LOCKS[k] <= fun.coin && !fun.free[k]).map(k => FUN_LOCK_NAME[k]);
-    return '🌰 +' + n + (why ? ' ' + why : '') + ' (모두 ' + fun.coin + '개)' + (opened.length ? ' 🎁 꾸미기에 새로 열림: ' + opened.join(', ') : '');
-  }
+  function funAdd() { funSave(); return ''; }       /* no acorns any more; the stamps, quiz and weekly goals stay as plain achievements */
 
   /* ----- stamps ----- */
   function funStamp(c) {
@@ -6175,7 +6171,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       b.addEventListener('click', () => {
         if (o.ok) {
           btns.forEach(x => { x.disabled = true; }); b.classList.add('good');
-          if (!fun.quiz[c.id]) { fun.quiz[c.id] = 1; msg.textContent = '정답이에요! 🎉'; toast('❓ 퀴즈 정답! ' + funAdd(2), 4500); } else msg.textContent = '정답이에요! (이미 도토리를 받은 문제예요)';
+          if (!fun.quiz[c.id]) { fun.quiz[c.id] = 1; msg.textContent = '정답이에요! 🎉'; toast('❓ 퀴즈 정답! ' + funAdd(2), 4500); } else msg.textContent = '정답이에요! (이미 맞힌 문제예요)';
           $('#artQuizBtn').textContent = '❓ 퀴즈 ✓'; funSave();
         } else { b.disabled = true; b.classList.add('bad'); msg.textContent = '아쉬워요, 다시 골라 봐요 🙂'; }
       });
@@ -6248,6 +6244,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   /* ----- hidden acorns ----- */
   const FUN_ACORNS = [];
   (function () {
+    return;                                            /* the hidden acorns are gone */
     const add = (id, name, x, z, gold) => FUN_ACORNS.push({ id: id, name: name, x: x, z: z, gold: !!gold, got: !!fun.acorns[id], m: null });
     PLACES.forEach((p, i) => { const a = 0.9 + i * 2.1; if (p.name === '화실') add('p' + i, p.name, p.x + 6, p.z - 1.3); else add('p' + i, p.name, p.x + Math.cos(a) * 2.4, p.z + Math.sin(a) * 2.4); });   /* the atelier's front step stays clear: its acorn lies beside the hut, outside the walls */
     ['산 전망대', '바닷가', '호숫가', '풍차 들판', '남쪽 꽃들판', '숲속 쉼터'].forEach((nm, j) => {
@@ -6296,22 +6293,17 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const card = (title) => { const c = el('div', 'card', null, box); if (title) el('h3', '', title, c); return c; };
     const bar = (par, a, b) => { const r = el('div', 'bar', null, par), i = el('b', '', null, r); i.style.width = Math.round(100 * a / Math.max(1, b)) + '%'; };
     const stamped = FUN_ALL.filter(c => fun.stamps[c.id]).length;
-    let c = card(); el('div', 'sum', '🌰 도토리 ' + fun.coin + '개' + (funTitle() ? ' · 「' + funTitle() + '」' : ''), c);
-    el('p', 'note', '도장 ' + stamped + '/' + FUN_ALL.length + ' · 숨은 도토리 ' + FUN_ACORNS.filter(a => a.got).length + '/' + FUN_ACORNS.length, c); bar(c, stamped, FUN_ALL.length);
+    let c = card(); el('div', 'sum', '📖 도장 ' + stamped + '/' + FUN_ALL.length + (funTitle() ? ' · 「' + funTitle() + '」' : ''), c);
+    el('p', 'note', '명화와 조각을 보면 도장이 찍혀요', c); bar(c, stamped, FUN_ALL.length);
     const nx = FUN_MS.find(m => stamped < m[0]); if (nx) el('p', 'note', '다음 칭호 「' + nx[1] + '」까지 도장 ' + (nx[0] - stamped) + '개', c);
 
     const wk = funWeekState(), f = funFeat(), th = funTheme(), wg = FUN_WINGS[f];
     c = card('📅 이번 주 (월요일마다 바뀌어요)');
-    el('p', '', '이번 주 구역: ' + (wg ? '「' + wg.name + '」' : '') + ' — 작품 4점 모두 보기 ' + Object.keys(wk.seen).length + '/4' + (wk.done ? ' ✓' : ' (완주하면 🌰 5)'), c);
-    el('p', '', '이번 주 그림 주제: 「' + th.t + '」' + (wk.draw ? ' ✓' : ' — 제목에 주제 단어를 넣어 저장하면 🌰 3'), c);
+    el('p', '', '이번 주 구역: ' + (wg ? '「' + wg.name + '」' : '') + ' — 작품 4점 모두 보기 ' + Object.keys(wk.seen).length + '/4' + (wk.done ? ' ✓' : ''), c);
+    el('p', '', '이번 주 그림 주제: 「' + th.t + '」' + (wk.draw ? ' ✓' : ' — 제목에 주제 단어를 넣어 저장해 보세요'), c);
     if (wg) { const gb = el('button', 'btn', '이번 주 구역으로 가기', c); gb.type = 'button'; gb.addEventListener('click', () => { $('#fun').hidden = true; goPlace({ name: wg.name, x: 0, z: wingZ(f) - 4, h: Math.PI, pitch: 0.2 }); }); }
 
     if (vote.last) { c = card('🏅 지난달 이달의 작품'); el('p', '', '「' + (vote.last.title || '제목 없음') + '」 · ' + (vote.last.artist || '이름 없는 화가') + ' (' + vote.last.n + '표)', c); }
-
-    c = card('🌰 숨은 도토리');
-    const rest = FUN_ACORNS.filter(a => !a.got && !a.gold), gold = FUN_ACORNS.filter(a => a.gold);
-    el('p', '', '황금 도토리 ' + gold.filter(a => a.got).length + '/' + gold.length + ' (밤하늘이 어두울 때만 나타나요 🌙)', c);
-    if (rest.length) { const names = [], nw = rest.filter(a => a.name.indexOf('대회랑 · ') === 0).length; rest.forEach(a => { if (a.name.indexOf('대회랑 · ') !== 0 && names.indexOf(a.name) < 0) names.push(a.name); }); if (nw) names.push('대회랑 (' + nw + '곳)'); el('p', 'note', '아직 못 찾은 곳: ' + names.join(', '), c); } else el('p', 'note', '숨은 도토리를 모두 찾았어요! 🎉', c);
 
     c = card('📖 명화 도장');
     for (let k = 0; k < FUN_NWING; k++) {
@@ -6329,8 +6321,6 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const ids = Object.keys(fun.stars); let sum = 0; ids.forEach(i => { sum += fun.stars[i]; });
     el('p', '', ids.length ? '별 ' + sum + '개 모았어요 (' + ids.length + '점)' : '명화 설명 카드의 「따라 그리기」로 화실에서 따라 그리고 ⭐ 점수를 눌러 보세요.', c);
 
-    c = card('🎁 꾸미기에 열리는 것');
-    Object.keys(FUN_LOCKS).sort((x, y) => FUN_LOCKS[x] - FUN_LOCKS[y]).forEach(k => el('p', 'note', (funLocked(k) ? '🔒 ' : '✅ ') + FUN_LOCK_NAME[k] + ' · 도토리 ' + FUN_LOCKS[k] + '개', c));
   }
   function funChip(row, a) {
     const on = !!fun.stamps[a.id], b = document.createElement('button'); b.type = 'button'; b.className = 'stamp' + (on ? ' on' : '');
@@ -6340,7 +6330,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   $('#funBtn').addEventListener('click', () => { if (!started) return; funRender(); $('#fun').hidden = false; loadVote(() => { if (!$('#fun').hidden) funRender(); }); });
   $('#funClose').addEventListener('click', () => { $('#fun').hidden = true; });
   $('#fun').addEventListener('click', e => { if (e.target === $('#fun')) $('#fun').hidden = true; });
-  { let welcomed = false; anim.push(() => { if (started && !welcomed) { welcomed = true; setTimeout(() => { const wg = FUN_WINGS[funFeat()]; toast('📖 이번 주 구역은 「' + (wg ? wg.name : '') + '」! 「더보기 → 관람 도감」에서 도장과 숨은 도토리를 확인해 보세요', 6500); }, 12000); } }); }
+  { let welcomed = false; anim.push(() => { if (started && !welcomed) { welcomed = true; setTimeout(() => { const wg = FUN_WINGS[funFeat()]; toast('📖 이번 주 구역은 「' + (wg ? wg.name : '') + '」! 「더보기 → 관람 도감」에서 도장을 확인해 보세요', 6500); }, 12000); } }); }
   window.__fun = { fun: fun, acorns: FUN_ACORNS, stamp: funStamp, render: funRender, score: funScoreMasks, stars: funStars, quiz: funQuiz, locks: FUN_LOCKS, locked: funLocked, week: funWeekNo, feat: funFeat, add: funAdd };
 
   /* ---------- monthly vote (이달의 작품): a tab in the hall of fame ---------- */
