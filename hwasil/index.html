@@ -3299,8 +3299,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       put(ped, new T.Mesh(cyl(1.5, 1.8, 1.6, 12), plaster2), 0, 0.8, 0); put(ped, new T.Mesh(bx(2.4, 0.3, 2.4), plaster), 0, 1.75, 0);
       const bust = makeBust(1.7); bust.position.y = 1.9; ped.add(bust); colliders.push({ x: GARD.x, z: GARD.z, r: 2 });
       const SZ = ['s', 'm', 's', 'm', 'l', 'm', 'm', 'l', 'm', 's', 'm', 's'], YC = { s: 2.5, m: 3.4, l: 5.2 }, R = GARD.R;
-      SZ.forEach((sz, i) => {
-        const a = (-145 + i * 290 / 11) * Math.PI / 180, px = GARD.x + Math.sin(a) * R, pz = GARD.z - Math.cos(a) * R, ry = Math.atan2(GARD.x - px, GARD.z - pz), y = YC[sz], D = FD[sz];
+      const ORDER = SZ.map((z, i) => i).sort((p, q) => Math.abs(-145 + p * 290 / 11) - Math.abs(-145 + q * 290 / 11));   /* the frames nearest the way in (the north point) come first: works that have no frame of their own fill them first */
+      ORDER.forEach(i => {
+        const sz = SZ[i], a = (-145 + i * 290 / 11) * Math.PI / 180, px = GARD.x + Math.sin(a) * R, pz = GARD.z - Math.cos(a) * R, ry = Math.atan2(GARD.x - px, GARD.z - pz), y = YC[sz], D = FD[sz];
         addSlot('garden', sz, px, y, pz, ry);
         const pg = new T.Group(); pg.position.set(px, 0, pz); pg.rotation.y = ry; scene.add(pg);
         const hw = D / 2 + FRAME_T + 0.35, ph = y + D / 2 + 0.7;
@@ -3322,8 +3323,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       put(ped, new T.Mesh(cyl(1.5, 1.8, 1.4, 12), plaster2), 0, 0.7, 0); put(ped, new T.Mesh(bx(2.4, 0.3, 2.4), plaster), 0, 1.55, 0);
       const ring = makeRing(2.1); ring.position.y = 1.7; ped.add(ring); colliders.push({ x: C.x, z: C.z, r: 2 });
       const SZ = ['m', 's', 'm', 's', 'l', 'm', 'm', 'l', 's', 'm', 's', 'm'], YC = { s: 2.5, m: 3.4, l: 5.2 }, R = C.R;
-      SZ.forEach((sz, i) => {
-        const a = (-145 + i * 290 / 11) * Math.PI / 180, px = C.x + Math.sin(a) * R, pz = C.z - Math.cos(a) * R, ry = Math.atan2(C.x - px, C.z - pz), y = YC[sz], D = FD[sz];
+      const ORDER = SZ.map((z, i) => i).sort((p, q) => Math.abs(-145 + p * 290 / 11) - Math.abs(-145 + q * 290 / 11));   /* the frames nearest the way in (the north point) come first: works that have no frame of their own fill them first */
+      ORDER.forEach(i => {
+        const sz = SZ[i], a = (-145 + i * 290 / 11) * Math.PI / 180, px = C.x + Math.sin(a) * R, pz = C.z - Math.cos(a) * R, ry = Math.atan2(C.x - px, C.z - pz), y = YC[sz], D = FD[sz];
         const nx = Math.sin(ry), nz = Math.cos(ry);
         addSlot('orchard', sz, px + nx * 0.16, y, pz + nz * 0.16, ry);                      /* faces the plaza */
         addSlot('orchard', sz, px - nx * 0.16, y, pz - nz * 0.16, ry + Math.PI);            /* faces outwards */
