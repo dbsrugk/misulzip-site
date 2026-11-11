@@ -90,8 +90,8 @@ button.chip { pointer-events: auto; cursor: pointer; }
   position: absolute;
   left: max(16px, env(safe-area-inset-left, 0px));
   right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(214px + var(--bar) + env(safe-area-inset-bottom, 0px));
-  margin-inline: auto;
+  top: calc(62px + env(safe-area-inset-top, 0px));   /* up under the top line: a message must not cover the avatar or the bubbles */
+  margin-inline: auto; pointer-events: none;
   max-width: 420px;
   padding: 10px 16px;
   border: 2px solid var(--ink);
@@ -135,22 +135,25 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #suggestCount { color: #6d655b; font-size: 14px; }
 #suggestOpen { margin-top: 10px; }
 .sitBtn {
-  position: absolute;
-  right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(146px + var(--bar) + env(safe-area-inset-bottom, 0px));   /* above the map, which now sits in the bottom right corner */
+  /* a speech bubble that floats next to the thing it is about (bench, easel, frame); placeBubbles() sets left/top every frame */
+  position: absolute; left: 50%; top: 62%;
+  transform: translate(-50%, -100%);
   pointer-events: auto;
-  padding: 16px 22px;
+  padding: 9px 15px;
   border: 2px solid var(--ink);
-  border-radius: 16px;
+  border-radius: 999px;
   background: var(--yellow);
-  box-shadow: 4px 4px 0 var(--ink);
-  font: 400 23px/1 var(--font-display);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 400 18px/1 var(--font-display);
+  white-space: nowrap;
   cursor: pointer;
 }
+.sitBtn::after { content: ''; position: absolute; left: 50%; bottom: -9px; width: 12px; height: 12px; margin-left: -6px; background: inherit; border: solid var(--ink); border-width: 0 2px 2px 0; transform: rotate(45deg); }
 #viewer { position: fixed; inset: 0; z-index: 26; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(28, 24, 20, 0.94); padding: 16px; }
 #viewerCanvas { display: block; background: var(--paper); border: 3px solid #3a2a1c; box-shadow: 0 0 0 8px #6b4a2f, 6px 8px 0 8px rgba(0,0,0,0.35); }
 #viewerCap { color: var(--chalk); font: 400 26px/1.2 var(--font-display); text-align: center; overflow-wrap: anywhere; }
-#tourBtn { bottom: calc(216px + var(--bar) + env(safe-area-inset-bottom, 0px)); font-size: 20px; padding: 12px 18px; background: #fff; }
+#tourBtn { left: 50%; top: auto !important; bottom: calc(var(--bar) + 40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 15px; padding: 8px 12px; background: #fff; }   /* the free spot between the stick and the map */
+#tourBtn::after { display: none; }
 .sitBtn[disabled] { background: var(--chalk); box-shadow: none; opacity: 0.85; cursor: default; }
 
 #inspectBar {
@@ -3797,13 +3800,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   let toastTimer = 0;
   function toast(text, ms) { const t = $('#toast'); t.textContent = text; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms || 5000); }
   const sitBtn = $('#sitBtn');
-  let nearIdx = -1, benchNear = -1;
+  let nearIdx = -1, benchNear = -1, sitTarget = null, viewTarget = null;
   const remotes = new Map();
   function occupied(i) { let o = false; remotes.forEach(r => { if (r.e === i) o = true; }); return o; }
   function updateSitBtn() {
     if (!started || pad.open || watch.open) { sitBtn.hidden = true; return; }
     if (mySeat >= 0) {
-      nearIdx = -1; sitBtn.hidden = false; sitBtn.disabled = false; sitBtn.dataset.mode = 'flip';
+      nearIdx = -1; sitBtn.hidden = false; sitBtn.disabled = false; sitBtn.dataset.mode = 'flip'; sitTarget = { x: pos.x, y: 2.5, z: pos.z };
       sitBtn.textContent = '🔄 반대쪽 보기'; return;
     }
     let best = -1, bd = 3.8;
@@ -3812,13 +3815,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     let nb = -1, nbd = Math.min(bd, 3.0);
     if (!goal) benches.forEach((b, bi) => { for (let side = 0; side < 2; side++) { const q = seatXY(bi, side), d = Math.hypot(pos.x - q.x, pos.z - q.z); if (d < nbd && !seatTaken(bi * 2 + side)) { nbd = d; nb = bi * 2 + side; } } });
     if (nb >= 0) {
-      nearIdx = -1; benchNear = nb; sitBtn.hidden = false; sitBtn.disabled = false; sitBtn.dataset.mode = 'bench';
+      nearIdx = -1; benchNear = nb; sitBtn.hidden = false; sitBtn.disabled = false; sitBtn.dataset.mode = 'bench'; { const bb = benches[nb >> 1]; sitTarget = { x: bb.x, y: 2.4, z: bb.z }; }
       sitBtn.textContent = benches[nb >> 1].low ? '🧺 돗자리에 앉기' : '🪑 벤치에 앉기'; return;
     }
     if (best < 0) { sitBtn.hidden = true; return; }
     sitBtn.hidden = false;
     const occ = occupied(best);
-    sitBtn.disabled = false;
+    sitBtn.disabled = false; { const ee = easels[best]; sitTarget = { x: ee.sit.x, y: 2.2, z: ee.sit.z }; }
     sitBtn.dataset.mode = occ ? 'watch' : 'sit';
     sitBtn.textContent = occ ? (best + 1) + '번 이젤 구경하기' : (best + 1) + '번 이젤에 앉기';
   }
@@ -3833,8 +3836,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const d = Math.hypot(pos.x - sl.x, pos.z - sl.z, (sl.ex ? 0 : (sl.y || 4) - 2) * 0.35) / (4.5 + sl.D);       /* an empty frame: the lower (eye-level) one wins */
       if (d < 1 && d < bd) { bd = d; best = sl; }
     });
-    nearSlot = best; viewBtn.hidden = !best;
-    viewBtn.style.bottom = sitBtn.hidden ? '' : 'calc(124px + env(safe-area-inset-bottom, 0px))';      /* stacked above the sit button instead of on top of it */
+    nearSlot = best; viewBtn.hidden = !best; viewTarget = best ? { x: best.x, y: best.ex ? (best.y || 3) : (best.y || 3), z: best.z } : null;
     if (best) viewBtn.textContent = best.reserved ? '작품 이야기 듣기' : best.ex ? '작품 크게 보기' : best.ev ? '🎁 사진 올리기' : (pendingHang ? '여기에 걸기' : '내 그림을 여기에 걸기');
   }
   /* the gallery list only carries summaries; the lines of a work are fetched when I come close (or open it), then kept for a while */
@@ -6061,6 +6063,24 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   const camPos = new T.Vector3(), _v = new T.Vector3(), _v2 = new T.Vector3(), lookCur = new T.Vector3(0, 2, 0), look = { yaw: 0, pitch: 0, zoom: 1 }; let camInit = false, seamShown = true, hiddenEasel = -1;
   let last = performance.now(), fpsT0 = 0, fpsN = 0, slowWin = 0;
+  /* the action buttons are bubbles over the thing they are about: project it to the screen, keep the bubble clear of the corners (joystick, map, bars) */
+  const _bv = new T.Vector3();
+  function placeBubble(btn, tg, lift) {
+    if (btn.hidden) return;
+    const W = window.innerWidth, H = window.innerHeight; let x = W / 2, y = H * 0.6;
+    if (tg) {
+      _bv.set(tg.x, tg.y, tg.z).project(camera);
+      if (_bv.z < 1 && Math.abs(_bv.x) < 3) { x = (_bv.x * 0.5 + 0.5) * W; y = (-_bv.y * 0.5 + 0.5) * H; }
+    }
+    y += lift || 0;
+    x = Math.max(80, Math.min(W - 80, x)); y = Math.max(150, Math.min(H * 0.68, y));
+    btn.style.left = x.toFixed(0) + 'px'; btn.style.top = y.toFixed(0) + 'px';
+  }
+  function placeBubbles() {
+    placeBubble(sitBtn, sitTarget, 0);
+    placeBubble(viewBtn, viewTarget, 0);
+    if (!sitBtn.hidden && !viewBtn.hidden && Math.abs(parseFloat(viewBtn.style.top) - parseFloat(sitBtn.style.top)) < 52) placeBubble(viewBtn, viewTarget, -56);   /* never on top of each other */
+  }
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     update(dt);
@@ -6079,6 +6099,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (Math.abs(camera.aspect - asp) > 1e-4 || camera.fov !== fov) { camera.aspect = asp; camera.fov = fov; camera.updateProjectionMatrix(); }
       chunkCull();
       renderer.render(scene, camera);
+      placeBubbles();
     }
     requestAnimationFrame(frame);
   }
