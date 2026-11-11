@@ -15,6 +15,7 @@ const { start, vis, until, check, done } = require('./lib');
   await B.waitForTimeout(0); let tapped = false;                                          /* both start at the same spot, so the same easel is in view for both */
   const eIdx = await A.evaluate(() => { for (let i = 0; i < 6; i++) { const p = window.__hw.easelXY(i); if (p.ok && p.x > 20 && p.x < 370 && p.y > 100 && p.y < 620) return i; } return -1; });
   if (eIdx >= 0) { const xy = await A.evaluate(i => window.__hw.easelXY(i), eIdx); await A.mouse.click(xy.x, xy.y); await A.waitForTimeout(300); tapped = await A.evaluate(() => { const e = document.querySelector('#toast'); return !!(e && !e.hidden && /걸어가요/.test(e.textContent)); }); }
+  console.log('DBG eIdx', eIdx, tapped, await A.evaluate(() => [document.querySelector('#toast').textContent, window.__hw.pos.x, window.__hw.pos.z]));
   check(tapped, 'A taps an easel');
   check(await until(A, () => !document.querySelector('#pad').hidden, null, 90), 'A sits and the pad opens');
   const box = await A.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
