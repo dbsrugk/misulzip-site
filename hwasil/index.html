@@ -3808,7 +3808,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function updateSitBtn() {
     if (!started || pad.open || watch.open) { sitBtn.hidden = true; return; }
     if (mySeat >= 0) {
-      nearIdx = -1; sitBtn.hidden = false; sitBtn.disabled = false; sitBtn.dataset.mode = 'flip'; sitTarget = { x: pos.x, y: 2.5, z: pos.z };
+      nearIdx = -1; sitBtn.hidden = false; sitBtn.disabled = false; sitBtn.dataset.mode = 'flip'; sitTarget = null;   /* about me: it stays at a fixed spot below the avatar instead of following the camera */
       sitBtn.textContent = '🔄 반대쪽 보기'; return;
     }
     let best = -1, bd = 3.8;
@@ -6076,7 +6076,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     }
     y += lift || 0;
     x = Math.max(80, Math.min(W - 80, x)); y = Math.max(150, Math.min(H * 0.68, y));
-    btn.style.left = x.toFixed(0) + 'px'; btn.style.top = y.toFixed(0) + 'px';
+    const L2 = x.toFixed(0) + 'px', T2 = y.toFixed(0) + 'px';
+    if (btn.style.left !== L2) btn.style.left = L2;
+    if (btn.style.top !== T2) btn.style.top = T2;      /* only touch the style when it changed */
   }
   function placeBubbles() {
     placeBubble(sitBtn, sitTarget, 0);
