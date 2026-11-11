@@ -352,6 +352,7 @@ body.padOpen #hud { visibility: hidden; }
 #placesMap { width: 100%; border: 2px solid var(--ink); border-radius: 12px; background: #f3ecdb; touch-action: pan-y; }
 .catTag { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 12px; border: 1.5px solid currentColor; vertical-align: middle; }
 .catTag.ex { color: #8a4a47; } .catTag.out { color: #3f7a4f; } .catTag.mk { color: #3f6fa8; }
+#evPin:not(:empty) { margin-bottom: 8px; }
 #roomsList, #placesList, #fameList { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 /* works sheet */
 #art { position: fixed; inset: 0; z-index: 27; display: flex; flex-direction: column; background: rgba(28, 24, 20, 0.96); }
@@ -759,6 +760,7 @@ body.padOpen #hud { visibility: hidden; }
     <div id="placesTabs"></div>
     <label id="walkOpt"><input type="checkbox" id="walkChk"> 걸어서 가기 (끄면 ✨ 순간이동)</label>
     <canvas id="placesMap" hidden></canvas>
+    <div id="evPin"></div>
     <div id="placesList"></div>
     <button class="btn" id="suggestOpen" type="button">📮 건의함</button>
   </div>
@@ -5766,7 +5768,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   miniEl.addEventListener('click', () => { if (!started || pad.open || watch.open) return; placesTab = 'map'; renderPlaces(); $('#places').hidden = false; });
   function renderPlaces() {
-    const list = $('#placesList'); list.textContent = '';
+    const list = $('#placesList'); list.textContent = ''; const evPin = $('#evPin'); evPin.textContent = '';
     const tabs = $('#placesTabs'); tabs.textContent = '';
     [['all', '전체'], ['ex', '전시관'], ['wings', '🖼 명화관'], ['out', '야외'], ['mk', '화실·쉼터'], ['map', '🗺 지도']].forEach(t => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (placesTab === t[0] ? ' on' : ''); b.textContent = t[1];
@@ -5792,11 +5794,11 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       });
     }
     if (placesTab !== 'map' && (placesTab === 'all' || placesTab === 'ex')) {
-      const pl = EVENT_PLACE, row = document.createElement('div'); row.className = 'roomRow evRow';
+      const pl = EVENT_PLACE, row = document.createElement('div'); row.className = 'roomRow evRow'; evPin.appendChild(row);
       const left = document.createElement('div'); left.className = 'l'; const nm = document.createElement('div'); nm.className = 'n'; nm.textContent = pl.name; left.appendChild(nm);
       const ct = document.createElement('div'); ct.className = 'c'; ct.textContent = pl.note; left.appendChild(ct);
       const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn primary'; bt.textContent = '가기'; bt.addEventListener('click', () => goPlace(pl));
-      row.appendChild(left); row.appendChild(bt); list.appendChild(row);
+      row.appendChild(left); row.appendChild(bt);
     }
     PLACES.forEach(pl => {
       const row = document.createElement('div'); row.className = 'roomRow'; const pc = catOf(pl); if (placesTab !== 'all' && placesTab !== 'map' && placesTab !== pc) row.hidden = true;
