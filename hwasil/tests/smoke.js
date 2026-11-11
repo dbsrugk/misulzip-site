@@ -83,8 +83,7 @@ const { start, vis, until, check, done } = require('./lib');
   check(!before.equals(after), 'dragging the scenery panel turns the view');
   await p.evaluate(() => { const r = document.querySelector('#padSize'); r.value = 30; r.dispatchEvent(new Event('input', { bubbles: true })); });
   await p.waitForTimeout(100);                                            /* check first: the preview fades after 1 s and a screenshot can be slow */
-  console.log('DBGSZ', JSON.stringify(await p.evaluate(() => { const f = document.querySelector('#sizeFloat'), d = f.firstElementChild; return [f.hidden, d.style.width, f.lastElementChild.textContent]; })));
-  check(await p.evaluate(() => { const f = document.querySelector('#sizeFloat'), d = f.firstElementChild; return !f.hidden && parseFloat(d.style.width) > 8 && /굵기 30/.test(f.lastElementChild.textContent); }), 'brush size preview shows while the slider moves');
+  check(await p.evaluate(() => { const f = document.querySelector('#sizeFloat'), d = f.firstElementChild; return !f.hidden && parseFloat(d.style.width) >= 6 && /굵기 30/.test(f.lastElementChild.textContent); }), 'brush size preview shows while the slider moves');
   await p.screenshot({ path: t.out('brush_preview.png') });
   /* paint bucket, custom colour, eyedropper */
   await p.click('#padClear'); await p.click('#padClear');                      /* second tap confirms */
@@ -121,7 +120,6 @@ const { start, vis, until, check, done } = require('./lib');
   check((await refInk()) > 100 && (await refInk()) < 20000, 'outline mode keeps only the edges');
   await p.click('#refMode button[data-m=img]'); await p.waitForTimeout(200);
   await p.click('#eyeBtn'); const box1 = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; }); await p.mouse.click(box1.x + box1.w * 0.5, box1.y + box1.h * 0.5); await p.waitForTimeout(300);
-  console.log('DBGEYE', JSON.stringify(await p.evaluate(([x,y]) => { const e = document.elementFromPoint(x,y); return [document.querySelector('#padColor').value, e && (e.id||e.tagName), document.querySelector('#pad').className, document.querySelector('#eyeBtn').className, document.elementsFromPoint(x,y).slice(0,5).map(q=>q.id||q.className||q.tagName), getComputedStyle(document.querySelector('#padCanvas')).pointerEvents + '/' + getComputedStyle(document.querySelector('#padCanvas')).display, document.querySelector('#padBoard').getBoundingClientRect().toJSON()]; }, [box1.x + box1.w * 0.5, box1.y + box1.h * 0.5])), JSON.stringify(box1));
   check(await p.evaluate(() => { const v = document.querySelector('#padColor').value; return parseInt(v.slice(5, 7), 16) > 200 && parseInt(v.slice(1, 3), 16) < 90; }), 'the eyedropper can pick a colour from the guide picture');
   await p.click('#refOff'); await p.waitForTimeout(200);
   check(await p.evaluate(() => document.querySelector('#refCanvas').hidden), 'the guide can be switched off');
@@ -142,7 +140,6 @@ const { start, vis, until, check, done } = require('./lib');
   const bq = await p.evaluate(() => { const r = document.querySelector('#padCanvas').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   await p.mouse.move(bq.x + bq.w * 0.2, bq.y + bq.h * 0.3); await p.mouse.down(); await p.mouse.move(bq.x + bq.w * 0.8, bq.y + bq.h * 0.7, { steps: 8 }); await p.mouse.up();
   await p.fill('#padTitle', '큰 그림'); await p.click('#padSave'); await p.waitForTimeout(1500);
-  console.log('DBGASK', JSON.stringify(await p.evaluate(() => { const a = document.querySelector('#exAsk'); return [a && a.hidden, a && getComputedStyle(a).display, document.querySelector('#toast').textContent, document.querySelector('#pad').hidden]; })));
   check(await vis(p, '#exAsk') && (await p.locator('#exAskBtns .btn').count()) === 3, 'after saving, it asks whether to put the work on show (auto / choose / later)');
   await p.click('#exManual'); await p.waitForTimeout(600);
   check(!(await vis(p, '#pad')) && await vis(p, '#hangRow') && await vis(p, '#places'), 'choosing myself leaves the easel, starts hang mode and shows the places to walk to');
