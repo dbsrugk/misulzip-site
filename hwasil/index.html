@@ -251,7 +251,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 .padView:active { cursor: grabbing; }
 .lookHint { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); max-width: 92%; padding: 4px 12px; border-radius: 999px; background: rgba(36, 32, 28, 0.55); color: #fffdf7; font-size: 13px; white-space: nowrap; pointer-events: none; transition: opacity 0.6s; }
 .lookHint.gone { opacity: 0; }
-.padMain { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.padMain { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; overscroll-behavior: contain; }   /* with every tool open the paper keeps its room and the tools scroll */
 /* scenery above the pad / scenery behind a see-through sheet */
 #pad.split, #pad.ghost { background: transparent; }
 #pad.split .padView { display: block; flex: 0 0 calc(var(--sceneH, 240px) - 58px); }
@@ -282,7 +282,7 @@ body.padOpen #hud { visibility: hidden; }
 .sizeFloat { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: none; z-index: 3; }
 .sizeFloat i { display: block; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 3.5px rgba(36, 32, 28, 0.75); }
 .sizeFloat b { font: 400 22px/1 var(--font-display); background: rgba(36, 32, 28, 0.8); color: #fffdf7; padding: 5px 14px; border-radius: 999px; }
-.padBoard { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.padBoard { position: relative; flex: 1 0 168px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .watchTitle { flex: 1; min-width: 0; text-align: center; font: 400 26px/1.2 var(--font-display); overflow-wrap: anywhere; }
 #padCanvas, #watchCanvas {
   display: block;
@@ -299,7 +299,8 @@ body.padOpen #hud { visibility: hidden; }
 .padFoldRow .btn { padding: 6px 14px; font-size: 15px; }
 #pad.fold .padTools, #pad.fold .padStatus { display: none; }
 #pad.full .padTop, #pad.full .padView, #pad.full .padTools, #pad.full .padStatus, #pad.full .swatches, #pad.full .padFoldRow { display: none; }
-#pad.full .padMain { margin: 0; padding: 0; border: 0; border-radius: 0; }
+#pad.full .padMain { margin: 0; padding: 0; border: 0; border-radius: 0; overflow: hidden; }
+#pad.full .padBoard { flex: 1 1 0; min-height: 0; }
 #pad.full { padding: 6px; }
 #pad.full:not(.ghost) { background: var(--chalk); }
 .padFullBar { display: none; position: absolute; z-index: 6; right: max(10px, env(safe-area-inset-right, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); gap: 6px; }
@@ -4203,6 +4204,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     sc = padCv.width / pad.W;
     rebuildBase(); present(); paintPreview(false); paintRef(); refreshPaperSeg(); applyZoom();
   }
+  if (window.ResizeObserver) { let rw = 0, rh = 0; new ResizeObserver(() => { const b = $('#padBoard'); if (!pad.open || (b.clientWidth === rw && b.clientHeight === rh)) return; rw = b.clientWidth; rh = b.clientHeight; fitPad(); }).observe($('#padBoard')); }   /* tools opening or closing change the paper's room */
   $('#paperSeg').addEventListener('click', e => {
     const b = e.target.closest('button'), p = b && PAPERS[b.dataset.paper];
     if (!p || b.disabled || pad.id != null || pad.strokes.length) return;
