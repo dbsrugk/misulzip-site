@@ -434,6 +434,18 @@ body.padOpen #hud { visibility: hidden; }
 #areaBanner.show { animation: areaPop 3.4s ease forwards; }
 @keyframes areaPop { 0% { opacity: 0; transform: translate(-50%, -14px); } 10% { opacity: 1; transform: translate(-50%, 0); } 78% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -8px); } }
 #exAsk .card { max-height: 82vh; overflow: auto; }
+#evUp { position: fixed; inset: 0; z-index: 41; display: flex; align-items: center; justify-content: center; background: rgba(28, 24, 20, 0.55); padding: 14px; }
+#evUp[hidden] { display: none; }
+#evUp .card { background: var(--paper); border: 3px solid #b8871c; border-radius: 18px; padding: 16px; width: min(360px, 100%); max-height: 88vh; overflow: auto; display: flex; flex-direction: column; gap: 9px; text-align: center; font: 400 21px/1.3 var(--font-display); box-shadow: 5px 6px 0 rgba(0,0,0,0.35); }
+#evUp h3 { margin: 0; font: 400 28px/1.1 var(--font-display); color: #8a5a00; }
+#evUp .evNote { font: 400 17px/1.4 var(--font-display); color: var(--muted); text-align: left; margin: 0; }
+#evUp .evNote b { color: var(--ink); font-weight: 400; }
+#evUp input[type=text] { width: 100%; box-sizing: border-box; font: 400 20px/1.2 var(--font-display); padding: 9px 12px; border: 2px solid var(--ink); border-radius: 12px; background: #fff; }
+#evUp label { text-align: left; font: 400 17px/1.2 var(--font-display); display: flex; flex-direction: column; gap: 4px; }
+#evPrev { max-width: 100%; max-height: 190px; align-self: center; border: 2px solid var(--ink); background: #fff; }
+#evUp .row2 { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+#evUp .evMsg { font: 400 17px/1.3 var(--font-display); color: var(--danger); min-height: 1.3em; margin: 0; }
+.roomRow.evRow { border-left: 6px solid #d9a92b; background: #fff8e4; }
 #exAskNote { white-space: pre-line; text-align: left; font: 400 19px/1.45 var(--font-display); }
 #exAsk .row2 { display: flex; gap: 10px; justify-content: center; }
 .heartLayer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 4; }
@@ -673,6 +685,20 @@ body.padOpen #hud { visibility: hidden; }
     <div id="exAskText"></div>
     <p class="empty" id="exAskNote"></p>
     <div class="row2" id="exAskBtns"></div>
+  </div>
+</div>
+
+<div id="evUp" hidden role="dialog" aria-label="이벤트존 작품 올리기">
+  <div class="card">
+    <h3>🎁 이벤트존 · 내 그림 걸기</h3>
+    <p class="evNote" id="evNote"><b>@dotori_museum</b> 을 팔로우하고, 올린 뒤 인스타에 인증하면 릴스에 소개돼요.<br>사진은 JPG·PNG, 5MB 이하 · 한 사람당 1점이에요.</p>
+    <input id="evFile" type="file" accept="image/jpeg,image/png" hidden>
+    <button class="btn" id="evPick" type="button">📷 사진 고르기</button>
+    <canvas id="evPrev" hidden></canvas>
+    <label>작품 제목<input id="evTitle" type="text" maxlength="14" placeholder="예: 우리 집 고양이" autocomplete="off"></label>
+    <label>작가 이름 (인스타 아이디로 적어 주세요)<input id="evArtist" type="text" maxlength="20" placeholder="@내인스타아이디" autocomplete="off" autocapitalize="none"></label>
+    <p class="evMsg" id="evMsg" role="alert"></p>
+    <div class="row2"><button class="btn primary" id="evGo" type="button" disabled>액자에 걸기</button><button class="btn" id="evClose" type="button">닫기</button></div>
   </div>
 </div>
 
@@ -1476,7 +1502,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       });
       scene.remove(m); g.add(m); m.position.set(0, 3.2 + h / 2, 0); colliders.push({ x: x - w / 2 + 0.2, z: z, r: 0.5 }, { x: x + w / 2 - 0.2, z: z, r: 0.5 });
     }
-    board(-8.6, z0 + 5, 5.6, 3.4, ['▲ 정면 큰 문  명화 미술관(대회랑)', '▶ 동쪽 문  화실 · 조각 전시관 · 정원 · 바다', '▼ 남쪽 문  친구들의 신진 작가관', '● 이 홀  쉬어 가는 중앙 홀'], '도토리 미술관');
+    board(-8.6, z0 + 5, 5.6, 3.4, ['▲ 정면 큰 문  명화 미술관(대회랑)', '▶ 동쪽 문  화실 · 조각 전시관 · 정원 · 바다', '▼ 남쪽 문  친구들의 신진 작가관', '🎁 이벤트존  신진 작가관 끝 별관 서쪽 벽', '● 이 홀  쉬어 가는 중앙 홀'], '도토리 미술관');
     board(8.6, z0 + 5, 5.6, 3.4, ['한눈에 보기'].concat(W.slice(0, 6).map((wg, i) => (i + 1) + '. ' + wg.name), ['더 깊이 보기'], W.slice(6).map((wg, i) => (i + 7) + '. ' + wg.name)), '대회랑 전시구역');
 
     /* --- the central rotunda (중앙 로툰다): between the lobby door and the corridor: a fountain, a ring of columns, an oculus, benches --- */
@@ -2295,7 +2321,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     ctx.putImageData(img, x0, y0);
     return true;
   }
+  const imgCache = new Map();                                 /* event pictures: a photo travels as one stroke { k: 'img', d: dataURL } */
+  function imgFor(d) {
+    let e = imgCache.get(d); if (e) { imgCache.delete(d); imgCache.set(d, e); return e.pr; }
+    const im = new Image(); e = { im: im, pr: new Promise(res => { im.onload = () => res(im); im.onerror = () => res(null); }) }; im.src = d;
+    imgCache.set(d, e); while (imgCache.size > 14) imgCache.delete(imgCache.keys().next().value); return e.pr;
+  }
+  const preImg = st => { const l = (st || []).filter(q => q && q.k === 'img'); return l.length ? Promise.all(l.map(q => imgFor(q.d))).then(() => st) : Promise.resolve(st); };
   function paintStroke(ctx, s, sc, off) {
+    if (s.k === 'img') { const e = imgCache.get(s.d); if (e && e.im.complete && e.im.naturalWidth && off) ctx.drawImage(e.im, 0, 0, off.w, off.h); return true; }
     const p = s.p; if (!p || p.length < 2) return false;
     if (s.k === 'f') { const b = off || { x: 0, y: 0, w: ctx.canvas.width, h: ctx.canvas.height }; return floodFillRaster(ctx, b, b.x + p[0] * sc, b.y + p[1] * sc, s.c); }
     ctx.save();
@@ -2358,13 +2392,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const FRAME_T = 0.2;
   const ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'studio'];
   function roomOf(r) { return ROOMS.indexOf(r) >= 0 ? r : 'gallery'; }
-  let emptyTex = null, emptyLabelTex = null, farTex = null, farLabelTex = null;
+  let emptyTex = null, emptyLabelTex = null, farTex = null, farLabelTex = null, evTex = null, evLabelTex = null;
   function emptyTexs() {                                  /* one shared 'empty frame' picture and label for all the blank frames */
     if (!emptyTex) {
       const c = document.createElement('canvas'); c.width = c.height = 256; emptyTex = new T.CanvasTexture(c); emptyTex.minFilter = T.LinearFilter; emptyTex.generateMipmaps = false;
       const l = document.createElement('canvas'); l.width = 512; l.height = 128; emptyLabelTex = new T.CanvasTexture(l); emptyLabelTex.minFilter = T.LinearFilter; emptyLabelTex.generateMipmaps = false;
       const f = document.createElement('canvas'); f.width = f.height = 64; farTex = new T.CanvasTexture(f); farTex.minFilter = T.LinearFilter; farTex.generateMipmaps = false;
       const fl = document.createElement('canvas'); fl.width = 64; fl.height = 16; farLabelTex = new T.CanvasTexture(fl); farLabelTex.minFilter = T.LinearFilter; farLabelTex.generateMipmaps = false;
+      const e2 = document.createElement('canvas'); e2.width = e2.height = 256; evTex = new T.CanvasTexture(e2); evTex.minFilter = T.LinearFilter; evTex.generateMipmaps = false;
+      const l2 = document.createElement('canvas'); l2.width = 512; l2.height = 128; evLabelTex = new T.CanvasTexture(l2); evLabelTex.minFilter = T.LinearFilter; evLabelTex.generateMipmaps = false;
       paintEmpty();
     }
   }
@@ -2372,6 +2408,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const c = emptyTex.image, x = c.getContext('2d'); x.fillStyle = '#efe9dc'; x.fillRect(0, 0, 256, 256); x.fillStyle = '#c7bfae'; x.font = '40px ' + FONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('빈 액자', 128, 128); emptyTex.needsUpdate = true;
     const l = emptyLabelTex.image.getContext('2d'); l.clearRect(0, 0, 512, 128); l.fillStyle = '#fffdf7'; l.fillRect(2, 2, 508, 124); l.strokeStyle = '#25211d'; l.lineWidth = 4; l.strokeRect(2, 2, 508, 124);
     l.textAlign = 'center'; l.textBaseline = 'middle'; l.fillStyle = '#b3ab9b'; l.font = '34px ' + FONT; l.fillText('눌러서 걸기', 256, 64); emptyLabelTex.needsUpdate = true;
+    if (evTex) {
+      const e = evTex.image.getContext('2d'); e.fillStyle = '#fff3cf'; e.fillRect(0, 0, 256, 256); e.strokeStyle = '#d9a92b'; e.lineWidth = 8; e.setLineDash([22, 14]); e.strokeRect(14, 14, 228, 228); e.setLineDash([]);
+      e.fillStyle = '#b8871c'; e.textAlign = 'center'; e.textBaseline = 'middle'; e.font = '46px ' + FONT; e.fillText('🎁 EVENT', 128, 96); e.font = '34px ' + FONT; e.fillText('내 그림을', 128, 150); e.fillText('걸어보세요', 128, 192); evTex.needsUpdate = true;
+      const l = evLabelTex.image.getContext('2d'); l.clearRect(0, 0, 512, 128); l.fillStyle = '#fff3cf'; l.fillRect(2, 2, 508, 124); l.strokeStyle = '#b8871c'; l.lineWidth = 4; l.strokeRect(2, 2, 508, 124);
+      l.textAlign = 'center'; l.textBaseline = 'middle'; l.fillStyle = '#8a5a00'; l.font = '36px ' + FONT; l.fillText('눌러서 사진 올리기', 256, 64); evLabelTex.needsUpdate = true;
+    }
     const f = farTex.image.getContext('2d'); f.fillStyle = '#f1ebdd'; f.fillRect(0, 0, 64, 64); f.fillStyle = '#ddd3bf'; f.fillRect(10, 18, 44, 4); f.fillRect(10, 30, 30, 4); f.fillRect(10, 42, 38, 4); farTex.needsUpdate = true;
     const fl = farLabelTex.image.getContext('2d'); fl.fillStyle = '#fffdf7'; fl.fillRect(0, 0, 64, 16); fl.fillStyle = '#25211d'; fl.fillRect(0, 0, 64, 1); fl.fillRect(0, 15, 64, 1); farLabelTex.needsUpdate = true;
   }
@@ -2384,7 +2426,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function releaseSlot(sl, hasWork) {                     /* give back the private canvases: a blank frame, or a work that is far away, uses shared pictures */
     emptyTexs();
     if (sl.cv) { sl.tex.dispose(); sl.ltex.dispose(); sl.cv = sl.tex = sl.lc = sl.ltex = null; }
-    sl.plane.material.map = hasWork ? farTex : emptyTex; sl.label.material.map = hasWork ? farLabelTex : emptyLabelTex;
+    sl.plane.material.map = hasWork ? farTex : (sl.ev ? evTex : emptyTex); sl.label.material.map = hasWork ? farLabelTex : (sl.ev ? evLabelTex : emptyLabelTex);
   }
   function drawSlot(sl, ex) {
     emptyTexs();
@@ -2468,6 +2510,37 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       lc.position.set(0, hh + FRAME_T + 0.6, 0.45); lc.userData.noShadow = true; g.add(lc);                       /* the light falling on the picture */
     });
     side('annex', GZ1, 0); endWall('annex', GZ2);
+    /* ---- the event zone: the whole west wall of the annex. Golden frames, only for pictures people upload (never for drawings or auto-hanging) ---- */
+    const goldM = L(0xd9a92b);
+    slots.forEach(q => { if (q.room === 'annex' && Math.abs(q.x + GX - 0.1) < 0.05) { q.ev = true; q.inner.children[0].material = goldM; releaseSlot(q, false); } });
+    const evPaint = [];
+    function evPlate(w, h, px, paint, two) {                      /* a flat sign painted on a canvas; two = visible from both sides */
+      const c = document.createElement('canvas'); c.width = px; c.height = Math.round(px * h / w); const t = new T.CanvasTexture(c); t.anisotropy = 4;
+      const draw = () => { const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height); paint(g, c.width, c.height); t.needsUpdate = true; }; evPaint.push(draw); draw();
+      const grp = new T.Group(), mk = () => new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: t, transparent: true }));
+      const a = mk(); grp.add(a); if (two) { const b = mk(); b.rotation.y = Math.PI; b.position.z = -0.02; grp.add(b); } return grp;
+    }
+    function fitText(g, text, px, maxW, x, y) {
+      g.font = px + 'px "Gamja Flower", "Noto Sans KR", sans-serif';
+      const mw = g.measureText(text).width; if (mw > maxW) g.font = Math.max(24, Math.floor(px * maxW / mw)) + 'px "Gamja Flower", "Noto Sans KR", sans-serif';
+      g.fillText(text, x, y);
+    }
+    function evBoardPaint(g, cw, ch, big, lines) {
+      g.fillStyle = '#fff3cf'; g.fillRect(0, 0, cw, ch); g.strokeStyle = '#b8871c'; g.lineWidth = 14; g.strokeRect(12, 12, cw - 24, ch - 24); g.strokeStyle = '#25211d'; g.lineWidth = 4; g.strokeRect(30, 30, cw - 60, ch - 60);
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#8a5a00'; fitText(g, big, 120, cw - 130, cw / 2, ch * (lines.length ? 0.2 : 0.38));
+      lines.forEach((ln, i) => { g.fillStyle = i % 2 ? '#6d655b' : '#25211d'; fitText(g, ln, 66, cw - 130, cw / 2, ch * (0.4 + i * 0.17)); });
+    }
+    {  /* a hanging sign across the annex, facing the door */
+      const sg = evPlate(10, 2.4, 1600, (g, cw, ch) => { evBoardPaint(g, cw, ch, '🎁 EVENT ZONE', []); g.fillStyle = '#25211d'; fitText(g, '내 그림을 걸어보세요 →', 66, cw - 150, cw / 2, ch * 0.74); }, true);
+      sg.position.set(-8.4, 13, GZ1 + 5); sg.rotation.y = Math.PI; scene.add(sg);
+      [-4.4, 4.4].forEach(dx => { put(scene, new T.Mesh(cyl(0.05, 0.05, 11, 6), L(0x3a2a1c)), -8.4 + dx, 18.5, GZ1 + 5); });
+      /* the info board, standing on the floor next to the wall */
+      const bd = new T.Group(); bd.position.set(-9.6, 0, GZ1 + 10); bd.rotation.y = Math.atan2(9.6, -10); scene.add(bd);
+      [-2.1, 2.1].forEach(dx => put(bd, new T.Mesh(cyl(0.12, 0.14, 4.4, 8), L(0x6b4a2f)), dx, 2.2, 0));
+      const pl = evPlate(4.8, 3.0, 1200, (g, cw, ch) => evBoardPaint(g, cw, ch, '이벤트존 안내', ['📸 @dotori_museum 팔로우', '내 그림(JPG·PNG 5MB↓)을 걸어요', '올린 뒤 인스타에 인증하면', '릴스에 소개돼요 🎬']), true);
+      pl.position.set(0, 3.3, 0.02); bd.add(pl); colliders.push({ x: -9.6 + Math.cos(0.9) * 2.1, z: GZ1 + 10 - Math.sin(0.9) * 2.1, r: 0.6 }, { x: -9.6 - Math.cos(0.9) * 2.1, z: GZ1 + 10 + Math.sin(0.9) * 2.1, r: 0.6 });
+      if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '이벤트존안내내그림을걸어보세요인스타팔로우').then(() => evPaint.forEach(f => f()));
+    }
     /* studio: the middle row sits above the paint shelves and canvases; a second, higher row above it */
     const studio = (list, ax, lim, face, tall) => list.forEach(q => hang(addSlot('studio', q[0], ax === 'x' ? lim + (lim < 0 ? 0.1 : -0.1) : q[1], q[2], ax === 'x' ? q[1] : lim + (lim < 0 ? 0.1 : -0.1), face), ax, lim, lim < 0 ? 1 : -1));
     const UPY = { m: 17.5, l: 18.6, s: 16.5 };
@@ -2482,18 +2555,18 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function setExhibits(docs) {
     exhibits = docs;
     const assign = new Map(), used = new Set(), left = [], byId = new Map(slots.map(q => [q.id, q])), rest = [];
-    docs.forEach(ex => { const sl = ex.slot ? byId.get(ex.slot) : null; if (sl && !sl.reserved && !used.has(sl)) { used.add(sl); assign.set(sl, ex); } else rest.push(ex); });   /* a claimed frame always shows its owner's work */
+    docs.forEach(ex => { const sl = ex.slot ? byId.get(ex.slot) : null; if (sl && !sl.reserved && !used.has(sl) && !!sl.ev === !!ex.ev) { used.add(sl); assign.set(sl, ex); } else if (!ex.ev) rest.push(ex); });   /* a claimed frame always shows its owner's work */
     ROOMS.forEach(room => {                              /* older works that never chose a frame take whatever is still free */
       const mine = slots.filter(q => q.room === room);
       rest.filter(ex => roomOf(ex.room) === room).forEach(ex => {
         const pref = ex.size === 's' || ex.size === 'l' ? ex.size : 'm', order = pref === 'l' ? ['l', 'm', 's'] : pref === 's' ? ['s', 'm', 'l'] : ['m', 'l', 's'];
         let ok = false;
-        for (let i = 0; i < order.length && !ok; i++) { const sl = mine.find(q => q.size === order[i] && !used.has(q)); if (sl) { used.add(sl); assign.set(sl, ex); ok = true; } }
+        for (let i = 0; i < order.length && !ok; i++) { const sl = mine.find(q => q.size === order[i] && !used.has(q) && !q.ev); if (sl) { used.add(sl); assign.set(sl, ex); ok = true; } }
         if (!ok && room !== 'studio') left.push(ex);
       });
     });
     left.forEach(ex => {
-      const sl = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard'].reduce((f, r) => f || slots.find(q => q.room === r && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !used.has(q)), null);
+      const sl = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard'].reduce((f, r) => f || slots.find(q => q.room === r && !q.ev && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !q.ev && !used.has(q)), null);
       if (sl) { used.add(sl); assign.set(sl, ex); }
     });
     slots.forEach(sl => {
@@ -3760,21 +3833,21 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     });
     nearSlot = best; viewBtn.hidden = !best;
     viewBtn.style.bottom = sitBtn.hidden ? '' : 'calc(124px + env(safe-area-inset-bottom, 0px))';      /* stacked above the sit button instead of on top of it */
-    if (best) viewBtn.textContent = best.reserved ? '작품 이야기 듣기' : best.ex ? '작품 크게 보기' : (pendingHang ? '여기에 걸기' : '내 그림을 여기에 걸기');
+    if (best) viewBtn.textContent = best.reserved ? '작품 이야기 듣기' : best.ex ? '작품 크게 보기' : best.ev ? '🎁 사진 올리기' : (pendingHang ? '여기에 걸기' : '내 그림을 여기에 걸기');
   }
   /* the gallery list only carries summaries; the lines of a work are fetched when I come close (or open it), then kept for a while */
   const strokeCache = new Map(), loadingEx = new Map();
   const exKey = ex => ex.id + ':' + ex.at;
   function ensureStrokes(ex) {
     const k = exKey(ex);
-    if (Array.isArray(ex.strokes)) { strokeCache.set(k, ex.strokes); return Promise.resolve(ex.strokes); }
-    if (strokeCache.has(k)) { const v = strokeCache.get(k); strokeCache.delete(k); strokeCache.set(k, v); return Promise.resolve(v); }
+    if (Array.isArray(ex.strokes)) { strokeCache.set(k, ex.strokes); return preImg(ex.strokes); }
+    if (strokeCache.has(k)) { const v = strokeCache.get(k); strokeCache.delete(k); strokeCache.set(k, v); return preImg(v); }
     if (loadingEx.has(k)) return loadingEx.get(k);
     if (!galCol) return Promise.reject(new Error('no db'));
     const pr = galCol.doc(ex.id).get().then(d => {
       const st = d && Array.isArray(d.strokes) ? d.strokes : null; if (!st) throw new Error('empty');
       strokeCache.set(k, st); while (strokeCache.size > 80) strokeCache.delete(strokeCache.keys().next().value);
-      return st;
+      return preImg(st);
     }).finally(() => loadingEx.delete(k));
     loadingEx.set(k, pr); return pr;
   }
@@ -3926,7 +3999,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     openArt(c);
   }
   function showWork(ex) {                                 /* open the big view; fetch the lines first when they are not here yet */
-    if (Array.isArray(ex.strokes)) { openViewer(ex); return; }
+    if (Array.isArray(ex.strokes) && !ex.ev) { openViewer(ex); return; }
     toast('그림을 불러오는 중…', 1500);
     ensureStrokes(ex).then(st => openViewer(Object.assign({}, ex, { strokes: st })), () => toast('그림을 불러오지 못했어요. 잠시 뒤 다시 눌러 주세요.', 3000));
   }
@@ -3940,7 +4013,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const sure = (b, label, run) => { let arm = 0; b.addEventListener('click', () => { if (!arm) { b.dataset.t = b.textContent; b.textContent = '정말 ' + label + '?'; b.classList.add('danger'); arm = setTimeout(() => { arm = 0; b.textContent = b.dataset.t; b.classList.remove('danger'); }, 3000); return; } clearTimeout(arm); arm = 0; run(b); }); };
     if (isMine(ex)) {
       sure(mk('내리기', '', () => {}), '내릴까요', async b => { b.disabled = true; await takeDown(ex); viewerEl.hidden = true; });
-      mk('다른 자리로 옮기기', '', () => { const w = works.find(q => q.id === ex.workId); viewerEl.hidden = true; if (w) startHang(w); else toast('이 그림은 내 그림 목록에서 찾지 못했어요.', 4000); });
+      if (!ex.ev) mk('다른 자리로 옮기기', '', () => { const w = works.find(q => q.id === ex.workId); viewerEl.hidden = true; if (w) startHang(w); else toast('이 그림은 내 그림 목록에서 찾지 못했어요.', 4000); });
     } else if (adminOn) {
       sure(mk('관리자: 내리기', '', () => {}), '내릴까요', async b => {
         b.disabled = true;
@@ -3998,6 +4071,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   /* ---------- tap an easel or a frame ---------- */
   function frameTap(sl) {
     if (sl.reserved) { showDocent(sl); return; }
+    if (sl.ev) { if (sl.ex) showWork(sl.ex); else if (pendingHang) toast('이벤트존 액자에는 사진을 올려요. 일반 그림은 다른 빈 액자에 걸어 주세요.', 4000); else evOpen(sl); return; }
     if (pendingHang) { if (sl.ex) { toast('이미 누군가 걸어 둔 액자예요. 빈 액자를 눌러 주세요.', 3000); return; } hangAt(pendingHang, sl); return; }
     if (sl.ex) showWork(sl.ex); else openHangPicker(sl);
   }
@@ -4568,7 +4642,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const AUTO_ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'studio'];
   function autoCandidates() {
     const SR = { m: 0, l: 1, s: 2 };
-    return slots.filter(q => !q.ex).sort((a, b) =>
+    return slots.filter(q => !q.ex && !q.ev).sort((a, b) =>
       AUTO_ROOMS.indexOf(a.room) - AUTO_ROOMS.indexOf(b.room) || SR[a.size] - SR[b.size] || a.y - b.y ||
       Math.hypot(pos.x - a.x, pos.z - a.z) - Math.hypot(pos.x - b.x, pos.z - b.z));
   }
@@ -4674,6 +4748,67 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       return 'fail';
     }
   }
+  /* ---------- event zone: upload a photo of your own picture to a golden frame ---------- */
+  const ev = { sl: null, img: null, w: 0, h: 0 };
+  const evMine = () => exhibits.find(e => e.ev && e.owner === uid) || null;
+  const evMsg = (t, ok) => { const m = $('#evMsg'); m.textContent = t || ''; m.style.color = ok ? '#2f6f3a' : ''; };
+  function evOpen(sl) {
+    if (!galCol) { toast('이 화면에서는 올릴 수 없어요.', 3000); return; }
+    ev.sl = sl; ev.img = null; $('#evPrev').hidden = true; $('#evGo').disabled = true; evMsg('');
+    const mine = evMine();
+    $('#evNote').innerHTML = '<b>@dotori_museum</b> 을 팔로우하고, 올린 뒤 인스타에 인증하면 릴스에 소개돼요.<br>사진은 JPG·PNG, 5MB 이하 · 한 사람당 1점이에요.' + (mine ? '<br><b>이미 올린 작품이 있어요.</b> 새로 올리면 먼저 올린 작품(“' + (mine.title || '제목 없음').replace(/[<>&]/g, '') + '”)은 내려가요.' : '');
+    $('#evTitle').value = ''; try { $('#evArtist').value = localStorage.getItem('hw-evartist') || ''; } catch (e) { $('#evArtist').value = ''; }
+    $('#evUp').hidden = false;
+  }
+  $('#evClose').addEventListener('click', () => { $('#evUp').hidden = true; });
+  $('#evUp').addEventListener('click', e => { if (e.target === $('#evUp')) $('#evUp').hidden = true; });
+  $('#evPick').addEventListener('click', () => { $('#evFile').value = ''; $('#evFile').click(); });
+  function evShrink(im) {                                    /* the longest side 1100 px, JPEG; smaller until the picture fits the server's size limit */
+    let side = 1100, q = 0.8;
+    for (let i = 0; i < 8; i++) {
+      const k = Math.min(1, side / Math.max(im.naturalWidth, im.naturalHeight)), w = Math.max(40, Math.round(im.naturalWidth * k)), h = Math.max(40, Math.round(im.naturalHeight * k));
+      const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(im, 0, 0, w, h);
+      const d = c.toDataURL('image/jpeg', q); if (d.length <= 215000) return { d: d, w: w, h: h, c: c };
+      if (q > 0.5) q -= 0.1; else side = Math.round(side * 0.8);
+    }
+    return null;
+  }
+  $('#evFile').addEventListener('change', () => {
+    const f = $('#evFile').files && $('#evFile').files[0]; if (!f) return;
+    if (!/^image\/(jpeg|png)$/.test(f.type)) { evMsg('JPG 또는 PNG 사진만 올릴 수 있어요.'); return; }
+    if (f.size > 5 * 1024 * 1024) { evMsg('사진이 너무 커요. 5MB 이하로 올려 주세요.'); return; }
+    evMsg('사진을 줄이는 중…', true);
+    const url = URL.createObjectURL(f), im = new Image();
+    im.onload = () => {
+      URL.revokeObjectURL(url);
+      const r = evShrink(im); if (!r) { evMsg('이 사진은 줄일 수 없어요. 다른 사진을 골라 주세요.'); return; }
+      ev.img = r.d; ev.w = r.w; ev.h = r.h;
+      const pv = $('#evPrev'); pv.width = Math.min(r.w, 360); pv.height = Math.round(pv.width * r.h / r.w); pv.getContext('2d').drawImage(r.c, 0, 0, pv.width, pv.height); pv.hidden = false;
+      $('#evGo').disabled = false; evMsg('좋아요! 제목과 이름을 적고 걸어 주세요.', true);
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); evMsg('사진을 열 수 없어요. 다른 사진을 골라 주세요.'); };
+    im.src = url;
+  });
+  $('#evGo').addEventListener('click', async () => {
+    if (!ev.img || !ev.sl || !galCol) return;
+    const title = $('#evTitle').value.trim().slice(0, 14) || '제목 없음', artist = $('#evArtist').value.trim().slice(0, 20) || '이름 없는 작가';
+    try { localStorage.setItem('hw-evartist', artist); } catch (e) {}
+    $('#evGo').disabled = true; evMsg('걸고 있어요…', true);
+    const sl = ev.sl, gid = uid + '_ev', mine = evMine();
+    const ed = { kind: 'exhibit', ev: 1, owner: uid, workId: 'ev', artist: artist, title: title, room: 'annex', size: sl.size, w: ev.w, h: ev.h, at: Date.now(), slot: sl.id, strokes: [{ k: 'img', d: ev.img }] };
+    if (jsonbSize(ed) > 258000) { evMsg('사진이 너무 커서 걸 수 없어요. 다른 사진을 골라 주세요.'); $('#evGo').disabled = false; return; }
+    try {
+      if (mine && mine.id) { try { await galCol.doc(mine.id).delete(); } catch (e) {} }
+      await galCol.doc(gid).hang(sl.id, ed);
+      strokeCache.set(gid + ':' + ed.at, ed.strokes);
+      try { if (window.hwasil.refresh) window.hwasil.refresh('gallery'); } catch (e) {}
+      $('#evUp').hidden = true; toast('🎁 이벤트존에 걸었어요! 인스타에 인증하면 릴스에 소개돼요 (@dotori_museum)', 7000);
+    } catch (e) {
+      const c = e && e.code; $('#evGo').disabled = false;
+      if (c === 'slot_taken') { try { if (window.hwasil.refresh) window.hwasil.refresh('gallery'); } catch (x) {} evMsg('방금 다른 분이 먼저 걸었어요. 다른 금빛 액자를 눌러 주세요.'); }
+      else evMsg(c === 'removed_banned' ? '관리자가 내렸던 사진이라 다시 걸 수 없어요.' : c === 'quota_exceeded' ? '전시는 한 사람당 20점까지예요.' : '걸지 못했어요. 잠시 뒤 다시 해 주세요.');
+    }
+  });
   function openHangPicker(sl) {
     const list = $('#hangList'); list.textContent = '';
     $('#hangName').textContent = ROOM_NAME[sl.room] + '의 ' + SIZE_NAME[sl.size] + ' 빈 액자예요. 걸 그림을 골라 주세요.';
@@ -5515,6 +5650,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const PCAT = { ex: '전시관', out: '야외', mk: '화실·쉼터' }, PCOL = { ex: '#8a4a47', out: '#3f7a4f', mk: '#3f6fa8' };
   const catOf = pl => ['알프스 마을', '눈밭', '산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원', '남쪽 꽃들판', '숲속 쉼터'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
   let placesTab = 'all';
+  const EVENT_PLACE = { name: '🎁 이벤트존', note: '내 그림을 걸어보세요 · 별관 서쪽 벽 (@dotori_museum)', x: -4.5, z: GZ1 + 16, h: -Math.PI / 2, pitch: 0.15 };
   function drawPlacesMap() {
     const cv = $('#placesMap'), W = Math.max(240, Math.min(420, ($('#placesList').parentNode.clientWidth || 340) - 40));
     const sq = z => z >= -70 ? z : -70 + (z + 70) * 0.1, xs = PLACES.map(q => q.x), zs = PLACES.map(q => sq(q.z)), x0 = Math.min.apply(null, xs) - 14, x1 = Math.max.apply(null, xs) + 14, z0 = Math.min.apply(null, zs) - 24, z1 = Math.max.apply(null, zs) + 14;
@@ -5654,6 +5790,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         bt.addEventListener('click', () => goPlace({ name: wg.name, x: 0, z: wingZ(k) - 4, h: Math.PI, pitch: 0.2 }));
         row.appendChild(strip); row.appendChild(left); row.appendChild(bt); list.appendChild(row);
       });
+    }
+    if (placesTab !== 'map' && (placesTab === 'all' || placesTab === 'ex')) {
+      const pl = EVENT_PLACE, row = document.createElement('div'); row.className = 'roomRow evRow';
+      const left = document.createElement('div'); left.className = 'l'; const nm = document.createElement('div'); nm.className = 'n'; nm.textContent = pl.name; left.appendChild(nm);
+      const ct = document.createElement('div'); ct.className = 'c'; ct.textContent = pl.note; left.appendChild(ct);
+      const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn primary'; bt.textContent = '가기'; bt.addEventListener('click', () => goPlace(pl));
+      row.appendChild(left); row.appendChild(bt); list.appendChild(row);
     }
     PLACES.forEach(pl => {
       const row = document.createElement('div'); row.className = 'roomRow'; const pc = catOf(pl); if (placesTab !== 'all' && placesTab !== 'map' && placesTab !== pc) row.hidden = true;
