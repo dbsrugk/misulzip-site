@@ -37,7 +37,7 @@ const { start, vis, until, check, done } = require('./lib');
   check(!(await vis(p, '#intro')) && /화실 1/.test(await p.textContent('#online')), 'reload goes straight back in: ' + await p.textContent('#online'));
   check((await p.evaluate(() => localStorage.getItem('hw-name'))) === '시험', 'name is remembered across the reload');
   async function place(i, shot) { await p.click('#placesBtn'); await p.waitForTimeout(300); await p.locator('#placesList .btn').nth(i).click(); await p.waitForTimeout(1800); await p.screenshot({ path: t.out(shot) }); }
-  await place(2, 'mountain.png'); await place(3, 'beach.png'); await place(4, 'lake.png'); await place(5, 'field.png'); await place(0, 'studio.png');
+  await place(7, 'mountain.png'); await place(3, 'beach.png'); await place(4, 'lake.png'); await place(5, 'field.png'); await place(0, 'studio.png');
   /* music: a button turns it off and on, the volume is remembered */
   check(await p.evaluate(() => window.__hw.music().on === true && document.querySelector('#musicBtn').textContent.indexOf('🎵') === 0), 'music is on by default');
   check(await p.evaluate(() => window.__hw.music().ctx !== 'none'), 'the sound engine is already created by the entry tap (music starts at once)');
@@ -50,7 +50,7 @@ const { start, vis, until, check, done } = require('./lib');
   const n = await p.evaluate(() => window.__hw.easels.length); check(n >= 22, 'easels: ' + n);                    /* the lobby keeps six easels (an atelier corner); the outdoor spots keep theirs */
   await p.click('#placesBtn'); await p.waitForTimeout(200); check((await p.locator('#placesList .btn').count()) === 21, 'twenty-one places listed'); await p.click('#placesClose'); await p.waitForTimeout(200);
   /* the gallery has no partitions any more; the annex and the garden can be visited */
-  await place(6, 'annex.png'); await place(7, 'garden.png'); await place(8, 'west1.png'); await place(9, 'west2.png'); await place(10, 'orchard.png');
+  await place(6, 'annex.png'); await place(2, 'garden.png'); await place(8, 'west1.png'); await place(9, 'west2.png'); await place(10, 'orchard.png');
   /* a place is reached on foot now: from the studio to the annex through both doors, then out to the garden through the east door */
   await place(0, 'studio.png');
   await p.evaluate(() => { window.__hwInstant = false; window.__hwWalk = true; });
@@ -216,7 +216,7 @@ const { start, vis, until, check, done } = require('./lib');
   check(await until(p, () => /대회랑 · 르네상스/.test(window.__hw.area()) && !document.querySelector('#areaBanner').hidden && /르네상스/.test(document.querySelector('#areaName').textContent), null, 10), 'a banner names the place I arrived at (grand gallery, Renaissance)');
   await place(14, 'rotunda.png');
   check(await until(p, () => window.__hw.area() === '중앙 로툰다', null, 10), 'the rotunda is named too');
-  await place(7, 'garden.png');
+  await place(2, 'garden.png');
   check(await until(p, () => window.__hw.area() === '야외 전시 정원' && document.querySelector('#areaName').textContent === '야외 전시 정원', null, 10), 'outdoors the banner names the garden');
   await place(11, 'grand.png');
   check(await p.evaluate(() => window.__hw.music().wing === 0), 'the renaissance wing has its own music mood');
@@ -248,7 +248,7 @@ const { start, vis, until, check, done } = require('./lib');
   check(await p.evaluate(() => { const r = window.__rpcs || []; return r.includes('hwasil_gallery_index') && !r.includes('hwasil_gallery_list'); }), 'the gallery list is the light index (no lines)');
   await place(9, 'west2.png'); await p.waitForTimeout(1500);                        /* far from the garden */
   check(await p.evaluate(gi => { const s = window.__hw.slots[gi]; return !!s.ex && !s.live && !s.cv; }, gi), 'a far frame holds its work as a summary only (no private picture)');
-  await place(7, 'garden.png');
+  await place(2, 'garden.png');
   check(await until(p, gi => window.__hw.slots[gi].live && !!window.__hw.slots[gi].cv, gi, 30), 'coming close loads the picture of that frame');
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
