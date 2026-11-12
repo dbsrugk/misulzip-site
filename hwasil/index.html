@@ -165,6 +165,10 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #swimBar[hidden] { display: none; }
 #swimBar .swInfo { background: rgba(255,255,255,.92); border: 2.5px solid var(--ink); border-radius: 999px; padding: 5px 12px; font-size: 14px; font-weight: 700; box-shadow: 2px 2px 0 var(--ink); }
 #swimBar button { pointer-events: auto; font: inherit; font-size: 14px; font-weight: 700; background: #fff; border: 2.5px solid var(--ink); border-radius: 999px; padding: 6px 13px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
+@keyframes swPulse { 0%,100% { box-shadow: 2px 2px 0 var(--ink), 0 0 0 0 rgba(255,236,120,.0); } 50% { box-shadow: 2px 2px 0 var(--ink), 0 0 14px 6px rgba(255,236,120,.9); } }
+#swimBar button.hint { animation: swPulse 1s ease-in-out infinite; background: #fff7c2; }
+#swimBar .swDepth { width: 72px; height: 10px; border: 2.5px solid var(--ink); border-radius: 99px; background: rgba(255,255,255,.85); overflow: hidden; box-shadow: 2px 2px 0 var(--ink); }
+#swimBar .swDepth i { display: block; height: 100%; width: 0; background: linear-gradient(90deg,#7fd0ee,#2a5ea8); transition: width .4s; }
 #swimBar button:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
 #swimBar button[hidden] { display: none; }
 #actDots { padding: 0 14px 8px; font-size: 26px; line-height: 1; letter-spacing: 1px; background: #fff; box-shadow: 2px 2px 0 var(--ink); }
@@ -570,7 +574,7 @@ body.padOpen #hud { visibility: hidden; }
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
   <button class="sitBtn" id="viewBtn" type="button" hidden>작품 크게 보기</button>
   <button class="sitBtn" id="photoBtn" type="button" hidden>📸 사진 찍기</button>
-  <div id="swimBar" hidden><span class="swInfo" id="swInfo">🌊 수영 중</span><button type="button" id="swDive"></button><button type="button" id="swUp"></button><button type="button" id="swGear"></button><button type="button" id="swBoat"></button></div>
+  <div id="swimBar" hidden><span class="swInfo" id="swInfo">🌊 수영 중</span><span class="swDepth" id="swDepth" title="수심"><i></i></span><button type="button" id="swDive"></button><button type="button" id="swUp"></button><button type="button" id="swGear"></button><button type="button" id="swBoat"></button></div>
   <button class="sitBtn" id="actDots" type="button" hidden aria-label="할 수 있는 일 보기">⋯</button>
   <button class="sitBtn" id="diveBtn" type="button" hidden>🤿 잠수하기</button>
   <button class="sitBtn" id="upBtn" type="button" hidden>⬆ 물 위로</button>
@@ -6079,14 +6083,16 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     setBtn(boatBtn, ok && DV.lvl === 0 && (BT.on >= 0 || nb >= 0), BT.on >= 0 ? '⚓ 내리기' : nb >= 0 ? (nb ? '🚣 ' : '⛵ ') + BOATS[nb].name + ' 타기' : '');
     /* in or on the water the same actions sit in a bar at the top, available the moment I get wet (no waiting for the "…") */
     const inW = ok && (swimAt(pos.x, pos.z) > 0.25 || DV.lvl > 0 || BT.on >= 0 || (nb >= 0 && pos.x > SEA_X - 4));
-    if (swimBar.hidden === inW) swimBar.hidden = !inW;
+    if (swimBar.hidden === inW) { swimBar.hidden = !inW; if (!inW) swHint = 0; }
     if (inW) {
       [[swDive, diveBtn], [swUp, upBtn], [swGear, gearBtn], [swBoat, boatBtn]].forEach(q => { const on = !q[1].hidden; if (q[0].hidden === on) q[0].hidden = !on; if (on && q[0].textContent !== q[1].textContent) q[0].textContent = q[1].textContent; if (!q[1].hidden) q[1].hidden = true; });
       const info = BT.on >= 0 ? '⛵ 항해 중' : DV.lvl > 0 ? '🤿 수심 ' + DIVE_D[DV.lvl].toFixed(1) + 'm' : swimK(pos.x) > 0.5 ? '🌊 바다 수영' : '🏊 호수 수영';
       if (swInfo.textContent !== info) swInfo.textContent = info;
+      const dw = Math.round(Math.min(1, -DV.y / 8) * 100) + '%'; if (swDepth.firstChild.style.width !== dw) swDepth.firstChild.style.width = dw;
+      swHint += 1 / 60; if (swHint < 7 && !swDive.hidden) swDive.classList.add('hint'); else swDive.classList.remove('hint');
     }
   }
-  const swimBar = $('#swimBar'), swInfo = $('#swInfo'), swDive = $('#swDive'), swUp = $('#swUp'), swGear = $('#swGear'), swBoat = $('#swBoat');
+  let swHint = 0; const swDepth = $('#swDepth'), swimBar = $('#swimBar'), swInfo = $('#swInfo'), swDive = $('#swDive'), swUp = $('#swUp'), swGear = $('#swGear'), swBoat = $('#swBoat');
   swDive.addEventListener('click', () => diveBtn.click()); swUp.addEventListener('click', () => upBtn.click()); swGear.addEventListener('click', () => gearBtn.click()); swBoat.addEventListener('click', () => boatBtn.click());
   const _ab = new T.Vector3();
   function actTick(dt) {
