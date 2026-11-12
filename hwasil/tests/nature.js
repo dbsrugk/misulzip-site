@@ -75,7 +75,7 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   const sx = await p.evaluate(() => ({ x: window.__hw.pos.x, bx: window.__nat.boats()[1].x, z: window.__hw.pos.z }));
   check(Math.abs(sx.x - x0) > 1.2, 'the boat moves with the stick: ' + JSON.stringify(sx));
   await p.waitForTimeout(1500); await p.dispatchEvent('#boatBtn', 'click'); await p.waitForTimeout(300);
-  check(await until(p, () => !document.getElementById('boatBtn').textContent.includes('내리기'), null, 40), 'got off');
+  check(await until(p, () => { const b = document.getElementById('boatBtn'); return b.hidden || !b.textContent.includes('내리기'); }, null, 40), 'got off');
   /* the lake can be swum in, with swim gear */
   await p.evaluate(() => { const P = window.__hw.pos; P.x = 72; P.z = 54; });
   check(await p.evaluate(() => window.__nat.swimAt(72, 54) > 0.9 && window.__nat.gY(72, 54) < -0.4), 'the lake is deep enough to swim in');
