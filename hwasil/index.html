@@ -152,6 +152,14 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #viewer { position: fixed; inset: 0; z-index: 26; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(28, 24, 20, 0.94); padding: 16px; }
 #viewerCanvas { display: block; background: var(--paper); border: 3px solid #3a2a1c; box-shadow: 0 0 0 8px #6b4a2f, 6px 8px 0 8px rgba(0,0,0,0.35); }
 #viewerCap { color: var(--chalk); font: 400 26px/1.2 var(--font-display); text-align: center; overflow-wrap: anywhere; }
+#photoCount { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 30; pointer-events: none; font: 400 120px/1 var(--font-display); color: #fff; text-shadow: 0 4px 0 var(--ink), 0 0 24px rgba(0, 0, 0, 0.45); }
+#photoFlash { position: fixed; inset: 0; z-index: 31; background: #fff; pointer-events: none; animation: pfl 0.5s ease-out forwards; }
+@keyframes pfl { from { opacity: 1; } to { opacity: 0; } }
+#photoView { position: fixed; inset: 0; z-index: 42; pointer-events: auto; display: flex; align-items: center; justify-content: center; background: rgba(28, 24, 20, 0.86); padding: 12px; }
+#photoView[hidden] { display: none; }
+.pvBox { display: flex; flex-direction: column; align-items: center; gap: 12px; max-height: 100%; }
+#photoImg { max-width: min(92vw, 420px); max-height: 72vh; border-radius: 6px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5); background: #fff; }
+.pvRow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 #tourBtn { left: 50%; top: auto !important; bottom: calc(var(--bar) + 40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 15px; padding: 8px 12px; background: #fff; }   /* the free spot between the stick and the map */
 #tourBtn::after { display: none; }
 .sitBtn[disabled] { background: var(--chalk); box-shadow: none; opacity: 0.85; cursor: default; }
@@ -550,6 +558,13 @@ body.padOpen #hud { visibility: hidden; }
   <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
   <button class="sitBtn" id="viewBtn" type="button" hidden>작품 크게 보기</button>
+  <button class="sitBtn" id="photoBtn" type="button" hidden>📸 사진 찍기</button>
+  <div id="photoCount" hidden></div><div id="photoFlash" hidden></div>
+  <div id="photoView" hidden>
+    <div class="pvBox"><img id="photoImg" alt="내가 찍은 사진"><div class="pvRow">
+      <button class="btn" id="photoSave" type="button">💾 저장하기</button><button class="btn" id="photoShare" type="button">📤 공유</button>
+      <button class="btn" id="photoRetake" type="button">🔁 다시 찍기</button><button class="btn" id="photoClose" type="button">닫기</button></div></div>
+  </div>
   <button class="sitBtn" id="tourBtn" type="button" hidden>🚶 15점 코스 걷기</button>
   <div id="rightCol">
     <div id="topRight">
@@ -1018,6 +1033,15 @@ body.padOpen #hud { visibility: hidden; }
   const wingAt = z => { for (let k = 0; k < NW; k++) if (z <= wingZ(k) && z > wingZ(k) - 32) return k; return z <= GGZ + 0.01 ? NW - 1 : -1; };   /* -1 inside a round hall */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
   const OUT = { x0: RM.hx + 1, x1: 146, z0: -68, z1: 334 }, SEA_X = 150, LAKE = { x: 72, z: 54, r: 13 }, MILL = { x: 112, z: 59 }, GARD = { x: 92, z: 172, r: 43, R: 31 }, GARD2 = { x: 92, z: 272, r: 43, R: 31 };   /* GARD: the open-air exhibition garden */
+  /* nature: the foothills north of the village can be climbed (footH = their height, set when the range is built), the sea can be swum in, and flower fields are photo spots */
+  let footH = () => 0, SUMMIT = { x: 92, z: -110, h: 10 };
+  const HILL = { x0: 44, x1: 140, z0: -127, z1: -92.2 }, SWIM = { x1: 176, z0: -60, z1: 320 };
+  const swimK = x => x > SEA_X - 1 ? Math.min(1, (x - SEA_X + 1) / 3) : 0;
+  const gY = (x, z) => {
+    let y = 0;
+    if (x >= HILL.x0 && x <= HILL.x1 && z >= HILL.z0 && z <= -88) { const h = footH(x, z); if (h > 0.05) y = h + 0.1; }
+    return y - 0.95 * swimK(x);
+  };
   const colliders = [];
   function plankTexture() {
     const c = document.createElement('canvas'); c.width = c.height = 512;
@@ -2777,6 +2801,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         const w = Math.sin(ep * 9); R1.rotation.z = 2.1 + w * 0.5; L1.rotation.z = -2.1 + w * 0.5; av.torso.rotation.z = w * 0.13; av.headG.rotation.z = -w * 0.12;
         av.legL.rotation.x = w * 0.6; av.legR.rotation.x = -w * 0.6; av.lift = Math.abs(w) * 0.3;
       } else if (id === 'wow') { L1.rotation.z = -2.4; R1.rotation.z = 2.4; if (ep < 0.5) av.lift = Math.sin(ep / 0.5 * Math.PI) * 0.9; }
+      else if (id === 'pose1') { R1.rotation.z = 2.55; R1.rotation.x = -0.35 + Math.sin(ep * 6) * 0.04; L1.rotation.z = -0.25; av.headG.rotation.z = 0.14; av.torso.rotation.z = -0.05; }          /* a V sign */
+      else if (id === 'pose2') { L1.rotation.x = R1.rotation.x = -1.35; L1.rotation.z = 0.55; R1.rotation.z = -0.55; av.headG.rotation.z = -0.16; }                                             /* hands under the chin, like a flower */
+      else if (id === 'pose3') { L1.rotation.z = -2.75; R1.rotation.z = 2.75; av.lift = Math.abs(Math.sin(ep * 5)) * 0.18; av.headG.rotation.z = Math.sin(ep * 5) * 0.06; }                       /* both arms up, hopping */
     } else if (painting && amp < 0.15) {
       av.armR.rotation.x = -1.25 + Math.sin(t * 7 + av.seed) * 0.22; av.armR.rotation.z = -0.12 + Math.sin(t * 3.1) * 0.08;
       av.armL.rotation.x = -0.75; av.armL.rotation.z = 0.12; av.legL.rotation.x = av.legR.rotation.x = 0;
@@ -2785,6 +2812,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       av.legL.rotation.x = s; av.legR.rotation.x = -s; av.armL.rotation.x = -s * 0.9; av.armR.rotation.x = s * 0.9; av.armL.rotation.z = av.armR.rotation.z = 0;
     }
     if (sitting) { av.legL.rotation.x = av.legR.rotation.x = -1.45; av.lift = sitting === 2 ? -0.46 : 0.66; }                         /* on a bench: legs forward, raised onto the seat */
+    if (av.swim > 0.4) {                                                                                                                                 /* swimming: strokes while moving, treading water when still */
+      const k = av.swim, mv = amp > 0.15, c = Math.sin(t * 5.2 + av.seed);
+      if (mv) { av.armL.rotation.set(-2.3 + c * 0.8, 0, 0.15); av.armR.rotation.set(-2.3 - c * 0.8, 0, -0.15); av.legL.rotation.x = Math.sin(t * 11) * 0.55; av.legR.rotation.x = -Math.sin(t * 11) * 0.55; }
+      else { av.armL.rotation.set(-0.3, 0, -0.9 - c * 0.25); av.armR.rotation.set(-0.3, 0, 0.9 + c * 0.25); av.legL.rotation.x = Math.sin(t * 4) * 0.25; av.legR.rotation.x = -Math.sin(t * 4) * 0.25; }
+      av.lift += 0.06 * Math.sin(t * 2.4 + av.seed);
+    }
     if (av.wings) av.wings.forEach((w, i) => { w.rotation.y = (i ? 1 : -1) * (0.3 + Math.sin(t * 4 + av.seed) * 0.14); });
     av.torso.scale.y = 1 + 0.022 * Math.sin(t * 2.2 + av.seed);
     av.headG.position.y = 1.85 + 0.014 * Math.sin(t * 2.2 + av.seed + 0.6);
@@ -3003,7 +3036,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const nh = (i, j, sd) => { const v = Math.sin(i * 127.1 + j * 311.7 + sd * 17.3) * 43758.5453; return v - Math.floor(v); };
     const vnz = (x, z, sd) => { const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j, ux = fx * fx * (3 - 2 * fx), uz = fz * fz * (3 - 2 * fz); return (nh(i, j, sd) * (1 - ux) + nh(i + 1, j, sd) * ux) * (1 - uz) + (nh(i, j + 1, sd) * (1 - ux) + nh(i + 1, j + 1, sd) * ux) * uz; };
     const ridge = (x, z, sd) => { let a = 0, fq = 1, k = 0.55; for (let o = 0; o < 4; o++) { const r = 1 - Math.abs(2 * vnz(x * fq, z * fq, sd + o) - 1); a += r * r * k; fq *= 2.1; k *= 0.5; } return a; };
-    function alps(x0, x1, zFront, depth, hmax, sd, haze, green) {
+    function alps(x0, x1, zFront, depth, hmax, sd, haze, green, hook) {
       const SX = 5, nx = Math.round((x1 - x0) / SX), nz = 20, HZ = new T.Color(0xa7bdd2), col = new T.Color(), pos = [], cols = [];
       const Y = (i, j) => {
         const x = x0 + i * SX, tz = j / nz, z = zFront - tz * depth, e = tz < 0.6 ? Math.pow(tz / 0.6, 1.4) : 1, ex = Math.min(1, i / (nx * 0.12), (nx - i) / (nx * 0.12)), mass = 0.45 + 0.55 * vnz(x * 0.011, 3.1, sd);
@@ -3012,6 +3045,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         const back = green && tz > 0.7 ? Math.max(0, (1 - tz) / 0.3) : 1;                                                                                 /* the foothills slope down again behind: you can stand behind them now */
         return Math.min(hmax * 1.12, hmax * e * ex * mass * (0.22 + 0.95 * ridge(x * 0.014, z * 0.014, sd))) * carve * back - 0.6;
       };
+      if (hook) hook(Y, x0, SX, nx, nz, zFront, depth);
       for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
         const q = [[i, j], [i + 1, j], [i, j + 1], [i + 1, j + 1]].map(a => [x0 + a[0] * SX, Y(a[0], a[1]), zFront - a[1] / nz * depth]);
         if (q.some(p => Math.abs(p[0]) < GGR + 8 && p[2] < GGS + 6 && p[2] > GGZ - 12)) continue;   /* the long gallery runs straight through the range: leave the mountain out there so it does not poke up through the floor */
@@ -3031,7 +3065,14 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new T.Float32BufferAttribute(cols, 3)); g.computeVertexNormals();
       const m = new T.Mesh(g, L(0xffffff, { vertexColors: true })); m.userData.noShadow = true; scene.add(m); return m;
     }
-    alps(-40, 232, -90, 36, 20, 1, 0.04, true);
+    alps(-40, 232, -90, 36, 20, 1, 0.04, true, (Y, x0, SX, nx, nz, zF, dep) => {      /* the same surface as the mesh, so you can walk up the foothills */
+      footH = (x, z) => {
+        const u = (x - x0) / SX, v = (zF - z) / dep * nz, i = Math.floor(u), j = Math.floor(v);
+        if (i < 0 || j < 0 || i >= nx || j >= nz) return 0;
+        const fx = u - i, fz = v - j, h0 = Y(i, j), h1 = Y(i + 1, j), h2 = Y(i, j + 1), h3 = Y(i + 1, j + 1);
+        return fx + fz <= 1 ? h0 + fx * (h1 - h0) + fz * (h2 - h0) : h3 + (1 - fx) * (h2 - h3) + (1 - fz) * (h1 - h3);
+      };
+    });
     alps(-70, 262, -136, 62, 62, 2, 0.2, false);
     alps(-130, 300, -216, 72, 108, 3, 0.4, false);
     {
@@ -3420,6 +3461,24 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       /* a signpost at the museum door */
       at(new T.Mesh(cyl(0.16, 0.2, 4.2, 8), wood), RM.hx + 3.2, 2.1, ZW - 3.4);
       { const pl = makeNamePlate('야외 전시 정원 →'); pl.sprite.scale.set(5.4, 1.35, 1); pl.sprite.position.set(RM.hx + 3.2, 4.8, ZW - 3.4); scene.add(pl.sprite); }
+      /* the climb: the highest point of the foothills near the valley is the summit; red-and-white marker posts lead up to it */
+      { let bh = -1;
+        for (let x = 62; x <= 122; x += 1) for (let z = -124; z <= -97; z += 1) { const h = footH(x, z) - Math.abs(x - 92) * 0.05; if (h > bh) { bh = h; SUMMIT.x = x; SUMMIT.z = z; SUMMIT.h = footH(x, z); } }
+        const sy = Math.max(0, SUMMIT.h) + 0.1, redM = L(0xd9342b), whiteM = L(0xffffff), flagC = document.createElement('canvas'); flagC.width = 256; flagC.height = 160;
+        const fg = flagC.getContext('2d'); fg.fillStyle = '#d9342b'; fg.fillRect(0, 0, 256, 160); fg.fillStyle = '#fff'; fg.font = '700 54px "Gamja Flower","Noto Sans KR",sans-serif'; fg.textAlign = 'center'; fg.textBaseline = 'middle'; fg.fillText('도토리봉', 128, 62); fg.font = '700 34px "Gamja Flower","Noto Sans KR",sans-serif'; fg.fillText('⛰ ' + Math.round(SUMMIT.h * 12) + ' m', 128, 116);
+        const flag = new T.Mesh(new T.PlaneGeometry(2.6, 1.6), new T.MeshBasicMaterial({ map: new T.CanvasTexture(flagC), side: T.DoubleSide })); flag.userData.noShadow = true;
+        at(new T.Mesh(cyl(0.08, 0.1, 5, 6), wood), SUMMIT.x, sy + 2.5, SUMMIT.z); at(flag, SUMMIT.x + 1.4, sy + 4.1, SUMMIT.z); anim.push((dt, t) => { flag.rotation.y = Math.sin(t * 2.2) * 0.25; });
+        [[0.9, 0.5, 0.4, 1.0], [-0.7, 0.3, 0.7, 0.8], [0.1, 1.0, -0.8, 0.6]].forEach(c => { const st = at(new T.Mesh(new T.IcosahedronGeometry(c[3], 0), L(0x9a9690)), SUMMIT.x + c[0], sy + c[1] - 0.3, SUMMIT.z + c[2]); st.scale.y = 0.7; });
+        colliders.push({ x: SUMMIT.x + 0.4, z: SUMMIT.z + 0.3, r: 1.3 });
+        { const pl = makeNamePlate('⛰ 도토리봉 정상'); pl.sprite.scale.set(5.4, 1.35, 1); pl.sprite.position.set(SUMMIT.x, sy + 6.2, SUMMIT.z); scene.add(pl.sprite); }
+        const x0 = 92, z0 = -97, dx = SUMMIT.x - x0, dz = SUMMIT.z - z0, len = Math.hypot(dx, dz);
+        for (let d = 6; d < len - 2; d += 6) {
+          const x = x0 + dx / len * d + Math.sin(d * 0.9) * 1.2, z = z0 + dz / len * d, y = Math.max(0, footH(x, z)) + 0.1;
+          at(new T.Mesh(cyl(0.08, 0.1, 1.5, 6), whiteM), x, y + 0.75, z); at(new T.Mesh(cyl(0.085, 0.105, 0.5, 6), redM), x, y + 1.15, z);
+        }
+        at(new T.Mesh(cyl(0.16, 0.2, 3.8, 8), wood), 88.5, 1.9, -97.5);
+        { const pl = makeNamePlate('⛰ 도토리봉 등산로 →'); pl.sprite.scale.set(6, 1.5, 1); pl.sprite.position.set(88.5, 4.4, -97.5); scene.add(pl.sprite); }
+      }
     })();
     /* the way north: a dirt path from the viewpoint through the village gate, up the valley, and a snowfield under the peaks where it snows */
     (function () {
@@ -3827,12 +3886,17 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (Math.abs(x - NORTH.x) <= 2.1 && z >= -70.6) return true;                                                                   /* the gate */
       if (z >= -92 && z <= -70.4 && x >= 67 + (-68 - z) * -0.125 && x <= 107 + (-68 - z) * 0.533) return true;
       if (Math.abs(x - NORTH.x) <= 4.5 && z >= -128 && z < -91.9) return true;
+      if (x >= HILL.x0 && x <= HILL.x1 && z >= HILL.z0 && z <= HILL.z1) return true;                                              /* the climbable foothills */
       return Math.hypot(x - NORTH.x, z - NORTH.sz) <= NORTH.sr;
     }
+    if (x > OUT.x1 && x <= SWIM.x1 && z >= SWIM.z0 && z <= SWIM.z1) return true;                                                    /* wade and swim into the sea */
     return x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1 && Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 0.5;   /* the field, minus the lake */
   }
   function tryMove(mx, mz) {
-    const ox = pos.x, oz = pos.z, nx = ox + mx, nz = oz + mz;
+    const ox = pos.x, oz = pos.z;
+    const sk = swimK(ox); if (sk) { mx *= 1 - 0.4 * sk; mz *= 1 - 0.4 * sk; }                                                          /* the water slows me down */
+    if (ox >= HILL.x0 - 2 && ox <= HILL.x1 + 2 && oz <= -88) { const run = Math.hypot(mx, mz) || 1, sl = (gY(ox + mx, oz + mz) - gY(ox, oz)) / run; if (sl > 0) { const f = Math.max(0.42, 1 - sl * 0.55); mx *= f; mz *= f; } }   /* uphill is slower */
+    const nx = ox + mx, nz = oz + mz;
     if (walkable(nx, nz)) { pos.x = nx; pos.z = nz; } else if (walkable(nx, oz)) pos.x = nx; else if (walkable(ox, nz)) pos.z = nz;
     for (let i = 0; i < colliders.length; i++) {
       const q = colliders[i], dx = pos.x - q.x, dz = pos.z - q.z, d = Math.hypot(dx, dz), min = q.r + 0.55;
@@ -5616,6 +5680,86 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (nm !== areaShown && (areaStable >= 0.5 || !areaShown)) { areaShown = nm; showAreaBanner(nm); funArea(nm); }                  /* settled for half a second: no flicker on a doorstep */
   }
 
+  /* ---------- nature: swimming ripples, the summit, photo spots ---------- */
+  const ripples = [];
+  function ripple(x, z) {
+    let q = ripples.find(r => !r.on);
+    if (!q && ripples.length < 10) { const m = new T.Mesh(new T.RingGeometry(0.55, 0.75, 24), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, side: T.DoubleSide })); m.rotation.x = -Math.PI / 2; m.userData.noShadow = true; scene.add(m); q = { m: m, on: false, a: 0 }; ripples.push(q); }
+    if (!q) return; q.on = true; q.a = 0; q.m.visible = true; q.m.position.set(x, 0.04, z);
+  }
+  const NATURE_SPOTS = [
+    { name: '풍차 꽃밭', f: (x, z) => Math.hypot(x - MILL.x, z - MILL.z) < 24 },
+    { name: '꽃길 정원', f: (x, z) => Math.hypot(x - GARD2.x, z - GARD2.z) < GARD2.r + 3 },
+    { name: '꽃길 산책로', f: (x, z) => Math.abs(x - 92) < 5.5 && z > 6 && z < 112 },
+    { name: '도토리봉 정상', f: (x, z) => Math.hypot(x - SUMMIT.x, z - SUMMIT.z) < 7 },
+    { name: '바닷가', f: (x, z) => x > OUT.x1 - 14 && z > -40 && z < 320 }
+  ];
+  const photoSpot = () => { const q = NATURE_SPOTS.find(o => o.f(pos.x, pos.z)); return q ? q.name : ''; };
+  const photoBtn = $('#photoBtn'); let photoBusy = false, photoReq = null, swimToast = 0, summitT = 0, ripT = 0;
+  function updateNature(dt) {
+    ripples.forEach(r => { if (!r.on) return; r.a += dt; const k = r.a / 1.1; r.m.scale.setScalar(1 + k * 2.4); r.m.material.opacity = Math.max(0, 0.7 * (1 - k)); if (k >= 1) { r.on = false; r.m.visible = false; } });
+    const sw = swimK(pos.x);
+    if (started && sw > 0.5) {
+      ripT -= dt; if (ripT <= 0) { ripT = 0.9; ripple(pos.x, pos.z); }
+      if (tNow - swimToast > 60) { swimToast = tNow; toast('🏊 바다에 들어왔어요! 조이스틱으로 헤엄쳐 보세요', 3500); funArea('바다 수영'); }
+    }
+    if (started && gY(pos.x, pos.z) > 1 && Math.hypot(pos.x - SUMMIT.x, pos.z - SUMMIT.z) < 3 && tNow - summitT > 45) {
+      summitT = tNow; toast('⛰ 도토리봉 정상 도착! 해발 ' + Math.round(SUMMIT.h * 12) + ' m · 여기서 사진도 찍어 보세요', 5000); funArea('도토리봉 정상');
+    }
+    const spot = started && !photoBusy && !pad.open && !watch.open && !inspect && mySeat < 0 && myEasel < 0 && !goal && !teleOn ? photoSpot() : '';
+    photoBtn.hidden = !spot;
+  }
+  function placePhotoBubble() {
+    if (photoBtn.hidden) return;
+    const W = window.innerWidth, H = window.innerHeight;
+    const L2 = Math.round(W / 2) + 'px', T2 = Math.round(Math.min(H * 0.68, H * 0.6 + 70)) + 'px';
+    if (photoBtn.style.left !== L2) photoBtn.style.left = L2; if (photoBtn.style.top !== T2) photoBtn.style.top = T2;
+  }
+  const pcCount = $('#photoCount');
+  async function takePhoto() {
+    if (photoBusy || !started) return; photoBusy = true; photoBtn.hidden = true; $('#photoView').hidden = true;
+    me.emote = { id: ['pose1', 'pose2', 'pose3'][Math.floor(Math.random() * 3)], t0: tNow, dur: 4.6 };
+    for (const n of ['3', '2', '1']) { pcCount.textContent = n; pcCount.hidden = false; await new Promise(r => setTimeout(r, 750)); }
+    pcCount.hidden = true; photoReq = { spot: photoSpot() };
+  }
+  const photoCam = new T.PerspectiveCamera(50, 1, 0.5, 700);
+  function doCapture() {
+    const rq = photoReq; photoReq = null; if (!rq) return; try {
+    const cv = renderer.domElement, W = cv.width, H = cv.height, asp = W / H, hf = 56 * Math.PI / 180;
+    photoCam.aspect = asp; photoCam.fov = Math.min(100, 2 * Math.atan(Math.tan(hf / 2) / Math.min(asp, 1.6)) * 180 / Math.PI); photoCam.updateProjectionMatrix();
+    const fx = Math.sin(heading), fz = Math.cos(heading), gy = Math.max(0, gY(pos.x, pos.z)), d = 4.3;
+    photoCam.position.set(pos.x + fx * d, gy + 1.9 + (pos.x > SEA_X ? -0.4 : 0), pos.z + fz * d); photoCam.lookAt(pos.x, gy + 1.45, pos.z);
+    renderer.render(scene, photoCam);
+    let sw, sh; if (asp < 0.8) { sw = W; sh = W / 0.8; } else { sh = H; sw = H * 0.8; }
+    const OW = Math.min(1080, Math.round(sw)), OH = Math.round(OW * 1.25), B = Math.round(OW * 0.026), CAP = Math.round(OW * 0.14);
+    const out = document.createElement('canvas'); out.width = OW + B * 2; out.height = OH + B + CAP; const g = out.getContext('2d');
+    g.fillStyle = '#fffaf0'; g.fillRect(0, 0, out.width, out.height);
+    g.drawImage(cv, (W - sw) / 2, (H - sh) / 2, sw, sh, B, B, OW, OH);
+    g.strokeStyle = 'rgba(0,0,0,0.12)'; g.lineWidth = 2; g.strokeRect(B, B, OW, OH);
+    const fam = '"Gamja Flower","Noto Sans KR",sans-serif', d0 = kstNow(), ds = d0.getUTCFullYear() + '.' + String(d0.getUTCMonth() + 1).padStart(2, '0') + '.' + String(d0.getUTCDate()).padStart(2, '0');
+    g.fillStyle = '#2a2420'; g.textBaseline = 'middle'; g.textAlign = 'left';
+    g.font = '400 ' + Math.round(CAP * 0.36) + 'px ' + fam; g.fillText('🌰 도토리 미술관', B + 6, OH + B + CAP * 0.36);
+    g.font = '400 ' + Math.round(CAP * 0.26) + 'px ' + fam; g.fillStyle = '#6b5e50'; g.fillText(ds + (rq.spot ? ' · ' + rq.spot : '') + ' · ' + myName, B + 6, OH + B + CAP * 0.74);
+    $('#photoFlash').hidden = true; void $('#photoFlash').offsetWidth; $('#photoFlash').hidden = false; setTimeout(() => { $('#photoFlash').hidden = true; }, 600);
+    $('#photoImg').src = out.toDataURL('image/jpeg', 0.9); $('#photoView').hidden = false; photoBusy = false; funArea('포토존');
+    window.__lastPhoto = { w: out.width, h: out.height };
+    } catch (e) { photoBusy = false; toast('사진을 찍지 못했어요. 다시 눌러 주세요', 3000); }
+  }
+  function photoFile() {
+    const a = $('#photoImg').src.split(','), bin = atob(a[1]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new File([u], 'dotori-museum-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+  }
+  photoBtn.addEventListener('click', takePhoto);
+  $('#photoClose').addEventListener('click', () => { $('#photoView').hidden = true; });
+  $('#photoRetake').addEventListener('click', () => { $('#photoView').hidden = true; takePhoto(); });
+  $('#photoSave').addEventListener('click', () => { const f = photoFile(), a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 1500); toast('💾 사진을 저장했어요! (다운로드/사진첩을 확인해 보세요)', 3500); });
+  $('#photoShare').addEventListener('click', async () => {
+    const f = photoFile();
+    try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: '도토리 미술관', text: '도토리 미술관에서 찍은 사진이에요 🌰' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    $('#photoSave').click();
+  });
+  window.__nat = { gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
+
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
     pos.x = pl.x; pos.z = pl.z; heading = pl.h; camYaw = pl.h + Math.PI; camPitch = pl.pitch || 0.5; camTx = pos.x; camTz = pos.z; camInit = false; myEasel = -1; mySeat = -1; camAim = null;
@@ -6035,11 +6179,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (curSp > 0.3 && started && !pad.open && !watch.open) { tryMove(wdx * curSp * dt, wdz * curSp * dt); walkPhase += dt * (6 + curSp * 0.9); walkAmp = lerp(walkAmp, Math.min(1, curSp / SPEED + 0.1), Math.min(1, dt * 10)); }
       else { curSp = 0; walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10)); }
     }
+    me.swim = swimK(pos.x); const myGY = gY(pos.x, pos.z);
     animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0, mySeat >= 0 ? (benches[mySeat >> 1].low ? 2 : 1) : 0);
-    player.position.set(pos.x, 0.0 + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp + me.lift, pos.z);
+    player.position.set(pos.x, myGY + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp * (1 - me.swim) + me.lift, pos.z);
     player.rotation.y = heading + teleSpin; player.rotation.x = 0.11 * walkAmp;
-    if (walkAmp > 0.6 && !player.userData.hidden) { puffT -= dt; if (puffT <= 0) { puffT = 0.17; puff(pos.x - Math.sin(heading) * 0.2, pos.z - Math.cos(heading) * 0.2); } }
-    blob.position.set(pos.x, 0.05, pos.z);
+    if (walkAmp > 0.6 && !player.userData.hidden) { puffT -= dt; if (puffT <= 0) { puffT = me.swim > 0.4 ? 0.3 : 0.17; if (me.swim > 0.4) ripple(pos.x, pos.z); else puff(pos.x - Math.sin(heading) * 0.2, pos.z - Math.cos(heading) * 0.2); } }
+    blob.position.set(pos.x, 0.05 + Math.max(0, myGY), pos.z);
     updateAtmosphere(dt, tNow); sunFollow(pos.x, pos.z); swayT.value = tNow;
     pushPresence(false);
     remotes.forEach(r => {
@@ -6048,12 +6193,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const moving = Math.hypot(dx, dz) > 0.05 || r.w === 1;
       r.x += dx * f2; r.z += dz * f2; r.h += angDiff(r.h, r.th) * Math.min(1, dt * 12);
       r.amp = lerp(r.amp, moving ? 1 : 0, Math.min(1, dt * 10)); if (r.amp > 0.05) r.phase += dt * 10;
+      r.av.swim = swimK(r.x);
       animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0, r.s >= 0 ? (benches[r.s >> 1].low ? 2 : 1) : 0);
-      r.av.group.position.set(r.x, Math.abs(Math.sin(r.phase)) * 0.09 * r.amp + r.av.lift, r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp;
-      if (r.amp > 0.6) { r.puffT = (r.puffT || 0) - dt; if (r.puffT <= 0) { r.puffT = 0.25; puff(r.x, r.z); } }
+      r.av.group.position.set(r.x, gY(r.x, r.z) + Math.abs(Math.sin(r.phase)) * 0.09 * r.amp * (1 - r.av.swim) + r.av.lift, r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp;
+      if (r.amp > 0.6) { r.puffT = (r.puffT || 0) - dt; if (r.puffT <= 0) { r.puffT = 0.25; if (r.av.swim > 0.4) ripple(r.x, r.z); else puff(r.x, r.z); } }
       r.plate.sprite.visible = Math.hypot(r.x - pos.x, r.z - pos.z) < 28;
     });
-    updateFx(tNow); updateNpcs(dt); updateArea(dt);
+    updateFx(tNow); updateNpcs(dt); updateArea(dt); updateNature(dt);
     updateSitBtn(); updateViewBtn();
     easels.forEach(e => {
       e.ring.material.opacity = (e.idx === nearIdx ? 0.9 : 0.4) + 0.12 * Math.sin(tNow * 3 + e.idx);
@@ -6075,12 +6221,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const f = 1 - Math.exp(-dt * 8);
     if (inspect && (Math.hypot(joy.x, joy.y) > 0.2 || keys.w || keys.a || keys.s || keys.d || keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright)) exitInspect();
     if (inspect && cptr.size === 0) camYaw += dt * 0.28;                       /* a slow turn of its own until a finger takes over */
-    camTx += ((inspect ? inspect.x : pos.x) - camTx) * f; camTz += ((inspect ? inspect.z : pos.z) - camTz) * f;
+    camTx += ((inspect ? inspect.x : pos.x) - camTx) * f; camTz += ((inspect ? inspect.z : pos.z) - camTz) * f; camTy += ((myGY > 0 ? myGY : myGY * 0.4) - camTy) * f;
     camDist += ((started ? camWant : 26) - camDist) * Math.min(1, dt * 3);
     const pe = Math.max(camPitch, 0.08), cp = Math.cos(pe);      /* below 0.08 the camera stops sinking and starts looking up instead */
     /* no clamping to the walls: walls are one-sided, so from outside they vanish and the view stays wide */
     const dx = camTx + Math.sin(camYaw) * cp * camDist;
-    const dy = (inspect ? inspect.y : 2.4) + Math.sin(pe) * camDist, lookY = inspect ? inspect.y : 2.0 + Math.max(0, 0.08 - camPitch) * 32;
+    const dy = (inspect ? inspect.y : 2.4 + camTy) + Math.sin(pe) * camDist, lookY = inspect ? inspect.y : 2.0 + camTy + Math.max(0, 0.08 - camPitch) * 32;
     const dz = camTz + Math.cos(camYaw) * cp * camDist;
     const artist = pad.open && pad.view !== 'off' && pad.easel >= 0;
     player.visible = !artist && !inspect; blob.visible = !artist && !inspect; player.userData.hidden = artist;
@@ -6100,13 +6246,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     camera.position.copy(camPos);
     camera.lookAt(camTx, lookY, camTz);
     lookCur.set(camTx, lookY, camTz);
-    updateOccluders(dt, camPos, inspect ? _v2.set(inspect.x, 2.0, inspect.z) : _v2.set(pos.x, 2.0, pos.z));
+    updateOccluders(dt, camPos, inspect ? _v2.set(inspect.x, 2.0, inspect.z) : _v2.set(pos.x, 2.0 + Math.max(0, myGY), pos.z));
     updateLos(dt, camPos, _v2);
     const seamOn = (camPos.z > RM.hz) === (camTz > RM.hz);
     if (seamOn !== seamShown) { seamShown = seamOn; seam.forEach(m => { m.visible = seamOn; }); }
     for (let i = 0; i < onWall.length; i++) { const w = onWall[i], c = camPos[w.ax], pc = w.ax === 'x' ? camTx : camTz; w.o.visible = w.inside > 0 ? (c > w.lim && pc > w.lim - 1.5) : (c < w.lim && pc < w.lim + 1.5); }   /* only while I am on that side too, so a camera that swings through the wall behind me never has the next room's pictures in front of my face */
   }
-  const camPos = new T.Vector3(), _v = new T.Vector3(), _v2 = new T.Vector3(), lookCur = new T.Vector3(0, 2, 0), look = { yaw: 0, pitch: 0, zoom: 1 }; let camInit = false, seamShown = true, hiddenEasel = -1;
+  const camPos = new T.Vector3(), _v = new T.Vector3(), _v2 = new T.Vector3(), lookCur = new T.Vector3(0, 2, 0), look = { yaw: 0, pitch: 0, zoom: 1 }; let camInit = false, seamShown = true, hiddenEasel = -1, camTy = 0;
   let last = performance.now(), fpsT0 = 0, fpsN = 0, slowWin = 0;
   /* the action buttons are bubbles over the thing they are about: project it to the screen, keep the bubble clear of the corners (joystick, map, bars) */
   const _bv = new T.Vector3();
@@ -6125,7 +6271,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   function placeBubbles() {
     placeBubble(sitBtn, sitTarget, 0);
-    placeBubble(viewBtn, viewTarget, 0);
+    placeBubble(viewBtn, viewTarget, 0); placePhotoBubble();
     if (!sitBtn.hidden && !viewBtn.hidden && Math.abs(parseFloat(viewBtn.style.top) - parseFloat(sitBtn.style.top)) < 52) placeBubble(viewBtn, viewTarget, -56);   /* never on top of each other */
   }
   function frame(now) {
@@ -6147,6 +6293,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       chunkCull();
       renderer.render(scene, camera);
       placeBubbles();
+      if (photoReq) doCapture();
     }
     requestAnimationFrame(frame);
   }
@@ -6195,7 +6342,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (ms && !fun.ms[n]) { fun.ms[n] = 1; msg += ' 🎉 칭호 「' + ms[1] + '」 ' + funAdd(ms[2]); }
     toast(msg, 5000);
   }
-  const FUN_AREAS = ['중앙 홀', '신진 작가관', '별관', '서쪽 전시관 1', '서쪽 전시관 2', '중앙 로툰다', '둥근 홀', '조각 전시관', '화실', '야외 전시 정원', '꽃길 정원', '산 전망대', '바닷가', '호숫가', '풍차 들판', '숲속 쉼터', '남쪽 꽃들판', '들판 산책길'].concat(FUN_WINGS.slice(0, FUN_NWING).map(w => '대회랑 · ' + w.name));
+  const FUN_AREAS = ['중앙 홀', '신진 작가관', '별관', '서쪽 전시관 1', '서쪽 전시관 2', '중앙 로툰다', '둥근 홀', '조각 전시관', '화실', '야외 전시 정원', '꽃길 정원', '산 전망대', '바닷가', '호숫가', '풍차 들판', '숲속 쉼터', '남쪽 꽃들판', '들판 산책길', '도토리봉 정상', '바다 수영', '포토존'].concat(FUN_WINGS.slice(0, FUN_NWING).map(w => '대회랑 · ' + w.name));
   function funArea(nm) { if (nm && !fun.areas[nm] && FUN_AREAS.indexOf(nm) >= 0) { fun.areas[nm] = 1; funSave(); } }
 
   /* ----- weekly: a featured wing and a drawing theme (the same for everybody, by the calendar; weeks start on Monday, Korea time) ----- */
