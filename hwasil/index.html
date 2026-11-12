@@ -1050,6 +1050,7 @@ body.padOpen #hud { visibility: hidden; }
   const swimK = x => x > SEA_X - 1 ? Math.min(1, (x - SEA_X + 1) / 3) : 0;
   const lakeK = (x, z) => { const d = Math.hypot(x - LAKE.x, z - LAKE.z); return d < LAKE.r ? Math.min(1, (LAKE.r - d) / 1.5) : 0; }, swimAt = (x, z) => Math.max(swimK(x), lakeK(x, z));
   const FORM = [];
+  const WIND = { value: 0 }; const windify = (mat, amp, h0) => { mat.onBeforeCompile = sh => { sh.uniforms.uWind = WIND; sh.vertexShader = 'uniform float uWind;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n#ifdef USE_INSTANCING\nfloat wph = instanceMatrix[3].x * 0.31 + instanceMatrix[3].z * 0.23; float wk = max(0.0, position.y - ' + (h0 || 0.6).toFixed(2) + ') * ' + (amp || 0.05).toFixed(3) + ';\ntransformed.x += sin(uWind * 1.3 + wph) * wk; transformed.z += cos(uWind * 1.1 + wph * 1.3) * wk * 0.7;\n#endif'); }; return mat; };
   const WU = { me: { value: new T.Vector2(1e5, 1e5) }, night: { value: 0 } };
   const DV = { lvl: 0, y: 0, tilt: 0 }, BT = { on: -1 }, BOATS = [], DIVE_D = [0, 3.5, 8];
   const seaFloor = (x, z) => { const k = Math.max(0, Math.min(1, (x - SEA_X) / 28)); return -0.9 - 10.2 * k * k * (3 - 2 * k) + 0.5 * Math.sin(x * 0.35 + z * 0.12) * Math.sin(z * 0.2) * k; };
@@ -3167,7 +3168,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     atmHooks.push((A, fog) => { cloudM.color.copy(fog).lerp(WHITE, 0.55 * (1 - A.night)).multiplyScalar(1 - A.night * 0.55 - A.cloud * 0.12).lerp(NIGHT_CLOUD, A.night * 0.55); cloudM.opacity = 0.92 + A.cloud * 0.07; });
     for (let i = 0; i < 20; i++) {
       const g = new T.Group(), big = i % 4 === 0, np = big ? 8 : 5 + Math.floor(rnd() * 3), sc = big ? 1.7 : 0.8 + rnd() * 0.7;
-      for (let k = 0; k < np; k++) { const b = new T.Mesh(new T.SphereGeometry(3.6 + rnd() * 3.4, 10, 8), cloudM); const mid = 1 - Math.abs(k - np / 2) / (np / 2); b.position.set((k - np / 2) * 5.2, mid * 3.2 + rnd() * 1.5, (rnd() - 0.5) * 5); b.scale.set(1.3, 0.62 + mid * 0.3, 1.05); g.add(b); }
+      { const parts = []; for (let k = 0; k < np; k++) { const mid = 1 - Math.abs(k - np / 2) / (np / 2); const sg = new T.SphereGeometry(3.6 + rnd() * 3.4, 9, 7).toNonIndexed(); sg.applyMatrix4(new T.Matrix4().compose(new T.Vector3((k - np / 2) * 5.2, mid * 3.2 + rnd() * 1.5, (rnd() - 0.5) * 5), new T.Quaternion(), new T.Vector3(1.3, 0.62 + mid * 0.3, 1.05))); parts.push(sg.attributes.position.array); }
+        const tot = parts.reduce((a, b) => a + b.length, 0), arr = new Float32Array(tot); let off = 0; parts.forEach(q => { arr.set(q, off); off += q.length; }); const cg = new T.BufferGeometry(); cg.setAttribute('position', new T.BufferAttribute(arr, 3)); const cm = new T.Mesh(cg, cloudM); cm.frustumCulled = false; g.add(cm); }
       g.scale.setScalar(sc); g.userData.noShadow = true; g.traverse(o => { o.userData.noShadow = true; });
       g.position.set(-150 + rnd() * 460, 48 + rnd() * 26 + (big ? 14 : 0), -300 + rnd() * 520); scene.add(g);
       anim.push(dt => { g.position.x += dt * (0.7 + (i % 7) * 0.12); if (g.position.x > 310) g.position.x = -170; });
@@ -3541,7 +3543,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         }
         for (let k = 0; k < 160; k++) { const x = -20 + R() * 240, z = -126 + R() * 36, h = footH(x, z); if (h > 0.5 && trail(x, z) > 2 && Math.hypot(x - SUMMIT.x, z - SUMMIT.z) > 4) rocks.push([x, h - 0.1, z, 0.4 + R() * 1.2, R() * 6]); }
         const dm2 = new T.Object3D(), cc = new T.Color();
-        const mk = (geo, list, pal, y0) => { if (!list.length) return null; const im = new T.InstancedMesh(geo, new T.MeshLambertMaterial({ color: 0xffffff }), list.length); list.forEach((q, i) => { dm2.position.set(q[0], q[1], q[2]); dm2.rotation.set(0, q[4], 0); dm2.scale.set(q[3], q[3] * (0.9 + q[5] * 0.4), q[3]); dm2.updateMatrix(); im.setMatrixAt(i, dm2.matrix); im.setColorAt(i, cc.setHex(pal[Math.floor(q[5] * 997) % pal.length]).multiplyScalar(0.9 + (q[5] * 7 % 1) * 0.2)); }); im.frustumCulled = false; im.userData.noShadow = true; scene.add(im); FORM.push(im); return im; };
+        const mk = (geo, list, pal, y0) => { if (!list.length) return null; const im = new T.InstancedMesh(geo, windify(new T.MeshLambertMaterial({ color: 0xffffff }), 0.045, 1.2), list.length); list.forEach((q, i) => { dm2.position.set(q[0], q[1], q[2]); dm2.rotation.set(0, q[4], 0); dm2.scale.set(q[3], q[3] * (0.9 + q[5] * 0.4), q[3]); dm2.updateMatrix(); im.setMatrixAt(i, dm2.matrix); im.setColorAt(i, cc.setHex(pal[Math.floor(q[5] * 997) % pal.length]).multiplyScalar(0.9 + (q[5] * 7 % 1) * 0.2)); }); im.frustumCulled = false; im.userData.noShadow = true; scene.add(im); FORM.push(im); return im; };
         mk(pineG, pines, [0x2f6b3d, 0x255a35, 0x3d7a46, 0x1f5030], 0);
         mk(broadG, broads, [0x5aa04a, 0x7bb85a, 0x5aa04a, 0xc9a23c, 0xd9822b, 0xc8503a, 0x8bbf4f], 0);
         const tr = pines.concat(broads), trunk = new T.InstancedMesh(new T.CylinderGeometry(0.16, 0.24, 2.6, 5).translate(0, 1.3, 0), new T.MeshLambertMaterial({ color: 0x6b4a2f }), tr.length);
@@ -3550,7 +3552,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         rocks.forEach((q, i) => { dm2.position.set(q[0], q[1] + q[3] * 0.3, q[2]); dm2.rotation.set(q[4], q[4] * 2, 0); dm2.scale.set(q[3] * 1.3, q[3], q[3] * 1.1); dm2.updateMatrix(); rk.setMatrixAt(i, dm2.matrix); rk.setColorAt(i, cc.setHex(i % 3 ? 0x8a8680 : 0x77726c)); }); rk.frustumCulled = false; rk.userData.noShadow = true; scene.add(rk); FORM.push(rk);
         /* forest floor: bushes, ferns, fallen logs, stumps and mossy boulders so the ground is never bare */
         const flr = (n, geo, pal, sc0, sc1, hmin, hmax, mat, lay) => { const ls = []; for (let k = 0; k < n * 6 && ls.length < n; k++) { const x = -30 + R() * 262, z = -126 + R() * 36, h = footH(x, z); if (h < hmin || h > hmax || trail(x, z) < 1.8 || Math.hypot(x - SUMMIT.x, z - SUMMIT.z) < 4) continue; if (Math.abs(x) < GGR + 10 && z < GGS + 8 && z > GGZ - 14) continue; ls.push([x, h, z, sc0 + R() * (sc1 - sc0), R() * 6.3, R()]); }
-          if (!ls.length) return; const im = new T.InstancedMesh(geo, mat || new T.MeshLambertMaterial({ color: 0xffffff }), ls.length); ls.forEach((q, i) => { dm2.position.set(q[0], q[1] + (lay || 0) * q[3], q[2]); dm2.rotation.set(0, q[4], 0); dm2.scale.set(q[3], q[3], q[3]); dm2.updateMatrix(); im.setMatrixAt(i, dm2.matrix); im.setColorAt(i, cc.setHex(pal[Math.floor(q[5] * 997) % pal.length]).multiplyScalar(0.85 + q[5] * 0.3)); }); im.frustumCulled = false; im.userData.noShadow = true; scene.add(im); FORM.push(im); };
+          if (!ls.length) return; const im = new T.InstancedMesh(geo, windify(mat || new T.MeshLambertMaterial({ color: 0xffffff }), 0.18, 0.1), ls.length); ls.forEach((q, i) => { dm2.position.set(q[0], q[1] + (lay || 0) * q[3], q[2]); dm2.rotation.set(0, q[4], 0); dm2.scale.set(q[3], q[3], q[3]); dm2.updateMatrix(); im.setMatrixAt(i, dm2.matrix); im.setColorAt(i, cc.setHex(pal[Math.floor(q[5] * 997) % pal.length]).multiplyScalar(0.85 + q[5] * 0.3)); }); im.frustumCulled = false; im.userData.noShadow = true; scene.add(im); FORM.push(im); };
         const bushG = mergeG([new T.IcosahedronGeometry(0.7, 0).translate(0, 0.45, 0), new T.IcosahedronGeometry(0.5, 0).translate(0.6, 0.3, 0.2), new T.IcosahedronGeometry(0.45, 0).translate(-0.5, 0.3, -0.2)]);
         const fernG = mergeG([0, 1, 2, 3, 4, 5].map(i => new T.ConeGeometry(0.16, 1.5, 4).translate(0, 0.75, 0).rotateZ(1.0).rotateY(i * 1.047 + 0.3)));
         const logG = new T.CylinderGeometry(0.28, 0.32, 3.2, 7).rotateZ(Math.PI / 2), stumpG = new T.CylinderGeometry(0.4, 0.5, 0.55, 8);
@@ -5967,7 +5969,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const fk = Math.max(0, Math.min(1, (night - 0.35) / 0.5)) * (1 - ATM.rain * 0.7) * (started && pos.x > RM.hx + 2 && !uw ? 1 : 0);
     flies.o.visible = fk > 0.01; flies.m.uniforms.uOp.value = fk; flies.m.uniforms.uT.value = t;
     if (flies.o.visible) { const P = flies.P; for (let i = 0; i < flies.n; i++) { const b = flies.B[i], ph = b[2] * 6.28, wx = wrapTo(b[0] * 400 - 80, pos.x, 120) + 1.3 * Math.sin(t * 0.5 + ph), wz = wrapTo(b[1] * 400 - 80, pos.z, 120) + 1.3 * Math.cos(t * 0.43 + ph * 2); P[i * 3] = wx; P[i * 3 + 1] = wx > SEA_X - 4 ? -200 : Math.max(0, gY(wx, wz)) + 0.5 + b[2] * 2.6 + 0.4 * Math.sin(t * 0.8 + ph * 3); P[i * 3 + 2] = wz; } flies.o.geometry.attributes.position.needsUpdate = true; }
-    updateDayLife(dt, t, night, uw); updateFireworks(dt);
+    WIND.value = t; updateDayLife(dt, t, night, uw); updateFireworks(dt);
     plank.o.visible = uw; plank.m.uniforms.uOp.value = 0.3 + 0.7 * night; plank.m.uniforms.uT.value = t;
     shafts.visible = uw && night < 0.8; 
     if (uw) {
@@ -6271,7 +6273,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (SE.whale) { const w = SE.whale, a = w.w * t, x = w.cx + Math.cos(a) * w.R * 0.3, z = w.cz + Math.sin(a) * w.R; w.g.position.set(x, w.y + Math.sin(t * 0.15) * 1.5, z); w.g.rotation.y = Math.atan2(-Math.cos(a) * 0.3, -Math.sin(a)) + 0; w.fl.rotation.x = 0.25 * Math.sin(t * 0.8); }
   }
   const oo2 = new T.Object3D();
-  window.__nat = { fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
+  window.__nat = { info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
 
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
