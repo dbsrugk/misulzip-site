@@ -3408,10 +3408,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const fh = new T.InstancedMesh(new T.IcosahedronGeometry(0.26, 0), new T.MeshLambertMaterial({ color: 0xffffff }), FN.length), fo = new T.Object3D(), fcl = new T.Color();
       fh.frustumCulled = false; FN.forEach((f, i) => { fo.position.set(f.x, f.y + 0.2, f.z); fo.updateMatrix(); fh.setMatrixAt(i, fo.matrix); fh.setColorAt(i, fcl.setHex(f.c)); }); scene.add(fh);
       /* lanterns, benches */
-      for (let x = RM.hx + 10, k = 0; x < WZ - 6; x += 12, k++) lantern(x, ZW + (k % 2 ? 3.4 : -3.4));
+      for (let x = RM.hx + 10, k = 0; x < WZ - 6; x += 12, k++) lantern(x, ZW - 3.4);   /* north side only: the atelier hut and its easels are on the south side */
       for (let z = ZW + 13, k = 0; z < 110; z += 13, k++) lantern(WZ + (k % 2 ? 3.4 : -3.4), z);
       [30, 66, 96].forEach((z, i) => outBench(WZ + (i % 2 ? -5.4 : 5.4), z, i % 2 ? -Math.PI / 2 : Math.PI / 2));
-      outBench(62, ZW + 5.4, Math.PI);
+      outBench(64, ZW - 5.6, Math.PI);
       /* a wooden arch hung with flowers where the path turns south, with the name of the garden */
       [-3.2, 3.2].forEach(dx => { at(new T.Mesh(cyl(0.22, 0.28, 5.2, 8), wood), WZ + dx, 2.6, 14); at(new T.Mesh(bx(0.9, 0.3, 0.9), kerb), WZ + dx, 0.15, 14); colliders.push({ x: WZ + dx, z: 14, r: 0.5 }); });
       at(new T.Mesh(bx(8.2, 0.34, 0.5), wood), WZ, 5.2, 14);
