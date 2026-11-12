@@ -165,7 +165,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.screenshot({ path: t.out('hang.png') });
   await p.click('#viewerClose'); await p.waitForTimeout(300);
   /* somebody else gets the next frame at the same moment: the server says taken */
-  const gj = await p.evaluate(() => window.__hw.slots.findIndex(s => s.room === 'garden' && s.size === 'm'));
+  const gj = await p.evaluate(() => window.__hw.slots.findLastIndex(s => s.room === 'garden' && s.size === 'm'));
   await p.evaluate(j => { const s = window.__hw.slots[j]; window.__db.gallery['zz_other'] = { id: 'zz_other', kind: 'exhibit', owner: 'zz', workId: 'w1', artist: '다른 화가', title: '남의 그림', slot: s.id, room: 'garden', size: 'm', w: 1000, h: 750, at: 5, strokes: [{ k: 'p', c: '#2c47c8', w: 12, p: [100, 100, 700, 600] }] }; }, gj);
   await p.evaluate(j => window.__hw.tapSlot(j), gj); await p.waitForTimeout(500);
   check(await vis(p, '#hang'), 'an empty frame opens the picker of my works');
