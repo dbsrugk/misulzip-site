@@ -174,7 +174,7 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #actDots { padding: 0 14px 8px; font-size: 26px; line-height: 1; letter-spacing: 1px; background: #fff; box-shadow: 2px 2px 0 var(--ink); }
 body:not(.actOpen) .sitBtn:not(#actDots):not(.keep) { display: none; }
 body.actOpen .sitBtn:not(#actDots):not(.keep)::after { display: none; }
-#uwTint { position: fixed; inset: 0; z-index: 4; pointer-events: none; background: radial-gradient(ellipse at 50% 40%, rgba(120,220,255,0.10), rgba(0,40,90,0.38)); }
+#uwTint { position: fixed; inset: 0; z-index: 4; pointer-events: none; background: radial-gradient(ellipse at 50% 38%, rgba(140,255,240,0.10), rgba(0,60,120,0.12) 70%, rgba(0,30,90,0.2)); }
 #uwTint[hidden] { display: none; }   /* the free spot between the stick and the map */
 #tourBtn.keep::after { display: none; }
 .sitBtn[disabled] { background: var(--chalk); box-shadow: none; opacity: 0.85; cursor: default; }
@@ -6045,7 +6045,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   function underwaterFx() {
     const uw = started && camera.position.y < -0.15 && camera.position.x > SEA_X - 1, d = Math.min(1, -camera.position.y / 8);
-    if (uw) { UWC.setRGB(0.1 - 0.06 * d, 0.46 - 0.3 * d, 0.7 - 0.3 * d).multiplyScalar(1 - 0.5 * ATM.night); UWC.r += 0.05 * ATM.night; UWC.g += 0.04 * ATM.night; UWC.b += 0.1 * ATM.night; uwGlowMats(ATM.night); scene.background.copy(UWC); scene.fog.color.copy(UWC); scene.fog.near = 1; scene.fog.far = 44 - 14 * d; }
+    if (uw) { UWC.setRGB(0.1 - 0.06 * d, 0.74 - 0.38 * d, 0.86 - 0.3 * d).multiplyScalar(1 - 0.45 * ATM.night); UWC.r += 0.05 * ATM.night; UWC.g += 0.04 * ATM.night; UWC.b += 0.1 * ATM.night; uwGlowMats(ATM.night); scene.background.copy(UWC); scene.fog.color.copy(UWC); scene.fog.near = 6; scene.fog.far = 120 - 34 * d; }
     if (sky.visible === uw) sky.visible = !uw;
     if (uwTint.hidden === uw) uwTint.hidden = !uw;
   }
@@ -6180,7 +6180,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { const nf = pos.z < 70; if (FORM.length && FORM[0].visible !== nf) FORM.forEach(m => { m.visible = nf; }); }      /* the hill forest is only drawn when I am anywhere near it */
     if (SC.fall) { SC.fall.uniforms.uT.value = t; SC.fall.uniforms.uN.value = night; }
     if (SC.mist) { const m = SC.mist; m.o.visible = nearN; if (nearN) { for (let i = 0; i < 45; i++) { const k = (t * 0.2 + m.ph[i]) % 1; m.P[i * 3] = m.x + Math.sin(m.ph[i] * 40 + t * 0.7) * (1.2 + k * 1.8); m.P[i * 3 + 1] = m.y + 0.3 + k * 3.2; m.P[i * 3 + 2] = m.z + Math.cos(m.ph[i] * 33 + t * 0.6) * (1.2 + k * 1.8); } m.o.geometry.attributes.position.needsUpdate = true; m.o.material.opacity = 0.32 * (1 - night * 0.6); } }
-    if (SC.clouds) { const C = SC.clouds; C.im.visible = nearN || pos.z < 0; if (C.im.visible) { C.m.color.setRGB(1 - night * 0.7, 1 - night * 0.68, 1 - night * 0.55); C.m.emissive.setRGB(0.4 - night * 0.36, 0.4 - night * 0.36, 0.4 - night * 0.34); C.cl.forEach((q, i) => { q.x += q.sp * dt; if (q.x > 270) q.x = -80; C.o.position.set(q.x, q.y + Math.sin(t * 0.1 + i) * 0.4, q.z); C.o.scale.set(q.s, q.s * 0.7, q.s); C.o.updateMatrix(); C.im.setMatrixAt(i, C.o.matrix); }); C.im.instanceMatrix.needsUpdate = true; } }
+    if (SC.clouds) { const C = SC.clouds; C.im.visible = nearN || pos.z < 0; if (C.im.visible) { C.m.color.setRGB(1 - night * 0.2, 1 - night * 0.14, 1); C.m.emissive.setRGB(0.4 - night * 0.06, 0.4 - night * 0.02, 0.4 + night * 0.18); C.cl.forEach((q, i) => { q.x += q.sp * dt; if (q.x > 270) q.x = -80; C.o.position.set(q.x, q.y + Math.sin(t * 0.1 + i) * 0.4, q.z); C.o.scale.set(q.s, q.s * 0.7, q.s); C.o.updateMatrix(); C.im.setMatrixAt(i, C.o.matrix); }); C.im.instanceMatrix.needsUpdate = true; } }
     if (SC.leaves) { const L = SC.leaves, on = started && pos.z < -20 && pos.x > -10 && night < 0.8 && !(DV.y < -0.5); L.o.visible = on; if (on) { for (let i = 0; i < L.n; i++) { const b = L.B[i], fall = (t * (0.5 + b[2] * 0.4) + b[1] * 10) % 10; L.P[i * 3] = wrapTo(b[0] * 200, pos.x, 60) + Math.sin(t * 0.9 + b[2] * 20) * 1.6; L.P[i * 3 + 1] = Math.max(0, gY(pos.x, pos.z)) + 11 - fall * 1.15 + 0.5; L.P[i * 3 + 2] = wrapTo(b[1] * 200 + 17, pos.z, 60) + Math.cos(t * 0.8 + b[0] * 20) * 1.6; } L.o.geometry.attributes.position.needsUpdate = true; } }
     SC.birds.forEach(b => { b.g.visible = night < 0.7; if (!b.g.visible) return; const a = b.ph + b.w * t, fl = Math.sin(t * 7 + b.ph * 5) * 0.7; b.g.position.set(b.cx + Math.cos(a) * b.R, b.y + Math.sin(t * 0.3 + b.ph) * 1.5, b.cz + Math.sin(a) * b.R); b.g.rotation.y = Math.atan2(-Math.sin(a) * Math.sign(b.w), Math.cos(a) * Math.sign(b.w)); b.wl.rotation.z = fl; b.wr.rotation.z = -fl; });
   }
@@ -6341,7 +6341,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (SE.whale) { const w = SE.whale, a = w.w * t, x = w.cx + Math.cos(a) * w.R * 0.3, z = w.cz + Math.sin(a) * w.R; w.g.position.set(x, w.y + Math.sin(t * 0.15) * 1.5, z); w.g.rotation.y = Math.atan2(-Math.cos(a) * 0.3, -Math.sin(a)) + 0; w.fl.rotation.x = 0.25 * Math.sin(t * 0.8); }
   }
   const oo2 = new T.Object3D();
-  window.__nat = { walk: walkable, info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
+  window.__nat = { scene: () => scene, walk: walkable, info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
 
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
