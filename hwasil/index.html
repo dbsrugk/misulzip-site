@@ -3164,12 +3164,27 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     /* clouds */
     const cloudM = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.92, fog: false });
     atmHooks.push((A, fog) => { cloudM.color.copy(fog).lerp(WHITE, 0.55 * (1 - A.night)).multiplyScalar(1 - A.night * 0.55 - A.cloud * 0.12); cloudM.opacity = 0.92 + A.cloud * 0.07; });
-    for (let i = 0; i < 9; i++) {
-      const g = new T.Group();
-      for (let k = 0; k < 4; k++) { const b = new T.Mesh(new T.SphereGeometry(4 + rnd() * 3, 10, 8), cloudM); b.position.set(k * 5 - 7, rnd() * 2, (rnd() - 0.5) * 3); b.scale.set(1.3, 0.7, 1); g.add(b); }
-      g.position.set(-80 + rnd() * 340, 50 + rnd() * 18, -150 + rnd() * 260); scene.add(g);
-      anim.push(dt => { g.position.x += dt * (0.8 + i * 0.05); if (g.position.x > 280) g.position.x = -120; });
+    for (let i = 0; i < 20; i++) {
+      const g = new T.Group(), big = i % 4 === 0, np = big ? 8 : 5 + Math.floor(rnd() * 3), sc = big ? 1.7 : 0.8 + rnd() * 0.7;
+      for (let k = 0; k < np; k++) { const b = new T.Mesh(new T.SphereGeometry(3.6 + rnd() * 3.4, 10, 8), cloudM); const mid = 1 - Math.abs(k - np / 2) / (np / 2); b.position.set((k - np / 2) * 5.2, mid * 3.2 + rnd() * 1.5, (rnd() - 0.5) * 5); b.scale.set(1.3, 0.62 + mid * 0.3, 1.05); g.add(b); }
+      g.scale.setScalar(sc); g.userData.noShadow = true; g.traverse(o => { o.userData.noShadow = true; });
+      g.position.set(-150 + rnd() * 460, 48 + rnd() * 26 + (big ? 14 : 0), -300 + rnd() * 520); scene.add(g);
+      anim.push(dt => { g.position.x += dt * (0.7 + (i % 7) * 0.12); if (g.position.x > 310) g.position.x = -170; });
     }
+    /* a far mountain range all round the horizon (follows the camera like the sky; hazier and bluer the farther it is) */
+    const RANGES = [];
+    [[338, 58, 0xa9bcd6, 1.0, 71], [318, 40, 0x86a0c4, 0.7, 13]].forEach((L, li) => {
+      const N = 160, pos = [], idx = [], col = []; let sd = L[4]; const rr = () => { sd = (sd * 16807 + 11) % 2147483647; return sd / 2147483647; };
+      const hs = []; for (let i = 0; i <= N; i++) { const a = i / N * Math.PI * 2; const east = Math.max(0, Math.cos(a)); const base = 0.35 + 0.65 * Math.abs(Math.sin(a * 3 + li) * 0.6 + Math.sin(a * 7.3 + li * 2) * 0.4); hs.push(L[1] * (0.25 + base * (0.5 + rr() * 0.7)) * (1 - 0.72 * east * east)); }
+      hs[N] = hs[0];
+      for (let i = 0; i <= N; i++) { const a = i / N * Math.PI * 2, x = Math.cos(a) * L[0], z = Math.sin(a) * L[0]; pos.push(x, -10, z, x, hs[i] - 10, z); col.push(1, 1, 1, 0.86, 0.92, 1); }
+      for (let i = 0; i < N; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new T.Float32BufferAttribute(col, 3)); g.setIndex(idx);
+      const m = new T.Mesh(g, new T.MeshBasicMaterial({ color: L[2], vertexColors: true, side: T.DoubleSide, fog: false, depthWrite: false })); m.renderOrder = -9; m.frustumCulled = false; m.userData.noShadow = true; scene.add(m); RANGES.push(m);
+      const tint = new T.Color(L[2]), nt = new T.Color(0x0e1838);
+      atmHooks.push((A, fog) => { m.material.color.copy(fog).lerp(tint, (0.55 + li * 0.3) * (1 - A.night * 0.85)).lerp(nt, A.night * (0.35 + li * 0.25)); });
+    });
+    window.__hwRanges = RANGES;
 
     /* trees (instanced): kept off the paths, the plaza and the drawing spots */
     const SPOTS = [{ x: 85, z: -46, r: 16 }, { x: 85, z: -37, r: 17 }, { x: LAKE.x, z: LAKE.z, r: 21 }, { x: LAKE.x - LAKE.r - 7, z: LAKE.z, r: 12 }, { x: MILL.x, z: MILL.z, r: 22 }, { x: MILL.x - 14, z: MILL.z - 4, r: 9 }, { x: MILL.x + 14, z: MILL.z - 4, r: 9 }, { x: 134, z: -12, r: 10 }];
@@ -6692,7 +6707,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     update(dt);
-    sky.position.copy(camera.position);
+    sky.position.copy(camera.position); if (window.__hwRanges) window.__hwRanges.forEach(r => r.position.set(camera.position.x, 0, camera.position.z));
     if (HI && started && !pad.open && !watch.open && !document.hidden && !navigator.webdriver) {          /* a slow phone: drop to low quality by itself (not when automated tests run) */
       if (!fpsT0) { fpsT0 = now; fpsN = 0; }
       fpsN++;
