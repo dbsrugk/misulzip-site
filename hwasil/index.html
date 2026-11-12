@@ -5970,7 +5970,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const fk = Math.max(0, Math.min(1, (night - 0.35) / 0.5)) * (1 - ATM.rain * 0.7) * (started && pos.x > RM.hx + 2 && !uw ? 1 : 0);
     flies.o.visible = fk > 0.01; flies.m.uniforms.uOp.value = fk; flies.m.uniforms.uT.value = t;
     if (flies.o.visible) { const P = flies.P; for (let i = 0; i < flies.n; i++) { const b = flies.B[i], ph = b[2] * 6.28, wx = wrapTo(b[0] * 400 - 80, pos.x, 120) + 1.3 * Math.sin(t * 0.5 + ph), wz = wrapTo(b[1] * 400 - 80, pos.z, 120) + 1.3 * Math.cos(t * 0.43 + ph * 2); P[i * 3] = wx; P[i * 3 + 1] = wx > SEA_X - 4 ? -200 : Math.max(0, gY(wx, wz)) + 0.5 + b[2] * 2.6 + 0.4 * Math.sin(t * 0.8 + ph * 3); P[i * 3 + 2] = wz; } flies.o.geometry.attributes.position.needsUpdate = true; }
-    WIND.value = t; updateDayLife(dt, t, night, uw); updateFireworks(dt); updateLakeLanterns(dt, t, night); updateJumpers(dt, night);
+    WIND.value = t; updateDayLife(dt, t, night, uw); updateFireworks(dt); updateLakeLanterns(dt, t, night); updateJumpers(dt, night); updateGroundMist(dt, t);
     plank.o.visible = uw; plank.m.uniforms.uOp.value = 0.3 + 0.7 * night; plank.m.uniforms.uT.value = t;
     shafts.visible = uw && night < 0.8; 
     if (uw) {
@@ -6265,6 +6265,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (j.t > 2.6) { j.t = -1; j.rg.visible = false; }
     });
   }
+  /* low ground mist that drifts over the meadows around sunrise and sunset */
+  const GM = []; { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'), gr = x.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); const tx = new T.CanvasTexture(cv);
+    for (let i = 0; i < (HI ? 22 : 12); i++) { const m = new T.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0, depthWrite: false, fog: false, color: 0xffeedd }), p = new T.Mesh(new T.PlaneGeometry(1, 1), m); p.rotation.x = -Math.PI / 2; const sz = 30 + RN() * 30; p.scale.set(sz, sz * 0.7, 1); p.visible = false; p.userData.noShadow = true; p.renderOrder = 2; scene.add(p); GM.push({ p: p, m: m, a: RN(), b: RN(), c: RN() }); } }
+  function updateGroundMist(dt, t) {
+    const bump = (v, c, w) => Math.max(0, 1 - Math.abs(v - c) / w), tt = ATM.t, k = Math.max(bump(tt, 0.02, 0.12), bump(tt, 1.02, 0.12), bump(tt, 0.58, 0.1)) * (1 - ATM.rain * 0.5) * (started && pos.x > RM.hx + 2 && pos.x < SEA_X - 6 && !(DV.y < -0.6) ? 1 : 0);
+    GM.forEach((g, i) => { g.p.visible = k > 0.03; if (!g.p.visible) return; const x = wrapTo(g.a * 300 + t * (0.5 + g.c), pos.x, 110), z = wrapTo(g.b * 300, pos.z, 110); g.p.position.set(x, Math.max(0, gY(x, z)) + 0.9 + g.c * 0.6, z); g.m.color.copy(scene.fog.color).lerp(WHITE, 0.5); g.m.opacity = 0.6 * k * (0.75 + 0.25 * Math.sin(t * 0.4 + i)); });
+  }
   function updateFireworks(dt) {
     const ok = started && ATM.night > 0.85 && ATM.cloud < 0.3 && ATM.rain < 0.1 && !(DV.y < -0.6);
     FW.forEach((f, fi) => {
@@ -6292,7 +6299,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (SE.whale) { const w = SE.whale, a = w.w * t, x = w.cx + Math.cos(a) * w.R * 0.3, z = w.cz + Math.sin(a) * w.R; w.g.position.set(x, w.y + Math.sin(t * 0.15) * 1.5, z); w.g.rotation.y = Math.atan2(-Math.cos(a) * 0.3, -Math.sin(a)) + 0; w.fl.rotation.x = 0.25 * Math.sin(t * 0.8); }
   }
   const oo2 = new T.Object3D();
-  window.__nat = { info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
+  window.__nat = { info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
 
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
