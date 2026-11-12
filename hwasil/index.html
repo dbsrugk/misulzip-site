@@ -5967,7 +5967,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const fk = Math.max(0, Math.min(1, (night - 0.35) / 0.5)) * (1 - ATM.rain * 0.7) * (started && pos.x > RM.hx + 2 && !uw ? 1 : 0);
     flies.o.visible = fk > 0.01; flies.m.uniforms.uOp.value = fk; flies.m.uniforms.uT.value = t;
     if (flies.o.visible) { const P = flies.P; for (let i = 0; i < flies.n; i++) { const b = flies.B[i], ph = b[2] * 6.28, wx = wrapTo(b[0] * 400 - 80, pos.x, 120) + 1.3 * Math.sin(t * 0.5 + ph), wz = wrapTo(b[1] * 400 - 80, pos.z, 120) + 1.3 * Math.cos(t * 0.43 + ph * 2); P[i * 3] = wx; P[i * 3 + 1] = wx > SEA_X - 4 ? -200 : Math.max(0, gY(wx, wz)) + 0.5 + b[2] * 2.6 + 0.4 * Math.sin(t * 0.8 + ph * 3); P[i * 3 + 2] = wz; } flies.o.geometry.attributes.position.needsUpdate = true; }
-    updateDayLife(dt, t, night, uw);
+    updateDayLife(dt, t, night, uw); updateFireworks(dt);
     plank.o.visible = uw; plank.m.uniforms.uOp.value = 0.3 + 0.7 * night; plank.m.uniforms.uT.value = t;
     shafts.visible = uw && night < 0.8; 
     if (uw) {
@@ -6241,6 +6241,19 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         g.traverse(o => { o.userData.noShadow = true; }); scene.add(g); (SE.isles = SE.isles || []).push(g); });
       SE.far = []; for (let i = 0; i < 5; i++) { const g = new T.Group(), hull = new T.Mesh(new T.BoxGeometry(5, 1.2, 1.6), LM(0xf4f4f4)), sl = new T.Mesh(new T.ConeGeometry(2.0, 7, 3).scale(1, 1, 0.12), new T.MeshLambertMaterial({ color: i % 2 ? 0xffffff : 0xffd2a0, side: T.DoubleSide })); sl.position.set(0, 4.2, 0); g.add(hull, sl); g.position.set(215 + RS() * 120, 0.1, -200 + i * 90); g.userData.noShadow = true; g.traverse(o => { o.userData.noShadow = true; }); scene.add(g); SE.far.push({ g: g, sp: 0.5 + RS() * 0.6, ph: RS() * 6 }); } }
   }
+  /* now and then fireworks go up over the sea on clear nights */
+  const FW = []; { const NP = HI ? 170 : 90; for (let i = 0; i < 3; i++) { const g = new T.BufferGeometry(), P = new Float32Array(NP * 3), C = new Float32Array(NP * 3), D = []; for (let k = 0; k < NP; k++) { const th = Math.acos(2 * Math.random() - 1), ph = Math.random() * 6.283, sp = 14 + Math.random() * 12; D.push([Math.sin(th) * Math.cos(ph) * sp, Math.cos(th) * sp, Math.sin(th) * Math.sin(ph) * sp]); } g.setAttribute('position', new T.BufferAttribute(P, 3)); g.setAttribute('color', new T.BufferAttribute(C, 3));
+      const m = new T.PointsMaterial({ size: 9, sizeAttenuation: false, map: dotTexEarly, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false }), o = new T.Points(g, m); o.frustumCulled = false; o.visible = false; o.userData.noShadow = true; scene.add(o); FW.push({ o: o, m: m, P: P, C: C, D: D, n: NP, t: -1, next: 3 + i * 4, cx: 0, cy: 0, cz: 0, col: new T.Color() }); } }
+  function updateFireworks(dt) {
+    const ok = started && ATM.night > 0.85 && ATM.cloud < 0.3 && ATM.rain < 0.1 && !(DV.y < -0.6);
+    FW.forEach((f, fi) => {
+      if (f.t < 0) { f.o.visible = false; if (ok) { f.next -= dt; if (f.next <= 0) { f.t = 0; f.next = 7 + Math.random() * 9; f.cx = 215 + Math.random() * 110; f.cz = -110 + Math.random() * 260; f.cy = 60 + Math.random() * 35; f.col.setHSL(Math.random(), 0.9, 0.62); } } return; }
+      f.t += dt; const rise = 1.4, T0 = f.t - rise; f.o.visible = true;
+      if (T0 < 0) { const k = f.t / rise, y = f.cy * k * (2 - k) * 0.9; for (let i = 0; i < f.n; i++) { f.P[i * 3] = f.cx; f.P[i * 3 + 1] = i < 3 ? y - i * 2 : -500; f.P[i * 3 + 2] = f.cz; f.C[i * 3] = 1; f.C[i * 3 + 1] = 0.85; f.C[i * 3 + 2] = 0.5; } f.m.opacity = 0.9; }
+      else { const dur = 3.2; if (T0 > dur) { f.t = -1; return; } const fade = 1 - T0 / dur; for (let i = 0; i < f.n; i++) { const d = f.D[i], dr = Math.exp(-T0 * 1.1); f.P[i * 3] = f.cx + d[0] * (1 - dr) / 1.1; f.P[i * 3 + 1] = f.cy + d[1] * (1 - dr) / 1.1 - 4.5 * T0 * T0; f.P[i * 3 + 2] = f.cz + d[2] * (1 - dr) / 1.1; const tw = 0.6 + 0.4 * Math.sin(T0 * 14 + i); f.C[i * 3] = f.col.r * tw; f.C[i * 3 + 1] = f.col.g * tw; f.C[i * 3 + 2] = f.col.b * tw; } f.m.opacity = Math.min(1, fade * 1.6); }
+      f.o.geometry.attributes.position.needsUpdate = true; f.o.geometry.attributes.color.needsUpdate = true;
+    });
+  }
   function updateSeaLife(dt, t) {
     if (SE.far) SE.far.forEach(f => { f.g.position.z += dt * f.sp; if (f.g.position.z > 260) f.g.position.z = -260; f.g.position.y = 0.1 + 0.15 * Math.sin(t * 0.8 + f.ph); f.g.rotation.set(0.04 * Math.sin(t * 0.7 + f.ph), 0, 0.05 * Math.sin(t * 0.6 + f.ph)); f.g.rotation.y = Math.PI / 2; });
     const night = ATM.night, nearSea = pos.x > 100;
@@ -6258,7 +6271,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (SE.whale) { const w = SE.whale, a = w.w * t, x = w.cx + Math.cos(a) * w.R * 0.3, z = w.cz + Math.sin(a) * w.R; w.g.position.set(x, w.y + Math.sin(t * 0.15) * 1.5, z); w.g.rotation.y = Math.atan2(-Math.cos(a) * 0.3, -Math.sin(a)) + 0; w.fl.rotation.x = 0.25 * Math.sin(t * 0.8); }
   }
   const oo2 = new T.Object3D();
-  window.__nat = { sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
+  window.__nat = { fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
 
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
