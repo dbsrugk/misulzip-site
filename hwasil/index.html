@@ -3162,8 +3162,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       V.traverse(o => { o.userData.noShadow = true; });
     }
     /* clouds */
+    const NIGHT_CLOUD = new T.Color(0x56649a);
     const cloudM = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.92, fog: false });
-    atmHooks.push((A, fog) => { cloudM.color.copy(fog).lerp(WHITE, 0.55 * (1 - A.night)).multiplyScalar(1 - A.night * 0.55 - A.cloud * 0.12); cloudM.opacity = 0.92 + A.cloud * 0.07; });
+    atmHooks.push((A, fog) => { cloudM.color.copy(fog).lerp(WHITE, 0.55 * (1 - A.night)).multiplyScalar(1 - A.night * 0.55 - A.cloud * 0.12).lerp(NIGHT_CLOUD, A.night * 0.55); cloudM.opacity = 0.92 + A.cloud * 0.07; });
     for (let i = 0; i < 20; i++) {
       const g = new T.Group(), big = i % 4 === 0, np = big ? 8 : 5 + Math.floor(rnd() * 3), sc = big ? 1.7 : 0.8 + rnd() * 0.7;
       for (let k = 0; k < np; k++) { const b = new T.Mesh(new T.SphereGeometry(3.6 + rnd() * 3.4, 10, 8), cloudM); const mid = 1 - Math.abs(k - np / 2) / (np / 2); b.position.set((k - np / 2) * 5.2, mid * 3.2 + rnd() * 1.5, (rnd() - 0.5) * 5); b.scale.set(1.3, 0.62 + mid * 0.3, 1.05); g.add(b); }
@@ -3184,6 +3185,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const tint = new T.Color(L[2]), nt = new T.Color(0x0e1838);
       atmHooks.push((A, fog) => { m.material.color.copy(fog).lerp(tint, (0.55 + li * 0.3) * (1 - A.night * 0.85)).lerp(nt, A.night * (0.35 + li * 0.25)); });
     });
+    /* aurora curtains over the northern sky on clear nights */
+    { const am = new T.ShaderMaterial({ transparent: true, side: T.DoubleSide, depthWrite: false, blending: T.AdditiveBlending, fog: false, uniforms: { uT: { value: 0 }, uOp: { value: 0 } },
+        vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: 'varying vec2 vUv; uniform float uT; uniform float uOp; void main() { float x = vUv.x * 14.0; float w = sin(x + uT * 0.35 + sin(x * 0.6 + uT * 0.2) * 1.8) * 0.5 + 0.5; float w2 = sin(x * 1.7 - uT * 0.5 + 2.0) * 0.5 + 0.5; float base = 0.18 + 0.2 * w2; float y = vUv.y; float band = smoothstep(base, base + 0.06, y) * smoothstep(0.98, 0.35 + 0.35 * w, y); float rays = 0.55 + 0.45 * sin(x * 9.0 + uT * 0.8 + w * 4.0); float edge = smoothstep(0.0, 0.18, vUv.x) * smoothstep(1.0, 0.82, vUv.x); vec3 g = vec3(0.2, 1.0, 0.55), p = vec3(0.65, 0.3, 1.0), c = mix(g, p, smoothstep(0.35, 0.95, y)); gl_FragColor = vec4(c * band * rays * edge, clamp(band * edge * uOp * (0.6 + 0.5 * w), 0.0, 1.0)); }' });
+      const au = new T.Mesh(new T.CylinderGeometry(310, 310, 210, 72, 1, true, Math.PI - 1.3, 2.6), am); au.position.y = 105; au.renderOrder = -8; au.frustumCulled = false; au.visible = false; au.userData.noShadow = true; scene.add(au); au.userData.followY = 105; RANGES.push(au);
+      atmHooks.push(A => { const k = Math.max(0, A.night - 0.55) / 0.45 * (1 - A.cloud) * (1 - A.rain) * (1 - A.snow * 0.5); am.uniforms.uOp.value = k; au.visible = k > 0.02; }); anim.push((dt, t) => { am.uniforms.uT.value = t; }); }
     window.__hwRanges = RANGES;
 
     /* trees (instanced): kept off the paths, the plaza and the drawing spots */
@@ -6758,7 +6765,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     update(dt);
-    sky.position.copy(camera.position); if (window.__hwRanges) window.__hwRanges.forEach(r => r.position.set(camera.position.x, 0, camera.position.z));
+    sky.position.copy(camera.position); if (window.__hwRanges) window.__hwRanges.forEach(r => r.position.set(camera.position.x, r.userData.followY || 0, camera.position.z));
     if (HI && started && !pad.open && !watch.open && !document.hidden && !navigator.webdriver) {          /* a slow phone: drop to low quality by itself (not when automated tests run) */
       if (!fpsT0) { fpsT0 = now; fpsN = 0; }
       fpsN++;
