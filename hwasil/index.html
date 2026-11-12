@@ -5979,6 +5979,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const fk = Math.max(0, Math.min(1, (night - 0.35) / 0.5)) * (1 - ATM.rain * 0.7) * (started && pos.x > RM.hx + 2 && !uw ? 1 : 0);
     flies.o.visible = fk > 0.01; flies.m.uniforms.uOp.value = fk; flies.m.uniforms.uT.value = t;
     if (flies.o.visible) { const P = flies.P; for (let i = 0; i < flies.n; i++) { const b = flies.B[i], ph = b[2] * 6.28, wx = wrapTo(b[0] * 400 - 80, pos.x, 120) + 1.3 * Math.sin(t * 0.5 + ph), wz = wrapTo(b[1] * 400 - 80, pos.z, 120) + 1.3 * Math.cos(t * 0.43 + ph * 2); P[i * 3] = wx; P[i * 3 + 1] = wx > SEA_X - 4 ? -200 : Math.max(0, gY(wx, wz)) + 0.5 + b[2] * 2.6 + 0.4 * Math.sin(t * 0.8 + ph * 3); P[i * 3 + 2] = wz; } flies.o.geometry.attributes.position.needsUpdate = true; }
+    /* auto quality: if the phone runs slowly for a few seconds, drop the render resolution once (no reload) */
+    if (!window.__aq) window.__aq = { n: 0, s: 0, done: 0, ratio: renderer.getPixelRatio() };
+    { const q = window.__aq; if (!q.done && started && dt > 0 && dt < 0.5) { q.n++; q.s += dt; if (q.s > 6) { const fps = q.n / q.s; q.n = 0; q.s = 0; if (fps < 26 && q.ratio > 1) { q.done = 1; renderer.setPixelRatio(1); renderer.setSize(window.innerWidth, window.innerHeight, false); toast('화면이 버벅여서 해상도를 낮췄어요 · 더 가볍게 하려면 설정에서 화질을 낮춰 보세요', 5000); } } } }
     WIND.value = t; updateDayLife(dt, t, night, uw); updateFireworks(dt); updateLakeLanterns(dt, t, night); updateJumpers(dt, night); updateGroundMist(dt, t); updateGlowFlowers(t, night);
     plank.o.visible = uw; plank.m.uniforms.uOp.value = 0.3 + 0.7 * night; plank.m.uniforms.uT.value = t; orbs.o.visible = uw && night > 0.3; orbs.m.uniforms.uOp.value = Math.min(1, (night - 0.3) * 1.6); orbs.m.uniforms.uT.value = t;
     shafts.visible = uw && night < 0.8; 
