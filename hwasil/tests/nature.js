@@ -53,6 +53,7 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   check(await until(p, () => !document.getElementById('swimBar').hidden && !document.getElementById('swDive').hidden, null, 40), 'the moment I am in the sea a swim bar with a dive button is at the top (no waiting for the …)');
   check((await p.textContent('#swDive')).includes('잠수'), 'the dive button reads: ' + await p.textContent('#swDive'));
   await p.click('#swDive'); await p.waitForTimeout(2800);
+  await until(p, () => window.__nat.uw() === 1, null, 60);
   const d1 = await p.evaluate(() => ({ y: window.__nat.dv().y, lvl: window.__nat.dv().lvl, uw: window.__nat.uw(), life: window.__nat.life() }));
   check(d1.lvl === 1 && d1.y < -1.8 && d1.uw === 1 && d1.life, 'diving puts me under water with the sea life on: ' + JSON.stringify(d1));
   await p.screenshot({ path: t.out('dive.png') });
