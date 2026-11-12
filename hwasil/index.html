@@ -3377,6 +3377,49 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         at(new T.Mesh(new T.IcosahedronGeometry(1.7, 1), leafA), x, 3.4, z); at(new T.Mesh(new T.IcosahedronGeometry(1.15, 1), leafB), x, 5.3, z);
         colliders.push({ x: x, z: z, r: 1.6 });
       });
+      /* ---- the garden walk: one paved flagstone path from the museum's east door, along the lawn and down the south road to the garden gate,
+              with flower beds on both sides, lanterns, benches, a flowered arch and signposts ---- */
+      const fc = document.createElement('canvas'); fc.width = fc.height = 256; const fq = fc.getContext('2d');
+      fq.fillStyle = '#d9ccaa'; fq.fillRect(0, 0, 256, 256);
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) {                                                              /* running-bond flagstones, each a little different */
+        const w = 256 / 3, x0 = c * w + (r % 2 ? w / 2 : 0) - w / 2, sh = 232 + ((r * 5 + c * 11) % 5) * 4; fq.fillStyle = 'rgb(' + sh + ',' + (sh - 10) + ',' + (sh - 38) + ')';
+        [x0, x0 + 256].forEach(xx => fq.fillRect(xx + 3, r * 64 + 3, w - 6, 58));
+      }
+      const ft = new T.CanvasTexture(fc); ft.wrapS = ft.wrapT = T.RepeatWrapping; ft.anisotropy = 4;
+      const WALK = 4.4, curbM = new T.MeshLambertMaterial({ color: 0x9c9384 });
+      function walkway(x1, z1, x2, z2) {
+        const len = Math.hypot(x2 - x1, z2 - z1), g = new T.Group(), tx = ft.clone(); tx.needsUpdate = true; tx.repeat.set(WALK / 4.4, len / 4.4);
+        const m = new T.Mesh(new T.PlaneGeometry(WALK, len), new T.MeshLambertMaterial({ map: tx })); m.rotation.x = -Math.PI / 2; m.receiveShadow = true; g.add(m);
+        [-1, 1].forEach(k => { const c = new T.Mesh(new T.PlaneGeometry(0.4, len), curbM); c.rotation.x = -Math.PI / 2; c.position.set(k * (WALK / 2 + 0.2), 0.004, 0); g.add(c); });
+        g.position.set((x1 + x2) / 2, 0.046, (z1 + z2) / 2); g.rotation.y = Math.atan2(x2 - x1, z2 - z1); scene.add(g);
+      }
+      const WZ = 92, ZW = 0;
+      walkway(RM.hx + 0.5, ZW, WZ - WALK / 2, ZW);                      /* east door -> the corner */
+      walkway(WZ, ZW + WALK / 2, WZ, n1 - 0.3);                          /* the corner -> the garden gate (over the old strip and road) */
+      flat(new T.CircleGeometry(WALK / 2 + 0.2, 20), curbM, WZ, 0.05, ZW); flat(new T.CircleGeometry(WALK / 2, 20), stone, WZ, 0.052, ZW);
+      /* flower beds: a low green mound with bright flowers, in pairs along both sides */
+      const FN = [], FCOL = [0xe84b4b, 0xf2c14e, 0xff8fb1, 0xc79bff, 0xffffff, 0xff7a59, 0x4a8fd8];
+      function bed(x, z, len, alongX) {
+        at(new T.Mesh(bx(alongX ? len : 1.5, 0.45, alongX ? 1.5 : len), L(0x4f9a4a)), x, 0.22, z).userData.noShadow = true;
+        for (let i = 0; i < Math.round(len * 1.6); i++) { const u = (rnd() - 0.5) * len, v = (rnd() - 0.5) * 1.2; FN.push({ x: x + (alongX ? u : v), z: z + (alongX ? v : u), y: 0.6 + rnd() * 0.5, c: FCOL[Math.floor(rnd() * FCOL.length)] }); }
+      }
+      for (let x = RM.hx + 6; x < WZ - 8; x += 9) [-1, 1].forEach(k => bed(x, ZW + k * 3.6, 4.5, true));
+      for (let z = ZW + 9; z < n1 - 6; z += 9) [-1, 1].forEach(k => { if (z > 100 && z < 124) return; bed(WZ + k * 3.6, z, 4.5, false); });
+      const fh = new T.InstancedMesh(new T.IcosahedronGeometry(0.26, 0), new T.MeshLambertMaterial({ color: 0xffffff }), FN.length), fo = new T.Object3D(), fcl = new T.Color();
+      fh.frustumCulled = false; FN.forEach((f, i) => { fo.position.set(f.x, f.y + 0.2, f.z); fo.updateMatrix(); fh.setMatrixAt(i, fo.matrix); fh.setColorAt(i, fcl.setHex(f.c)); }); scene.add(fh);
+      /* lanterns, benches */
+      for (let x = RM.hx + 10, k = 0; x < WZ - 6; x += 12, k++) lantern(x, ZW + (k % 2 ? 3.4 : -3.4));
+      for (let z = ZW + 13, k = 0; z < 110; z += 13, k++) lantern(WZ + (k % 2 ? 3.4 : -3.4), z);
+      [30, 66, 96].forEach((z, i) => outBench(WZ + (i % 2 ? -5.4 : 5.4), z, i % 2 ? -Math.PI / 2 : Math.PI / 2));
+      outBench(62, ZW + 5.4, Math.PI);
+      /* a wooden arch hung with flowers where the path turns south, with the name of the garden */
+      [-3.2, 3.2].forEach(dx => { at(new T.Mesh(cyl(0.22, 0.28, 5.2, 8), wood), WZ + dx, 2.6, 14); at(new T.Mesh(bx(0.9, 0.3, 0.9), kerb), WZ + dx, 0.15, 14); colliders.push({ x: WZ + dx, z: 14, r: 0.5 }); });
+      at(new T.Mesh(bx(8.2, 0.34, 0.5), wood), WZ, 5.2, 14);
+      for (let i = 0; i < 24; i++) { const u = -3.6 + i * 0.31; at(new T.Mesh(new T.IcosahedronGeometry(0.28, 0), L(FCOL[i % FCOL.length])), WZ + u, 4.95 + (i % 3) * 0.08, 14 + (i % 2 ? 0.18 : -0.18)).userData.noShadow = true; }
+      { const pl = makeNamePlate('🌼 야외 전시 정원 가는 길'); pl.sprite.scale.set(7, 1.7, 1); pl.sprite.position.set(WZ, 6.5, 14); scene.add(pl.sprite); }
+      /* a signpost at the museum door */
+      at(new T.Mesh(cyl(0.16, 0.2, 4.2, 8), wood), RM.hx + 3.2, 2.1, ZW - 3.4);
+      { const pl = makeNamePlate('야외 전시 정원 →'); pl.sprite.scale.set(5.4, 1.35, 1); pl.sprite.position.set(RM.hx + 3.2, 4.8, ZW - 3.4); scene.add(pl.sprite); }
     })();
     /* the way north: a dirt path from the viewpoint through the village gate, up the valley, and a snowfield under the peaks where it snows */
     (function () {
