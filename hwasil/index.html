@@ -160,8 +160,13 @@ button.chip { pointer-events: auto; cursor: pointer; }
 .pvBox { display: flex; flex-direction: column; align-items: center; gap: 12px; max-height: 100%; }
 #photoImg { max-width: min(92vw, 420px); max-height: 72vh; border-radius: 6px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5); background: #fff; }
 .pvRow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-#tourBtn { left: 50%; top: auto !important; bottom: calc(var(--bar) + 40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 15px; padding: 8px 12px; background: #fff; }   /* the free spot between the stick and the map */
-#tourBtn::after { display: none; }
+#tourBtn.keep { left: 50%; top: auto !important; bottom: calc(var(--bar) + 40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 15px; padding: 8px 12px; background: #fff; }
+#actDots { padding: 0 14px 8px; font-size: 26px; line-height: 1; letter-spacing: 1px; background: #fff; box-shadow: 2px 2px 0 var(--ink); }
+body:not(.actOpen) .sitBtn:not(#actDots):not(.keep) { display: none; }
+body.actOpen .sitBtn:not(#actDots):not(.keep)::after { display: none; }
+#uwTint { position: fixed; inset: 0; z-index: 4; pointer-events: none; background: radial-gradient(ellipse at 50% 40%, rgba(120,220,255,0.10), rgba(0,40,90,0.38)); }
+#uwTint[hidden] { display: none; }   /* the free spot between the stick and the map */
+#tourBtn.keep::after { display: none; }
 .sitBtn[disabled] { background: var(--chalk); box-shadow: none; opacity: 0.85; cursor: default; }
 
 #inspectBar {
@@ -559,6 +564,11 @@ body.padOpen #hud { visibility: hidden; }
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
   <button class="sitBtn" id="viewBtn" type="button" hidden>작품 크게 보기</button>
   <button class="sitBtn" id="photoBtn" type="button" hidden>📸 사진 찍기</button>
+  <button class="sitBtn" id="actDots" type="button" hidden aria-label="할 수 있는 일 보기">⋯</button>
+  <button class="sitBtn" id="diveBtn" type="button" hidden>🤿 잠수하기</button>
+  <button class="sitBtn" id="upBtn" type="button" hidden>⬆ 물 위로</button>
+  <button class="sitBtn" id="boatBtn" type="button" hidden>⛵ 보트 타기</button>
+  <div id="uwTint" hidden></div>
   <div id="photoCount" hidden></div><div id="photoFlash" hidden></div>
   <div id="photoView" hidden>
     <div class="pvBox"><img id="photoImg" alt="내가 찍은 사진"><div class="pvRow">
@@ -1035,8 +1045,10 @@ body.padOpen #hud { visibility: hidden; }
   const OUT = { x0: RM.hx + 1, x1: 146, z0: -68, z1: 334 }, SEA_X = 150, LAKE = { x: 72, z: 54, r: 13 }, MILL = { x: 112, z: 59 }, GARD = { x: 92, z: 172, r: 43, R: 31 }, GARD2 = { x: 92, z: 272, r: 43, R: 31 };   /* GARD: the open-air exhibition garden */
   /* nature: the foothills north of the village can be climbed (footH = their height, set when the range is built), the sea can be swum in, and flower fields are photo spots */
   let footH = () => 0, SUMMIT = { x: 92, z: -110, h: 10 };
-  const HILL = { x0: 44, x1: 140, z0: -127, z1: -92.2 }, SWIM = { x1: 176, z0: -60, z1: 320 };
+  const HILL = { x0: 44, x1: 140, z0: -127, z1: -92.2 }, SWIM = { x1: 204, z0: -60, z1: 320 };
   const swimK = x => x > SEA_X - 1 ? Math.min(1, (x - SEA_X + 1) / 3) : 0;
+  const DV = { lvl: 0, y: 0, tilt: 0 }, BT = { on: -1 }, BOATS = [], DIVE_D = [0, 3.5, 8];
+  const seaFloor = (x, z) => { const k = Math.max(0, Math.min(1, (x - SEA_X) / 28)); return -0.9 - 10.2 * k * k * (3 - 2 * k) + 0.5 * Math.sin(x * 0.35 + z * 0.12) * Math.sin(z * 0.2) * k; };
   const gY = (x, z) => {
     let y = 0;
     if (x >= HILL.x0 && x <= HILL.x1 && z >= HILL.z0 && z <= -88) { const h = footH(x, z); if (h > 0.05) y = h + 0.1; }
@@ -3027,10 +3039,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const sail = put(boat, new T.Mesh(new T.ConeGeometry(2, 5, 3), B(0xffffff)), 0.2, 3.6, 0); sail.scale.set(1, 1, 0.05); sail.rotation.y = Math.PI / 2;
     infoSpot(196, 8, -38, 6, 16, 6, '🗼 바다 위 바위섬에 선 등대예요. 밤이 되면 꼭대기에 불이 켜져요');
     { const bh = infoSpot(0, 2.5, 0, 6, 6, 3, '⛵ 돛단배가 바다를 천천히 오가요. 손 흔들어 인사해 볼까요?'); scene.remove(bh); boat.add(bh); }
-    anim.push((dt, t) => {
-      const z = 22 + 16 * Math.sin(t * 0.12), dir = Math.cos(t * 0.12) > 0 ? 0 : Math.PI;
-      boat.position.set(178, 0.05 + 0.1 * Math.sin(t * 1.3), z); boat.rotation.set(0, Math.PI / 2 + dir, 0.05 * Math.sin(t * 1.1));
-    });
+    BOATS.push({ name: '돛단배', g: boat, r: 7, off: -1.4, x: 178, z: 22, h: 0, sp: 0, auto: t => ({ x: 178, z: 22 + 16 * Math.sin(t * 0.12), h: Math.cos(t * 0.12) > 0 ? 0 : Math.PI }) });
+    const row = new T.Group(); scene.add(row);
+    put(row, new T.Mesh(bx(3.6, 0.6, 1.5), wood), 0, 0.25, 0); put(row, new T.Mesh(bx(0.5, 0.12, 1.5), woodD2), 0.3, 0.6, 0); put(row, new T.Mesh(bx(0.5, 0.12, 1.5), woodD2), -0.9, 0.6, 0);
+    { const bw = put(row, new T.Mesh(new T.ConeGeometry(0.45, 0.9, 4), L(0xd9342b)), 2.1, 0.3, 0); bw.rotation.z = -Math.PI / 2; }
+    BOATS.push({ name: '나룻배', g: row, r: 6, off: -0.3, x: 154, z: -10, h: Math.PI / 2, sp: 0, auto: t => ({ x: 154 + 0.2 * Math.sin(t * 0.5), z: -10, h: Math.PI / 2 + 0.05 * Math.sin(t * 0.4) }) });
+    anim.push((dt, t) => BOATS.forEach((b, i) => {
+      if (BT.on !== i) { const a = b.auto(t), k = 1 - Math.exp(-dt * 0.9); b.x += (a.x - b.x) * k; b.z += (a.z - b.z) * k; b.h += angDiff(b.h, a.h) * k; b.sp = 0; }
+      b.g.position.set(b.x, 0.05 + 0.1 * Math.sin(t * 1.3 + i), b.z); b.g.rotation.set(0, b.h - Math.PI / 2, 0.05 * Math.sin(t * 1.1 + i));
+    }));
 
     /* the Alps: three ranges of jagged, faceted peaks (meadow and dark pines low down, bare rock, then snow) and a village with a church, cows and fences in the green foothills */
     const nh = (i, j, sd) => { const v = Math.sin(i * 127.1 + j * 311.7 + sd * 17.3) * 43758.5453; return v - Math.floor(v); };
@@ -5370,7 +5387,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       r.pt = Math.max(0, Math.min(99999, Number(pr.pt) || 0));
       const rn = Number(pr.rn) || 0;
       if (r.rn === undefined) r.rn = rn; else if (rn !== r.rn) { r.rn = rn; if (typeof pr.rs === 'string') spawnRx(slots.find(q => q.id === pr.rs) || extraSlots.find(q => q.id === pr.rs), Number(pr.rx)); }
-      const nx = clamp(pr.x, -RM.hx, OUT.x1 + 2), nz = clamp(pr.z, NORTH.sz - NORTH.sr - 2, Math.max(GZ2, OUT.z1)), nt = performance.now();
+      const nx = clamp(pr.x, -RM.hx, SWIM.x1 + 2), nz = clamp(pr.z, NORTH.sz - NORTH.sr - 2, Math.max(GZ2, OUT.z1)), nt = performance.now();
       if (r.init && (nx !== r.tx || nz !== r.tz)) {                           /* a new position: estimate the walking speed so the avatar glides on between updates */
         const dtp = (nt - r.lt) / 1000, jump = Math.hypot(nx - r.tx, nz - r.tz);
         if (dtp > 0.05 && dtp < 1.2 && pr.w === 1 && jump < 6) { r.vx = clamp((nx - r.tx) / dtp, -9, 9); r.vz = clamp((nz - r.tz) / dtp, -9, 9); } else { r.vx = 0; r.vz = 0; }
@@ -5381,9 +5398,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       r.th = typeof pr.h === 'number' && isFinite(pr.h) ? pr.h : r.th; r.w = pr.w === 1 ? 1 : 0;
       r.s = typeof pr.s === 'number' && pr.s >= 0 && pr.s < benches.length * 2 ? Math.floor(pr.s) : -1;
       r.e = typeof pr.e === 'number' && pr.e >= 0 && pr.e < easels.length ? Math.floor(pr.e) : -1;
+      r.dv = clamp(Math.floor(Number(pr.dv)) || 0, 0, 2); r.bt = clamp(Math.floor(Number(pr.bt)) || 0, 0, BOATS.length);
       if (!r.init) { r.x = r.tx; r.z = r.tz; r.h = r.th; r.init = true; }
     });
-    remotes.forEach((r, k) => { if (!seen.has(k)) { scene.remove(r.av.group); remotes.delete(k); } });
+    remotes.forEach((r, k) => { if (!seen.has(k)) { scene.remove(r.av.group); if (r.skiff) scene.remove(r.skiff); remotes.delete(k); } });
     remotes.forEach((r, k) => {
       if (r.e < 0) return;
       const b = boards[r.e];
@@ -5394,8 +5412,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function pushPresence(force) {
     if (!roomNS || !started) return;
     const now = performance.now();
-    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n, rx: myRx.i, rs: myRx.s, rn: myRx.n, pt: playMin() };
-    const k = patch.pt + ',' + patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.s + ',' + patch.a + ',' + patch.mt + ',' + patch.rn;
+    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n, rx: myRx.i, rs: myRx.s, rn: myRx.n, pt: playMin(), dv: DV.lvl, bt: BT.on + 1 };
+    const k = patch.pt + ',' + patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.s + ',' + patch.a + ',' + patch.mt + ',' + patch.rn + ',' + patch.dv + ',' + patch.bt;
     if (!force && (k === lastSent || now - lastSend < 100 + Math.min(200, (inRoomCount - 1) * 12))) return;
     lastSend = now; lastSent = k;
     roomNS.presence(patch).catch(function () {});
@@ -5416,7 +5434,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     else el.textContent = '화실 ' + roomNum + ' · ' + inRoomCount + '/' + ROOM_CAP + '명';
   }
   function clearWorld() {
-    remotes.forEach(r => scene.remove(r.av.group)); remotes.clear();
+    remotes.forEach(r => { scene.remove(r.av.group); if (r.skiff) scene.remove(r.skiff); }); remotes.clear();
     for (const k in boards) delete boards[k];
     for (const k in lastWant) delete lastWant[k];
     easels.forEach(e => { paintWork(e.cvs, { w: 4, h: 3, strokes: [] }, '#d8d0c0'); e.tex.needsUpdate = true; });
@@ -5694,7 +5712,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { name: '도토리봉 정상', f: (x, z) => Math.hypot(x - SUMMIT.x, z - SUMMIT.z) < 7 },
     { name: '바닷가', f: (x, z) => x > OUT.x1 - 14 && z > -40 && z < 320 }
   ];
-  const photoSpot = () => { const q = NATURE_SPOTS.find(o => o.f(pos.x, pos.z)); return q ? q.name : ''; };
+  const photoSpot = () => { if (DV.y < -1) return '바닷속'; const q = NATURE_SPOTS.find(o => o.f(pos.x, pos.z)); return q ? q.name : ''; };
   const photoBtn = $('#photoBtn'); let photoBusy = false, photoReq = null, swimToast = 0, summitT = 0, ripT = 0;
   function updateNature(dt) {
     ripples.forEach(r => { if (!r.on) return; r.a += dt; const k = r.a / 1.1; r.m.scale.setScalar(1 + k * 2.4); r.m.material.opacity = Math.max(0, 0.7 * (1 - k)); if (k >= 1) { r.on = false; r.m.visible = false; } });
@@ -5728,7 +5746,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const cv = renderer.domElement, W = cv.width, H = cv.height, asp = W / H, hf = 56 * Math.PI / 180;
     photoCam.aspect = asp; photoCam.fov = Math.min(100, 2 * Math.atan(Math.tan(hf / 2) / Math.min(asp, 1.6)) * 180 / Math.PI); photoCam.updateProjectionMatrix();
     const fx = Math.sin(heading), fz = Math.cos(heading), gy = Math.max(0, gY(pos.x, pos.z)), d = 4.3;
-    photoCam.position.set(pos.x + fx * d, gy + 1.9 + (pos.x > SEA_X ? -0.4 : 0), pos.z + fz * d); photoCam.lookAt(pos.x, gy + 1.45, pos.z);
+    photoCam.position.set(pos.x + fx * d, gy + DV.y + 1.9 + (pos.x > SEA_X ? -0.4 : 0), pos.z + fz * d); photoCam.lookAt(pos.x, gy + DV.y + 1.45, pos.z);
     renderer.render(scene, photoCam);
     let sw, sh; if (asp < 0.8) { sw = W; sh = W / 0.8; } else { sh = H; sw = H * 0.8; }
     const OW = Math.min(1080, Math.round(sw)), OH = Math.round(OW * 1.25), B = Math.round(OW * 0.026), CAP = Math.round(OW * 0.14);
@@ -5758,7 +5776,151 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: '도토리 미술관', text: '도토리 미술관에서 찍은 사진이에요 🌰' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
     $('#photoSave').click();
   });
-  window.__nat = { gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
+  /* ---------- under the sea, boats, and the small "…" action menu ---------- */
+  player.rotation.order = 'YXZ';
+  const UWC = new T.Color(0x0c6aa6), uwTint = $('#uwTint'), diveBtn = $('#diveBtn'), upBtn = $('#upBtn'), boatBtn = $('#boatBtn'), actDots = $('#actDots');
+  const life = new T.Group(); life.visible = false; scene.add(life);
+  { /* the sea floor: sand that slopes away from the beach */
+    const g = new T.PlaneGeometry(130, 440, 52, 88); g.rotateX(-Math.PI / 2);
+    const p = g.attributes.position, col = new Float32Array(p.count * 3), c = new T.Color(), c1 = new T.Color(0xeadca8), c2 = new T.Color(0x6fa8a0);
+    for (let i = 0; i < p.count; i++) {
+      const wx = p.getX(i) + 215, wz = p.getZ(i) + 130, d = Math.min(1, (wx - SEA_X) / 40);
+      p.setXYZ(i, wx, seaFloor(wx, wz), wz); c.copy(c1).lerp(c2, d).multiplyScalar(0.92 + 0.08 * Math.sin(wx * 0.9 + wz * 0.7)); col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    }
+    g.setAttribute('color', new T.BufferAttribute(col, 3)); g.computeVertexNormals();
+    const fl = new T.Mesh(g, new T.MeshLambertMaterial({ vertexColors: true })); fl.userData.noShadow = true; fl.receiveShadow = false; life.add(fl);
+  }
+  const RN = mulberry32(2026), dm = new T.Object3D();
+  /* fish schools */
+  const FS = [], FISH_N = 90, fpal = [0xffb347, 0xff6f61, 0x4fc3f7, 0xfff176, 0xb388ff, 0x80cbc4];
+  for (let s = 0; s < 9; s++) FS.push({ cx: 160 + RN() * 36, cz: -40 + s * 40 + RN() * 14, cy: -(2 + RN() * 5), R: 3 + RN() * 3, w: (RN() < 0.5 ? -1 : 1) * (0.25 + RN() * 0.25), ph: RN() * 6.28, col: fpal[s % fpal.length] });
+  const fBody = new T.InstancedMesh(new T.SphereGeometry(0.28, 7, 5).scale(1.7, 0.8, 0.5), new T.MeshLambertMaterial({ color: 0xffffff }), FISH_N);
+  const tg = new T.ConeGeometry(0.2, 0.36, 4); tg.rotateZ(Math.PI / 2); tg.translate(-0.5, 0, 0);
+  const fTail = new T.InstancedMesh(tg, new T.MeshLambertMaterial({ color: 0xffffff }), FISH_N);
+  for (let i = 0; i < FISH_N; i++) { const cc = new T.Color(FS[(i / 10) | 0].col).multiplyScalar(0.85 + RN() * 0.3); fBody.setColorAt(i, cc); fTail.setColorAt(i, cc); }
+  fBody.frustumCulled = fTail.frustumCulled = false; life.add(fBody, fTail);
+  const fishAt = (i, t, o) => { const s = FS[(i / 10) | 0], ang = s.ph + s.w * t * (1 + 0.12 * Math.sin(i)) + o, r = s.R * (0.55 + 0.45 * ((i * 37) % 10) / 10); return [s.cx + Math.cos(ang) * r, Math.max(seaFloor(s.cx, s.cz) + 1.2, s.cy + 0.7 * Math.sin(t * 0.7 + i)), s.cz + Math.sin(ang) * r * 0.8]; };
+  /* corals and seaweed */
+  const cor = new T.InstancedMesh(new T.ConeGeometry(0.5, 1.5, 6).translate(0, 0.7, 0), new T.MeshLambertMaterial({ color: 0xffffff }), 150);
+  const cpal = [0xff6f61, 0xffb347, 0xc75bd6, 0x4fd1c5, 0xff8fb3];
+  for (let i = 0; i < 150; i++) { const x = 154 + RN() * 50, z = -52 + RN() * 366, sc = 0.7 + RN() * 1.3; dm.position.set(x, seaFloor(x, z) - 0.05, z); dm.rotation.set(0, RN() * 6, 0); dm.scale.set(sc, sc * (0.7 + RN() * 0.8), sc); dm.updateMatrix(); cor.setMatrixAt(i, dm.matrix); cor.setColorAt(i, new T.Color(cpal[i % 5])); }
+  const brn = new T.InstancedMesh(new T.SphereGeometry(0.7, 8, 6).scale(1, 0.7, 1), new T.MeshLambertMaterial({ color: 0xffffff }), 60);
+  for (let i = 0; i < 60; i++) { const x = 153 + RN() * 50, z = -52 + RN() * 366, sc = 0.6 + RN(); dm.position.set(x, seaFloor(x, z) + 0.1, z); dm.rotation.set(0, 0, 0); dm.scale.set(sc, sc, sc); dm.updateMatrix(); brn.setMatrixAt(i, dm.matrix); brn.setColorAt(i, new T.Color(i % 2 ? 0xe9a0c8 : 0xe7c36a)); }
+  cor.frustumCulled = brn.frustumCulled = false; life.add(cor, brn);
+  const WN = 170, weed = new T.InstancedMesh(new T.ConeGeometry(0.16, 3.2, 4).translate(0, 1.6, 0), new T.MeshLambertMaterial({ color: 0x3f9f5a }), WN), wd = [];
+  for (let i = 0; i < WN; i++) { const x = 154 + RN() * 50, z = -52 + RN() * 366; wd.push([x, seaFloor(x, z) - 0.1, z, RN() * 6.28, 0.7 + RN() * 0.9]); }
+  weed.frustumCulled = false; life.add(weed);
+  /* turtles and jellyfish */
+  const turtles = [], jellies = [], mt = c => new T.MeshLambertMaterial({ color: c });
+  for (let i = 0; i < 3; i++) {
+    const g = new T.Group(), shell = new T.Mesh(new T.SphereGeometry(0.9, 10, 6).scale(1.2, 0.5, 1), mt(0x4b8a4f)); g.add(shell);
+    const hd = new T.Mesh(new T.SphereGeometry(0.28, 8, 6), mt(0x9ccc65)); hd.position.set(1.15, 0.05, 0); g.add(hd);
+    const fl = [[0.5, 0.8], [0.5, -0.8], [-0.6, 0.7], [-0.6, -0.7]].map(a => { const f = new T.Mesh(new T.BoxGeometry(0.9, 0.08, 0.38), mt(0x9ccc65)); f.position.set(a[0], -0.1, a[1]); g.add(f); return f; });
+    life.add(g); turtles.push({ g: g, fl: fl, cx: 168 + i * 12, cz: 20 + i * 90 + RN() * 30, R: 14 + RN() * 8, w: 0.07 + RN() * 0.04, ph: RN() * 6, y: -(3 + RN() * 3) });
+  }
+  for (let i = 0; i < 6; i++) {
+    const g = new T.Group(), dome = new T.Mesh(new T.SphereGeometry(0.6, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new T.MeshLambertMaterial({ color: 0xff9ad5, transparent: true, opacity: 0.7, emissive: 0x802060, side: T.DoubleSide }));
+    g.add(dome); for (let k = 0; k < 5; k++) { const tn = new T.Mesh(new T.CylinderGeometry(0.02, 0.02, 1.2, 4), mt(0xffc4e8)); tn.position.set(Math.cos(k * 1.25) * 0.3, -0.6, Math.sin(k * 1.25) * 0.3); g.add(tn); }
+    life.add(g); jellies.push({ g: g, x: 165 + RN() * 30, z: -30 + i * 55 + RN() * 20, y: -(3 + RN() * 4), ph: RN() * 6 });
+  }
+  /* air bubbles from the diver */
+  const bubs = []; let bubT = 0;
+  for (let i = 0; i < 18; i++) { const m = new T.Mesh(new T.SphereGeometry(0.09, 6, 4), new T.MeshBasicMaterial({ color: 0xdff6ff, transparent: true, opacity: 0.8 })); m.visible = false; m.userData.noShadow = true; scene.add(m); bubs.push({ m: m, on: false, v: 0 }); }
+  function updateLife(dt, t) {
+    const near = pos.x > SEA_X - 14; life.visible = near; if (!near) return;
+    for (let i = 0; i < FISH_N; i++) {
+      const a = fishAt(i, t, 0), b = fishAt(i, t, 0.06), th = Math.atan2(-(b[2] - a[2]), b[0] - a[0]);
+      dm.position.set(a[0], a[1], a[2]); dm.rotation.set(0, th, 0); dm.scale.set(1, 1, 1); dm.updateMatrix(); fBody.setMatrixAt(i, dm.matrix);
+      dm.rotation.set(0, th + 0.45 * Math.sin(t * 10 + i), 0); dm.updateMatrix(); fTail.setMatrixAt(i, dm.matrix);
+    }
+    fBody.instanceMatrix.needsUpdate = fTail.instanceMatrix.needsUpdate = true;
+    for (let i = 0; i < WN; i++) { const q = wd[i]; dm.position.set(q[0], q[1], q[2]); dm.rotation.set(0.18 * Math.sin(t * 1.1 + q[3]), q[3], 0.18 * Math.cos(t * 0.9 + q[3])); dm.scale.set(1, q[4], 1); dm.updateMatrix(); weed.setMatrixAt(i, dm.matrix); }
+    weed.instanceMatrix.needsUpdate = true;
+    turtles.forEach(u => {
+      const a = u.ph + u.w * t, x = u.cx + Math.cos(a) * u.R, z = u.cz + Math.sin(a) * u.R;
+      u.g.position.set(x, Math.max(seaFloor(x, z) + 1.4, u.y + 0.5 * Math.sin(t * 0.6 + u.ph)), z); u.g.rotation.y = Math.atan2(-Math.cos(a), -Math.sin(a));
+      u.fl.forEach((f, k) => { f.rotation.x = (k % 2 ? -1 : 1) * 0.5 * Math.sin(t * 2.2 + (k > 1 ? 1.5 : 0)); });
+    });
+    jellies.forEach(j => { j.g.position.set(j.x + 2 * Math.sin(t * 0.15 + j.ph), Math.max(seaFloor(j.x, j.z) + 1.5, j.y + 1.5 * Math.sin(t * 0.5 + j.ph)), j.z + 2 * Math.cos(t * 0.13 + j.ph)); const s = 1 + 0.12 * Math.sin(t * 2.4 + j.ph); j.g.scale.set(s, 1.1 - (s - 1), s); });
+  }
+  /* diving: three depths, the sea floor stops me, and a trail of bubbles */
+  let diveToast = 0;
+  function diveStep(dt) {
+    if (DV.lvl > 0 && (swimK(pos.x) < 0.6 || BT.on >= 0)) DV.lvl = 0;
+    const want = Math.min(0, Math.max(-DIVE_D[DV.lvl], seaFloor(pos.x, pos.z) + 1.1));
+    DV.y += (want - DV.y) * Math.min(1, dt * 2.2);
+    DV.tilt = lerp(DV.tilt || 0, DV.y < -1 ? (walkAmp > 0.2 ? 1.2 : 0.4) : 0, Math.min(1, dt * 5));
+    if (DV.y < -1) {
+      if (tNow - diveToast > 120) { diveToast = tNow; toast('🤿 바닷속이에요! 물고기·거북이·해파리를 찾아보세요', 4500); funArea('바닷속 다이빙'); }
+      bubT -= dt; if (bubT <= 0) { bubT = 0.45; const b = bubs.find(q => !q.on); if (b) { b.on = true; b.v = 1.2 + Math.random() * 0.8; b.m.visible = true; b.m.position.set(pos.x + Math.sin(heading) * 0.5, player.position.y + 1.9, pos.z + Math.cos(heading) * 0.5); } }
+    }
+    bubs.forEach(b => { if (!b.on) return; b.m.position.y += b.v * dt; b.m.position.x += Math.sin(tNow * 3 + b.v * 9) * 0.004; if (b.m.position.y > -0.1) { b.on = false; b.m.visible = false; } });
+  }
+  function underwaterFx() {
+    const uw = started && camera.position.y < -0.15 && camera.position.x > SEA_X - 1, d = Math.min(1, -camera.position.y / 8);
+    if (uw) { UWC.setRGB(0.1 - 0.06 * d, 0.46 - 0.3 * d, 0.7 - 0.3 * d); scene.background.copy(UWC); scene.fog.color.copy(UWC); scene.fog.near = 1; scene.fog.far = 44 - 14 * d; }
+    if (sky.visible === uw) sky.visible = !uw;
+    if (uwTint.hidden === uw) uwTint.hidden = !uw;
+  }
+  /* boats: tap the button next to one to climb in, steer with the stick */
+  const nearBoat = () => { if (pos.x < SEA_X - 8) return -1; for (let i = 0; i < BOATS.length; i++) if (Math.hypot(BOATS[i].x - pos.x, BOATS[i].z - pos.z) < BOATS[i].r) return i; return -1; };
+  let boatRip = 0;
+  function rideBoat(dt, ix, iy, m) {
+    const b = BOATS[BT.on];
+    if (m > 0.08) { const sy = Math.sin(camYaw), cy = Math.cos(camYaw), dx = cy * ix - sy * iy, dz = -sy * ix - cy * iy; b.h += angDiff(b.h, Math.atan2(dx, dz)) * Math.min(1, dt * 2.5); b.sp = lerp(b.sp || 0, 5.5 * m, Math.min(1, dt * 1.6)); }
+    else b.sp = lerp(b.sp || 0, 0, Math.min(1, dt * 1.4));
+    const nx = b.x + Math.sin(b.h) * b.sp * dt, nz = b.z + Math.cos(b.h) * b.sp * dt;
+    if (nx > SEA_X + 2 && nx < SWIM.x1 - 4) b.x = nx; else b.sp *= 0.6;
+    if (nz > SWIM.z0 + 3 && nz < SWIM.z1 - 3) b.z = nz; else b.sp *= 0.6;
+    pos.x = b.x + Math.sin(b.h) * b.off; pos.z = b.z + Math.cos(b.h) * b.off; heading = b.h; walkAmp = lerp(walkAmp, 0, 0.3); curSp = 0;
+    boatRip -= dt; if (b.sp > 1 && boatRip <= 0) { boatRip = 0.5; ripple(b.x - Math.sin(b.h) * 1.5, b.z - Math.cos(b.h) * 1.5); }
+  }
+  function remoteWater(r, dt) {
+    const g = r.av.group; r.dvY = (r.dvY || 0) + (-DIVE_D[r.dv || 0] - (r.dvY || 0)) * Math.min(1, dt * 2);
+    if (r.bt && BOATS[r.bt - 1]) {
+      if (!r.skiff) { r.skiff = new T.Group(); r.skiff.add(new T.Mesh(new T.BoxGeometry(3.6, 0.6, 1.5), mt(0x9a6b3f))); r.skiff.userData.noShadow = true; scene.add(r.skiff); }
+      r.skiff.visible = true; r.skiff.position.set(r.x, 0.1 + 0.08 * Math.sin(tNow * 1.3), r.z); r.skiff.rotation.y = r.h - Math.PI / 2; g.position.y = 0.4 + r.av.lift;
+    } else { if (r.skiff) r.skiff.visible = false; g.position.y += r.dvY; }
+    g.rotation.order = 'YXZ'; r.tilt = lerp(r.tilt || 0, r.dvY < -1 ? 1.0 : 0, Math.min(1, dt * 5)); g.rotation.x = 0.11 * r.amp + r.tilt;
+  }
+  /* the small "…" bubble over my head: it hides while I walk, and opens a short menu of what I can do right here */
+  const ACT = [sitBtn, viewBtn, photoBtn, tourBtn, diveBtn, upBtn, boatBtn];
+  let actOpen = false, actT = 0, aIdle = 0, aX = 0, aZ = 0;
+  function setMenu(v) { v = !!v; if (actOpen === v) return; actOpen = v; actT = 0; document.body.classList.toggle('actOpen', v); }
+  const setBtn = (b, show, txt) => { if (b.hidden === show) b.hidden = !show; if (show && b.textContent !== txt) b.textContent = txt; };
+  function updateWaterBtns() {
+    const ok = started && !pad.open && !watch.open && mySeat < 0 && myEasel < 0 && !goal && !teleOn && !inspect, nb = ok && DV.lvl === 0 && BT.on < 0 ? nearBoat() : -1;
+    setBtn(diveBtn, ok && BT.on < 0 && DV.lvl < 2 && swimK(pos.x) > 0.8, DV.lvl === 0 ? '🤿 잠수하기' : '⬇ 더 깊이');
+    setBtn(upBtn, ok && BT.on < 0 && DV.lvl > 0, DV.lvl > 1 ? '⬆ 위로' : '⬆ 물 위로');
+    setBtn(boatBtn, ok && DV.lvl === 0 && (BT.on >= 0 || nb >= 0), BT.on >= 0 ? '⚓ 내리기' : nb >= 0 ? (nb ? '🚣 ' : '⛵ ') + BOATS[nb].name + ' 타기' : '');
+  }
+  const _ab = new T.Vector3();
+  function actTick(dt) {
+    const dm2 = Math.hypot(pos.x - aX, pos.z - aZ); aX = pos.x; aZ = pos.z;
+    if (dm2 > 0.003 || walkAmp > 0.3 || (BT.on >= 0 && Math.abs(BOATS[BT.on].sp) > 0.3)) aIdle = 0; else aIdle += dt;
+    const kp = tourBtn.textContent.charAt(0) === '⏹'; if (tourBtn.classList.contains('keep') !== kp) tourBtn.classList.toggle('keep', kp);
+    const items = ACT.filter(b => !b.hidden && !b.classList.contains('keep'));
+    const show = started && items.length > 0 && !pad.open && !watch.open && viewerEl.hidden && (aIdle > 0.4 || actOpen);
+    if (actDots.hidden === show) actDots.hidden = !show;
+    if (actOpen) { actT += dt; if (!show || aIdle < 0.05 || actT > 9) setMenu(false); }
+    if (!show) return;
+    const W = window.innerWidth, H = window.innerHeight; _ab.set(pos.x, player.position.y + 3.3, pos.z).project(camera);
+    let x = W / 2, y = H * 0.4; if (_ab.z < 1 && Math.abs(_ab.x) < 2) { x = (_ab.x * 0.5 + 0.5) * W + 40; y = (-_ab.y * 0.5 + 0.5) * H; }
+    const n = actOpen ? items.length : 0; x = Math.max(80, Math.min(W - 80, x)); y = Math.max(70 + n * 50, Math.min(H * 0.72, y));
+    const put2 = (b, xx, yy) => { const L2 = xx.toFixed(0) + 'px', T2 = yy.toFixed(0) + 'px'; if (b.style.left !== L2) b.style.left = L2; if (b.style.top !== T2) b.style.top = T2; };
+    put2(actDots, x, y);
+    if (actOpen) items.forEach((b, i) => put2(b, x, y - 52 - i * 50));
+  }
+  [sitBtn, viewBtn, photoBtn, tourBtn, diveBtn, upBtn, boatBtn].forEach(b => b.addEventListener('click', () => setMenu(false)));
+  actDots.addEventListener('click', () => setMenu(!actOpen));
+  cv.addEventListener('pointerdown', () => setMenu(false));
+  diveBtn.addEventListener('click', () => { if (swimK(pos.x) > 0.8) DV.lvl = Math.min(2, DV.lvl + 1); });
+  upBtn.addEventListener('click', () => { DV.lvl = Math.max(0, DV.lvl - 1); });
+  boatBtn.addEventListener('click', () => {
+    if (BT.on >= 0) { const b = BOATS[BT.on]; b.sp = 0; BT.on = -1; if (pos.x < 158) { pos.x = 147.5; toast('⚓ 선착장에 내렸어요', 2500); } else toast('⚓ 보트에서 내렸어요. 헤엄쳐서 가거나 다시 탈 수 있어요', 3500); return; }
+    const i = nearBoat(); if (i < 0) return; BT.on = i; DV.lvl = 0; BOATS[i].sp = 0; funArea('보트 타기'); toast('⛵ 출발! 조이스틱으로 방향을 정해요 · 한 번 더 누르면 내려요', 5000);
+  });
+  window.__nat = { menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
 
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
@@ -6142,7 +6304,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (goal && m > 0.08) goal = null;
     if (mySeat >= 0 && m > 0.08) standUp();
     if (camAim) { camYaw += angDiff(camYaw, camAim.yaw) * Math.min(1, dt * 3); camPitch += (camAim.pitch - camPitch) * Math.min(1, dt * 3); camAim.t -= dt; if (camAim.t <= 0) camAim = null; }
-    if (started && !pad.open && !watch.open && m > 0.08) {
+    if (BT.on >= 0) rideBoat(dt, ix, iy, m);
+    else if (started && !pad.open && !watch.open && m > 0.08) {
       const sy = Math.sin(camYaw), cy = Math.cos(camYaw);
       const dx = cy * ix - sy * iy, dz = -sy * ix - cy * iy, dl = Math.hypot(dx, dz) || 1, outd = pos.x > RM.hx + 2, run = outd && (Math.hypot(joy.x, joy.y) > 0.93 || keys['shift']) ? 1.8 : 1, sp = SPEED * m * run;
       if (outd && !runHinted) { runHinted = true; try { if (!localStorage.getItem('hw-runhint')) { localStorage.setItem('hw-runhint', '1'); toast('조이스틱을 끝까지 밀면 달려요 🏃', 4000); } } catch (e) {} }
@@ -6179,13 +6342,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (curSp > 0.3 && started && !pad.open && !watch.open) { tryMove(wdx * curSp * dt, wdz * curSp * dt); walkPhase += dt * (6 + curSp * 0.9); walkAmp = lerp(walkAmp, Math.min(1, curSp / SPEED + 0.1), Math.min(1, dt * 10)); }
       else { curSp = 0; walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10)); }
     }
-    me.swim = swimK(pos.x); const myGY = gY(pos.x, pos.z);
-    animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0, mySeat >= 0 ? (benches[mySeat >> 1].low ? 2 : 1) : 0);
-    player.position.set(pos.x, myGY + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp * (1 - me.swim) + me.lift, pos.z);
-    player.rotation.y = heading + teleSpin; player.rotation.x = 0.11 * walkAmp;
+    me.swim = BT.on >= 0 ? 0 : swimK(pos.x); const myGY = gY(pos.x, pos.z); diveStep(dt);
+    animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0, mySeat >= 0 ? (benches[mySeat >> 1].low ? 2 : 1) : BT.on >= 0 ? 1 : 0);
+    player.position.set(pos.x, (BT.on >= 0 ? BOATS[BT.on].g.position.y + 0.12 : myGY + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp * (1 - me.swim) + DV.y) + me.lift, pos.z);
+    player.rotation.y = heading + teleSpin; player.rotation.x = 0.11 * walkAmp + DV.tilt;
     if (walkAmp > 0.6 && !player.userData.hidden) { puffT -= dt; if (puffT <= 0) { puffT = me.swim > 0.4 ? 0.3 : 0.17; if (me.swim > 0.4) ripple(pos.x, pos.z); else puff(pos.x - Math.sin(heading) * 0.2, pos.z - Math.cos(heading) * 0.2); } }
     blob.position.set(pos.x, 0.05 + Math.max(0, myGY), pos.z);
-    updateAtmosphere(dt, tNow); sunFollow(pos.x, pos.z); swayT.value = tNow;
+    updateAtmosphere(dt, tNow); underwaterFx(); updateLife(dt, tNow); sunFollow(pos.x, pos.z); swayT.value = tNow;
     pushPresence(false);
     remotes.forEach(r => {
       const age = Math.min((performance.now() - (r.lt || 0)) / 1000, 0.35), f2 = 1 - Math.exp(-dt * 9);   /* keep gliding along the last known speed until the next update arrives */
@@ -6193,13 +6356,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const moving = Math.hypot(dx, dz) > 0.05 || r.w === 1;
       r.x += dx * f2; r.z += dz * f2; r.h += angDiff(r.h, r.th) * Math.min(1, dt * 12);
       r.amp = lerp(r.amp, moving ? 1 : 0, Math.min(1, dt * 10)); if (r.amp > 0.05) r.phase += dt * 10;
-      r.av.swim = swimK(r.x);
-      animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0, r.s >= 0 ? (benches[r.s >> 1].low ? 2 : 1) : 0);
-      r.av.group.position.set(r.x, gY(r.x, r.z) + Math.abs(Math.sin(r.phase)) * 0.09 * r.amp * (1 - r.av.swim) + r.av.lift, r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp;
+      r.av.swim = r.bt ? 0 : swimK(r.x);
+      animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0, r.s >= 0 ? (benches[r.s >> 1].low ? 2 : 1) : r.bt ? 1 : 0);
+      r.av.group.position.set(r.x, gY(r.x, r.z) + Math.abs(Math.sin(r.phase)) * 0.09 * r.amp * (1 - r.av.swim) + r.av.lift, r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp; remoteWater(r, dt);
       if (r.amp > 0.6) { r.puffT = (r.puffT || 0) - dt; if (r.puffT <= 0) { r.puffT = 0.25; if (r.av.swim > 0.4) ripple(r.x, r.z); else puff(r.x, r.z); } }
       r.plate.sprite.visible = Math.hypot(r.x - pos.x, r.z - pos.z) < 28;
     });
-    updateFx(tNow); updateNpcs(dt); updateArea(dt); updateNature(dt);
+    updateFx(tNow); updateNpcs(dt); updateArea(dt); updateNature(dt); updateWaterBtns();
     updateSitBtn(); updateViewBtn();
     easels.forEach(e => {
       e.ring.material.opacity = (e.idx === nearIdx ? 0.9 : 0.4) + 0.12 * Math.sin(tNow * 3 + e.idx);
@@ -6221,15 +6384,16 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const f = 1 - Math.exp(-dt * 8);
     if (inspect && (Math.hypot(joy.x, joy.y) > 0.2 || keys.w || keys.a || keys.s || keys.d || keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright)) exitInspect();
     if (inspect && cptr.size === 0) camYaw += dt * 0.28;                       /* a slow turn of its own until a finger takes over */
-    camTx += ((inspect ? inspect.x : pos.x) - camTx) * f; camTz += ((inspect ? inspect.z : pos.z) - camTz) * f; camTy += ((myGY > 0 ? myGY : myGY * 0.4) - camTy) * f;
+    camTx += ((inspect ? inspect.x : pos.x) - camTx) * f; camTz += ((inspect ? inspect.z : pos.z) - camTz) * f; camTy += ((myGY > 0 ? myGY : myGY * 0.4) + DV.y * 0.9 + (BT.on >= 0 ? 0.5 : 0) - camTy) * f;
     camDist += ((started ? camWant : 26) - camDist) * Math.min(1, dt * 3);
     const pe = Math.max(camPitch, 0.08), cp = Math.cos(pe);      /* below 0.08 the camera stops sinking and starts looking up instead */
     /* no clamping to the walls: walls are one-sided, so from outside they vanish and the view stays wide */
     const dx = camTx + Math.sin(camYaw) * cp * camDist;
-    const dy = (inspect ? inspect.y : 2.4 + camTy) + Math.sin(pe) * camDist, lookY = inspect ? inspect.y : 2.0 + camTy + Math.max(0, 0.08 - camPitch) * 32;
+    let dy = (inspect ? inspect.y : 2.4 + camTy) + Math.sin(pe) * camDist, lookY = inspect ? inspect.y : 2.0 + camTy + Math.max(0, 0.08 - camPitch) * 32;
     const dz = camTz + Math.cos(camYaw) * cp * camDist;
+    if (DV.y < -0.6 && dx > SEA_X + 1) dy = Math.max(seaFloor(dx, dz) + 0.6, Math.min(dy, -0.4));      /* under water the camera stays under water */
     const artist = pad.open && pad.view !== 'off' && pad.easel >= 0;
-    player.visible = !artist && !inspect; blob.visible = !artist && !inspect; player.userData.hidden = artist;
+    player.visible = !artist && !inspect; blob.visible = !artist && !inspect && DV.y > -0.5 && BT.on < 0; player.userData.hidden = artist;
     if (teleOn || teleK !== 1) { const ks = Math.max(0.001, teleK); player.scale.set(ks, 1 + (1 - ks) * 1.2, ks); if (teleK < 0.02) { player.visible = false; blob.visible = false; } } else if (player.scale.x !== 1) player.scale.set(1, 1, 1);
     if (hiddenEasel >= 0 && (!artist || hiddenEasel !== pad.easel)) { easels[hiddenEasel].grp.visible = true; easels[hiddenEasel].ring.visible = true; hiddenEasel = -1; }
     if (artist && hiddenEasel !== pad.easel) { hiddenEasel = pad.easel; easels[hiddenEasel].grp.visible = false; easels[hiddenEasel].ring.visible = false; }   /* clear view past my own easel */
@@ -6269,11 +6433,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (btn.style.left !== L2) btn.style.left = L2;
     if (btn.style.top !== T2) btn.style.top = T2;      /* only touch the style when it changed */
   }
-  function placeBubbles() {
-    placeBubble(sitBtn, sitTarget, 0);
-    placeBubble(viewBtn, viewTarget, 0); placePhotoBubble();
-    if (!sitBtn.hidden && !viewBtn.hidden && Math.abs(parseFloat(viewBtn.style.top) - parseFloat(sitBtn.style.top)) < 52) placeBubble(viewBtn, viewTarget, -56);   /* never on top of each other */
-  }
+  function placeBubbles(dt) { actTick(dt); }
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     update(dt);
@@ -6292,7 +6452,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (Math.abs(camera.aspect - asp) > 1e-4 || camera.fov !== fov) { camera.aspect = asp; camera.fov = fov; camera.updateProjectionMatrix(); }
       chunkCull();
       renderer.render(scene, camera);
-      placeBubbles();
+      placeBubbles(dt);
       if (photoReq) doCapture();
     }
     requestAnimationFrame(frame);
@@ -6342,7 +6502,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (ms && !fun.ms[n]) { fun.ms[n] = 1; msg += ' 🎉 칭호 「' + ms[1] + '」 ' + funAdd(ms[2]); }
     toast(msg, 5000);
   }
-  const FUN_AREAS = ['중앙 홀', '신진 작가관', '별관', '서쪽 전시관 1', '서쪽 전시관 2', '중앙 로툰다', '둥근 홀', '조각 전시관', '화실', '야외 전시 정원', '꽃길 정원', '산 전망대', '바닷가', '호숫가', '풍차 들판', '숲속 쉼터', '남쪽 꽃들판', '들판 산책길', '도토리봉 정상', '바다 수영', '포토존'].concat(FUN_WINGS.slice(0, FUN_NWING).map(w => '대회랑 · ' + w.name));
+  const FUN_AREAS = ['중앙 홀', '신진 작가관', '별관', '서쪽 전시관 1', '서쪽 전시관 2', '중앙 로툰다', '둥근 홀', '조각 전시관', '화실', '야외 전시 정원', '꽃길 정원', '산 전망대', '바닷가', '호숫가', '풍차 들판', '숲속 쉼터', '남쪽 꽃들판', '들판 산책길', '도토리봉 정상', '바다 수영', '포토존', '바닷속 다이빙', '보트 타기'].concat(FUN_WINGS.slice(0, FUN_NWING).map(w => '대회랑 · ' + w.name));
   function funArea(nm) { if (nm && !fun.areas[nm] && FUN_AREAS.indexOf(nm) >= 0) { fun.areas[nm] = 1; funSave(); } }
 
   /* ----- weekly: a featured wing and a drawing theme (the same for everybody, by the calendar; weeks start on Monday, Korea time) ----- */
