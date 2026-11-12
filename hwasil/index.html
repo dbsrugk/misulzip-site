@@ -5970,7 +5970,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const fk = Math.max(0, Math.min(1, (night - 0.35) / 0.5)) * (1 - ATM.rain * 0.7) * (started && pos.x > RM.hx + 2 && !uw ? 1 : 0);
     flies.o.visible = fk > 0.01; flies.m.uniforms.uOp.value = fk; flies.m.uniforms.uT.value = t;
     if (flies.o.visible) { const P = flies.P; for (let i = 0; i < flies.n; i++) { const b = flies.B[i], ph = b[2] * 6.28, wx = wrapTo(b[0] * 400 - 80, pos.x, 120) + 1.3 * Math.sin(t * 0.5 + ph), wz = wrapTo(b[1] * 400 - 80, pos.z, 120) + 1.3 * Math.cos(t * 0.43 + ph * 2); P[i * 3] = wx; P[i * 3 + 1] = wx > SEA_X - 4 ? -200 : Math.max(0, gY(wx, wz)) + 0.5 + b[2] * 2.6 + 0.4 * Math.sin(t * 0.8 + ph * 3); P[i * 3 + 2] = wz; } flies.o.geometry.attributes.position.needsUpdate = true; }
-    WIND.value = t; updateDayLife(dt, t, night, uw); updateFireworks(dt); updateLakeLanterns(dt, t, night);
+    WIND.value = t; updateDayLife(dt, t, night, uw); updateFireworks(dt); updateLakeLanterns(dt, t, night); updateJumpers(dt, night);
     plank.o.visible = uw; plank.m.uniforms.uOp.value = 0.3 + 0.7 * night; plank.m.uniforms.uT.value = t;
     shafts.visible = uw && night < 0.8; 
     if (uw) {
@@ -6253,6 +6253,18 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const k = Math.max(0, Math.min(1, (night - 0.3) / 0.4)) * (1 - ATM.rain * 0.4), near = Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) < 120 && !(DV.y < -0.6);
     LL.forEach(l => { l.g.visible = k > 0.02 && near; if (!l.g.visible) return; l.a += l.w * dt; const x = LAKE.x + Math.cos(l.a) * l.r, z = LAKE.z + Math.sin(l.a) * l.r; l.g.position.set(x, 0.02 + 0.04 * Math.sin(t * 1.4 + l.ph), z); l.g.rotation.y = l.a * 2; l.gl.material.opacity = (0.4 + 0.2 * Math.sin(t * 3 + l.ph * 2)) * k; });
   }
+  /* fish that leap out of the lake and the sea now and then, with a ring of ripples */
+  const JF = []; { const fm = new T.MeshLambertMaterial({ color: 0xc8d8e8, emissive: 0x303a44 }), rm = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: T.DoubleSide, depthWrite: false, fog: false });
+    for (let i = 0; i < 4; i++) { const f = new T.Group(), bd = new T.Mesh(new T.SphereGeometry(0.4, 8, 6).scale(1.6, 0.6, 0.5), fm), tl = new T.Mesh(new T.ConeGeometry(0.28, 0.5, 4).rotateZ(Math.PI / 2), fm); tl.position.x = -0.75; f.add(bd, tl); f.visible = false; f.userData.noShadow = true; scene.add(f); const rg = new T.Mesh(new T.RingGeometry(0.85, 1, 24), rm.clone()); rg.rotation.x = -Math.PI / 2; rg.visible = false; rg.userData.noShadow = true; scene.add(rg); JF.push({ f: f, rg: rg, t: -1, next: 2 + i * 2.5, x: 0, z: 0, y0: 0, dir: 0, sea: i % 2 === 1 }); } }
+  function updateJumpers(dt, night) {
+    const ok = started && !(DV.y < -0.6) && ATM.rain < 0.6;
+    JF.forEach(j => {
+      if (j.t < 0) { j.f.visible = false; if (ok) { j.next -= dt; if (j.next <= 0) { j.next = 5 + Math.random() * 7; const a = Math.random() * 6.28; if (j.sea) { j.x = Math.max(SEA_X + 8, Math.min(SWIM.x1 - 4, pos.x + (Math.random() - 0.3) * 30)); j.z = pos.z + (Math.random() - 0.5) * 40; j.y0 = 0; if (pos.x < SEA_X - 30) return; } else { const r = Math.random() * (LAKE.r - 3); j.x = LAKE.x + Math.cos(a) * r; j.z = LAKE.z + Math.sin(a) * r; j.y0 = 0.02; if (Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) > 70) return; } j.dir = Math.random() * 6.28; j.t = 0; } } return; }
+      j.t += dt; const T1 = 1.0; if (j.t < T1) { const k = j.t / T1, h = 4 * k * (1 - k) * 1.9; j.f.visible = true; j.f.position.set(j.x + Math.cos(j.dir) * j.t * 1.6, j.y0 + h, j.z + Math.sin(j.dir) * j.t * 1.6); j.f.rotation.set(0, -j.dir, (0.5 - k) * 1.8); } else j.f.visible = false;
+      const rt = j.t - T1 * 0.85; if (rt > 0 && rt < 1.6) { j.rg.visible = true; j.rg.position.set(j.x + Math.cos(j.dir) * 1.5, j.y0 + 0.05, j.z + Math.sin(j.dir) * 1.5); j.rg.scale.setScalar(0.4 + rt * 2.2); j.rg.material.opacity = 0.7 * (1 - rt / 1.6) * (1 - night * 0.6); } else j.rg.visible = false;
+      if (j.t > 2.6) { j.t = -1; j.rg.visible = false; }
+    });
+  }
   function updateFireworks(dt) {
     const ok = started && ATM.night > 0.85 && ATM.cloud < 0.3 && ATM.rain < 0.1 && !(DV.y < -0.6);
     FW.forEach((f, fi) => {
@@ -6280,7 +6292,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (SE.whale) { const w = SE.whale, a = w.w * t, x = w.cx + Math.cos(a) * w.R * 0.3, z = w.cz + Math.sin(a) * w.R; w.g.position.set(x, w.y + Math.sin(t * 0.15) * 1.5, z); w.g.rotation.y = Math.atan2(-Math.cos(a) * 0.3, -Math.sin(a)) + 0; w.fl.rotation.x = 0.25 * Math.sin(t * 0.8); }
   }
   const oo2 = new T.Object3D();
-  window.__nat = { info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
+  window.__nat = { info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
 
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
