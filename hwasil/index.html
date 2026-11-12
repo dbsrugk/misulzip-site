@@ -5707,7 +5707,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       summitT = tNow; toast('⛰ 도토리봉 정상 도착! 해발 ' + Math.round(SUMMIT.h * 12) + ' m · 여기서 사진도 찍어 보세요', 5000); funArea('도토리봉 정상');
     }
     const spot = started && !photoBusy && !pad.open && !watch.open && !inspect && mySeat < 0 && myEasel < 0 && !goal && !teleOn ? photoSpot() : '';
-    photoBtn.hidden = !spot;
+    if (photoBtn.hidden === !!spot) photoBtn.hidden = !spot;      /* only touch the DOM when it changes */
   }
   function placePhotoBubble() {
     if (photoBtn.hidden) return;

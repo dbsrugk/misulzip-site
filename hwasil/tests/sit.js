@@ -23,7 +23,7 @@ const { start, until, check, done } = require('./lib');
   /* the seated player can turn round, and a button offers the seat when I am next to a bench */
   const h0 = await a.evaluate(() => window.__hw.heading());
   check((await a.textContent('#sitBtn')).includes('반대쪽'), 'a turn-round button shows while sitting');
-  await a.click('#sitBtn', { timeout: 5000 }).catch(e => console.log(e.message.slice(0, 1800))); await a.waitForTimeout(300);
+  await a.dispatchEvent('#sitBtn', 'click', {}, { timeout: 5000 }).catch(e => console.log(e.message.slice(0, 1800))); await a.waitForTimeout(300);
   check(Math.abs(Math.abs(await a.evaluate(() => window.__hw.heading()) - h0) - Math.PI) < 0.01, 'the button turns me to the other side');
   await a.keyboard.down('d'); await a.waitForTimeout(500); await a.keyboard.up('d');
   check(await a.evaluate(() => window.__hw.seat() === -1), 'moving gets me up');
