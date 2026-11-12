@@ -1675,9 +1675,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { t: 0.12, top: 0x6fb3ea, mid: 0xc4e4f6, bot: 0xf8eed8, fog: 0xdfe9ec, hs: 0xeaf3ff, hg: 0x9aa57a, hi: 0.55, sc: 0xffefd0, si: 0.72, dir: [-0.5, 0.62, -0.6], glow: 0xffe09e, night: 0 },     /* day */
     { t: 0.42, top: 0x6fb3ea, mid: 0xc4e4f6, bot: 0xf8eed8, fog: 0xdfe9ec, hs: 0xeaf3ff, hg: 0x9aa57a, hi: 0.55, sc: 0xffefd0, si: 0.72, dir: [-0.6, 0.5, -0.45], glow: 0xffe09e, night: 0 },
     { t: 0.55, top: 0x4a5fa8, mid: 0xf09a6a, bot: 0xffc27a, fog: 0xe8b79a, hs: 0xffd0b0, hg: 0x8a7060, hi: 0.5, sc: 0xff9a55, si: 0.6, dir: [-0.85, 0.16, -0.3], glow: 0xff9a55, night: 0.15 },       /* sunset */
-    { t: 0.65, top: 0x23306a, mid: 0x6a5a9a, bot: 0xd88a8a, fog: 0x7a6a8a, hs: 0x9a9ad0, hg: 0x4a4a60, hi: 0.42, sc: 0x8a8ad0, si: 0.25, dir: [-0.9, 0.06, -0.2], glow: 0xc88aa0, night: 0.55 },       /* dusk */
-    { t: 0.78, top: 0x070d2a, mid: 0x14224a, bot: 0x2a3a66, fog: 0x1d2a4c, hs: 0x6f86c8, hg: 0x2c3350, hi: 0.42, sc: 0xaabbee, si: 0.3, dir: [0.45, 0.7, 0.5], glow: 0x6f86c8, night: 1 },         /* night */
-    { t: 0.92, top: 0x070d2a, mid: 0x14224a, bot: 0x2a3a66, fog: 0x1d2a4c, hs: 0x6f86c8, hg: 0x2c3350, hi: 0.42, sc: 0xaabbee, si: 0.3, dir: [0.55, 0.6, 0.4], glow: 0x6f86c8, night: 1 },
+    { t: 0.65, top: 0x23306a, mid: 0x6a5a9a, bot: 0xd88a8a, fog: 0x7a6a8a, hs: 0xa8a8e0, hg: 0x5a5a80, hi: 0.55, sc: 0x9a9ae0, si: 0.4, dir: [-0.9, 0.06, -0.2], glow: 0xc88aa0, night: 0.55 },       /* dusk */
+    { t: 0.78, top: 0x070d2a, mid: 0x14224a, bot: 0x2a3a66, fog: 0x1d2a4c, hs: 0x8fa6ea, hg: 0x3a4a80, hi: 0.66, sc: 0xb8c8ff, si: 0.5, dir: [0.45, 0.7, 0.5], glow: 0x6f86c8, night: 1 },         /* night */
+    { t: 0.92, top: 0x070d2a, mid: 0x14224a, bot: 0x2a3a66, fog: 0x1d2a4c, hs: 0x8fa6ea, hg: 0x3a4a80, hi: 0.66, sc: 0xb8c8ff, si: 0.5, dir: [0.55, 0.6, 0.4], glow: 0x6f86c8, night: 1 },
     { t: 0.97, top: 0x1a2858, mid: 0x4a5a92, bot: 0xb08a9a, fog: 0x5a5c80, hs: 0xb0a0c8, hg: 0x4a4a60, hi: 0.44, sc: 0xb0a0c8, si: 0.3, dir: [0.7, 0.35, -0.1], glow: 0xb08a9a, night: 0.6 },    /* before dawn */
     { t: 1.00, top: 0x7aa0d8, mid: 0xf3c8b0, bot: 0xffd9a8, fog: 0xf0d6c4, hs: 0xffe3d0, hg: 0x9a8f78, hi: 0.5, sc: 0xffc9a0, si: 0.55, dir: [0.85, 0.2, -0.35], glow: 0xffc890, night: 0.1 }
   ].map(o => ({ t: o.t, top: new T.Color(o.top), mid: new T.Color(o.mid), bot: new T.Color(o.bot), fog: new T.Color(o.fog), hs: new T.Color(o.hs), hg: new T.Color(o.hg), hi: o.hi, sc: new T.Color(o.sc), si: o.si, dir: new T.Vector3(o.dir[0], o.dir[1], o.dir[2]), glow: new T.Color(o.glow), night: o.night }));
@@ -3987,6 +3987,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (z >= -92 && z <= -70.4 && x >= 67 + (-68 - z) * -0.125 && x <= 107 + (-68 - z) * 0.533) return true;
       if (Math.abs(x - NORTH.x) <= 4.5 && z >= -128 && z < -91.9) return true;
       if (x >= HILL.x0 && x <= HILL.x1 && z >= HILL.z0 && z <= HILL.z1) return true;                                              /* the climbable foothills */
+      if (x >= HILL.x0 && x <= 148 && z >= HILL.z0 && z <= HILL.z1) return true;                                                  /* the foothills run down to the shore (the waterfall pool is out here) */
+      if (x >= 126 && x <= 148 && z > HILL.z1 && z < OUT.z0) return true;                                                          /* the shore strip east of the village fence, linking back to the field */
       return Math.hypot(x - NORTH.x, z - NORTH.sz) <= NORTH.sr;
     }
     if (x > OUT.x1 && x <= SWIM.x1 && z >= SWIM.z0 && z <= SWIM.z1) return true;                                                    /* wade and swim into the sea */
@@ -5935,7 +5937,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     vertexShader: 'attribute float ph; uniform float uT; uniform float uSize; varying float vA; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; float tw = 0.5 + 0.5 * sin(uT * 2.0 + ph * 18.85); vA = tw; gl_PointSize = uSize * (0.6 + 0.8 * tw) * (420.0 / max(1.0, -mv.z)); }',
     fragmentShader: 'uniform vec3 uCol; uniform float uOp; varying float vA; void main() { float d = length(gl_PointCoord - vec2(0.5)); float a = smoothstep(0.5, 0.0, d); a *= a; gl_FragColor = vec4(uCol * (0.7 + 0.6 * vA), a * uOp * (0.35 + 0.65 * vA)); }' });
   const mkPts = (n, col, size) => { const g = new T.BufferGeometry(), P = new Float32Array(n * 3), PH = new Float32Array(n), B = []; for (let i = 0; i < n; i++) { PH[i] = RN(); B.push([RN(), RN(), RN()]); } g.setAttribute('position', new T.BufferAttribute(P, 3)); g.setAttribute('ph', new T.BufferAttribute(PH, 1)); const m = ptsMat(col, size), o = new T.Points(g, m); o.frustumCulled = false; o.visible = false; o.userData.noShadow = true; scene.add(o); return { o: o, m: m, P: P, B: B, n: n }; };
-  const flies = mkPts(HI ? 220 : 110, 0xd8ff6a, 1.1), plank = mkPts(HI ? 260 : 130, 0x9be8ff, 0.09), shafts = new T.Group(); shafts.visible = false; scene.add(shafts);
+  const flies = mkPts(HI ? 220 : 110, 0xd8ff6a, 1.1), plank = mkPts(HI ? 260 : 130, 0x9be8ff, 0.16), orbs = mkPts(HI ? 70 : 36, 0xff7ae8, 0.7), shafts = new T.Group(); shafts.visible = false; scene.add(shafts);
   const shM = []; for (let i = 0; i < 9; i++) { const m = new T.ShaderMaterial({ transparent: true, depthWrite: false, side: T.DoubleSide, blending: T.AdditiveBlending, fog: false, uniforms: { uT: { value: 0 }, uOp: { value: 0 }, uPh: { value: RN() * 6 } },
     vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: 'varying vec2 vUv; uniform float uT; uniform float uOp; uniform float uPh; void main() { float a = smoothstep(0.0, 0.3, vUv.x) * smoothstep(1.0, 0.7, vUv.x) * pow(vUv.y, 1.6) * uOp * (0.55 + 0.45 * sin(uT * 0.6 + uPh)); gl_FragColor = vec4(0.55, 0.85, 1.0, a); }' });
@@ -5970,13 +5972,14 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const fk = Math.max(0, Math.min(1, (night - 0.35) / 0.5)) * (1 - ATM.rain * 0.7) * (started && pos.x > RM.hx + 2 && !uw ? 1 : 0);
     flies.o.visible = fk > 0.01; flies.m.uniforms.uOp.value = fk; flies.m.uniforms.uT.value = t;
     if (flies.o.visible) { const P = flies.P; for (let i = 0; i < flies.n; i++) { const b = flies.B[i], ph = b[2] * 6.28, wx = wrapTo(b[0] * 400 - 80, pos.x, 120) + 1.3 * Math.sin(t * 0.5 + ph), wz = wrapTo(b[1] * 400 - 80, pos.z, 120) + 1.3 * Math.cos(t * 0.43 + ph * 2); P[i * 3] = wx; P[i * 3 + 1] = wx > SEA_X - 4 ? -200 : Math.max(0, gY(wx, wz)) + 0.5 + b[2] * 2.6 + 0.4 * Math.sin(t * 0.8 + ph * 3); P[i * 3 + 2] = wz; } flies.o.geometry.attributes.position.needsUpdate = true; }
-    WIND.value = t; updateDayLife(dt, t, night, uw); updateFireworks(dt); updateLakeLanterns(dt, t, night); updateJumpers(dt, night); updateGroundMist(dt, t);
-    plank.o.visible = uw; plank.m.uniforms.uOp.value = 0.3 + 0.7 * night; plank.m.uniforms.uT.value = t;
+    WIND.value = t; updateDayLife(dt, t, night, uw); updateFireworks(dt); updateLakeLanterns(dt, t, night); updateJumpers(dt, night); updateGroundMist(dt, t); updateGlowFlowers(t, night);
+    plank.o.visible = uw; plank.m.uniforms.uOp.value = 0.3 + 0.7 * night; plank.m.uniforms.uT.value = t; orbs.o.visible = uw && night > 0.3; orbs.m.uniforms.uOp.value = Math.min(1, (night - 0.3) * 1.6); orbs.m.uniforms.uT.value = t;
     shafts.visible = uw && night < 0.8; 
     if (uw) {
       const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z, P = plank.P;
       for (let i = 0; i < plank.n; i++) { const b = plank.B[i]; P[i * 3] = wrapTo(b[0] * 300, cx, 34) + 0.6 * Math.sin(t * 0.4 + b[2] * 6); P[i * 3 + 1] = wrapTo(b[1] * 300, cy, 18) + 0.5 * Math.sin(t * 0.5 + b[0] * 9); P[i * 3 + 2] = wrapTo(b[2] * 300, cz, 34); }
       plank.o.geometry.attributes.position.needsUpdate = true;
+      if (orbs.o.visible) { const Q = orbs.P; for (let i = 0; i < orbs.n; i++) { const b = orbs.B[i]; Q[i * 3] = wrapTo(b[0] * 260, cx, 40) + Math.sin(t * 0.3 + b[2] * 9) * 1.2; Q[i * 3 + 1] = Math.max(seaFloor(cx, cz) + 0.5, wrapTo(b[1] * 260, cy, 14)) + 0.8 * Math.sin(t * 0.4 + b[0] * 7); Q[i * 3 + 2] = wrapTo(b[2] * 260, cz, 40); } orbs.o.geometry.attributes.position.needsUpdate = true; }
       if (shafts.visible) { shafts.position.set(cx, 0, cz); shafts.children.forEach((pl, i) => { const a = pl.userData.a + t * 0.01; pl.position.set(Math.cos(a) * pl.userData.r, -9, Math.sin(a) * pl.userData.r); pl.rotation.y = a + 1.2; }); shM.forEach(m => { m.uniforms.uT.value = t; m.uniforms.uOp.value = 0.3 * (1 - night); }); }
     }
   }
@@ -6019,9 +6022,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     }
     bubs.forEach(b => { if (!b.on) return; b.m.position.y += b.v * dt; b.m.position.x += Math.sin(tNow * 3 + b.v * 9) * 0.004; if (b.m.position.y > -0.1) { b.on = false; b.m.visible = false; } });
   }
+  /* at night the reefs, kelp and fish glow by themselves so the sea is a dazzling night view, not a black one */
+  let UWM = null;
+  function uwGlowMats(night) {
+    if (!UWM) { UWM = []; const seen = new Set(); life.traverse(o => { const m = o.material; if (m && m.emissive && !seen.has(m) && m.emissive.getHex() === 0 && m.color) { seen.add(m); const c = m.color; if (Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b) > 0.18) { m.userData.c0 = c.clone(); UWM.push(m); } } }); }
+    for (let i = 0; i < UWM.length; i++) { const m = UWM[i], c = m.userData.c0, mx = Math.max(c.r, c.g, c.b, 0.2); m.emissive.setRGB(c.r / mx, c.g / mx, c.b / mx).multiplyScalar(0.85 * night); }
+  }
   function underwaterFx() {
     const uw = started && camera.position.y < -0.15 && camera.position.x > SEA_X - 1, d = Math.min(1, -camera.position.y / 8);
-    if (uw) { UWC.setRGB(0.1 - 0.06 * d, 0.46 - 0.3 * d, 0.7 - 0.3 * d).multiplyScalar(1 - 0.72 * ATM.night); scene.background.copy(UWC); scene.fog.color.copy(UWC); scene.fog.near = 1; scene.fog.far = 44 - 14 * d; }
+    if (uw) { UWC.setRGB(0.1 - 0.06 * d, 0.46 - 0.3 * d, 0.7 - 0.3 * d).multiplyScalar(1 - 0.5 * ATM.night); UWC.r += 0.05 * ATM.night; UWC.g += 0.04 * ATM.night; UWC.b += 0.1 * ATM.night; uwGlowMats(ATM.night); scene.background.copy(UWC); scene.fog.color.copy(UWC); scene.fog.near = 1; scene.fog.far = 44 - 14 * d; }
     if (sky.visible === uw) sky.visible = !uw;
     if (uwTint.hidden === uw) uwTint.hidden = !uw;
   }
@@ -6272,6 +6281,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const bump = (v, c, w) => Math.max(0, 1 - Math.abs(v - c) / w), tt = ATM.t, k = Math.max(bump(tt, 0.02, 0.12), bump(tt, 1.02, 0.12), bump(tt, 0.58, 0.1)) * (1 - ATM.rain * 0.5) * (started && pos.x > RM.hx + 2 && pos.x < SEA_X - 6 && !(DV.y < -0.6) ? 1 : 0);
     GM.forEach((g, i) => { g.p.visible = k > 0.03; if (!g.p.visible) return; const x = wrapTo(g.a * 300 + t * (0.5 + g.c), pos.x, 110), z = wrapTo(g.b * 300, pos.z, 110); g.p.position.set(x, Math.max(0, gY(x, z)) + 0.9 + g.c * 0.6, z); g.m.color.copy(scene.fog.color).lerp(WHITE, 0.5); g.m.opacity = 0.6 * k * (0.75 + 0.25 * Math.sin(t * 0.4 + i)); });
   }
+  /* fluorescent meadow flowers that glow in three colours at night */
+  const GFL = [[0x4ff0ff, 0], [0xff5ae8, 1], [0xb6ff4f, 2]].map(c => mkPts(HI ? 90 : 48, c[0], 1.5));
+  function updateGlowFlowers(t, night) {
+    const k = Math.max(0, Math.min(1, (night - 0.3) / 0.5)) * (1 - ATM.rain * 0.6) * (started && pos.x > RM.hx + 2 && pos.x < SEA_X - 4 && !(DV.y < -0.6) ? 1 : 0);
+    GFL.forEach((g, gi) => { g.o.visible = k > 0.02; if (!g.o.visible) return; g.m.uniforms.uOp.value = k * 0.95; g.m.uniforms.uT.value = t + gi; const P = g.P; for (let i = 0; i < g.n; i++) { const b = g.B[i], wx = wrapTo(b[0] * 500 + gi * 37, pos.x, 100), wz = wrapTo(b[1] * 500 + gi * 91, pos.z, 100); P[i * 3] = wx; P[i * 3 + 1] = Math.max(0, gY(wx, wz)) + 0.35 + b[2] * 0.4; P[i * 3 + 2] = wz; } g.o.geometry.attributes.position.needsUpdate = true; });
+  }
   function updateFireworks(dt) {
     const ok = started && ATM.night > 0.85 && ATM.cloud < 0.3 && ATM.rain < 0.1 && !(DV.y < -0.6);
     FW.forEach((f, fi) => {
@@ -6299,7 +6314,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (SE.whale) { const w = SE.whale, a = w.w * t, x = w.cx + Math.cos(a) * w.R * 0.3, z = w.cz + Math.sin(a) * w.R; w.g.position.set(x, w.y + Math.sin(t * 0.15) * 1.5, z); w.g.rotation.y = Math.atan2(-Math.cos(a) * 0.3, -Math.sin(a)) + 0; w.fl.rotation.x = 0.25 * Math.sin(t * 0.8); }
   }
   const oo2 = new T.Object3D();
-  window.__nat = { info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
+  window.__nat = { walk: walkable, info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
 
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
