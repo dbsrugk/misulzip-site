@@ -62,6 +62,7 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   await p.screenshot({ path: t.out('dive2.png') });
   await p.evaluate(() => { window.__nat.dive(0); }); await p.waitForTimeout(6000);
   const d3 = await p.evaluate(() => ({ y: window.__nat.dv().y, uw: window.__nat.uw() })); check(d3.y > -0.5, 'back at the surface: ' + JSON.stringify(d3));
+  await p.waitForTimeout(1500); check(await p.evaluate(() => (window.__hwSkyO || []).filter(o => o.userData.hooked !== true).every(o => o.visible)), 'sky things are back after surfacing');
   /* boats */
   await p.evaluate(() => { const b = window.__nat.boats()[1]; const P = window.__hw.pos; P.x = 149; P.z = -10; });
   check(await until(p, () => !document.getElementById('boatBtn').hidden, null, 40), 'the moored boat can be boarded from the beach');
