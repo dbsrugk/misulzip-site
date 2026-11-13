@@ -1054,7 +1054,16 @@ body.padOpen #hud { visibility: hidden; }
   const bayZ = b => wingZ(Math.floor(b / 2)) - GG.bay * (b % 2) - GG.bay / 2;   /* z of the middle of a picture bay */
   const gapZ = i => GGS - 32 * GGAPW[i] - GGAP * i - GGAP / 2;                  /* z of the middle of round hall i */
   /* the gallery building runs north under the hill: nothing from the outdoors (trees, flowers, mushrooms, clouds) may stand inside its footprint */
-  const inGal = (x, z) => { if (z > -RM.hz + 1) return false; if (Math.abs(x) < 26 && z >= GGS - 2) return true; if (Math.abs(x) < GG.hw + 5 && z < GGS + 2 && z > GGZ - 8) return true; for (let i = 0; i < GGAPW.length; i++) if (Math.hypot(x, z - gapZ(i)) < GGR + 5) return true; return false; };
+  /* THE BUILDING TABLE: every roofed footprint in one place. Anything from the outdoors (trees, flowers, mushrooms, clouds, leaves) asks indoorAt() before it stands or shows somewhere. A new building = one more row here. */
+  const BUILD = [
+    { n: '중앙 홀', r: [-RM.hx, RM.hx, -RM.hz, RM.hz] },
+    { n: '신진 작가관·별관', r: [-GX, GX, GZ0, GZ2] },
+    { n: '서쪽 전시관', r: [W2X, -GX, GZ0, GZ1] },
+    { n: '로툰다', r: [-21, 21, GGS, -RM.hz] },
+    { n: '대회랑', r: [-GG.hw, GG.hw, GGZ, GGS] }
+  ].concat(GGAPW.map((w, i) => ({ n: '둥근 홀 ' + (i + 1), c: [0, gapZ(i), GGR] })));
+  const indoorAt = (x, z, m) => { m = m || 0; for (let i = 0; i < BUILD.length; i++) { const b = BUILD[i]; if (b.r ? (x >= b.r[0] - m && x <= b.r[1] + m && z >= b.r[2] - m && z <= b.r[3] + m) : Math.hypot(x - b.c[0], z - b.c[1]) <= b.c[2] + m) return b.n; } return ''; };
+  const inGal = (x, z) => !!indoorAt(x, z, 5);
   const wingAt = z => { for (let k = 0; k < NW; k++) if (z <= wingZ(k) && z > wingZ(k) - 32) return k; return z <= GGZ + 0.01 ? NW - 1 : -1; };   /* -1 inside a round hall */
   /* outdoors: a big field east of the studio (through the east door), sea beyond x = SEA_X */
   const OUT = { x0: RM.hx + 1, x1: 146, z0: -68, z1: 334 }, SEA_X = 150, LAKE = { x: 72, z: 54, r: 13 }, MILL = { x: 112, z: 59 }, GARD = { x: 92, z: 172, r: 43, R: 31 }, GARD2 = { x: 92, z: 272, r: 43, R: 31 };   /* GARD: the open-air exhibition garden */
@@ -3981,32 +3990,32 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   window.addEventListener('keydown', e => { if (e.target && e.target.tagName === 'INPUT') return; keys[e.key.toLowerCase()] = true; });
   window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
-  function walkable(x, z) {
-    if (Math.abs(x) <= RM.hx - 1 && Math.abs(z) <= RM.hz - 1) return true;
-    if (Math.abs(x) <= DOOR - 0.5 && z > RM.hz - 1.01 && z <= GZ0 + 1.01) return true;
-    if (Math.abs(x) <= GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;
-    if (Math.abs(x) <= DOOR - 0.5 && z > GZ1 - 1.01 && z <= GZ1 + 1.01) return true;
-    if (Math.abs(x) <= GX - 1 && z >= GZ1 + 1 && z <= GZ2 - 1) return true;
-    if (Math.abs(x) <= DOOR - 0.5 && z <= -RM.hz + 1.01 && z >= -RM.hz - 1.01) return true;                                                 /* the grand door */
-    if (Math.abs(x) <= 19 && z <= -RM.hz - 1 && z >= GGS + 1) return true;                                                                 /* the rotunda */
-    if (Math.abs(x) <= GG.hw - 1 && z <= GGS + 1.01 && z >= GGZ + 1) return true;
-    if (GGAPW.some((w, g) => Math.hypot(x, z - gapZ(g)) <= GGR - 1)) return true;                                                  /* the round halls */                                                          /* the grand gallery */
-    if (Math.abs(z - WZ) <= DOOR - 0.5 && ((x <= -GX + 1.01 && x >= -GX - 1.01) || (x <= W1X + 1.01 && x >= W1X - 1.01))) return true;      /* the west doors */
-    if (x >= W1X + 1 && x <= -GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;                                                         /* west hall 1 */
-    if (x >= W2X + 1 && x <= W1X - 1 && z >= GZ0 + 1 && z <= GZ1 - 1) return true;                                                         /* west hall 2 */
-    if (Math.abs(z) <= DOOR - 0.5 && x > RM.hx - 1.01 && x <= OUT.x0 + 0.01) return true;     /* east doorway */
-    if (z < OUT.z0) {                                                                           /* north of the field: the village inside its fence, the valley trail, the snowfield */
-      if (Math.abs(x - NORTH.x) <= 2.1 && z >= -70.6) return true;                                                                   /* the gate */
-      if (z >= -92 && z <= -70.4 && x >= 67 + (-68 - z) * -0.125 && x <= 107 + (-68 - z) * 0.533) return true;
-      if (Math.abs(x - NORTH.x) <= 4.5 && z >= -128 && z < -91.9) return true;
-      if (x >= HILL.x0 && x <= HILL.x1 && z >= HILL.z0 && z <= HILL.z1) return true;                                              /* the climbable foothills */
-      if (x >= HILL.x0 && x <= 148 && z >= HILL.z0 && z <= HILL.z1) return true;                                                  /* the foothills run down to the shore (the waterfall pool is out here) */
-      if (x >= 126 && x <= 148 && z > HILL.z1 && z < OUT.z0) return true;                                                          /* the shore strip east of the village fence, linking back to the field */
-      return Math.hypot(x - NORTH.x, z - NORTH.sz) <= NORTH.sr;
-    }
-    if (x > OUT.x1 && x <= SWIM.x1 && z >= SWIM.z0 && z <= SWIM.z1) return true;                                                    /* wade and swim into the sea */
-    return x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1 && true;   /* the whole field: the lake can be swum in too */
-  }
+  /* THE WALK TABLE: every stretch of ground I can stand on, one row each (name, test). walkable() is just "any row says yes". A new area = one more row. */
+  const WALK = [
+    ['중앙 홀', (x, z) => Math.abs(x) <= RM.hx - 1 && Math.abs(z) <= RM.hz - 1],
+    ['남쪽 문', (x, z) => Math.abs(x) <= DOOR - 0.5 && z > RM.hz - 1.01 && z <= GZ0 + 1.01],
+    ['신진 작가관', (x, z) => Math.abs(x) <= GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1],
+    ['별관 문', (x, z) => Math.abs(x) <= DOOR - 0.5 && z > GZ1 - 1.01 && z <= GZ1 + 1.01],
+    ['별관', (x, z) => Math.abs(x) <= GX - 1 && z >= GZ1 + 1 && z <= GZ2 - 1],
+    ['큰 문', (x, z) => Math.abs(x) <= DOOR - 0.5 && z <= -RM.hz + 1.01 && z >= -RM.hz - 1.01],
+    ['로툰다', (x, z) => Math.abs(x) <= 19 && z <= -RM.hz - 1 && z >= GGS + 1],
+    ['대회랑', (x, z) => Math.abs(x) <= GG.hw - 1 && z <= GGS + 1.01 && z >= GGZ + 1],
+    ['둥근 홀', (x, z) => GGAPW.some((w, g) => Math.hypot(x, z - gapZ(g)) <= GGR - 1)],
+    ['서쪽 문', (x, z) => Math.abs(z - WZ) <= DOOR - 0.5 && ((x <= -GX + 1.01 && x >= -GX - 1.01) || (x <= W1X + 1.01 && x >= W1X - 1.01))],
+    ['서쪽 전시관 1', (x, z) => x >= W1X + 1 && x <= -GX - 1 && z >= GZ0 + 1 && z <= GZ1 - 1],
+    ['서쪽 전시관 2', (x, z) => x >= W2X + 1 && x <= W1X - 1 && z >= GZ0 + 1 && z <= GZ1 - 1],
+    ['동쪽 문', (x, z) => Math.abs(z) <= DOOR - 0.5 && x > RM.hx - 1.01 && x <= OUT.x0 + 0.01],
+    ['마을 문', (x, z) => z < OUT.z0 && Math.abs(x - NORTH.x) <= 2.1 && z >= -70.6],
+    ['알프스 마을', (x, z) => z >= -92 && z <= -70.4 && x >= 67 + (-68 - z) * -0.125 && x <= 107 + (-68 - z) * 0.533],
+    ['골짜기 길', (x, z) => Math.abs(x - NORTH.x) <= 4.5 && z >= -128 && z < -91.9],
+    ['산자락', (x, z) => x >= HILL.x0 && x <= 148 && z >= HILL.z0 && z <= HILL.z1],
+    ['해안 길', (x, z) => x >= 126 && x <= 148 && z > HILL.z1 && z < OUT.z0],
+    ['눈밭', (x, z) => z < OUT.z0 && Math.hypot(x - NORTH.x, z - NORTH.sz) <= NORTH.sr],
+    ['바다', (x, z) => z >= OUT.z0 && x > OUT.x1 && x <= SWIM.x1 && z >= SWIM.z0 && z <= SWIM.z1],
+    ['들판', (x, z) => x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1]
+  ];
+  function walkable(x, z) { for (let i = 0; i < WALK.length; i++) if (WALK[i][1](x, z)) return true; return false; }
+  const walkZone = (x, z) => { for (let i = 0; i < WALK.length; i++) if (WALK[i][1](x, z)) return WALK[i][0]; return ''; };
   function tryMove(mx, mz) {
     const ox = pos.x, oz = pos.z;
     const sk = swimAt(ox, oz); if (sk) { mx *= 1 - 0.4 * sk; mz *= 1 - 0.4 * sk; }                                                          /* the water slows me down */
@@ -6345,7 +6354,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (SE.whale) { const w = SE.whale, a = w.w * t, x = w.cx + Math.cos(a) * w.R * 0.3, z = w.cz + Math.sin(a) * w.R; w.g.position.set(x, w.y + Math.sin(t * 0.15) * 1.5, z); w.g.rotation.y = Math.atan2(-Math.cos(a) * 0.3, -Math.sin(a)) + 0; w.fl.rotation.x = 0.25 * Math.sin(t * 0.8); }
   }
   const oo2 = new T.Object3D();
-  window.__nat = { scene: () => scene, cam: () => camera, walk: walkable, info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
+  window.__nat = { indoorAt: indoorAt, walkZone: walkZone, zones: () => WALK.map(w => w[0]), builds: () => BUILD.map(b => b.n), natureInside: () => { const m4 = new T.Matrix4(); let n = 0; const ims = FORM.concat(NG.mush ? [NG.mush] : []); scene.traverse(o => { if (o.isInstancedMesh && o.userData.nature && ims.indexOf(o) < 0) ims.push(o); }); ims.forEach(o => { if (!o.isInstancedMesh) return; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); const e = m4.elements; if (Math.hypot(e[0], e[1], e[2]) > 0 && indoorAt(e[12], e[14], 1)) n++; } }); return n; }, scene: () => scene, cam: () => camera, walk: walkable, info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
 
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
