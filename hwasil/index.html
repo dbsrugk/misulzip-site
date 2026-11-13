@@ -6754,8 +6754,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (BT.on >= 0) rideBoat(dt, ix, iy, m);
     else if (started && !pad.open && !watch.open && m > 0.08) {
       const sy = Math.sin(camYaw), cy = Math.cos(camYaw);
-      const dx = cy * ix - sy * iy, dz = -sy * ix - cy * iy, dl = Math.hypot(dx, dz) || 1, outd = pos.x > RM.hx + 2, run = outd && (Math.hypot(joy.x, joy.y) > 0.93 || keys['shift']) ? 1.8 : 1, sp = SPEED * m * run;
-      if (outd && !runHinted) { runHinted = true; try { if (!localStorage.getItem('hw-runhint')) { localStorage.setItem('hw-runhint', '1'); toast('조이스틱을 끝까지 밀면 달려요 🏃', 4000); } } catch (e) {} }
+      const dx = cy * ix - sy * iy, dz = -sy * ix - cy * iy, dl = Math.hypot(dx, dz) || 1, run = (Math.hypot(joy.x, joy.y) > 0.93 || keys['shift']) ? 1.8 : 1, sp = SPEED * m * run;   /* running works indoors too (it used to be outdoors only) */
+      if (!runHinted) { runHinted = true; try { if (!localStorage.getItem('hw-runhint')) { localStorage.setItem('hw-runhint', '1'); toast('조이스틱을 끝까지 밀면 달려요 🏃', 4000); } } catch (e) {} }
       wdx = dx / dl; wdz = dz / dl; curSp = lerp(curSp, sp, 1 - Math.exp(-dt * 10));
       tryMove(wdx * curSp * dt, wdz * curSp * dt);
       heading += angDiff(heading, Math.atan2(dx, dz)) * Math.min(1, dt * 12);
