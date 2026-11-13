@@ -116,6 +116,9 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #settings { position: fixed; inset: 0; z-index: 25; background: rgba(36, 32, 28, 0.55); display: flex; align-items: flex-end; }
 #settings h3 { margin: 14px 0 6px; font: 400 20px/1.2 var(--font-display); }
 #playStats { font-size: 16px; line-height: 1.6; }
+#perfBox { font-size: 15px; line-height: 1.7; margin: 4px 0 8px; }
+#perfBox .slow { color: #c0392b; font-weight: 700; }
+#perfBox .ok { color: #2e7d32; }
 #uiToggles label { display: flex; align-items: center; gap: 10px; padding: 6px 2px; font-size: 17px; }
 #uiToggles input { width: 22px; height: 22px; }
 #miniMap { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(20px + var(--bar) + env(safe-area-inset-bottom, 0px)); width: 120px; height: 120px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--ink); background: rgba(243, 236, 219, 0.88); box-shadow: 0 2px 8px rgba(36, 32, 28, 0.25); pointer-events: auto; cursor: pointer; }
@@ -778,6 +781,10 @@ body.padOpen #hud { visibility: hidden; }
     <div class="sheetHead"><h2>⚙️ 설정</h2><button class="btn" id="settingsClose" type="button">닫기</button></div>
     <h3>접속 기록</h3>
     <div id="playStats"></div>
+    <h3>이 기기의 화면 속도</h3>
+    <p class="empty">장소마다 1초에 몇 장을 그리는지(30 이상이면 부드러워요). 돌아다닌 곳만 나와요.</p>
+    <div id="perfBox"></div>
+    <button class="btn" id="perfCopy" type="button">속도 기록 복사</button> <button class="btn" id="perfClear" type="button">기록 지우기</button>
     <h3>화면에 보이기</h3>
     <p class="empty">끄면 그 자리는 닫히고 나머지가 다시 줄 맞춰 정리돼요.</p>
     <div id="uiToggles"></div>
@@ -5958,7 +5965,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const ptsMat = (col, size) => new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, uniforms: { uT: { value: 0 }, uCol: { value: new T.Color(col) }, uOp: { value: 0 }, uSize: { value: size } },
     vertexShader: 'attribute float ph; uniform float uT; uniform float uSize; varying float vA; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; float tw = 0.5 + 0.5 * sin(uT * 2.0 + ph * 18.85); vA = tw; gl_PointSize = uSize * (0.6 + 0.8 * tw) * (420.0 / max(1.0, -mv.z)); }',
     fragmentShader: 'uniform vec3 uCol; uniform float uOp; varying float vA; void main() { float d = length(gl_PointCoord - vec2(0.5)); float a = smoothstep(0.5, 0.0, d); a *= a; gl_FragColor = vec4(uCol * (0.7 + 0.6 * vA), a * uOp * (0.35 + 0.65 * vA)); }' });
-  const mkPts = (n, col, size) => { const g = new T.BufferGeometry(), P = new Float32Array(n * 3), PH = new Float32Array(n), B = []; for (let i = 0; i < n; i++) { PH[i] = RN(); B.push([RN(), RN(), RN()]); } g.setAttribute('position', new T.BufferAttribute(P, 3)); g.setAttribute('ph', new T.BufferAttribute(PH, 1)); const m = ptsMat(col, size), o = new T.Points(g, m); o.frustumCulled = false; o.visible = false; o.userData.noShadow = true; scene.add(o); return { o: o, m: m, P: P, B: B, n: n }; };
+  /* ECO: a lighter middle step for a phone that is a little slow on high quality: half the glow points, no fireworks, fewer butterflies (the picture stays, the counts drop) */
+  let ECO = false; const ECOP = [];
+  function setEco(on) { if (ECO === on) return; ECO = on; ECOP.forEach(q => q.o.geometry.setDrawRange(0, on ? Math.ceil(q.n * 0.45) : q.n)); window.__eco = on; }
+  const mkPts = (n, col, size) => { const g = new T.BufferGeometry(), P = new Float32Array(n * 3), PH = new Float32Array(n), B = []; for (let i = 0; i < n; i++) { PH[i] = RN(); B.push([RN(), RN(), RN()]); } g.setAttribute('position', new T.BufferAttribute(P, 3)); g.setAttribute('ph', new T.BufferAttribute(PH, 1)); const m = ptsMat(col, size), o = new T.Points(g, m); o.frustumCulled = false; o.visible = false; o.userData.noShadow = true; scene.add(o); const q = { o: o, m: m, P: P, B: B, n: n }; ECOP.push(q); return q; };
   const flies = mkPts(HI ? 220 : 110, 0xd8ff6a, 1.1), plank = mkPts(HI ? 260 : 130, 0x9be8ff, 0.16), orbs = mkPts(HI ? 70 : 36, 0xff7ae8, 0.7), shafts = new T.Group(); shafts.visible = false; scene.add(shafts);
   const shM = []; for (let i = 0; i < 9; i++) { const m = new T.ShaderMaterial({ transparent: true, depthWrite: false, side: T.DoubleSide, blending: T.AdditiveBlending, fog: false, uniforms: { uT: { value: 0 }, uOp: { value: 0 }, uPh: { value: RN() * 6 } },
     vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
@@ -5979,7 +5989,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     seeds.o.visible = k > 0.02; seeds.m.opacity = 0.85 * k;
     if (seeds.o.visible) { const P = seeds.P; for (let i = 0; i < seeds.n; i++) { const b = seeds.B[i], ph = b[2] * 6.28, wx = wrapTo(b[0] * 400 + t * 0.8, pos.x, 80), wz = wrapTo(b[1] * 400 + t * 0.35, pos.z, 80); P[i * 3] = wx + Math.sin(t * 0.7 + ph); P[i * 3 + 1] = Math.max(0, gY(wx, wz)) + 0.8 + b[2] * 3.4 + 0.5 * Math.sin(t * 0.9 + ph * 3); P[i * 3 + 2] = wz + Math.cos(t * 0.6 + ph); } seeds.o.geometry.attributes.position.needsUpdate = true; }
     BFL.forEach((f, i) => {
-      f.g.visible = k > 0.3; if (!f.g.visible) return;
+      f.g.visible = k > 0.3 && !(ECO && i % 2); if (!f.g.visible) return;
       const cx = wrapTo(f.a * 300, pos.x, 70), cz = wrapTo(f.b * 300, pos.z, 70), a = t * (0.25 + f.c * 0.2) + f.c * 20, r = 3 + f.c * 4;
       const x = cx + Math.cos(a) * r, z = cz + Math.sin(a * 1.3) * r;
       f.g.position.set(x, Math.max(0, gY(x, z)) + 1.2 + 0.7 * Math.sin(t * 1.3 + i) + f.c, z); f.g.rotation.y = -a - Math.PI / 2;
@@ -5997,8 +6007,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (flies.o.visible) { const P = flies.P; for (let i = 0; i < flies.n; i++) { const b = flies.B[i], ph = b[2] * 6.28, wx = wrapTo(b[0] * 400 - 80, pos.x, 120) + 1.3 * Math.sin(t * 0.5 + ph), wz = wrapTo(b[1] * 400 - 80, pos.z, 120) + 1.3 * Math.cos(t * 0.43 + ph * 2); P[i * 3] = wx; P[i * 3 + 1] = wx > SEA_X - 4 ? -200 : Math.max(0, gY(wx, wz)) + 0.5 + b[2] * 2.6 + 0.4 * Math.sin(t * 0.8 + ph * 3); P[i * 3 + 2] = wz; } flies.o.geometry.attributes.position.needsUpdate = true; }
     /* auto quality: if the phone runs slowly for a few seconds, drop the render resolution once (no reload) */
     if (!window.__aq) window.__aq = { n: 0, s: 0, done: 0, ratio: renderer.getPixelRatio() };
-    { const q = window.__aq; if (!q.done && started && dt > 0 && dt < 0.5) { q.n++; q.s += dt; if (q.s > 6) { const fps = q.n / q.s; q.n = 0; q.s = 0; if (fps < 26 && q.ratio > 1) { q.done = 1; renderer.setPixelRatio(1); renderer.setSize(window.innerWidth, window.innerHeight, false); toast('화면이 버벅여서 해상도를 낮췄어요 · 더 가볍게 하려면 설정에서 화질을 낮춰 보세요', 5000); } } } }
-    WIND.value = t; updateDayLife(dt, t, night, uw); if (pos.x > 100) updateFireworks(dt); updateLakeLanterns(dt, t, night); updateJumpers(dt, night); updateGroundMist(dt, t); updateGlowFlowers(t, night);
+    { const q = window.__aq; if (q.done < 2 && started && dt > 0 && dt < 0.5 && !navigator.webdriver) { q.n++; q.s += dt; if (q.s > 6) { const fps = q.n / q.s; q.n = 0; q.s = 0; if (fps < 26) { if (!q.done && q.ratio > 1) { q.done = 1; renderer.setPixelRatio(1); renderer.setSize(window.innerWidth, window.innerHeight, false); toast('화면이 버벅여서 해상도를 낮췄어요', 4000); } else { q.done = 2; setEco(true); toast('화면이 버벅여서 반짝이 효과를 줄였어요 · 설정에서 속도를 볼 수 있어요', 5000); } } } } }
+    WIND.value = t; updateDayLife(dt, t, night, uw); if (pos.x > 100 && !ECO) updateFireworks(dt); else if (ECO && FW[0].o.visible) FW.forEach(f => { f.o.visible = false; f.t = -1; }); updateLakeLanterns(dt, t, night); updateJumpers(dt, night); updateGroundMist(dt, t); updateGlowFlowers(t, night);
     plank.o.visible = uw; plank.m.uniforms.uOp.value = 0.3 + 0.7 * night; plank.m.uniforms.uT.value = t; orbs.o.visible = uw && night > 0.3; orbs.m.uniforms.uOp.value = Math.min(1, (night - 0.3) * 1.6); orbs.m.uniforms.uT.value = t;
     shafts.visible = uw && night < 0.8; 
     if (uw) {
@@ -6300,7 +6310,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const LL = []; { const cols = [0xffc27a, 0xff9a8a, 0xffe08a, 0xffb0d0, 0xa8e0ff]; for (let i = 0; i < (HI ? 16 : 9); i++) { const g = new T.Group(), c = cols[i % cols.length]; const bx = new T.Mesh(new T.BoxGeometry(0.5, 0.34, 0.5), new T.MeshBasicMaterial({ color: c, fog: false })); bx.position.y = 0.22; const base = new T.Mesh(new T.BoxGeometry(0.9, 0.08, 0.9), new T.MeshLambertMaterial({ color: 0x6b4a2f })); const gl = new T.Sprite(new T.SpriteMaterial({ map: dotTexEarly, color: c, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, opacity: 0 })); gl.scale.set(1.9, 1.9, 1); gl.position.y = 0.4; const rf = new T.Sprite(new T.SpriteMaterial({ map: dotTexEarly, color: c, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, opacity: 0 })); rf.scale.set(1.1, 5.5, 1); rf.position.y = -0.55; g.add(rf); g.add(base, bx, gl); g.traverse(o => { o.userData.noShadow = true; }); g.visible = false; scene.add(g); LL.push({ g: g, gl: gl, rf: rf, a: RN() * 6.28, r: 2 + RN() * (LAKE.r - 4), w: (RN() < 0.5 ? -1 : 1) * (0.03 + RN() * 0.05), ph: RN() * 6 }); } }
   function updateLakeLanterns(dt, t, night) {
     const k = Math.max(0, Math.min(1, (night - 0.3) / 0.4)) * (1 - ATM.rain * 0.4), near = Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) < 120 && !(DV.y < -0.6);
-    LL.forEach(l => { l.g.visible = k > 0.02 && near; if (!l.g.visible) return; l.a += l.w * dt; const x = LAKE.x + Math.cos(l.a) * l.r, z = LAKE.z + Math.sin(l.a) * l.r; l.g.position.set(x, 0.02 + 0.04 * Math.sin(t * 1.4 + l.ph), z); l.g.rotation.y = l.a * 2; l.gl.material.opacity = (0.4 + 0.2 * Math.sin(t * 3 + l.ph * 2)) * k; l.rf.material.opacity = 0.32 * k * (0.7 + 0.3 * Math.sin(t * 2 + l.ph)); });
+    LL.forEach((l, li) => { l.g.visible = k > 0.02 && near && !(ECO && li % 2); if (!l.g.visible) return; l.a += l.w * dt; const x = LAKE.x + Math.cos(l.a) * l.r, z = LAKE.z + Math.sin(l.a) * l.r; l.g.position.set(x, 0.02 + 0.04 * Math.sin(t * 1.4 + l.ph), z); l.g.rotation.y = l.a * 2; l.gl.material.opacity = (0.4 + 0.2 * Math.sin(t * 3 + l.ph * 2)) * k; l.rf.material.opacity = 0.32 * k * (0.7 + 0.3 * Math.sin(t * 2 + l.ph)); });
   }
   /* fish that leap out of the lake and the sea now and then, with a ring of ripples */
   const JF = []; { const fm = new T.MeshLambertMaterial({ color: 0xc8d8e8, emissive: 0x303a44 }), rm = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: T.DoubleSide, depthWrite: false, fog: false });
@@ -6354,7 +6364,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (SE.whale) { const w = SE.whale, a = w.w * t, x = w.cx + Math.cos(a) * w.R * 0.3, z = w.cz + Math.sin(a) * w.R; w.g.position.set(x, w.y + Math.sin(t * 0.15) * 1.5, z); w.g.rotation.y = Math.atan2(-Math.cos(a) * 0.3, -Math.sin(a)) + 0; w.fl.rotation.x = 0.25 * Math.sin(t * 0.8); }
   }
   const oo2 = new T.Object3D();
-  window.__nat = { indoorAt: indoorAt, walkZone: walkZone, zones: () => WALK.map(w => w[0]), builds: () => BUILD.map(b => b.n), natureInside: () => { const m4 = new T.Matrix4(); let n = 0; const ims = FORM.concat(NG.mush ? [NG.mush] : []); scene.traverse(o => { if (o.isInstancedMesh && o.userData.nature && ims.indexOf(o) < 0) ims.push(o); }); ims.forEach(o => { if (!o.isInstancedMesh) return; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); const e = m4.elements; if (Math.hypot(e[0], e[1], e[2]) > 0 && indoorAt(e[12], e[14], 1)) n++; } }); return n; }, scene: () => scene, cam: () => camera, walk: walkable, info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
+  window.__nat = { setEco: setEco, eco: () => ECO, ecoPts: () => ECOP.map(q => q.o.geometry.drawRange.count), indoorAt: indoorAt, walkZone: walkZone, zones: () => WALK.map(w => w[0]), builds: () => BUILD.map(b => b.n), natureInside: () => { const m4 = new T.Matrix4(); let n = 0; const ims = FORM.concat(NG.mush ? [NG.mush] : []); scene.traverse(o => { if (o.isInstancedMesh && o.userData.nature && ims.indexOf(o) < 0) ims.push(o); }); ims.forEach(o => { if (!o.isInstancedMesh) return; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); const e = m4.elements; if (Math.hypot(e[0], e[1], e[2]) > 0 && indoorAt(e[12], e[14], 1)) n++; } }); return n; }, scene: () => scene, cam: () => camera, walk: walkable, info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
 
   /* ---------- fast travel ---------- */
   function snapTo(pl) {                                    /* jump straight there (used when the way is blocked, and by the tests) */
@@ -6507,11 +6517,14 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     window.__skyFxOff = uiOff.indexOf('skyFx') >= 0;
     layoutHud();
   }
+  $('#perfCopy').addEventListener('click', () => { const tx = perfText(); const done = () => toast('속도 기록을 복사했어요. 붙여넣어 보내 주세요', 3000); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(tx).then(done, () => { window.prompt('아래를 복사하세요', tx); }); else window.prompt('아래를 복사하세요', tx); });
+  $('#perfClear').addEventListener('click', () => { PERF.d = {}; try { localStorage.removeItem('hw-perf'); } catch (e2) {} fillSettings(); });
   function fillSettings() {
     const sec = Math.floor(playTotal), ses = t0Play ? Math.floor((Date.now() - t0Play) / 1000) : 0, ps = $('#playStats'); ps.textContent = '';
     const add = (a, b) => { const d = document.createElement('div'); d.textContent = a + ' ' + b; ps.appendChild(d); };
     add('누적 접속', fmDur(sec)); add('이번 접속', fmDur(ses));
     if (rankAll) { const i = rankAll.findIndex(q => q.me); if (i >= 0) add('전체 순위', (i + 1) + '위'); }
+    { const pb = $('#perfBox'), rows = perfRows(); pb.textContent = ''; if (!rows.length) pb.textContent = '아직 기록이 없어요. 조금 돌아다닌 뒤 다시 열어 보세요.'; rows.forEach(r => { const e = document.createElement('div'); e.className = r.fps < 26 ? 'slow' : r.fps >= 40 ? 'ok' : ''; e.textContent = r.k + ' · 평균 ' + r.fps.toFixed(0) + ' (최저 ' + r.min.toFixed(0) + ')'; pb.appendChild(e); }); }
     const bx2 = $('#uiToggles'); bx2.textContent = '';
     UI_ITEMS.forEach(q => {
       const lb = document.createElement('label'), cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = uiOff.indexOf(q[0]) < 0;
@@ -6868,10 +6881,16 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (btn.style.top !== T2) btn.style.top = T2;      /* only touch the style when it changed */
   }
   function placeBubbles(dt) { actTick(dt); }
+  const PERF = { last: 0, acc: 0, n: 0, saved: 0, d: {} }; try { PERF.d = JSON.parse(localStorage.getItem('hw-perf') || '{}') || {}; } catch (e) { PERF.d = {}; }
+  const perfRows = () => Object.keys(PERF.d).map(k => ({ k: k, fps: PERF.d[k][1] > 0 ? PERF.d[k][0] / PERF.d[k][1] : 0, min: PERF.d[k][2], sec: PERF.d[k][1] })).filter(r => r.sec >= 2).sort((a, b) => a.fps - b.fps);
+  const perfText = () => '도토리 미술관 속도 기록 · 화질 ' + (HI ? '높음' : '낮음') + (ECO ? '(가볍게)' : '') + ' · 화면 ' + window.innerWidth + '×' + window.innerHeight + ' @' + (window.devicePixelRatio || 1).toFixed(1) + ' (그리는 배율 ' + renderer.getPixelRatio().toFixed(1) + ')\n' + perfRows().map(r => r.k + ': 평균 ' + r.fps.toFixed(0) + ' / 최저 ' + r.min.toFixed(0) + ' (' + Math.round(r.sec) + '초)').join('\n');
+  window.__perf = { rows: perfRows, text: perfText, d: PERF };
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     update(dt);
     sky.position.copy(camera.position); if (window.__hwRanges) window.__hwRanges.forEach(r => r.position.set(camera.position.x, r.userData.followY || 0, camera.position.z)); if (!sky.visible) { SKYO.forEach(o => { o.visible = false; }); SKYO.hid = true; } else if (SKYO.hid) { SKYO.hid = false; SKYO.forEach(o => { if (!o.userData.hooked) o.visible = true; }); }
+    /* speed log: how many frames a second this device draws in each place (kept on the device; shown in the settings so it can be copied out) */
+    if (started && !pad.open && !watch.open && !document.hidden) { const fdt = (now - PERF.last) / 1000; PERF.last = now; if (fdt > 0 && fdt < 1) { PERF.acc += fdt; PERF.n++; if (PERF.acc >= 2) { const nm = (DV.y < -0.6 ? '바닷속' : areaNameAt(pos.x, pos.z) || '기타') + (ATM.night > 0.6 ? ' (밤)' : ''), r = PERF.d[nm] || (PERF.d[nm] = [0, 0, 999]), fps = PERF.n / PERF.acc; r[0] += PERF.n; r[1] += PERF.acc; if (fps < r[2]) r[2] = fps; PERF.acc = 0; PERF.n = 0; if (now - PERF.saved > 10000) { PERF.saved = now; try { localStorage.setItem('hw-perf', JSON.stringify(PERF.d)); } catch (e) {} } } } } else PERF.last = now;
     if (HI && started && !pad.open && !watch.open && !document.hidden && !navigator.webdriver) {          /* a slow phone: drop to low quality by itself (not when automated tests run) */
       if (!fpsT0) { fpsT0 = now; fpsN = 0; }
       fpsN++;

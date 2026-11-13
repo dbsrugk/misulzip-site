@@ -91,5 +91,8 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   check(zt.inside === 0, 'nothing from the outdoors stands inside any building (' + zt.inside + ')');
   check(zt.z.join('|') === '중앙 홀|대회랑|들판|바다|눈밭|', 'the walk table names the ground under me: ' + zt.z.join('|'));
   check(zt.b[0] === '중앙 홀' && zt.b[1] === '대회랑' && zt.b[2] === '서쪽 전시관' && zt.b[3] === '', 'the building table knows indoors from outdoors: ' + zt.b.join('|'));
+  const pf = await p.evaluate(() => { const r = window.__perf.rows(), a = window.__nat.ecoPts().reduce((x, y) => x + (isFinite(y) ? y : 1e6), 0); window.__nat.setEco(true); const b = window.__nat.ecoPts().reduce((x, y) => x + y, 0); window.__nat.setEco(false); return { n: r.length, ok: r.every(q => q.fps > 0), a: a, b: b, txt: window.__perf.text().split('\n').length }; });
+  check(pf.n >= 2 && pf.ok && pf.txt >= 3, 'the speed log has a row for each place I visited (' + pf.n + ')');
+  check(pf.b < pf.a, 'the lighter step draws fewer glow points (' + pf.b + ')');
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
