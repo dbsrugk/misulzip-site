@@ -5,7 +5,7 @@ const { start, until, check, done } = require('./lib');
   const other = 'ab'.repeat(16);
   await p.evaluate(k => { window.__other = { key: k, works: [1, 2, 3].map(i => ({ id: 'w' + i, kind: 'work', at: 1000 + i, w: 100, h: 100, title: 'x' + i, strokes: [{ k: 'p', c: '#000', w: 2, p: [1, 1, 5, 5] }], exh: i === 1 })) }; }, other);
   await until(p, () => { const i = document.getElementById('intro'); return !i || i.offsetParent === null || getComputedStyle(i).display === 'none'; }, null, 30);
-  await p.click('#worksBtn');
+  await p.click('#gearBtn');
   await p.waitForTimeout(500);
   await p.evaluate(() => { document.getElementById('keyBox').open = true; });
   const key = () => p.locator('#keyInput');

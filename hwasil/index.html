@@ -114,6 +114,9 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #moreMenu[hidden] { display: none; }
 #hud #moreMenu .chip { justify-content: flex-start; pointer-events: auto; font-size: 16px; padding: 9px 14px; }
 #settings { position: fixed; inset: 0; z-index: 25; background: rgba(36, 32, 28, 0.55); display: flex; align-items: flex-end; }
+#settings .sheet { overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain; }
+#settings .sheet > * { flex: 0 0 auto; }
+#settings #keyBox[open] { max-height: none; overflow: visible; }
 #settings h3 { margin: 14px 0 6px; font: 400 20px/1.2 var(--font-display); }
 #playStats { font-size: 16px; line-height: 1.6; }
 #perfBox { font-size: 15px; line-height: 1.7; margin: 4px 0 8px; }
@@ -452,6 +455,8 @@ body.padOpen #hud { visibility: hidden; }
 .nameRow { display: flex; gap: 8px; align-items: stretch; }
 .nameRow input { flex: 1; min-width: 0; }
 .nameRow .btn { padding: 4px 12px; font-size: 22px; line-height: 1; }
+#howBox { margin: 0 0 12px; } #howBox summary { cursor: pointer; font-weight: 700; padding: 4px 0; }
+#settings details { border-top: 2px dashed var(--ink); padding: 10px 0 6px; } #settings details summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
 #qBox { flex: 0 0 auto; border-top: 2px dashed var(--ink); padding-top: 10px; }
 #qBox summary { cursor: pointer; font-size: 15px; font-weight: 700; padding: 4px 0; }
 #qBox .seg { margin-top: 10px; }
@@ -561,6 +566,8 @@ body.padOpen #hud { visibility: hidden; }
     <button class="chip" id="fameBtn" type="button">🏆 명예의 전당</button>
     <button class="chip" id="funBtn" type="button">📖 관람 도감</button>
     <button class="chip" id="collabBtn" type="button">🤝 합작 액자</button>
+    <button class="chip" id="timeQuick" type="button">🌗 낮·밤 바꾸기</button>
+    <button class="chip" id="wxQuick" type="button">☔ 날씨 바꾸기</button>
     <button class="chip" id="musicBtn" type="button" aria-label="음악 켜고 끄기">🎵 음악</button>
     <button class="chip" id="moreSug" type="button">📮 건의함</button>
   </div>
@@ -673,52 +680,6 @@ body.padOpen #hud { visibility: hidden; }
     <div class="sheetHead"><h2>내 그림</h2><button class="btn" id="worksClose" type="button">닫기</button></div>
     <p class="empty" id="worksEmpty" hidden>아직 저장한 그림이 없어요. 이젤 앞에 앉아서 첫 그림을 그려 보세요.</p>
     <div id="worksGrid"></div>
-    <details id="nameBox">
-      <summary>내 화가 이름 바꾸기</summary>
-      <label class="field" for="renameInput">새 이름
-        <span class="nameRow"><input id="renameInput" type="text" maxlength="10" autocomplete="off" placeholder="10자까지"><button class="btn" id="renameDice" type="button" aria-label="이름 랜덤으로 바꾸기">🎲</button></span>
-      </label>
-      <button class="btn primary" id="renameBtn" type="button">이름 바꾸기</button>
-      <p class="empty" id="renameMsg" hidden></p>
-    </details>
-    <details id="qBox">
-      <summary>그래픽 품질</summary>
-      <p class="empty">화면이 느리거나 폰이 뜨거워지면 '낮음'으로 바꿔 보세요. 그림자와 장식(풀, 나비, 꽃가루)이 줄어들어요. 바꾸면 화면을 다시 불러와요.</p>
-      <div class="seg" id="qSeg" role="group" aria-label="그래픽 품질"><button type="button" data-q="hi">높음</button><button type="button" data-q="lo">낮음</button></div>
-    </details>
-    <details id="mBox">
-      <summary>음악</summary>
-      <p class="empty">잔잔한 힐링 음악이 흘러요. 화실, 전시관, 야외마다 분위기가 조금씩 달라요. 소리는 위쪽 🎵 버튼으로 켜고 끌 수 있어요.</p>
-      <input id="volRange" type="range" min="0" max="100" step="1" aria-label="음악 크기">
-    </details>
-    <details id="tBox">
-      <summary>시간과 날씨</summary>
-      <p class="empty">하늘은 시계에 맞춰 낮, 노을, 밤으로 돌아요(30분에 한 바퀴). 모두 같은 하늘을 봐요. 날씨는 늘 맑음이고, 비·눈·안개는 직접 고르면 이 화면에서만 나와요.</p>
-      <div class="dressRow"><div class="lab">시간</div><div class="seg" id="tSeg" role="group" aria-label="시간"><button type="button" data-t="auto">자동</button><button type="button" data-t="day">낮</button><button type="button" data-t="sunset">노을</button><button type="button" data-t="night">밤</button></div></div>
-      <div class="dressRow"><div class="lab">날씨</div><div class="seg" id="wSeg" role="group" aria-label="날씨"><button type="button" data-w="auto">자동</button><button type="button" data-w="clear">맑음</button><button type="button" data-w="rain">비</button><button type="button" data-w="snow">눈</button><button type="button" data-w="fog">안개</button></div></div>
-    </details>
-    <details id="adBox">
-      <summary>관리자</summary>
-      <p class="empty" id="adNote">관리자 비밀번호를 넣으면, 이 기기에서 부적절한 작품을 내릴 수 있어요.</p>
-      <span class="nameRow" id="adRow"><input id="adPw" type="password" autocomplete="off" placeholder="관리자 비밀번호"><button class="btn" id="adGo" type="button">켜기</button></span>
-      <p class="empty" id="adMsg" hidden></p>
-      <button class="btn" id="adOff" type="button" hidden>관리자 끄기</button>
-      <button class="btn" id="adVault" type="button" hidden>내린 작품 보관함</button>
-      <button class="btn" id="adSug" type="button" hidden>📮 건의 보기</button>
-      <div id="adList" hidden></div>
-    </details>
-    <details id="keyBox">
-      <summary>다른 기기로 옮기기</summary>
-      <p class="empty">내 그림은 이 기기의 '열쇠'로 찾아요. 열쇠를 복사해 두었다가 다른 기기에서 붙여넣으면 같은 그림 목록이 열려요. 열쇠를 아는 사람은 내 그림을 지울 수도 있으니 아무에게나 보여 주지 마세요.</p>
-      <button class="btn" id="keyCopy" type="button">내 열쇠 복사</button>
-      <input id="keyShow" type="text" readonly hidden aria-label="내 열쇠">
-      <label class="field" for="keyInput">다른 기기의 열쇠 붙여넣기
-        <input id="keyInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="xxxx-xxxx-xxxx-…">
-      </label>
-      <button class="btn primary" id="keyApply" type="button">이 열쇠로 바꾸기</button>
-      <button class="btn" id="keyMerge" type="button">작품 합치기 (이 열쇠 그림을 지금 열쇠로)</button>
-      <p class="empty" id="keyMsg" hidden></p>
-    </details>
   </div>
 </div>
 
@@ -779,6 +740,23 @@ body.padOpen #hud { visibility: hidden; }
 <div id="settings" hidden>
   <div class="sheet" role="dialog" aria-label="설정">
     <div class="sheetHead"><h2>⚙️ 설정</h2><button class="btn" id="settingsClose" type="button">닫기</button></div>
+    <h3>화면과 소리</h3>
+    <details id="tBox" open>
+      <summary>시간과 날씨</summary>
+      <p class="empty">하늘은 시계에 맞춰 낮, 노을, 밤으로 돌아요(30분에 한 바퀴). 모두 같은 하늘을 봐요. 날씨는 늘 맑음이고, 비·눈·안개는 직접 고르면 이 화면에서만 나와요.</p>
+      <div class="dressRow"><div class="lab">시간</div><div class="seg" id="tSeg" role="group" aria-label="시간"><button type="button" data-t="auto">자동</button><button type="button" data-t="day">낮</button><button type="button" data-t="sunset">노을</button><button type="button" data-t="night">밤</button></div></div>
+      <div class="dressRow"><div class="lab">날씨</div><div class="seg" id="wSeg" role="group" aria-label="날씨"><button type="button" data-w="auto">자동</button><button type="button" data-w="clear">맑음</button><button type="button" data-w="rain">비</button><button type="button" data-w="snow">눈</button><button type="button" data-w="fog">안개</button></div></div>
+    </details>
+    <details id="mBox">
+      <summary>음악</summary>
+      <p class="empty">잔잔한 힐링 음악이 흘러요. 화실, 전시관, 야외마다 분위기가 조금씩 달라요. 소리는 위쪽 🎵 버튼으로 켜고 끌 수 있어요.</p>
+      <input id="volRange" type="range" min="0" max="100" step="1" aria-label="음악 크기">
+    </details>
+    <details id="qBox">
+      <summary>그래픽 품질</summary>
+      <p class="empty">화면이 느리거나 폰이 뜨거워지면 '낮음'으로 바꿔 보세요. 그림자와 장식(풀, 나비, 꽃가루)이 줄어들어요. 바꾸면 화면을 다시 불러와요.</p>
+      <div class="seg" id="qSeg" role="group" aria-label="그래픽 품질"><button type="button" data-q="hi">높음</button><button type="button" data-q="lo">낮음</button></div>
+    </details>
     <h3>접속 기록</h3>
     <div id="playStats"></div>
     <h3>이 기기의 화면 속도</h3>
@@ -789,6 +767,38 @@ body.padOpen #hud { visibility: hidden; }
     <p class="empty">끄면 그 자리는 닫히고 나머지가 다시 줄 맞춰 정리돼요.</p>
     <div id="uiToggles"></div>
     <button class="btn" id="uiReset" type="button">모두 다시 켜기</button>
+    <h3>내 정보</h3>
+    <details id="nameBox">
+      <summary>내 화가 이름 바꾸기</summary>
+      <label class="field" for="renameInput">새 이름
+        <span class="nameRow"><input id="renameInput" type="text" maxlength="10" autocomplete="off" placeholder="10자까지"><button class="btn" id="renameDice" type="button" aria-label="이름 랜덤으로 바꾸기">🎲</button></span>
+      </label>
+      <button class="btn primary" id="renameBtn" type="button">이름 바꾸기</button>
+      <p class="empty" id="renameMsg" hidden></p>
+    </details>
+    <details id="keyBox">
+      <summary>다른 기기로 옮기기</summary>
+      <p class="empty">내 그림은 이 기기의 '열쇠'로 찾아요. 열쇠를 복사해 두었다가 다른 기기에서 붙여넣으면 같은 그림 목록이 열려요. 열쇠를 아는 사람은 내 그림을 지울 수도 있으니 아무에게나 보여 주지 마세요.</p>
+      <button class="btn" id="keyCopy" type="button">내 열쇠 복사</button>
+      <input id="keyShow" type="text" readonly hidden aria-label="내 열쇠">
+      <label class="field" for="keyInput">다른 기기의 열쇠 붙여넣기
+        <input id="keyInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="xxxx-xxxx-xxxx-…">
+      </label>
+      <button class="btn primary" id="keyApply" type="button">이 열쇠로 바꾸기</button>
+      <button class="btn" id="keyMerge" type="button">작품 합치기 (이 열쇠 그림을 지금 열쇠로)</button>
+      <p class="empty" id="keyMsg" hidden></p>
+    </details>
+    <h3>관리자</h3>
+    <details id="adBox">
+      <summary>관리자</summary>
+      <p class="empty" id="adNote">관리자 비밀번호를 넣으면, 이 기기에서 부적절한 작품을 내릴 수 있어요.</p>
+      <span class="nameRow" id="adRow"><input id="adPw" type="password" autocomplete="off" placeholder="관리자 비밀번호"><button class="btn" id="adGo" type="button">켜기</button></span>
+      <p class="empty" id="adMsg" hidden></p>
+      <button class="btn" id="adOff" type="button" hidden>관리자 끄기</button>
+      <button class="btn" id="adVault" type="button" hidden>내린 작품 보관함</button>
+      <button class="btn" id="adSug" type="button" hidden>📮 건의 보기</button>
+      <div id="adList" hidden></div>
+    </details>
     <button class="btn" id="settingsSug" type="button">📮 건의함</button>
   </div>
 </div>
@@ -873,12 +883,14 @@ body.padOpen #hud { visibility: hidden; }
   <div class="card">
     <h1>🌰 도토리 미술관</h1>
     <p>작은 도토리가 되어 걸어 다니며 명화를 구경하는 미술관이에요. 정면의 큰 문으로 가면 명화가 걸린 대회랑이 나와요.</p>
+    <details id="howBox"><summary>조작법 보기</summary>
     <ul>
       <li>왼쪽 아래 조이스틱으로 걷고, 화면을 끌어서 돌려 보세요 (두 손가락으로 확대/축소)</li>
       <li>정면의 큰 문으로 가면 명화 대회랑이에요. 작품 앞에서 '작품 이야기 듣기'를 눌러 보세요</li>
       <li>이젤 앞에 앉으면 그림판이 열려요. 그린 그림은 '전시하기'로 신진 작가관에 걸 수 있어요</li>
       <li>위쪽 '장소 이동'을 누르면 원하는 곳까지 걸어서 데려다줘요</li>
     </ul>
+    </details>
     <label class="field" for="codeInput" id="codeField">입장 코드
       <input id="codeInput" type="text" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="초대받은 코드">
     </label>
@@ -5207,7 +5219,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       t.textContent = (r.title || '제목 없음') + ' · ' + (r.artist || '') + ' · ' + new Date(r.at).toLocaleDateString('ko-KR');
       const v = document.createElement('button'); v.className = 'btn'; v.type = 'button'; v.textContent = '보기';
       v.addEventListener('click', async () => {
-        try { const d = await window.hwasil.admin.removedGet(r.id); if (d) { $('#works').hidden = true; openViewer(d); } } catch (e) { toast('불러오지 못했어요.', 2500); }
+        try { const d = await window.hwasil.admin.removedGet(r.id); if (d) { $('#works').hidden = true; $('#settings').hidden = true; openViewer(d); } } catch (e) { toast('불러오지 못했어요.', 2500); }
       });
       const u = document.createElement('button'); u.className = 'btn'; u.type = 'button'; u.textContent = '다시 허용';
       u.addEventListener('click', async () => {
@@ -7291,6 +7303,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       return ref.set(fit.doc).then(() => { window.hwasil.collabDone(cc).catch(() => {}); $('#collab').hidden = true; toast('합작이 「내 그림」에 저장됐어요 🎉', 4000); askExhibit(Object.assign({ id: ref.id }, fit.doc)); });
     }).catch(e => collabRoom(cc, cErr(e)));
   }
+  { const cyc = (seg, attr, names, label) => { const bs = Array.from(document.querySelectorAll(seg + ' button')), i = bs.findIndex(b => b.classList.contains('on')), nx = bs[(i + 1) % bs.length]; nx.click(); toast(label + ': ' + (names[nx.dataset[attr]] || nx.textContent), 2200); };
+    $('#timeQuick').addEventListener('click', () => { if (started) cyc('#tSeg', 't', { auto: '자동 (시계에 맞춤)', day: '낮', sunset: '노을', night: '밤' }, '시간'); });
+    $('#wxQuick').addEventListener('click', () => { if (started) cyc('#wSeg', 'w', { auto: '자동', clear: '맑음', rain: '비', snow: '눈', fog: '안개' }, '날씨'); }); }
   $('#collabBtn').addEventListener('click', () => { if (!started) return; collabHome(); $('#collab').hidden = false; });
   $('#collabClose').addEventListener('click', () => { $('#collab').hidden = true; });
   $('#collab').addEventListener('click', e => { if (e.target === $('#collab')) $('#collab').hidden = true; });
