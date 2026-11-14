@@ -46,7 +46,7 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   await p.evaluate(() => { window.__hw.pos.x += 0.5; }); await p.waitForTimeout(60);
   await p.evaluate(() => { window.__hw.pos.x += 0.5; });
   await p.waitForTimeout(80);
-  check(!(await vis(p, '#actDots')), 'the … hides while I move');
+  check(await vis(p, '#actDots'), 'the … stays up while I move (no waiting to stand still)');
   /* diving */
   await p.evaluate(() => { const P = window.__hw.pos; P.x = 168; P.z = 40; });
   check(await until(p, () => !document.getElementById('swimBar').hidden && !document.getElementById('swDive').hidden, null, 40), 'the moment I am in the sea a swim bar with a dive button is at the top (no waiting for the …)');
@@ -59,7 +59,7 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   await p.evaluate(() => { window.__hw.setYaw(2.2); window.__nat.dive(2); }); await p.waitForTimeout(3000);
   const d2 = await p.evaluate(() => window.__nat.dv().y); check(d2 < -5, 'deeper: ' + d2.toFixed(1));
   await p.screenshot({ path: t.out('dive2.png') });
-  await p.evaluate(() => { window.__nat.dive(0); }); await p.waitForTimeout(6000);
+  await p.evaluate(() => { window.__nat.dive(0); }); await until(p, () => window.__nat.dv().y > -0.5, null, 60);
   const d3 = await p.evaluate(() => ({ y: window.__nat.dv().y, uw: window.__nat.uw() })); check(d3.y > -0.5, 'back at the surface: ' + JSON.stringify(d3));
   await p.waitForTimeout(1500); check(await p.evaluate(() => (window.__hwSkyO || []).filter(o => o.userData.hooked !== true).every(o => o.visible)), 'sky things are back after surfacing');
   /* boats */

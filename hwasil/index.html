@@ -169,6 +169,11 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #tourBtn.keep { left: 50%; top: auto !important; bottom: calc(var(--bar) + 40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 15px; padding: 8px 12px; background: #fff; }
 #swimBar { pointer-events: none; position: fixed; left: 8px; right: 8px; top: calc(140px + env(safe-area-inset-top, 0px)); z-index: 12; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
 #swimBar[hidden] { display: none; }
+body.clean #hud > *:not(#joy):not(#cleanBar):not(#toast), body.clean #areaBanner { visibility: hidden !important; }
+body.clean #joy { opacity: .35; }
+#cleanBar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 30; display: flex; gap: 8px; pointer-events: auto; }
+#cleanBar[hidden] { display: none; }
+#cleanBar button { pointer-events: auto; font: inherit; font-size: 15px; font-weight: 700; background: rgba(255,255,255,.92); border: 2.5px solid var(--ink); border-radius: 999px; padding: 8px 16px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
 #swimBar .swInfo { background: rgba(255,255,255,.92); border: 2.5px solid var(--ink); border-radius: 999px; padding: 5px 12px; font-size: 14px; font-weight: 700; box-shadow: 2px 2px 0 var(--ink); }
 #swimBar button { pointer-events: auto; font: inherit; font-size: 14px; font-weight: 700; background: #fff; border: 2.5px solid var(--ink); border-radius: 999px; padding: 6px 13px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
 @keyframes swPulse { 0%,100% { box-shadow: 2px 2px 0 var(--ink), 0 0 0 0 rgba(255,236,120,.0); } 50% { box-shadow: 2px 2px 0 var(--ink), 0 0 14px 6px rgba(255,236,120,.9); } }
@@ -566,6 +571,7 @@ body.padOpen #hud { visibility: hidden; }
     <button class="chip" id="fameBtn" type="button">🏆 명예의 전당</button>
     <button class="chip" id="funBtn" type="button">📖 관람 도감</button>
     <button class="chip" id="collabBtn" type="button">🤝 합작 액자</button>
+    <button class="chip" id="cleanBtn" type="button">📷 풍경 사진 모드</button>
     <button class="chip" id="timeQuick" type="button">🌗 낮·밤 바꾸기</button>
     <button class="chip" id="wxQuick" type="button">☔ 날씨 바꾸기</button>
     <button class="chip" id="musicBtn" type="button" aria-label="음악 켜고 끄기">🎵 음악</button>
@@ -584,6 +590,7 @@ body.padOpen #hud { visibility: hidden; }
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
   <button class="sitBtn" id="viewBtn" type="button" hidden>작품 크게 보기</button>
   <button class="sitBtn" id="photoBtn" type="button" hidden>📸 사진 찍기</button>
+  <div id="cleanBar" hidden><button type="button" id="cleanShot">📷 저장</button><button type="button" id="cleanExit">✕ 나가기</button></div>
   <div id="swimBar" hidden><span class="swInfo" id="swInfo">🌊 수영 중</span><span class="swDepth" id="swDepth" title="수심"><i></i></span><button type="button" id="swDive"></button><button type="button" id="swUp"></button><button type="button" id="swGear"></button><button type="button" id="swBoat"></button></div>
   <button class="sitBtn" id="actDots" type="button" hidden aria-label="할 수 있는 일 보기">⋯</button>
   <button class="sitBtn" id="diveBtn" type="button" hidden>🤿 잠수하기</button>
@@ -6133,10 +6140,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (dm2 > 0.003 || walkAmp > 0.3 || (BT.on >= 0 && Math.abs(BOATS[BT.on].sp) > 0.3)) aIdle = 0; else aIdle += dt;
     const kp = tourBtn.textContent.charAt(0) === '⏹'; if (tourBtn.classList.contains('keep') !== kp) tourBtn.classList.toggle('keep', kp);
     const items = ACT.filter(b => !b.hidden && !b.classList.contains('keep'));
-    const show = started && items.length > 0 && !pad.open && !watch.open && viewerEl.hidden && (aIdle > 0.4 || actOpen);
+    const show = started && items.length > 0 && !pad.open && !watch.open && viewerEl.hidden && !document.body.classList.contains('clean');   /* shown the moment something can be done here (it used to wait until I stood still) */
     if (actDots.hidden === show) { actDots.hidden = !show; if (show) sparkTargets().forEach(q => sparkleAt(q[0], q[1], q[2])); }
     else if (show && !actOpen) { const sk = sparkTargets().map(q => Math.round(q[0]) + ',' + Math.round(q[2])).join(';'); if (sk !== actSK) { actSK = sk; if (sk) sparkTargets().forEach(q => sparkleAt(q[0], q[1], q[2])); } }
-    if (actOpen) { actT += dt; if (!show || aIdle < 0.05 || actT > 9) setMenu(false); }
+    if (actOpen) { actT += dt; if (!show || (aIdle < 0.05 && actT > 0.6) || actT > 9) setMenu(false); }
     if (!show) return;
     const W = window.innerWidth, H = window.innerHeight; _ab.set(pos.x, player.position.y + 3.3, pos.z).project(camera);
     let x = W / 2, y = H * 0.4; if (_ab.z < 1 && Math.abs(_ab.x) < 2) { x = (_ab.x * 0.5 + 0.5) * W + 40; y = (-_ab.y * 0.5 + 0.5) * H; }
@@ -6550,6 +6557,20 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   moreMenu.addEventListener('click', () => setMore(false));
   document.addEventListener('pointerdown', e => { if (!moreMenu.hidden && !moreMenu.contains(e.target) && e.target !== moreBtn) setMore(false); });
   $('#moreSug').addEventListener('click', () => { openSuggest(); });
+  /* scenery photo mode: every button steps aside so only the view is left; the picture on screen can be saved or shared */
+  let shotReq = false;
+  function saveShot(blob) {
+    if (!blob) { toast('사진을 저장하지 못했어요', 2500); return; }
+    const name = 'dotori-' + Date.now() + '.jpg', file = (typeof File === 'function') ? new File([blob], name, { type: 'image/jpeg' }) : null;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: '도토리 미술관' }).catch(() => {}); return; }
+    const u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); toast('사진을 저장했어요', 2500);
+  }
+  function setClean(on) { document.body.classList.toggle('clean', on); $('#cleanBar').hidden = !on; if (on) { setMenu(false); $('#moreMenu').hidden = true; toast('화면을 끌어 구도를 잡고 「저장」을 눌러 보세요', 3500); } }
+  $('#cleanBtn').addEventListener('click', () => { if (started) setClean(true); });
+  $('#cleanExit').addEventListener('click', () => setClean(false));
+  $('#cleanShot').addEventListener('click', () => { shotReq = true; });
+  window.__clean = { set: setClean, shot: () => { shotReq = true; }, pending: () => shotReq };
+
   $('#gearBtn').addEventListener('click', () => { loadRankAll(); fillSettings(); $('#settings').hidden = false; });
   $('#settingsClose').addEventListener('click', () => { $('#settings').hidden = true; });
   $('#uiReset').addEventListener('click', () => { uiOff = []; store('hw-ui-off', '[]'); applyUi(); fillSettings(); });
@@ -6922,6 +6943,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (Math.abs(camera.aspect - asp) > 1e-4 || camera.fov !== fov) { camera.aspect = asp; camera.fov = fov; camera.updateProjectionMatrix(); }
       chunkCull();
       renderer.render(scene, camera);
+      if (shotReq) { shotReq = false; try { renderer.domElement.toBlob(saveShot, 'image/jpeg', 0.92); } catch (e) { toast('사진을 저장하지 못했어요', 2500); } }
       placeBubbles(dt);
       if (photoReq) doCapture();
     }
