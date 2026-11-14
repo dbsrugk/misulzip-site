@@ -6839,6 +6839,11 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     let dy = (inspect ? inspect.y : 2.4 + camTy) + Math.sin(pe) * camDist, lookY = inspect ? inspect.y : 2.0 + camTy + Math.max(0, 0.08 - camPitch) * 32;
     const dz = camTz + Math.cos(camYaw) * cp * camDist;
     if (DV.y < -0.6 && dx > SEA_X + 1) dy = Math.max(seaFloor(dx, dz) + 0.6, Math.min(dy, -0.4));      /* under water the camera stays under water */
+    if (!inspect && pos.x > RM.hx + 2 && !(DV.y < -0.6)) {                                            /* on the hills the camera never dips under the ground, and rises when a ridge stands between it and me */
+      let need = Math.max(0, gY(dx, dz)) + 1.3;
+      for (let k = 0.3; k < 0.95; k += 0.3) { const g = gY(camTx + (dx - camTx) * k, camTz + (dz - camTz) * k) + 0.9, ly = lookY + (dy - lookY) * k; if (g > ly) need = Math.max(need, lookY + (g - lookY) / k); }
+      if (need > dy) dy = Math.min(need, dy + 14);
+    }
     const artist = pad.open && pad.view !== 'off' && pad.easel >= 0;
     player.visible = !artist && !inspect; blob.visible = !artist && !inspect && DV.y > -0.5 && BT.on < 0; player.userData.hidden = artist;
     if (teleOn || teleK !== 1) { const ks = Math.max(0.001, teleK); player.scale.set(ks, 1 + (1 - ks) * 1.2, ks); if (teleK < 0.02) { player.visible = false; blob.visible = false; } } else if (player.scale.x !== 1) player.scale.set(1, 1, 1);
