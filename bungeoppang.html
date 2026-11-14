@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>붕어빵 포차</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@700;900&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 세로 한 화면. 위에서부터 차양(매출·시간) → 손님 주문 → 2×2 무쇠 붕어빵 틀 → 진열대 → 속 재료 통. 한겨울 길거리 포차 한 가지 모습으로 고정. */
+:root{
+  --awning:#d23b2e; --awning-cream:#fbf1dc;
+  --counter:#c8cad6; --counter-deep:#a9acbc;
+  --iron:#2f2b29; --iron-hi:#4a4542; --cavity:#1d1a18;
+  --kraft:#dcb783; --kraft-edge:#b98f58;
+  --ink:#2a211c; --ink-soft:#5d524b; --paper:#fffaf0;
+  --batter:#f3dc9a; --ok:#3f9b57; --warn:#e3a21a; --bad:#c7392c;
+  --display:"Hahmlet","Noto Serif KR",serif;
+  --body:"Noto Sans KR",system-ui,-apple-system,sans-serif;
+  --hand:"Nanum Pen Script","Noto Sans KR",cursive;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--counter);color:var(--ink);font-family:var(--body);font-size:14px;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+#app{position:relative;height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:10px;overflow-y:auto;overflow-x:hidden;
+  background:
+    radial-gradient(120% 60% at 50% 0%,rgba(255,255,255,.35),transparent 60%),
+    repeating-linear-gradient(92deg,rgba(255,255,255,.07) 0 2px,transparent 2px 7px),
+    var(--counter)}
+#app>*{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* 차양 */
+.awning{position:relative;flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px 16px;
+  background:repeating-linear-gradient(90deg,var(--awning) 0 26px,var(--awning-cream) 26px 52px);margin-bottom:8px}
+.awning::after{content:"";position:absolute;left:0;right:0;bottom:-12px;height:13px;
+  background:
+    radial-gradient(circle at 13px 0,var(--awning) 12.5px,transparent 13px) 0 0/52px 13px repeat-x,
+    radial-gradient(circle at 13px 0,var(--awning-cream) 12.5px,transparent 13px) 26px 0/52px 13px repeat-x;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
+.awning h1{margin:0;font-family:var(--display);font-weight:900;font-size:20px;letter-spacing:-.02em;color:var(--paper);background:var(--ink);padding:5px 10px 6px;border-radius:4px;white-space:nowrap}
+.hud{display:flex;gap:6px}
+.hud div{background:var(--paper);border:2px solid var(--ink);border-radius:6px;padding:2px 9px 3px;text-align:right;min-width:74px}
+.hud small{display:block;font-size:10px;color:var(--ink-soft);line-height:1.3}
+.hud b{font-family:var(--display);font-size:16px;font-variant-numeric:tabular-nums;line-height:1.15}
+.hud .low b{color:var(--bad)}
+
+/* 손님 */
+.customers{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;min-height:86px}
+.cust{position:relative;display:flex;gap:8px;align-items:center;background:var(--paper);border:2px solid var(--ink);border-radius:12px 12px 12px 2px;padding:7px 8px 11px;min-width:0;animation:pop .25s ease-out}
+.cust.empty{background:transparent;border:2px dashed var(--counter-deep);color:var(--ink-soft);justify-content:center;font-family:var(--hand);font-size:19px;animation:none}
+.cust svg{flex:none;width:40px;height:40px}
+.order{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.chip{display:flex;align-items:center;gap:5px;font-weight:700;font-size:13px;line-height:1.2;white-space:nowrap}
+.chip i{flex:none;width:13px;height:13px;border-radius:50%;border:1.5px solid var(--ink);background:var(--c)}
+.chip.done{opacity:.35;text-decoration:line-through}
+.chip em{font-style:normal;font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+.pat{position:absolute;left:8px;right:8px;bottom:4px;height:4px;border-radius:2px;background:#e6dfd0;overflow:hidden}
+.pat i{display:block;height:100%;width:100%;background:var(--ok);transform-origin:left}
+
+/* 틀 */
+.pan-wrap{position:relative;flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-height:230px}
+.pan{position:relative;width:100%;max-width:400px;display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px;border-radius:16px;
+  background:
+    radial-gradient(circle at 20% 15%,rgba(255,255,255,.10),transparent 40%),
+    repeating-radial-gradient(circle at 70% 80%,rgba(0,0,0,.10) 0 2px,transparent 2px 6px),
+    var(--iron);
+  box-shadow:0 0 0 3px var(--iron-hi) inset,0 10px 18px rgba(30,25,40,.35),0 2px 0 #151312}
+.mold{position:relative;display:block;width:100%;aspect-ratio:3/2;border-radius:10px;background:var(--iron-hi);box-shadow:inset 0 2px 5px rgba(0,0,0,.55);overflow:visible}
+.mold:active{transform:scale(.98)}
+.mold svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.mold .l-batter,.mold .l-fill,.mold .l-bake{opacity:0;transform-origin:50% 50%;transform:scale(.3);transition:transform .32s cubic-bezier(.3,1.5,.5,1),opacity .15s}
+.mold.s-batter .l-batter,.mold.s-filled .l-batter{opacity:1;transform:scale(.9)}
+.mold.s-filled .l-fill{opacity:1;transform:none}
+.mold.s-side1 .l-bake,.mold.s-side2 .l-bake{opacity:1;transform:none}
+.mold.s-side2 .l-bake{transform:scaleX(-1)}
+.mold.flip svg{animation:flip .3s ease-in-out}
+.mold.shake{animation:shake .25s}
+.mold .emb{opacity:var(--emb,0)}
+.gauge{position:absolute;left:9%;right:9%;bottom:5px;height:7px;border-radius:4px;border:1.5px solid #0e0c0b;background:
+  linear-gradient(90deg,#efe3c4 0 53.5%,var(--ok) 53.5% 78.5%,var(--bad) 78.5%);opacity:0;transition:opacity .15s}
+.mold.s-side1 .gauge,.mold.s-side2 .gauge{opacity:1}
+.gauge i{position:absolute;top:-4px;left:0;width:5px;height:12px;margin-left:-2.5px;border-radius:2px;background:var(--paper);border:1.5px solid #0e0c0b}
+.next{position:absolute;top:-7px;left:50%;transform:translateX(-50%) rotate(-2deg);z-index:2;font-family:var(--hand);font-size:17px;line-height:1;white-space:nowrap;
+  background:var(--kraft);color:var(--ink);padding:2px 8px 3px;border-radius:2px;box-shadow:0 1px 0 var(--kraft-edge),0 2px 3px rgba(0,0,0,.3);pointer-events:none}
+.next.go{background:var(--ok);color:var(--paper);box-shadow:0 2px 3px rgba(0,0,0,.3)}
+.next.hot{background:var(--bad);color:var(--paper);box-shadow:0 2px 3px rgba(0,0,0,.3)}
+.steam{position:absolute;left:50%;top:30%;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.55);opacity:0;pointer-events:none}
+.mold.s-side1 .steam,.mold.s-side2 .steam{animation:steam 1.4s linear infinite}
+.mold.burnt .steam{background:rgba(40,40,40,.7)}
+.float{position:absolute;left:50%;top:20%;z-index:5;transform:translateX(-50%);font-family:var(--display);font-weight:900;font-size:19px;color:var(--paper);
+  text-shadow:0 0 3px var(--ink),0 2px 0 var(--ink),0 -1px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink);white-space:nowrap;pointer-events:none;animation:rise .9s ease-out forwards}
+.float.bad{color:#ffb3a8}
+#kettle{position:absolute;z-index:4;width:84px;height:70px;margin:-62px 0 0 -30px;padding:0;pointer-events:none;opacity:0}
+#kettle.pour{animation:pour .5s ease-in-out}
+
+/* 진열대 */
+.stock{flex:none;display:flex;align-items:center;gap:8px;min-height:40px}
+.kraft{flex:none;font-family:var(--hand);font-size:19px;line-height:1;background:var(--kraft);padding:4px 9px 5px;border-radius:2px;box-shadow:0 1px 0 var(--kraft-edge);transform:rotate(-2deg)}
+#stock{flex:1;display:flex;gap:4px;align-items:center;min-height:36px;padding:3px 6px;border-radius:8px;background:rgba(255,255,255,.4);border:1.5px solid var(--counter-deep);min-width:0;overflow:hidden;color:var(--ink-soft);font-size:12px}
+#stock svg{flex:none;width:38px;height:26px}
+
+/* 속 재료 */
+.fillings{flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.fill-btn{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px 7px;border-radius:10px;background:linear-gradient(#f4f5f8,#d5d7e0);border:2px solid #8f93a6;box-shadow:0 3px 0 #8f93a6;min-width:0}
+.fill-btn span.tub{display:block;width:100%;height:36px;border-radius:6px;border:2px solid rgba(0,0,0,.35);
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.35),transparent 45%),radial-gradient(circle at 70% 70%,rgba(0,0,0,.18),transparent 50%),var(--c)}
+.fill-btn span.lbl{font-family:var(--hand);font-size:19px;line-height:1;background:var(--kraft);padding:1px 7px 2px;border-radius:2px;white-space:nowrap}
+.fill-btn[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 3px var(--warn),0 3px 0 var(--ink);transform:translateY(-3px)}
+.hint{flex:none;margin:0;padding-block:0 12px;text-align:center;font-size:13px;font-weight:500;color:var(--ink-soft);min-height:32px;line-height:1.4}
+
+/* 시작·마감 화면 */
+.overlay{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding-block:20px;background:rgba(32,26,36,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.card{width:100%;max-width:340px;background:var(--paper);border:3px solid var(--ink);border-radius:14px;padding:20px 20px 18px;box-shadow:0 6px 0 var(--ink);text-align:center}
+.card h2{margin:0 0 4px;font-family:var(--display);font-weight:900;font-size:30px;letter-spacing:-.03em;text-wrap:balance}
+.card .sub{margin:0 0 14px;font-family:var(--hand);font-size:22px;color:var(--awning);line-height:1.1}
+.card ol{margin:0 0 14px;padding:0;list-style:none;text-align:left;display:grid;gap:7px;counter-reset:s}
+.card ol li{counter-increment:s;display:grid;grid-template-columns:22px 1fr;gap:8px;line-height:1.45}
+.card ol li::before{content:counter(s);width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);font-weight:700;font-size:12px;display:grid;place-items:center}
+.card dl{margin:0 0 14px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;text-align:left}
+.card dt{color:var(--ink-soft)} .card dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.card .big{font-family:var(--display);font-weight:900;font-size:38px;margin:2px 0 12px;font-variant-numeric:tabular-nums}
+.card .mini{margin:10px 0 0;font-size:12px;color:var(--ink-soft)}
+.cta{width:100%;padding:13px 16px 14px;border-radius:10px;background:var(--awning);color:var(--paper);font-family:var(--display);font-weight:900;font-size:19px;box-shadow:0 4px 0 #8e241b}
+.cta:active{transform:translateY(3px);box-shadow:0 1px 0 #8e241b}
+
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+@keyframes flip{50%{transform:scaleY(.05)}}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@keyframes steam{0%{opacity:0;transform:translate(-50%,0) scale(.6)}25%{opacity:.8}100%{opacity:0;transform:translate(40%,-34px) scale(2.2)}}
+@keyframes rise{from{opacity:0;transform:translate(-50%,10px)}20%{opacity:1}to{opacity:0;transform:translate(-50%,-34px)}}
+@keyframes pour{0%{opacity:0;transform:rotate(0)}25%{opacity:1;transform:rotate(-28deg)}75%{opacity:1;transform:rotate(-28deg)}100%{opacity:0;transform:rotate(0)}}
+@media (max-height:640px){#app{gap:7px}.customers{min-height:78px}.fill-btn span.tub{height:26px}.pan-wrap{min-height:200px}}
+@media (prefers-reduced-motion:reduce){.mold .l-batter,.mold .l-fill,.mold .l-bake{transition:none}.mold.flip svg,.mold.shake,.cust{animation:none}.steam{display:none}}
+</style>
+
+<div id="app">
+  <header class="awning">
+    <h1>붕어빵 포차</h1>
+    <div class="hud">
+      <div><small>매출</small><b id="money">0원</b></div>
+      <div id="timeBox"><small>남은 시간</small><b id="time">2:00</b></div>
+    </div>
+  </header>
+
+  <section class="customers" id="customers" aria-live="polite"></section>
+
+  <section class="pan-wrap">
+    <div class="pan" id="pan"></div>
+    <svg id="kettle" viewBox="0 0 84 70" aria-hidden="true">
+      <path d="M22 44 L4 30 L8 26 L26 36Z" fill="#e2a21f" stroke="#2a211c" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M34 22 C34 2,70 2,70 22" fill="none" stroke="#2a211c" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="52" cy="44" rx="28" ry="22" fill="#f4bb2e" stroke="#2a211c" stroke-width="2.5"/>
+      <ellipse cx="52" cy="26" rx="17" ry="5" fill="#f3dc9a" stroke="#2a211c" stroke-width="2.5"/>
+      <path d="M5 30 C0 44,2 56,3 68" fill="none" stroke="#f3dc9a" stroke-width="5" stroke-linecap="round"/>
+    </svg>
+  </section>
+
+  <section class="stock"><span class="kraft">진열대</span><div id="stock"></div></section>
+  <section class="fillings" id="fillings" role="group" aria-label="속 재료"></section>
+  <p class="hint" id="hint" aria-live="polite"></p>
+
+  <div class="overlay" id="overlay">
+    <div class="card" id="card"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var FL={pat:{n:'팥',c:'#6e2f2a'},cream:{n:'슈크림',c:'#f7df86'},goguma:{n:'고구마',c:'#e08a1e'},choco:{n:'초코',c:'#3d2317'}};
+var KEYS=Object.keys(FL);
+var RATE=0.15, MAXP=1.4, MINP=0.5, OK_LO=0.75, OK_HI=1.1, DAY=120, PRICE=700, STOCK_MAX=6;
+var FISH='M8 40 C14 17,50 7,78 26 C88 32,97 29,113 13 C108 30,108 50,113 67 C97 51,88 48,78 54 C50 73,14 63,8 40Z';
+var DEFAULT_HINT='틀을 눌러서 반죽 → 속 → 반죽 → 뒤집기 → 꺼내기';
+var $=function(id){return document.getElementById(id)};
+var G=null, raf=0, last=0, hintTimer=0, actx=null;
+
+function fishSvg(fill,dot){
+  return '<svg viewBox="0 0 120 80" aria-hidden="true"><path d="'+FISH+'" fill="'+fill+'" stroke="#2a211c" stroke-width="4" stroke-linejoin="round"/>'+
+    (dot?'<circle cx="52" cy="40" r="11" fill="'+dot+'" stroke="#2a211c" stroke-width="3"/>':'')+'</svg>';
+}
+function moldSvg(){
+  return '<svg viewBox="0 0 120 80" aria-hidden="true">'+
+    '<path d="'+FISH+'" fill="#1d1a18" stroke="#0e0c0b" stroke-width="3" stroke-linejoin="round"/>'+
+    '<g fill="none" stroke="rgba(255,255,255,.09)" stroke-width="2" stroke-linecap="round"><path d="M38 25 Q47 40 38 55"/><path d="M52 24 Q60 40 52 56"/><path d="M66 27 Q73 40 66 53"/><path d="M92 33 L106 22M92 40 L107 40M92 47 L106 58"/></g>'+
+    '<path class="l-batter" d="'+FISH+'" fill="#f3dc9a"/>'+
+    '<g class="l-fill"><ellipse cx="52" cy="40" rx="21" ry="13" fill="var(--fillc)"/><ellipse cx="46" cy="36" rx="7" ry="3" fill="rgba(255,255,255,.25)"/></g>'+
+    '<g class="l-bake"><path d="'+FISH+'" fill="var(--bake,#f3dc9a)" stroke="var(--bake,#f3dc9a)" stroke-width="5" stroke-linejoin="round"/>'+
+    '<g class="emb" fill="none" stroke="rgba(70,32,8,.5)" stroke-width="2.2" stroke-linecap="round"><circle cx="25" cy="35" r="3"/><path d="M12 44 Q17 47 21 44"/><path d="M38 25 Q47 40 38 55"/><path d="M52 24 Q60 40 52 56"/><path d="M66 27 Q73 40 66 53"/><path d="M92 33 L106 22M92 40 L107 40M92 47 L106 58"/></g></g>'+
+    '</svg>';
+}
+function faceSvg(look,sad){
+  return '<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="23" r="13" fill="'+look.skin+'" stroke="#2a211c" stroke-width="2"/>'+
+    '<path d="M6 20 C6 2,34 2,34 20Z" fill="'+look.hat+'" stroke="#2a211c" stroke-width="2" stroke-linejoin="round"/><circle cx="20" cy="5" r="4" fill="'+look.hat+'" stroke="#2a211c" stroke-width="2"/>'+
+    '<circle cx="15" cy="25" r="1.7" fill="#2a211c"/><circle cx="25" cy="25" r="1.7" fill="#2a211c"/>'+
+    '<path d="'+(sad?'M15 33 Q20 29 25 33':'M15 30 Q20 35 25 30')+'" fill="none" stroke="#2a211c" stroke-width="2" stroke-linecap="round"/></svg>';
+}
+var LOOKS=[{skin:'#f6d3b0',hat:'#3d6fb4'},{skin:'#eec39a',hat:'#d23b2e'},{skin:'#f9dcc0',hat:'#3f9b57'},{skin:'#e3b48c',hat:'#e3a21a'},{skin:'#f3cfae',hat:'#7a4fa3'}];
+
+var STOPS=[[0,[243,220,154]],[OK_LO,[226,166,74]],[OK_HI,[188,116,40]],[MAXP,[38,24,16]]];
+function bakeColor(p){
+  for(var i=1;i<STOPS.length;i++){ if(p<=STOPS[i][0]){
+    var a=STOPS[i-1],b=STOPS[i],t=(p-a[0])/(b[0]-a[0]);
+    return 'rgb('+[0,1,2].map(function(k){return Math.round(a[1][k]+(b[1][k]-a[1][k])*t)}).join(',')+')';
+  }}
+  return 'rgb(38,24,16)';
+}
+function grade(p){return p<OK_LO?'pale':p<=OK_HI?'perfect':p<MAXP?'dark':'burnt'}
+function won(n){return n.toLocaleString('ko-KR')+'원'}
+function rnd(a,b){return a+Math.random()*(b-a)}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+
+function beep(f,d,type,vol){
+  if(!actx) return;
+  try{
+    var o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;
+    o.type=type||'sine';o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(vol||.06,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+d);
+  }catch(e){}
+}
+function hint(msg,hold){
+  $('hint').textContent=msg;
+  clearTimeout(hintTimer);
+  if(hold!==true) hintTimer=setTimeout(function(){$('hint').textContent=DEFAULT_HINT},2200);
+}
+
+/* ---------- 화면 만들기 ---------- */
+function buildPan(){
+  var h='';
+  for(var i=0;i<4;i++) h+='<button class="mold s-empty" id="mold'+i+'" data-i="'+i+'" aria-label="'+(i+1)+'번 틀">'+moldSvg()+
+    '<span class="steam"></span><span class="gauge"><i></i></span><span class="next">반죽 붓기</span></button>';
+  $('pan').innerHTML=h;
+  $('pan').addEventListener('pointerdown',function(e){
+    var b=e.target.closest('.mold'); if(b&&G&&G.on){e.preventDefault();tapMold(+b.dataset.i)}
+  });
+}
+function buildFillings(){
+  $('fillings').innerHTML=KEYS.map(function(k){
+    return '<button class="fill-btn" id="fill-'+k+'" data-k="'+k+'" aria-pressed="false" style="--c:'+FL[k].c+'"><span class="tub"></span><span class="lbl">'+FL[k].n+'</span></button>';
+  }).join('');
+  $('fillings').addEventListener('pointerdown',function(e){
+    var b=e.target.closest('.fill-btn'); if(b){selectFill(b.dataset.k);beep(520,.06,'triangle')}
+  });
+}
+function selectFill(k){
+  if(G) G.sel=k;
+  KEYS.forEach(function(x){$('fill-'+x).setAttribute('aria-pressed',x===k?'true':'false')});
+}
+
+/* ---------- 틀 ---------- */
+var NEXT={empty:'반죽 붓기',batter:'속 넣기',filled:'반죽 덮기'};
+function renderMold(i){
+  var m=G.molds[i],el=$('mold'+i);
+  el.className='mold s-'+m.st+(m.p>=MAXP?' burnt':'');
+  if(m.fl) el.style.setProperty('--fillc',FL[m.fl].c);
+  updateMoldLive(i);
+}
+function updateMoldLive(i){
+  var m=G.molds[i],el=$('mold'+i),nx=el.querySelector('.next'),cook=(m.st==='side1'||m.st==='side2');
+  if(cook){
+    el.style.setProperty('--bake',bakeColor(m.p));
+    el.style.setProperty('--emb',Math.min(1,m.p/OK_LO).toFixed(2));
+    el.querySelector('.gauge i').style.left=(m.p/MAXP*100)+'%';
+    var g=grade(m.p), act=m.st==='side1'?'뒤집기':'꺼내기';
+    var txt=m.p<MINP?'굽는 중…':g==='burnt'?'탔어요!':g==='perfect'?'지금 '+act+'!':act;
+    var cls='next'+(g==='perfect'?' go':(g==='dark'||g==='burnt')?' hot':'');
+    if(nx.textContent!==txt) nx.textContent=txt;
+    if(nx.className!==cls) nx.className=cls;
+    if(g==='burnt'&&!el.classList.contains('burnt')) el.classList.add('burnt');
+  }else{
+    var t=m.st==='batter'?FL[G.sel].n+' 넣기':NEXT[m.st];
+    if(nx.textContent!==t) nx.textContent=t;
+    if(nx.className!=='next') nx.className='next';
+  }
+}
+function pourAt(i){
+  var el=$('mold'+i),k=$('kettle'),w=el.parentNode.parentNode.getBoundingClientRect(),r=el.getBoundingClientRect();
+  k.style.left=(r.left-w.left+r.width*.55)+'px';k.style.top=(r.top-w.top+r.height*.35)+'px';
+  k.classList.remove('pour');void k.offsetWidth;k.classList.add('pour');
+  beep(240,.18,'sawtooth',.03);
+}
+function fx(i,cls){var el=$('mold'+i);el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);setTimeout(function(){el.classList.remove(cls)},320)}
+function floatText(i,txt,bad){
+  var s=document.createElement('span');s.className='float'+(bad?' bad':'');s.textContent=txt;
+  $('mold'+i).appendChild(s);setTimeout(function(){s.remove()},900);
+}
+function tapMold(i){
+  var m=G.molds[i];
+  if(m.st==='empty'){m.st='batter';pourAt(i);hint('속 재료를 고르고 틀을 한 번 더 누르세요')}
+  else if(m.st==='batter'){m.st='filled';m.fl=G.sel;beep(430,.08,'triangle');hint(FL[m.fl].n+' 듬뿍! 반죽으로 덮어 주세요')}
+  else if(m.st==='filled'){m.st='side1';m.p=0;pourAt(i);hint('초록 구간에서 뒤집으면 완벽해요')}
+  else if(m.p<MINP){fx(i,'shake');hint('아직 덜 익었어요. 조금만 기다리세요');beep(150,.08,'square',.03);return}
+  else if(m.st==='side1'){m.q1=grade(m.p);m.st='side2';m.p=0;fx(i,'flip');beep(660,.07,'triangle')}
+  else{finish(i,m);return}
+  renderMold(i);
+}
+function finish(i,m){
+  var q2=grade(m.p), fl=m.fl;
+  G.molds[i]={st:'empty',fl:null,p:0,q1:null};
+  renderMold(i);
+  if(m.q1==='burnt'||q2==='burnt'){
+    G.burnt++;floatText(i,'탔어요…',true);hint('새까맣게 탔어요. 버렸습니다');beep(110,.25,'sawtooth',.05);return;
+  }
+  var perfect=(m.q1==='perfect'&&q2==='perfect');
+  if(perfect) G.perfect++;
+  var sold=serve({fl:fl,perfect:perfect});
+  if(sold){floatText(i,'+'+won(sold)+(perfect?' 완벽!':''));beep(perfect?990:780,.12,'triangle')}
+  else if(G.stock.length<STOCK_MAX){G.stock.push({fl:fl,perfect:perfect});floatText(i,'진열대로');renderStock();beep(600,.08,'triangle')}
+  else{floatText(i,'자리 없음',true);hint('진열대가 꽉 찼어요. 주문을 보고 구우세요')}
+}
+
+/* ---------- 손님 ---------- */
+function serve(f){ // 주문에 맞는 손님이 있으면 판매, 받은 금액을 돌려준다
+  var best=null;
+  G.cust.forEach(function(c){ if(c&&c.need[f.fl]>0&&(!best||c.pat<best.pat)) best=c });
+  if(!best) return 0;
+  best.need[f.fl]--;
+  var pay=PRICE+(f.perfect?100:0);
+  G.sold++;
+  var left=KEYS.reduce(function(s,k){return s+(best.need[k]||0)},0);
+  if(left===0){
+    var tip=Math.round(best.pat/best.max*3)*100;
+    pay+=tip; G.served++;
+    G.cust[best.slot]=null; G.spawn[best.slot]=rnd(1.2,3);
+    hint(tip?'손님이 팁 '+won(tip)+'을 주고 갔어요':'주문 완료! 감사합니다');
+    beep(1180,.18,'triangle');
+  }
+  G.money+=pay; renderHud(); renderCustomers();
+  return pay;
+}
+function newCustomer(slot){
+  var late=G.t<DAY*.55, total=Math.random()<(late?.45:.2)?3:Math.random()<.5?2:1, need={};
+  if(G.served+G.missed===0&&slot===0) total=1;
+  for(var n=0;n<total;n++){var k=pick(KEYS);if(Object.keys(need).length>=2&&!need[k])k=Object.keys(need)[0];need[k]=(need[k]||0)+1}
+  var c={slot:slot,need:need,order:JSON.parse(JSON.stringify(need)),max:30+8*total,look:pick(LOOKS)};
+  c.pat=c.max; G.cust[slot]=c;
+  beep(880,.07,'sine',.04);
+  // 진열대에 있는 붕어빵부터 판다
+  for(var s=0;s<G.stock.length;){
+    if(G.cust[slot]&&c.need[G.stock[s].fl]>0){var f=G.stock.splice(s,1)[0];serve(f)} else s++;
+  }
+  renderStock();renderCustomers();
+}
+function renderCustomers(){
+  var h='';
+  for(var s=0;s<2;s++){
+    var c=G&&G.cust[s];
+    if(!c){h+='<div class="cust empty">손님 기다리는 중…</div>';continue}
+    h+='<div class="cust">'+faceSvg(c.look,c.pat/c.max<.3)+'<div class="order">'+Object.keys(c.order).map(function(k){
+      var got=c.order[k]-c.need[k];
+      return '<span class="chip'+(c.need[k]===0?' done':'')+'" style="--c:'+FL[k].c+'"><i></i>'+FL[k].n+' <em>'+got+'/'+c.order[k]+'</em></span>';
+    }).join('')+'</div><span class="pat"><i id="pat'+s+'"></i></span></div>';
+  }
+  $('customers').innerHTML=h;
+  updatePatience();
+}
+function updatePatience(){
+  for(var s=0;s<2;s++){var c=G.cust[s],el=$('pat'+s);if(c&&el){var r=Math.max(0,c.pat/c.max);el.style.transform='scaleX('+r.toFixed(3)+')';el.style.background=r<.3?'var(--bad)':r<.6?'var(--warn)':'var(--ok)'}}
+}
+function renderStock(){
+  $('stock').innerHTML=G&&G.stock.length?G.stock.map(function(f){return fishSvg('#d99a3c',FL[f.fl].c)}).join(''):'남는 붕어빵 자리';
+}
+function renderHud(){
+  $('money').textContent=won(G.money);
+  var t=Math.max(0,Math.ceil(G.t));
+  $('time').textContent=Math.floor(t/60)+':'+('0'+t%60).slice(-2);
+  $('timeBox').className=t<=15?'low':'';
+}
+
+/* ---------- 진행 ---------- */
+function tick(now){
+  raf=requestAnimationFrame(tick);
+  var dt=Math.min(.1,(now-last)/1000); last=now;
+  if(!G.on||dt<=0) return;
+  var sec=Math.ceil(G.t);
+  G.t-=dt;
+  for(var i=0;i<4;i++){var m=G.molds[i];
+    if(m.st==='side1'||m.st==='side2'){ if(m.p<MAXP){m.p=Math.min(MAXP,m.p+RATE*dt); if(m.p>=MAXP) beep(130,.2,'sawtooth',.04)} updateMoldLive(i) }
+  }
+  var changed=false;
+  for(var s=0;s<2;s++){
+    var c=G.cust[s];
+    if(c){
+      var sad=c.pat/c.max<.3; c.pat-=dt;
+      if(c.pat<=0){G.cust[s]=null;G.spawn[s]=rnd(1.5,3);G.missed++;changed=true;hint('손님이 기다리다 그냥 갔어요');beep(200,.2,'square',.03)}
+      else if(!sad&&c.pat/c.max<.3) changed=true;
+    }else{ G.spawn[s]-=dt; if(G.spawn[s]<=0&&G.t>6){newCustomer(s)} }
+  }
+  if(changed) renderCustomers(); else updatePatience();
+  if(Math.ceil(G.t)!==sec) renderHud();
+  if(G.t<=0) endDay();
+}
+function startDay(){
+  if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(actx&&actx.state==='suspended') actx.resume();
+  G={on:true,t:DAY,money:0,sold:0,served:0,missed:0,perfect:0,burnt:0,sel:'pat',stock:[],cust:[null,null],spawn:[.6,7],
+     molds:[0,1,2,3].map(function(){return{st:'empty',fl:null,p:0,q1:null}})};
+  $('overlay').hidden=true;
+  selectFill('pat');
+  for(var i=0;i<4;i++) renderMold(i);
+  renderHud();renderStock();renderCustomers();hint(DEFAULT_HINT,true);
+  cancelAnimationFrame(raf);last=performance.now();raf=requestAnimationFrame(tick);
+}
+function endDay(){
+  G.on=false;cancelAnimationFrame(raf);
+  var best=0;
+  try{best=+localStorage.getItem('bung.best')||0}catch(e){}
+  var isNew=G.money>best;
+  if(isNew){try{localStorage.setItem('bung.best',String(G.money))}catch(e){}}
+  $('card').innerHTML='<h2>오늘 장사 끝!</h2><p class="sub">'+(isNew&&G.money>0?'최고 매출을 새로 썼어요':G.money>=10000?'줄 서는 맛집이네요':'내일은 더 잘 구워 봐요')+'</p>'+
+    '<div class="big">'+won(G.money)+'</div>'+
+    '<dl><dt>판 붕어빵</dt><dd>'+G.sold+'마리</dd><dt>완벽하게 구운 것</dt><dd>'+G.perfect+'마리</dd><dt>태운 것</dt><dd>'+G.burnt+'마리</dd><dt>그냥 간 손님</dt><dd>'+G.missed+'명</dd><dt>최고 매출</dt><dd>'+won(Math.max(best,G.money))+'</dd></dl>'+
+    '<button class="cta" id="startBtn">다시 장사하기</button>';
+  $('overlay').hidden=false;
+  $('startBtn').addEventListener('click',startDay);
+}
+function intro(){
+  $('card').innerHTML='<h2>붕어빵 포차</h2><p class="sub">한 마리 700원 · 2분 장사</p>'+
+    '<ol><li><span>틀을 눌러 <b>반죽</b>을 붓습니다.</span></li><li><span>아래에서 <b>속 재료</b>를 고르고 틀을 누릅니다.</span></li><li><span>한 번 더 눌러 반죽으로 덮으면 굽기 시작합니다.</span></li><li><span>눈금이 <b>초록 구간</b>일 때 눌러 뒤집고, 다시 초록일 때 꺼냅니다.</span></li><li><span>손님 주문과 같은 맛이면 바로 팔립니다. 빨리 줄수록 팁이 붙어요.</span></li></ol>'+
+    '<button class="cta" id="startBtn">장사 시작</button><p class="mini">너무 오래 두면 새까맣게 타서 버려야 해요.</p>';
+  $('startBtn').addEventListener('click',startDay);
+}
+
+buildPan();buildFillings();
+G={on:false,t:DAY,money:0,sel:'pat',stock:[],cust:[null,null],spawn:[0,0],molds:[0,1,2,3].map(function(){return{st:'empty',fl:null,p:0}})};
+selectFill('pat');renderHud();renderStock();renderCustomers();$('hint').textContent=DEFAULT_HINT;
+intro();
+document.addEventListener('visibilitychange',function(){last=performance.now()});
+})();
+</script>
+</body>
+</html>
