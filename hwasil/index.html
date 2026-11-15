@@ -1084,12 +1084,15 @@ body.padOpen #hud { visibility: hidden; }
   const gapZ = i => GGS - 32 * GGAPW[i] - GGAP * i - GGAP / 2;                  /* z of the middle of round hall i */
   /* the gallery building runs north under the hill: nothing from the outdoors (trees, flowers, mushrooms, clouds) may stand inside its footprint */
   /* THE BUILDING TABLE: every roofed footprint in one place. Anything from the outdoors (trees, flowers, mushrooms, clouds, leaves) asks indoorAt() before it stands or shows somewhere. A new building = one more row here. */
+  const CAVE = { x: 134.5, z: -77, r: 9.5, mouth: 0.38 };   /* the cave gallery on the north beach: a rock dome, its mouth opens to the south (mouth = half-width of the opening in radians) */
+  const caveAng = (x, z) => Math.abs(Math.atan2(x - CAVE.x, z - CAVE.z));   /* 0 = due south of the centre, where the mouth is */
   const BUILD = [
     { n: '중앙 홀', r: [-RM.hx, RM.hx, -RM.hz, RM.hz] },
     { n: '신진 작가관·별관', r: [-GX, GX, GZ0, GZ2] },
     { n: '서쪽 전시관', r: [W2X, -GX, GZ0, GZ1] },
     { n: '로툰다', r: [-21, 21, GGS, -RM.hz] },
-    { n: '대회랑', r: [-GG.hw, GG.hw, GGZ, GGS] }
+    { n: '대회랑', r: [-GG.hw, GG.hw, GGZ, GGS] },
+    { n: '동굴 갤러리', c: [CAVE.x, CAVE.z, CAVE.r] }
   ].concat(GGAPW.map((w, i) => ({ n: '둥근 홀 ' + (i + 1), c: [0, gapZ(i), GGR] })));
   const indoorAt = (x, z, m) => { m = m || 0; for (let i = 0; i < BUILD.length; i++) { const b = BUILD[i]; if (b.r ? (x >= b.r[0] - m && x <= b.r[1] + m && z >= b.r[2] - m && z <= b.r[3] + m) : Math.hypot(x - b.c[0], z - b.c[1]) <= b.c[2] + m) return b.n; } return ''; };
   const inGal = (x, z) => !!indoorAt(x, z, 5);
@@ -2505,7 +2508,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   let galCol = null, exhibits = [];
   const FD = { s: 2.6, m: 4.0, l: 6.6 };                 /* longest side of the picture area per frame size */
   const FRAME_T = 0.2;
-  const ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'studio'];
+  const ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'studio'];
   function roomOf(r) { return ROOMS.indexOf(r) >= 0 ? r : 'gallery'; }
   let emptyTex = null, emptyLabelTex = null, farTex = null, farLabelTex = null, evTex = null, evLabelTex = null;
   function emptyTexs() {                                  /* one shared 'empty frame' picture and label for all the blank frames */
@@ -2681,7 +2684,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       });
     });
     left.forEach(ex => {
-      const sl = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard'].reduce((f, r) => f || slots.find(q => q.room === r && !q.ev && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !q.ev && !used.has(q)), null);
+      const sl = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave'].reduce((f, r) => f || slots.find(q => q.room === r && !q.ev && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !q.ev && !used.has(q)), null);
       if (sl) { used.add(sl); assign.set(sl, ex); }
     });
     slots.forEach(sl => {
@@ -3034,7 +3037,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { name: '남쪽 꽃들판', note: '끝없이 펼쳐진 들꽃 초원과 숲', x: 92, z: 62, h: 0, pitch: 0.2 },
     { name: '숲속 쉼터', note: '커다란 나무 아래 돌 마당', x: 92, z: 98, h: 0, pitch: 0.25 },
     { name: '알프스 마을', note: '소들이 풀을 뜯는 산골 마을. 교회와 통나무집', x: NORTH.x, z: -76, h: Math.PI, pitch: 0.2 },
-    { name: '눈밭', note: '눈 덮인 봉우리 바로 아래, 눈이 내리는 하얀 들판', x: NORTH.x, z: -124, h: Math.PI, pitch: 0.12 }
+    { name: '눈밭', note: '눈 덮인 봉우리 바로 아래, 눈이 내리는 하얀 들판', x: NORTH.x, z: -124, h: Math.PI, pitch: 0.12 },
+    { name: '동굴 갤러리', note: '빛나는 수정 사이에 친구들 그림이 걸리는 바닷가 동굴', x: CAVE.x, z: CAVE.z + 3.5, h: Math.PI, pitch: 0.16 }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
@@ -4055,7 +4059,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     ['알프스 마을', (x, z) => z >= -92 && z <= -70.4 && x >= 67 + (-68 - z) * -0.125 && x <= 107 + (-68 - z) * 0.533],
     ['골짜기 길', (x, z) => Math.abs(x - NORTH.x) <= 4.5 && z >= -128 && z < -91.9],
     ['산자락', (x, z) => x >= HILL.x0 && x <= 148 && z >= HILL.z0 && z <= HILL.z1],
-    ['해안 길', (x, z) => x >= 126 && x <= 148 && z > HILL.z1 && z < OUT.z0],
+    ['해안 길', (x, z) => { if (!(x >= 126 && x <= 148 && z > HILL.z1 && z < OUT.z0)) return false; const d = Math.hypot(x - CAVE.x, z - CAVE.z); return d < CAVE.r - 1.1 || d > CAVE.r + 1.3 || caveAng(x, z) < CAVE.mouth * 0.72; }],   /* the cave's rock wall is solid except at its mouth */
     ['눈밭', (x, z) => z < OUT.z0 && Math.hypot(x - NORTH.x, z - NORTH.sz) <= NORTH.sr],
     ['바다', (x, z) => z >= OUT.z0 && x > OUT.x1 && x <= SWIM.x1 && z >= SWIM.z0 && z <= SWIM.z1],
     ['들판', (x, z) => x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1]
@@ -4922,7 +4926,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       ['exManual', '직접 고르기', false, () => { closePad(); startHang(w); renderPlaces(); $('#places').hidden = false; }],   /* leave the easel, then pick a frame (the places list helps to walk there) */
       ['exNo', '나중에', false, () => {}]]);
   }
-  const AUTO_ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'studio'];
+  const AUTO_ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'studio'];
   function autoCandidates() {
     const SR = { m: 0, l: 1, s: 2 };
     return slots.filter(q => !q.ex && !q.ev).sort((a, b) =>
@@ -4987,7 +4991,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   $('#padSave').addEventListener('click', save);
 
-  const ROOM_NAME = { museum: '대회랑', gallery: '신진 작가관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', studio: '화실' };
+  const ROOM_NAME = { museum: '대회랑', gallery: '신진 작가관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', cave: '동굴 갤러리', studio: '화실' };
   const SIZE_NAME = { s: '작은', m: '보통', l: '큰' };
   async function takeDown(ex) {                           /* only the owner's own frames: the server checks it too */
     if (!galCol) return;
@@ -5816,6 +5820,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const AREA_NOTE = { '둥근 홀': '벤치에 앉아 잠깐 쉬어 가는 둥근 홀', '중앙 홀': '북쪽 미술관 · 동쪽 화실과 조각 전시관 · 남쪽 친구들 전시', '화실': '이젤을 눌러 앉아서 그려요', '조각 전시관': '피에타·다비드·생각하는 사람… 세계 조각 명작 15점, 한가운데에는 피에타', '중앙 로툰다': '분수와 기둥이 있는 둥근 홀', '신진 작가관': '친구들이 그린 그림이 걸려 있어요', '별관': '신진 작가관의 두 번째 전시장', '서쪽 전시관 1': '친구들이 그린 그림', '서쪽 전시관 2': '친구들이 그린 그림', '야외 전시 정원': '하늘 아래 액자가 둘러선 정원', '꽃길 정원': '양쪽에 그림이 걸린 둥근 꽃길', '산 전망대': '눈 덮인 봉우리를 바라보며', '바닷가': '모래사장과 수평선, 등대', '호숫가': '잔잔한 물, 수련, 작은 배', '풍차 들판': '꽃밭 너머로 돌아가는 풍차', '남쪽 꽃들판': '끝없이 펼쳐진 들꽃 초원과 숲', '숲속 쉼터': '커다란 나무 아래 돌 마당', '들판 산책길': '중앙 홀 동쪽 문 밖의 넓은 들판' };
   function areaNameAt(x, z) {
     if (x > RM.hx - 0.5) {
+      if (Math.hypot(x - CAVE.x, z - CAVE.z) < CAVE.r + 0.5) return '동굴 갤러리';
       if (z < OUT.z0 - 0.5 && x > 55) return z < -100 ? '눈밭' : '알프스 마을';
       if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 3 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 3) return '조각 전시관';
       if (Math.abs(x - ATELIER.x) < ATELIER.w / 2 + 3 && Math.abs(z - ATELIER.z) < ATELIER.d / 2 + 6) return '화실';
@@ -6403,6 +6408,36 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (SE.whale) { const w = SE.whale, a = w.w * t, x = w.cx + Math.cos(a) * w.R * 0.3, z = w.cz + Math.sin(a) * w.R; w.g.position.set(x, w.y + Math.sin(t * 0.15) * 1.5, z); w.g.rotation.y = Math.atan2(-Math.cos(a) * 0.3, -Math.sin(a)) + 0; w.fl.rotation.x = 0.25 * Math.sin(t * 0.8); }
   }
   const oo2 = new T.Object3D();
+  /* ---------- the cave gallery: a rock dome on the north beach; dark inside, lit by crystals and a glowing pool, twelve frames for friends' pictures round the wall ---------- */
+  { const C = CAVE, R = C.r, g = new T.Group(); g.position.set(C.x, 0, C.z); scene.add(g); let sd = 4242; const rr = () => { sd = (sd * 16807 + 7) % 2147483647; return sd / 2147483647; };
+    /* the shell: rings from the ground to the top, leaving the mouth open (angle 0 = south) */
+    const NA = 26, NE = 7, vp = [], idx = [], a0 = C.mouth, a1 = Math.PI * 2 - C.mouth, H = 8.2;
+    for (let e = 0; e <= NE; e++) for (let i = 0; i <= NA; i++) { const op = e >= 4 ? 0 : e === 3 ? 0.45 : 1, a = a0 * op + (a1 + (Math.PI * 2 - a1) * (1 - op) - a0 * op) * i / NA, t = e / NE, el = t * Math.PI / 2, edge = (i === 0 || i === NA) ? 0 : 1, j = (0.5 + rr()) * 0.55 * edge * (e < NE ? 1 : 0), rad = (R + j) * Math.cos(el) + 0.25 * t, y = H * Math.sin(el) + j * 0.5; vp.push(Math.sin(a) * rad, y, Math.cos(a) * rad); }
+    for (let e = 0; e < NE; e++) for (let i = 0; i < NA; i++) { const p0 = e * (NA + 1) + i, p1 = p0 + 1, p2 = p0 + NA + 1, p3 = p2 + 1; idx.push(p0, p1, p2, p1, p3, p2); }
+    const sg = new T.BufferGeometry(); sg.setAttribute('position', new T.Float32BufferAttribute(vp, 3)); sg.setIndex(idx); const flat = sg.toNonIndexed(); flat.computeVertexNormals();
+    const outM = new T.MeshLambertMaterial({ color: 0x7d7a80, flatShading: true }), inM = new T.MeshBasicMaterial({ color: 0x1b1a2e, side: T.BackSide, fog: false });
+    const shOut = new T.Mesh(flat, outM), shIn = new T.Mesh(flat, inM); shOut.userData.noSkin = true; shIn.userData.noSkin = true; shIn.userData.noShadow = true; g.add(shOut, shIn);
+    /* boulders round the mouth and the foot of the dome, and a lintel rock over the opening */
+    const rockM = new T.MeshLambertMaterial({ color: 0x6f6c74, flatShading: true }), rock = (x, y, z, s, sy) => { const m = new T.Mesh(new T.IcosahedronGeometry(1, 0), rockM); m.position.set(x, y, z); m.scale.set(s, s * (sy || 0.8), s); m.rotation.set(rr() * 3, rr() * 3, rr() * 3); m.userData.noLos = true; g.add(m); return m; };
+    [-1, 1].forEach(sn => { const a = sn * (C.mouth + 0.08); rock(Math.sin(a) * (R + 0.3), 1.3, Math.cos(a) * (R + 0.3), 1.9, 1.3); rock(Math.sin(a) * (R + 1.5), 0.6, Math.cos(a) * (R + 1.5), 1.1); });
+    rock(0, 5.9, R * 0.86, 2.5, 0.5); rock(-2.6, 5.0, R * 0.9, 1.4, 0.6); rock(2.7, 4.9, R * 0.9, 1.3, 0.6);
+    for (let i = 0; i < 12; i++) { const a = a0 + 0.2 + (a1 - a0 - 0.4) * i / 11; rock(Math.sin(a) * (R + 0.7), 0.5, Math.cos(a) * (R + 0.7), 0.8 + rr() * 0.9); }
+    /* inside: a dark floor, a glowing pool, crystals with halos */
+    const fl = new T.Mesh(new T.CircleGeometry(R - 0.1, 28), new T.MeshBasicMaterial({ color: 0x26243a, fog: false })); fl.rotation.x = -Math.PI / 2; fl.position.y = 0.04; fl.userData.noShadow = true; g.add(fl);
+    const sill = new T.Mesh(new T.PlaneGeometry(R * 1.1, 3.2), new T.MeshBasicMaterial({ color: 0x26243a, fog: false })); sill.rotation.x = -Math.PI / 2; sill.position.set(0, 0.035, R - 1.0); g.add(sill);
+    const poolM = new T.MeshBasicMaterial({ color: 0x4fe8ff, fog: false }), pool = new T.Mesh(new T.CircleGeometry(1.9, 22), poolM); pool.rotation.x = -Math.PI / 2; pool.position.set(0, 0.07, -0.6); g.add(pool);
+    const glow = (x, y, z, c, s, op) => { const sp = new T.Sprite(new T.SpriteMaterial({ map: dotTexEarly, color: c, transparent: true, opacity: op || 0.55, depthWrite: false, blending: T.AdditiveBlending, fog: false })); sp.scale.set(s, s, 1); sp.position.set(x, y, z); g.add(sp); return sp; };
+    const pg = glow(0, 0.5, -0.6, 0x4fe8ff, 7.5, 0.5), CC = [0x5ff0ff, 0xc98bff, 0xff7ad9, 0x8dffb0], halos = [];
+    const crys = (x, z, c, s) => { const m = new T.MeshBasicMaterial({ color: c, fog: false }); [[0, 0, 1, 0], [0.45, 0.2, 0.62, 0.35], [-0.4, -0.25, 0.7, -0.3], [0.1, -0.45, 0.45, 0.2]].forEach(q => { const k = new T.Mesh(new T.ConeGeometry(0.34 * s * q[2], 2.1 * s * q[2], 5), m); k.position.set(x + q[0] * s, 1.05 * s * q[2], z + q[1] * s); k.rotation.z = q[3]; k.userData.noLos = true; g.add(k); }); halos.push(glow(x, 1.2 * s, z, c, 4.6 * s, 0.5)); };
+    for (let i = 0; i < 9; i++) { const a = a0 + 0.35 + (a1 - a0 - 0.7) * (i + 0.5) / 9, rd = R - 1.7; crys(Math.sin(a) * rd, Math.cos(a) * rd, CC[i % 4], 0.75 + rr() * 0.5); }
+    crys(-3.1, 1.4, CC[1], 0.55); crys(3.3, 0.6, CC[0], 0.6); crys(1.2, -3.6, CC[2], 0.5);
+    for (let i = 0; i < 16; i++) { const a = rr() * 6.28, el = 0.35 + rr() * 1.1, rd = (R - 0.4) * Math.cos(el); const st = glow(Math.sin(a) * rd, H * Math.sin(el) - 0.3, Math.cos(a) * rd, CC[i % 4], 0.5 + rr() * 0.5, 0.9); halos.push(st); }
+    anim.push((dt, t) => { if (Math.abs(pos.x - C.x) > 60 || Math.abs(pos.z - C.z) > 60) return; pg.material.opacity = 0.42 + 0.14 * Math.sin(t * 1.3); halos.forEach((h, i) => { h.material.opacity = (i < 12 ? 0.42 : 0.7) + 0.2 * Math.sin(t * (0.9 + (i % 5) * 0.23) + i); }); });
+    /* twelve frames for friends' pictures round the wall, facing the middle */
+    for (let i = 0; i < 12; i++) { const a = a0 + 0.3 + (a1 - a0 - 0.6) * i / 11, big = false, y = 2.9, rd = R * Math.cos(Math.asin((y + 1.4) / H)) - 0.5; addSlot('cave', 's', C.x + Math.sin(a) * rd, y, C.z + Math.cos(a) * rd, a + Math.PI); }
+    /* a signpost outside */
+    window.__cave = { g: g, C: C };
+  }
   window.__nat = { setEco: setEco, eco: () => ECO, ecoPts: () => ECOP.map(q => q.o.geometry.drawRange.count), indoorAt: indoorAt, walkZone: walkZone, zones: () => WALK.map(w => w[0]), builds: () => BUILD.map(b => b.n), natureInside: () => { const m4 = new T.Matrix4(); let n = 0; const ims = FORM.concat(NG.mush ? [NG.mush] : []); scene.traverse(o => { if (o.isInstancedMesh && o.userData.nature && ims.indexOf(o) < 0) ims.push(o); }); ims.forEach(o => { if (!o.isInstancedMesh) return; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); const e = m4.elements; if (Math.hypot(e[0], e[1], e[2]) > 0 && indoorAt(e[12], e[14], 1)) n++; } }); return n; }, scene: () => scene, cam: () => camera, walk: walkable, info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
 
   /* ---------- fast travel ---------- */
@@ -6486,7 +6521,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   /* places are grouped into three kinds: exhibition halls, outdoors, and making/resting; the sheet can filter by kind or show a map */
   const PCAT = { ex: '전시관', out: '야외', mk: '화실·쉼터' }, PCOL = { ex: '#8a4a47', out: '#3f7a4f', mk: '#3f6fa8' };
-  const catOf = pl => ['알프스 마을', '눈밭', '산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원', '남쪽 꽃들판', '숲속 쉼터'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
+  const catOf = pl => ['알프스 마을', '눈밭', '동굴 갤러리', '산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원', '남쪽 꽃들판', '숲속 쉼터'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
   let placesTab = 'all';
   const EVENT_PLACE = { name: '🎁 이벤트존', note: '내 그림을 걸어보세요 · 별관 서쪽 벽 (@dotori_museum)', x: -4.5, z: GZ1 + 16, h: -Math.PI / 2, pitch: 0.15 };
   function drawPlacesMap() {
@@ -6888,14 +6923,19 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (inspect && (Math.hypot(joy.x, joy.y) > 0.2 || keys.w || keys.a || keys.s || keys.d || keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright)) exitInspect();
     if (inspect && cptr.size === 0) camYaw += dt * 0.28;                       /* a slow turn of its own until a finger takes over */
     camTx += ((inspect ? inspect.x : pos.x) - camTx) * f; camTz += ((inspect ? inspect.z : pos.z) - camTz) * f; camTy += ((myGY > 0 ? myGY : myGY * 0.4) + DV.y * 0.9 + (BT.on >= 0 ? 0.5 : 0) - camTy) * f;
-    camDist += ((started ? camWant : 26) - camDist) * Math.min(1, dt * 3);
+    const inCave = started && Math.hypot(pos.x - CAVE.x, pos.z - CAVE.z) < CAVE.r - 0.6;
+    camDist += ((started ? (inCave ? Math.min(camWant, 8.5) : camWant) : 26) - camDist) * Math.min(1, dt * 3);
     const pe = Math.max(camPitch, 0.08), cp = Math.cos(pe);      /* below 0.08 the camera stops sinking and starts looking up instead */
     /* no clamping to the walls: walls are one-sided, so from outside they vanish and the view stays wide */
-    const dx = camTx + Math.sin(camYaw) * cp * camDist;
+    let dx = camTx + Math.sin(camYaw) * cp * camDist;
     let dy = (inspect ? inspect.y : 2.4 + camTy) + Math.sin(pe) * camDist, lookY = inspect ? inspect.y : 2.0 + camTy + Math.max(0, 0.08 - camPitch) * 32;
-    const dz = camTz + Math.cos(camYaw) * cp * camDist;
+    let dz = camTz + Math.cos(camYaw) * cp * camDist;
     if (DV.y < -0.6 && dx > SEA_X + 1) dy = Math.max(seaFloor(dx, dz) + 0.6, Math.min(dy, -0.4));      /* under water the camera stays under water */
-    if (!inspect && pos.x > RM.hx + 2 && !(DV.y < -0.6)) {                                            /* on the hills the camera never dips under the ground, and rises when a ridge stands between it and me */
+    if (inCave && !inspect) {                                                                          /* in the cave the camera stays inside the rock dome with me */
+      const lim = CAVE.r - 1.9; let k = 1; for (let i = 0; i < 12 && Math.hypot(camTx + (dx - camTx) * k - CAVE.x, camTz + (dz - camTz) * k - CAVE.z) > lim; i++) k -= 0.08;
+      dx = camTx + (dx - camTx) * k; dz = camTz + (dz - camTz) * k; dy = Math.min(lookY + (dy - lookY) * k, 5.2);
+    }
+    if (!inCave && !inspect && pos.x > RM.hx + 2 && !(DV.y < -0.6)) {                                            /* on the hills the camera never dips under the ground, and rises when a ridge stands between it and me */
       let need = Math.max(0, gY(dx, dz)) + 1.3;
       for (let k = 0.3; k < 0.95; k += 0.3) { const g = gY(camTx + (dx - camTx) * k, camTz + (dz - camTz) * k) + 0.9, ly = lookY + (dy - lookY) * k; if (g > ly) need = Math.max(need, lookY + (g - lookY) / k); }
       if (need > dy) dy = Math.min(need, dy + 14);

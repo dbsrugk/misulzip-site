@@ -94,5 +94,8 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   const pf = await p.evaluate(() => { const r = window.__perf.rows(), a = window.__nat.ecoPts().reduce((x, y) => x + (isFinite(y) ? y : 1e6), 0); window.__nat.setEco(true); const b = window.__nat.ecoPts().reduce((x, y) => x + y, 0); window.__nat.setEco(false); return { n: r.length, ok: r.every(q => q.fps > 0), a: a, b: b, txt: window.__perf.text().split('\n').length }; });
   check(pf.n >= 2 && pf.ok && pf.txt >= 3, 'the speed log has a row for each place I visited (' + pf.n + ')');
   check(pf.b < pf.a, 'the lighter step draws fewer glow points (' + pf.b + ')');
+  const cvz = await p.evaluate(() => { const C = window.__cave.C, w = window.__nat.walk; return { inside: w(C.x, C.z), mouth: w(C.x, C.z + C.r), wall: w(C.x + C.r, C.z), back: w(C.x, C.z - C.r), east: w(147, C.z), name: window.__nat.indoorAt(C.x, C.z), slots: window.__hw.slots.filter(q => q.room === 'cave').length }; });
+  check(cvz.inside && cvz.mouth && !cvz.wall && !cvz.back && cvz.east, 'the cave can be walked into through its mouth only, and the beach path passes beside it: ' + JSON.stringify(cvz));
+  check(cvz.name === '동굴 갤러리' && cvz.slots === 12, 'the cave gallery has twelve frames for friends (' + cvz.slots + ')');
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
