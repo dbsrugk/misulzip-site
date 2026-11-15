@@ -1207,8 +1207,33 @@ body.padOpen #hud { visibility: hidden; }
       bb.setFromObject(o); bb.getSize(sz); bb.getCenter(c); if (sz.y < RM.h * 0.7 || Math.max(sz.x, sz.z) < 2 || Math.min(sz.x, sz.z) > 0.6) return;
       if (!indoorAt(c.x, c.z, 1.2)) return; found.push(o);
     });
-    found.forEach(o => { const k = new T.Mesh(o.geometry, mat); k.userData.noSkin = true; k.userData.noLos = true; k.visible = false; o.add(k); SKIN.push(k); });
-    window.__skin = SKIN;
+    /* the outside is dressed like a cathedral: pale stone courses, tall pointed stained-glass windows that glow at night, a plinth and a cornice, and buttresses with pinnacles between the windows */
+    const TW = 512, TH = 1024, mk = () => { const cv2 = document.createElement('canvas'); cv2.width = TW; cv2.height = TH; return cv2; }, cvA = mk(), cvE = mk(), xa = cvA.getContext('2d'), xe = cvE.getContext('2d'); let sd = 77; const rr = () => { sd = (sd * 16807 + 3) % 2147483647; return sd / 2147483647; };
+    xa.fillStyle = '#e9dfc9'; xa.fillRect(0, 0, TW, TH); for (let y = 0, r = 0; y < TH; y += 34, r++) for (let x = (r % 2) * -48; x < TW; x += 96) { const v = Math.floor(rr() * 22); xa.fillStyle = 'rgb(' + (226 + v) + ',' + (215 + v) + ',' + (193 + v) + ')'; xa.fillRect(x + 2, y + 2, 92, 30); }
+    xa.fillStyle = '#b9ac92'; xa.fillRect(0, TH - 70, TW, 70); xa.fillStyle = '#a3967d'; xa.fillRect(0, TH - 78, TW, 10);                                     /* plinth */
+    xa.fillStyle = '#cfc2a6'; xa.fillRect(0, 0, TW, 44); xa.fillStyle = '#b3a68b'; for (let x = 6; x < TW; x += 32) xa.fillRect(x, 44, 18, 14); xa.fillRect(0, 40, TW, 6);   /* cornice with dentils */
+    xe.fillStyle = '#000'; xe.fillRect(0, 0, TW, TH);
+    const lancet = (ctx, cx, top, bot, hw) => { ctx.beginPath(); ctx.moveTo(cx - hw, bot); ctx.lineTo(cx - hw, top + hw * 1.5); ctx.quadraticCurveTo(cx - hw, top + hw * 0.3, cx, top); ctx.quadraticCurveTo(cx + hw, top + hw * 0.3, cx + hw, top + hw * 1.5); ctx.lineTo(cx + hw, bot); ctx.closePath(); };
+    const GLASS = ['#2f6fd0', '#d0392f', '#e8b53a', '#3aa56a', '#7a4fc0', '#3fb7d8', '#f0e2b0'], cx0 = TW / 2, top0 = 190, bot0 = 800, hw0 = 96;
+    xa.fillStyle = '#8f8470'; lancet(xa, cx0, top0 - 16, bot0 + 14, hw0 + 16); xa.fill(); xa.fillStyle = '#6f6656'; xa.fillRect(cx0 - hw0 - 26, bot0 + 12, hw0 * 2 + 52, 14);
+    [xa, xe].forEach(ctx => { ctx.save(); lancet(ctx, cx0, top0, bot0, hw0); ctx.clip(); let s2 = 99; const r2 = () => { s2 = (s2 * 16807 + 3) % 2147483647; return s2 / 2147483647; };
+      for (let y = top0; y < bot0; y += 38) for (let x = cx0 - hw0; x < cx0 + hw0; x += 32) { ctx.fillStyle = GLASS[Math.floor(r2() * GLASS.length)]; ctx.fillRect(x, y, 32, 38); }
+      const gr = ctx.createRadialGradient(cx0, top0 + 150, 10, cx0, top0 + 150, 120); gr.addColorStop(0, 'rgba(255,240,190,0.85)'); gr.addColorStop(1, 'rgba(255,240,190,0)'); ctx.fillStyle = gr; ctx.fillRect(cx0 - hw0, top0, hw0 * 2, 300);
+      ctx.strokeStyle = ctx === xa ? '#3a3328' : '#000'; ctx.lineWidth = 4; for (let y = top0; y < bot0; y += 38) { ctx.beginPath(); ctx.moveTo(cx0 - hw0, y); ctx.lineTo(cx0 + hw0, y); ctx.stroke(); } for (let x = cx0 - hw0; x <= cx0 + hw0; x += 32) { ctx.beginPath(); ctx.moveTo(x, top0); ctx.lineTo(x, bot0); ctx.stroke(); }
+      ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(cx0, top0); ctx.lineTo(cx0, bot0); ctx.stroke(); ctx.beginPath(); ctx.arc(cx0, top0 + 150, 46, 0, 6.3); ctx.stroke(); ctx.restore(); });
+    xa.fillStyle = '#8f8470'; xa.beginPath(); xa.arc(cx0, 112, 50, 0, 6.3); xa.fill(); [xa, xe].forEach(ctx => { for (let i = 0; i < 8; i++) { ctx.fillStyle = GLASS[i % 6]; ctx.beginPath(); ctx.moveTo(cx0, 112); ctx.arc(cx0, 112, 40, i * Math.PI / 4, (i + 1) * Math.PI / 4); ctx.closePath(); ctx.fill(); } ctx.fillStyle = '#f0e2b0'; ctx.beginPath(); ctx.arc(cx0, 112, 11, 0, 6.3); ctx.fill(); });   /* a small rose window above */
+    const texA = new T.CanvasTexture(cvA), texE = new T.CanvasTexture(cvE); [texA, texE].forEach(tx => { tx.wrapS = T.RepeatWrapping; }); const TILE = 8.5, deco = [], em = new T.Color();
+    const stoneM = new T.MeshLambertMaterial({ color: 0xd9cdb3 }), mergeAll = list => { let n = 0; list.forEach(g2 => { n += g2.attributes.position.count; }); const P = new Float32Array(n * 3), N = new Float32Array(n * 3); let o2 = 0; list.forEach(g2 => { P.set(g2.attributes.position.array, o2); N.set(g2.attributes.normal.array, o2); o2 += g2.attributes.position.count * 3; }); const ge = new T.BufferGeometry(); ge.setAttribute('position', new T.BufferAttribute(P, 3)); ge.setAttribute('normal', new T.BufferAttribute(N, 3)); return ge; };
+    const nrm = new T.Vector3(), ctr = new T.Vector3();
+    found.forEach(o => {
+      let m2 = mat; const pp = o.geometry.parameters, isPlane = o.geometry.type === 'PlaneGeometry' && pp && pp.width;
+      o.getWorldDirection(nrm); o.getWorldPosition(ctr); const outside = !indoorAt(ctr.x - nrm.x * 1.6, ctr.z - nrm.z * 1.6, 0.2);
+      if (isPlane && outside && pp.width >= 5 && pp.height >= RM.h * 0.7) { const n = Math.max(1, Math.round(pp.width / TILE)), ta = texA.clone(), te = texE.clone(); ta.repeat.set(n, 1); te.repeat.set(n, 1); ta.needsUpdate = te.needsUpdate = true; m2 = new T.MeshLambertMaterial({ map: ta, emissiveMap: te, emissive: 0x000000, side: T.BackSide }); deco.push(m2);
+        const parts = [], hh = pp.height; for (let i = 0; i <= n; i++) { const x = -pp.width / 2 + pp.width * i / n; parts.push(new T.BoxGeometry(1.0, hh * 0.86, 1.0).toNonIndexed().translate(x, -hh / 2 + hh * 0.43, -0.5)); parts.push(new T.BoxGeometry(1.5, hh * 0.3, 1.5).toNonIndexed().translate(x, -hh / 2 + hh * 0.15, -0.75)); parts.push(new T.ConeGeometry(0.75, 3.4, 4).toNonIndexed().rotateY(Math.PI / 4).translate(x, -hh / 2 + hh * 0.86 + 1.7, -0.5)); }
+        const bt = new T.Mesh(mergeAll(parts), stoneM); bt.userData.noSkin = true; bt.userData.noLos = true; bt.visible = false; o.add(bt); SKIN.push(bt); }
+      const k = new T.Mesh(o.geometry, m2); k.userData.noSkin = true; k.userData.noLos = true; k.visible = false; o.add(k); SKIN.push(k); });
+    atmHooks.push(A => { const g2 = 0.12 + 0.95 * Math.min(1, A.night * 1.3); em.setRGB(g2, g2 * 0.95, g2 * 0.85); deco.forEach(m3 => { m3.emissive.copy(em); }); });
+    window.__skin = SKIN; window.__skinDeco = deco.length;
   }
   function updateSkin() { if (!skinBuilt) { if (started) skinBuild(); return; } const on = !indoorAt(pos.x, pos.z, 0.5); if (on !== skinOn) { skinOn = on; SKIN.forEach(k => { k.visible = on; }); } }
   function losBuild() {
