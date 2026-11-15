@@ -166,10 +166,10 @@ button.chip { pointer-events: auto; cursor: pointer; }
 .pvBox { display: flex; flex-direction: column; align-items: center; gap: 12px; max-height: 100%; }
 #photoImg { max-width: min(92vw, 420px); max-height: 72vh; border-radius: 6px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5); background: #fff; }
 .pvRow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-#tourBtn.keep { left: 50%; top: auto !important; bottom: calc(var(--bar) + 96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 15px; padding: 8px 12px; background: #fff; }
+#tourBtn.keep { left: 50%; top: auto !important; bottom: calc(var(--bar) + 40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 15px; padding: 8px 12px; background: #fff; }
 #swimBar { pointer-events: none; position: fixed; left: 8px; right: 8px; top: calc(140px + env(safe-area-inset-top, 0px)); z-index: 12; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
 #swimBar[hidden] { display: none; }
-#jumpBtn { position: fixed; right: max(150px, calc(env(safe-area-inset-right, 0px) + 150px)); bottom: calc(24px + var(--bar) + env(safe-area-inset-bottom, 0px)); width: 58px; height: 58px; border-radius: 50%; border: 2.5px solid var(--ink); background: rgba(255,255,255,.88); box-shadow: 2px 2px 0 var(--ink); font: inherit; font-size: 13px; font-weight: 700; pointer-events: auto; cursor: pointer; z-index: 6; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+#jumpBtn { position: fixed; right: max(42px, calc(env(safe-area-inset-right, 0px) + 42px)); bottom: calc(152px + var(--bar) + env(safe-area-inset-bottom, 0px)); width: 68px; height: 68px; font-size: 15px !important; touch-action: none; border-radius: 50%; border: 2.5px solid var(--ink); background: rgba(255,255,255,.88); box-shadow: 2px 2px 0 var(--ink); font: inherit; font-size: 13px; font-weight: 700; pointer-events: auto; cursor: pointer; z-index: 6; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
 #jumpBtn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
 body.clean #hud > *:not(#joy):not(#cleanBar):not(#toast), body.clean #areaBanner { visibility: hidden !important; }
 body.clean #joy { opacity: .35; }
@@ -7081,7 +7081,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   /* jump: a little hop on the spot or on the run (space bar or the round button); friends see it too */
   const JMP = { y: 0, v: 0, n: 0, held: false };
   function jump() { if (!started || JMP.y > 0 || pad.open || watch.open || myEasel >= 0 || mySeat >= 0 || BT.on >= 0 || DV.lvl > 0 || me.swim > 0.4) return; JMP.v = 7.6; JMP.y = 0.001; JMP.n = (JMP.n + 1) % 1000; }
-  $('#jumpBtn').addEventListener('click', jump);
+  { const jb = $('#jumpBtn'); let jt = 0; const go = e => { const n = performance.now(); if (n - jt > 250) { jt = n; jump(); } if (e.cancelable) e.preventDefault(); e.stopPropagation(); };   /* pointerdown, not click: a second finger (the first is on the joystick) never produces a click on phones */
+    jb.addEventListener('pointerdown', go); jb.addEventListener('touchstart', go, { passive: false }); jb.addEventListener('click', go); }
   window.__jump = { go: jump, y: () => JMP.y, n: () => JMP.n };
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
