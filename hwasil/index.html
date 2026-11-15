@@ -169,8 +169,6 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #tourBtn.keep { left: 50%; top: auto !important; bottom: calc(var(--bar) + 40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 15px; padding: 8px 12px; background: #fff; }
 #swimBar { pointer-events: none; position: fixed; left: 8px; right: 8px; top: calc(140px + env(safe-area-inset-top, 0px)); z-index: 12; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
 #swimBar[hidden] { display: none; }
-#jumpBtn { position: fixed; right: max(42px, calc(env(safe-area-inset-right, 0px) + 42px)); bottom: calc(152px + var(--bar) + env(safe-area-inset-bottom, 0px)); width: 68px; height: 68px; font-size: 15px !important; touch-action: none; border-radius: 50%; border: 2.5px solid var(--ink); background: rgba(255,255,255,.88); box-shadow: 2px 2px 0 var(--ink); font: inherit; font-size: 13px; font-weight: 700; pointer-events: auto; cursor: pointer; z-index: 6; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
-#jumpBtn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
 body.clean #hud > *:not(#joy):not(#cleanBar):not(#toast), body.clean #areaBanner { visibility: hidden !important; }
 body.clean #joy { opacity: .35; }
 #cleanBar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 30; display: flex; gap: 8px; pointer-events: auto; }
@@ -612,7 +610,6 @@ body.padOpen #hud { visibility: hidden; }
       <div class="chip" id="timeGauge" aria-label="접속 시간"><span id="timeTxt">누적 0분</span><i><b id="timeBar"></b></i></div>
       <button class="chip" id="gearBtn" type="button" aria-label="설정">⚙️</button>
     </div>
-    <button id="jumpBtn" type="button" aria-label="점프">점프</button>
     <canvas id="miniMap" width="208" height="208" aria-label="미니맵: 누르면 큰 지도"></canvas>
     <div id="rankBox" hidden></div>
   </div>
@@ -5562,7 +5559,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       r.th = typeof pr.h === 'number' && isFinite(pr.h) ? pr.h : r.th; r.w = pr.w === 1 ? 1 : 0;
       r.s = typeof pr.s === 'number' && pr.s >= 0 && pr.s < benches.length * 2 ? Math.floor(pr.s) : -1;
       r.e = typeof pr.e === 'number' && pr.e >= 0 && pr.e < easels.length ? Math.floor(pr.e) : -1;
-      r.dv = clamp(Math.floor(Number(pr.dv)) || 0, 0, 2); r.bt = clamp(Math.floor(Number(pr.bt)) || 0, 0, BOATS.length); r.gr = clamp(Math.floor(Number(pr.gr)) || 0, 0, 3); { const jp = Math.floor(Number(pr.jp)) || 0; if (r.jp !== undefined && jp !== r.jp && !r.jy) { r.jv = 7.6; r.jy = 0.001; } r.jp = jp; }
+      r.dv = clamp(Math.floor(Number(pr.dv)) || 0, 0, 2); r.bt = clamp(Math.floor(Number(pr.bt)) || 0, 0, BOATS.length); r.gr = clamp(Math.floor(Number(pr.gr)) || 0, 0, 3);
       if (!r.init) { r.x = r.tx; r.z = r.tz; r.h = r.th; r.init = true; }
     });
     remotes.forEach((r, k) => { if (!seen.has(k)) { scene.remove(r.av.group); if (r.skiff) scene.remove(r.skiff); remotes.delete(k); } });
@@ -5576,8 +5573,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function pushPresence(force) {
     if (!roomNS || !started) return;
     const now = performance.now();
-    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n, rx: myRx.i, rs: myRx.s, rn: myRx.n, pt: playMin(), dv: DV.lvl, bt: BT.on + 1, gr: GEAR.i, jp: JMP.n };
-    const k = patch.pt + ',' + patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.s + ',' + patch.a + ',' + patch.mt + ',' + patch.rn + ',' + patch.dv + ',' + patch.bt + ',' + patch.gr + ',' + patch.jp;
+    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n, rx: myRx.i, rs: myRx.s, rn: myRx.n, pt: playMin(), dv: DV.lvl, bt: BT.on + 1, gr: GEAR.i };
+    const k = patch.pt + ',' + patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.s + ',' + patch.a + ',' + patch.mt + ',' + patch.rn + ',' + patch.dv + ',' + patch.bt + ',' + patch.gr;
     if (!force && (k === lastSent || now - lastSend < 100 + Math.min(200, (inRoomCount - 1) * 12))) return;
     lastSend = now; lastSent = k;
     roomNS.presence(patch).catch(function () {});
@@ -6970,10 +6967,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       else { curSp = 0; walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10)); }
     }
     me.swim = BT.on >= 0 ? 0 : swimAt(pos.x, pos.z); const myGY = gY(pos.x, pos.z); diveStep(dt);
-    if (keys[' '] && !JMP.held) { JMP.held = true; jump(); } else if (!keys[' ']) JMP.held = false;
-    if (JMP.y > 0 || JMP.v > 0) { JMP.v -= 22 * dt; JMP.y += JMP.v * dt; if (JMP.y <= 0) { JMP.y = 0; JMP.v = 0; } }
     animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0, mySeat >= 0 ? (benches[mySeat >> 1].low ? 2 : 1) : BT.on >= 0 ? 1 : 0);
-    player.position.set(pos.x, (BT.on >= 0 ? BOATS[BT.on].g.position.y + 0.12 : myGY + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp * (1 - me.swim) + DV.y) + me.lift + JMP.y, pos.z);
+    player.position.set(pos.x, (BT.on >= 0 ? BOATS[BT.on].g.position.y + 0.12 : myGY + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp * (1 - me.swim) + DV.y) + me.lift, pos.z);
     player.rotation.y = heading + teleSpin; player.rotation.x = 0.11 * walkAmp + DV.tilt;
     if (walkAmp > 0.6 && !player.userData.hidden) { puffT -= dt; if (puffT <= 0) { puffT = me.swim > 0.4 ? 0.3 : 0.17; if (me.swim > 0.4) ripple(pos.x, pos.z); else puff(pos.x - Math.sin(heading) * 0.2, pos.z - Math.cos(heading) * 0.2); } }
     blob.position.set(pos.x, 0.05 + Math.max(0, myGY), pos.z);
@@ -6987,8 +6982,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       r.amp = lerp(r.amp, moving ? 1 : 0, Math.min(1, dt * 10)); if (r.amp > 0.05) r.phase += dt * 10;
       r.av.swim = r.bt ? 0 : swimAt(r.x, r.z);
       animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0, r.s >= 0 ? (benches[r.s >> 1].low ? 2 : 1) : r.bt ? 1 : 0);
-      if (r.jy > 0) { r.jv -= 22 * dt; r.jy += r.jv * dt; if (r.jy <= 0) { r.jy = 0; r.jv = 0; } }
-      r.av.group.position.set(r.x, gY(r.x, r.z) + Math.abs(Math.sin(r.phase)) * 0.09 * r.amp * (1 - r.av.swim) + r.av.lift + (r.jy || 0), r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp; remoteWater(r, dt);
+      r.av.group.position.set(r.x, gY(r.x, r.z) + Math.abs(Math.sin(r.phase)) * 0.09 * r.amp * (1 - r.av.swim) + r.av.lift, r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp; remoteWater(r, dt);
       if (r.amp > 0.6) { r.puffT = (r.puffT || 0) - dt; if (r.puffT <= 0) { r.puffT = 0.25; if (r.av.swim > 0.4) ripple(r.x, r.z); else puff(r.x, r.z); } }
       r.plate.sprite.visible = Math.hypot(r.x - pos.x, r.z - pos.z) < 28;
     });
@@ -7078,12 +7072,6 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const perfRows = () => Object.keys(PERF.d).map(k => ({ k: k, fps: PERF.d[k][1] > 0 ? PERF.d[k][0] / PERF.d[k][1] : 0, min: PERF.d[k][2], sec: PERF.d[k][1] })).filter(r => r.sec >= 2).sort((a, b) => a.fps - b.fps);
   const perfText = () => '도토리 미술관 속도 기록 · 화질 ' + (HI ? '높음' : '낮음') + (ECO ? '(가볍게)' : '') + ' · 화면 ' + window.innerWidth + '×' + window.innerHeight + ' @' + (window.devicePixelRatio || 1).toFixed(1) + ' (그리는 배율 ' + renderer.getPixelRatio().toFixed(1) + ')\n' + perfRows().map(r => r.k + ': 평균 ' + r.fps.toFixed(0) + ' / 최저 ' + r.min.toFixed(0) + ' (' + Math.round(r.sec) + '초)').join('\n');
   window.__perf = { rows: perfRows, text: perfText, d: PERF };
-  /* jump: a little hop on the spot or on the run (space bar or the round button); friends see it too */
-  const JMP = { y: 0, v: 0, n: 0, held: false };
-  function jump() { if (!started || JMP.y > 0 || pad.open || watch.open || myEasel >= 0 || mySeat >= 0 || BT.on >= 0 || DV.lvl > 0 || me.swim > 0.4) return; JMP.v = 7.6; JMP.y = 0.001; JMP.n = (JMP.n + 1) % 1000; }
-  { const jb = $('#jumpBtn'); let jt = 0; const go = e => { const n = performance.now(); if (n - jt > 250) { jt = n; jump(); } if (e.cancelable) e.preventDefault(); e.stopPropagation(); };   /* pointerdown, not click: a second finger (the first is on the joystick) never produces a click on phones */
-    jb.addEventListener('pointerdown', go); jb.addEventListener('touchstart', go, { passive: false }); jb.addEventListener('click', go); }
-  window.__jump = { go: jump, y: () => JMP.y, n: () => JMP.n };
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     update(dt);
