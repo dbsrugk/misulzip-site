@@ -1086,13 +1086,18 @@ body.padOpen #hud { visibility: hidden; }
   /* THE BUILDING TABLE: every roofed footprint in one place. Anything from the outdoors (trees, flowers, mushrooms, clouds, leaves) asks indoorAt() before it stands or shows somewhere. A new building = one more row here. */
   const CAVE = { x: 134.5, z: -77, r: 9.5, mouth: 0.38 };   /* the cave gallery on the north beach: a rock dome, its mouth opens to the south (mouth = half-width of the opening in radians) */
   const caveAng = (x, z) => Math.abs(Math.atan2(x - CAVE.x, z - CAVE.z));   /* 0 = due south of the centre, where the mouth is */
+  /* the deep cave: a long winding tunnel and a great crystal chamber, far to the north (out of sight of everything else); the door at the back of the beach cave leads here */
+  const TUN = { x: 100, z0: -420, z1: -600, hw: 6.5, cr: 21, h: 8 }; TUN.cz = TUN.z1 - TUN.cr + 4;
+  const tunX = z => TUN.x + 8 * Math.sin((TUN.z0 - z) / 24), TUN_EX = tunX(TUN.z1);
+  const rockIn = (x, z, m) => (z <= TUN.z0 + 0.3 && z >= TUN.z1 - 1 && Math.abs(x - tunX(z)) <= TUN.hw - m) || Math.hypot(x - TUN_EX, z - TUN.cz) <= TUN.cr - m;
   const BUILD = [
     { n: '중앙 홀', r: [-RM.hx, RM.hx, -RM.hz, RM.hz] },
     { n: '신진 작가관·별관', r: [-GX, GX, GZ0, GZ2] },
     { n: '서쪽 전시관', r: [W2X, -GX, GZ0, GZ1] },
     { n: '로툰다', r: [-21, 21, GGS, -RM.hz] },
     { n: '대회랑', r: [-GG.hw, GG.hw, GGZ, GGS] },
-    { n: '동굴 갤러리', c: [CAVE.x, CAVE.z, CAVE.r] }
+    { n: '동굴 갤러리', c: [CAVE.x, CAVE.z, CAVE.r] },
+    { n: '동굴 갤러리', r: [TUN.x - 8 - TUN.hw - TUN.cr, TUN.x + 8 + TUN.hw + TUN.cr, TUN.cz - TUN.cr, TUN.z0 + 1] }
   ].concat(GGAPW.map((w, i) => ({ n: '둥근 홀 ' + (i + 1), c: [0, gapZ(i), GGR] })));
   const indoorAt = (x, z, m) => { m = m || 0; for (let i = 0; i < BUILD.length; i++) { const b = BUILD[i]; if (b.r ? (x >= b.r[0] - m && x <= b.r[1] + m && z >= b.r[2] - m && z <= b.r[3] + m) : Math.hypot(x - b.c[0], z - b.c[1]) <= b.c[2] + m) return b.n; } return ''; };
   const inGal = (x, z) => !!indoorAt(x, z, 5);
@@ -4061,6 +4066,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     ['산자락', (x, z) => x >= HILL.x0 && x <= 148 && z >= HILL.z0 && z <= HILL.z1],
     ['해안 길', (x, z) => { if (!(x >= 126 && x <= 148 && z > HILL.z1 && z < OUT.z0)) return false; const d = Math.hypot(x - CAVE.x, z - CAVE.z); return d < CAVE.r - 1.1 || d > CAVE.r + 1.3 || caveAng(x, z) < CAVE.mouth * 0.72; }],   /* the cave's rock wall is solid except at its mouth */
     ['눈밭', (x, z) => z < OUT.z0 && Math.hypot(x - NORTH.x, z - NORTH.sz) <= NORTH.sr],
+    ['깊은 동굴', (x, z) => z < TUN.z0 + 1 && rockIn(x, z, 1.5)],
     ['바다', (x, z) => z >= OUT.z0 && x > OUT.x1 && x <= SWIM.x1 && z >= SWIM.z0 && z <= SWIM.z1],
     ['들판', (x, z) => x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1]
   ];
@@ -5544,7 +5550,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       r.pt = Math.max(0, Math.min(99999, Number(pr.pt) || 0));
       const rn = Number(pr.rn) || 0;
       if (r.rn === undefined) r.rn = rn; else if (rn !== r.rn) { r.rn = rn; if (typeof pr.rs === 'string') spawnRx(slots.find(q => q.id === pr.rs) || extraSlots.find(q => q.id === pr.rs), Number(pr.rx)); }
-      const nx = clamp(pr.x, -RM.hx, SWIM.x1 + 2), nz = clamp(pr.z, NORTH.sz - NORTH.sr - 2, Math.max(GZ2, OUT.z1)), nt = performance.now();
+      const nx = clamp(pr.x, -RM.hx, SWIM.x1 + 2), nz = clamp(pr.z, Math.min(NORTH.sz - NORTH.sr - 2, TUN.cz - TUN.cr - 2), Math.max(GZ2, OUT.z1)), nt = performance.now();
       if (r.init && (nx !== r.tx || nz !== r.tz)) {                           /* a new position: estimate the walking speed so the avatar glides on between updates */
         const dtp = (nt - r.lt) / 1000, jump = Math.hypot(nx - r.tx, nz - r.tz);
         if (dtp > 0.05 && dtp < 1.2 && pr.w === 1 && jump < 6) { r.vx = clamp((nx - r.tx) / dtp, -9, 9); r.vz = clamp((nz - r.tz) / dtp, -9, 9); } else { r.vx = 0; r.vz = 0; }
@@ -5821,6 +5827,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function areaNameAt(x, z) {
     if (x > RM.hx - 0.5) {
       if (Math.hypot(x - CAVE.x, z - CAVE.z) < CAVE.r + 0.5) return '동굴 갤러리';
+      if (z < TUN.z0 + 2 && rockIn(x, z, 0)) return '깊은 동굴';
       if (z < OUT.z0 - 0.5 && x > 55) return z < -100 ? '눈밭' : '알프스 마을';
       if (Math.abs(x - SCULPT.x) < SCULPT.w / 2 + 3 && Math.abs(z - SCULPT.z) < SCULPT.d / 2 + 3) return '조각 전시관';
       if (Math.abs(x - ATELIER.x) < ATELIER.w / 2 + 3 && Math.abs(z - ATELIER.z) < ATELIER.d / 2 + 6) return '화실';
@@ -6029,7 +6036,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   const seeds = mkPts(HI ? 90 : 45, 0xffffff, 0.5); seeds.o.material.dispose(); seeds.o.material = new T.PointsMaterial({ size: 0.4, map: dotTexEarly, color: 0xfffbe8, transparent: true, opacity: 0.85, depthWrite: false, fog: false }); seeds.m = seeds.o.material;
   function updateDayLife(dt, t, night, uw) {
-    const k = (1 - Math.min(1, night * 2.2)) * (1 - ATM.rain * 0.9) * (1 - ATM.snow) * (started && pos.x > RM.hx + 2 && pos.x < SEA_X - 6 && !uw ? 1 : 0);
+    const k = (1 - Math.min(1, night * 2.2)) * (1 - ATM.rain * 0.9) * (1 - ATM.snow) * (started && pos.x > RM.hx + 2 && pos.x < SEA_X - 6 && !uw && pos.z > TUN.z0 + 20 ? 1 : 0);
     seeds.o.visible = k > 0.02; seeds.m.opacity = 0.85 * k;
     if (seeds.o.visible) { const P = seeds.P; for (let i = 0; i < seeds.n; i++) { const b = seeds.B[i], ph = b[2] * 6.28, wx = wrapTo(b[0] * 400 + t * 0.8, pos.x, 80), wz = wrapTo(b[1] * 400 + t * 0.35, pos.z, 80); P[i * 3] = wx + Math.sin(t * 0.7 + ph); P[i * 3 + 1] = Math.max(0, gY(wx, wz)) + 0.8 + b[2] * 3.4 + 0.5 * Math.sin(t * 0.9 + ph * 3); P[i * 3 + 2] = wz + Math.cos(t * 0.6 + ph); } seeds.o.geometry.attributes.position.needsUpdate = true; }
     BFL.forEach((f, i) => {
@@ -6372,7 +6379,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const GM = []; { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'), gr = x.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); const tx = new T.CanvasTexture(cv);
     for (let i = 0; i < (HI ? 22 : 12); i++) { const m = new T.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0, depthWrite: false, fog: false, color: 0xffeedd }), p = new T.Mesh(new T.PlaneGeometry(1, 1), m); p.rotation.x = -Math.PI / 2; const sz = 18 + RN() * 20; p.scale.set(sz, sz * 0.7, 1); p.visible = false; p.userData.noShadow = true; p.renderOrder = 2; scene.add(p); GM.push({ p: p, m: m, a: RN(), b: RN(), c: RN() }); } }
   function updateGroundMist(dt, t) {
-    const bump = (v, c, w) => Math.max(0, 1 - Math.abs(v - c) / w), tt = ATM.t, k = Math.max(bump(tt, 0.02, 0.12), bump(tt, 1.02, 0.12), bump(tt, 0.58, 0.1)) * (1 - ATM.rain * 0.5) * (started && pos.x > RM.hx + 2 && pos.x < SEA_X - 6 && !(DV.y < -0.6) ? 1 : 0);
+    const bump = (v, c, w) => Math.max(0, 1 - Math.abs(v - c) / w), tt = ATM.t, k = Math.max(bump(tt, 0.02, 0.12), bump(tt, 1.02, 0.12), bump(tt, 0.58, 0.1)) * (1 - ATM.rain * 0.5) * (started && pos.x > RM.hx + 2 && pos.x < SEA_X - 6 && !(DV.y < -0.6) && pos.z > TUN.z0 + 20 ? 1 : 0);
     GM.forEach((g, i) => { g.p.visible = k > 0.03; if (!g.p.visible) return; const x = wrapTo(g.a * 300 + t * (0.5 + g.c), pos.x, 110), z = wrapTo(g.b * 300, pos.z, 110); g.p.position.set(x, Math.max(0, gY(x, z)) + 0.35 + g.c * 0.4, z); g.m.color.copy(scene.fog.color).lerp(WHITE, 0.5); const dd = Math.hypot(x - pos.x, z - pos.z); g.m.opacity = 0.24 * k * (0.75 + 0.25 * Math.sin(t * 0.4 + i)) * Math.min(1, Math.max(0, (dd - 8) / 14)); });
   }
   /* fluorescent meadow flowers that glow in three colours at night */
@@ -6434,8 +6441,55 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     for (let i = 0; i < 16; i++) { const a = rr() * 6.28, el = 0.35 + rr() * 1.1, rd = (R - 0.4) * Math.cos(el); const st = glow(Math.sin(a) * rd, H * Math.sin(el) - 0.3, Math.cos(a) * rd, CC[i % 4], 0.5 + rr() * 0.5, 0.9); halos.push(st); }
     anim.push((dt, t) => { if (Math.abs(pos.x - C.x) > 60 || Math.abs(pos.z - C.z) > 60) return; pg.material.opacity = 0.42 + 0.14 * Math.sin(t * 1.3); halos.forEach((h, i) => { h.material.opacity = (i < 12 ? 0.42 : 0.7) + 0.2 * Math.sin(t * (0.9 + (i % 5) * 0.23) + i); }); });
     /* twelve frames for friends' pictures round the wall, facing the middle */
-    for (let i = 0; i < 12; i++) { const a = a0 + 0.3 + (a1 - a0 - 0.6) * i / 11, big = false, y = 2.9, rd = R * Math.cos(Math.asin((y + 1.4) / H)) - 0.5; addSlot('cave', 's', C.x + Math.sin(a) * rd, y, C.z + Math.cos(a) * rd, a + Math.PI); }
-    /* a signpost outside */
+    for (let i = 0; i < 12; i++) { if (i === 5 || i === 6) continue; const a = a0 + 0.3 + (a1 - a0 - 0.6) * i / 11, big = false, y = 2.9, rd = R * Math.cos(Math.asin((y + 1.4) / H)) - 0.5; addSlot('cave', 's', C.x + Math.sin(a) * rd, y, C.z + Math.cos(a) * rd, a + Math.PI); }
+    /* ---- the deep cave ---- */
+    { const U = TUN, D = new T.Group(); scene.add(D); const shade = () => { const k = 0.55 + rr() * 0.75; return [0.085 * k, 0.08 * k, 0.16 * k + 0.02]; };
+      const flatGeo = (vp, idx) => { const P = [], Cc = []; for (let i = 0; i < idx.length; i += 3) { const c = shade(); for (let k = 0; k < 3; k++) { const q = idx[i + k] * 3; P.push(vp[q], vp[q + 1], vp[q + 2]); Cc.push(c[0], c[1], c[2]); } } const ge = new T.BufferGeometry(); ge.setAttribute('position', new T.Float32BufferAttribute(P, 3)); ge.setAttribute('color', new T.Float32BufferAttribute(Cc, 3)); return ge; };
+      const wallM = new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide, fog: false }), addW = ge => { const m = new T.Mesh(ge, wallM); m.userData.noLos = true; m.userData.noSkin = true; m.userData.noShadow = true; m.frustumCulled = false; D.add(m); return m; };
+      /* the tunnel: an arch swept along a winding line */
+      { const NS = Math.round((U.z0 - U.z1) / 4), NR = 9, vp = [], idx = []; for (let s2 = 0; s2 <= NS; s2++) { const z = U.z0 - (U.z0 - U.z1) * s2 / NS, cx = tunX(z); for (let i = 0; i <= NR; i++) { const th = Math.PI * i / NR, j = (i === 0 || i === NR) ? 0 : rr() * 0.9; vp.push(cx + Math.cos(th) * (U.hw + j), Math.sin(th) * (U.h + j * 0.8), z + (rr() - 0.5) * 1.2); } }
+        for (let s2 = 0; s2 < NS; s2++) for (let i = 0; i < NR; i++) { const p0 = s2 * (NR + 1) + i, p1 = p0 + 1, p2 = p0 + NR + 1, p3 = p2 + 1; idx.push(p0, p1, p2, p1, p3, p2); } addW(flatGeo(vp, idx)); }
+      /* the chamber: a dome whose mouth (to the south) meets the tunnel */
+      { const R = U.cr, H = 13, NA = 30, NE = 8, mo = 0.34, a0 = mo, a1 = Math.PI * 2 - mo, vp = [], idx = []; for (let e = 0; e <= NE; e++) for (let i = 0; i <= NA; i++) { const op = e >= 4 ? 0 : e === 3 ? 0.5 : 1, a = a0 * op + (a1 + (Math.PI * 2 - a1) * (1 - op) - a0 * op) * i / NA, t = e / NE, el = t * Math.PI / 2, j = rr() * 1.1 * (e < NE ? 1 : 0), rad = (R + j) * Math.cos(el) + 0.3 * t; vp.push(TUN_EX + Math.sin(a) * rad, H * Math.sin(el) + j * 0.5, U.cz + Math.cos(a) * rad); }
+        for (let e = 0; e < NE; e++) for (let i = 0; i < NA; i++) { const p0 = e * (NA + 1) + i, p1 = p0 + 1, p2 = p0 + NA + 1, p3 = p2 + 1; idx.push(p0, p1, p2, p1, p3, p2); } addW(flatGeo(vp, idx)); }
+      { const zc = U.cz + U.cr * Math.cos(0.34) - 0.2, sh = new T.Shape(); sh.moveTo(-10, -0.5); sh.lineTo(10, -0.5); sh.lineTo(10, 12); sh.lineTo(-10, 12); sh.lineTo(-10, -0.5); const ho = new T.Path(); ho.moveTo(-U.hw + 0.2, -0.5); ho.lineTo(-U.hw + 0.2, 0); ho.absellipse(0, 0, U.hw - 0.2, U.h - 0.3, Math.PI, 0, true); ho.lineTo(U.hw - 0.2, -0.5); ho.lineTo(-U.hw + 0.2, -0.5); sh.holes.push(ho);
+        const col = new T.Mesh(new T.ShapeGeometry(sh, 10), new T.MeshBasicMaterial({ color: 0x15142a, side: T.DoubleSide, fog: false })); col.position.set(tunX(zc), 0, zc); col.userData.noSkin = true; col.userData.noLos = true; D.add(col); }   /* a rock collar closes the gap between the tunnel's arch and the chamber's mouth */
+      /* floor, a glowing stream down the middle, the chamber's lake */
+      const ribbon = (w, y, col, wig) => { const NS = Math.round((U.z0 - U.z1) / 3), vp = [], idx = []; for (let s2 = 0; s2 <= NS; s2++) { const z = U.z0 + 1 - (U.z0 + 2 - U.z1) * s2 / NS, cx = tunX(z) + (wig ? 1.6 * Math.sin(z / 7) : 0); vp.push(cx - w, y, z, cx + w, y, z); } for (let s2 = 0; s2 < NS; s2++) { const p0 = s2 * 2; idx.push(p0, p0 + 1, p0 + 2, p0 + 1, p0 + 3, p0 + 2); } const ge = new T.BufferGeometry(); ge.setAttribute('position', new T.Float32BufferAttribute(vp, 3)); ge.setIndex(idx); const m = new T.Mesh(ge, new T.MeshBasicMaterial({ color: col, side: T.DoubleSide, fog: false })); m.frustumCulled = false; m.userData.noShadow = true; m.userData.noLos = true; D.add(m); return m; };
+      ribbon(U.hw + 1, 0.03, 0x232136, false); const stream = ribbon(0.75, 0.06, 0x35d6ee, true);
+      const cf = new T.Mesh(new T.CircleGeometry(U.cr, 36), new T.MeshBasicMaterial({ color: 0x232136, fog: false })); cf.rotation.x = -Math.PI / 2; cf.position.set(TUN_EX, 0.035, U.cz); cf.userData.noShadow = true; D.add(cf);
+      const lake = new T.Mesh(new T.CircleGeometry(6, 30), new T.MeshBasicMaterial({ color: 0x2fc4de, fog: false })); lake.rotation.x = -Math.PI / 2; lake.position.set(TUN_EX, 0.07, U.cz - 2); D.add(lake);
+      const big = (x, y, z, c, s2, op) => { const sp = new T.Sprite(new T.SpriteMaterial({ map: dotTexEarly, color: c, transparent: true, opacity: op, depthWrite: false, blending: T.AdditiveBlending, fog: false })); sp.scale.set(s2, s2, 1); sp.position.set(x, y, z); D.add(sp); return sp; };
+      const lg = new T.Mesh(new T.CircleGeometry(9.5, 30), new T.MeshBasicMaterial({ map: dotTexEarly, color: 0x4fe8ff, transparent: true, opacity: 0.3, depthWrite: false, blending: T.AdditiveBlending, fog: false })); lg.rotation.x = -Math.PI / 2; lg.position.set(TUN_EX, 0.1, U.cz - 2); lg.userData.noLos = true; D.add(lg);
+      /* the way out: a bright arch at the south end */
+      const cap = new T.Mesh(new T.PlaneGeometry(U.hw * 2 + 3, U.h + 2), new T.MeshBasicMaterial({ color: 0x14132a, fog: false, side: T.DoubleSide })); cap.position.set(tunX(U.z0), (U.h + 2) / 2, U.z0 + 0.9); cap.userData.noSkin = true; cap.userData.noLos = true; D.add(cap);
+      const dayA = new T.Mesh(new T.CircleGeometry(2.4, 20, 0, Math.PI), new T.MeshBasicMaterial({ color: 0xfff3c4, fog: false, side: T.DoubleSide })); dayA.position.set(tunX(U.z0), 0.05, U.z0 + 0.8); dayA.scale.y = 1.5; D.add(dayA); big(tunX(U.z0), 2, U.z0 + 0.2, 0xfff0b0, 11, 0.5);
+      /* crystals (one instanced mesh) with halos (points), and stalactites */
+      const CL = [], put3 = (x, z, c, s2) => { [[0, 0, 1, 0], [0.5, 0.2, 0.6, 0.4], [-0.45, -0.2, 0.7, -0.35]].forEach(q => CL.push([x + q[0] * s2, z + q[1] * s2, s2 * q[2], q[3], c])); };
+      for (let z = U.z0 - 6; z > U.z1 + 2; z -= 7) { const sd2 = (Math.round(z) % 2) ? 1 : -1, cx = tunX(z); put3(cx + sd2 * (U.hw - 1.5), z, CC[Math.abs(Math.round(z / 7)) % 4], 0.8 + rr() * 0.7); if (rr() < 0.45) put3(cx - sd2 * (U.hw - 1.7), z - 3, CC[Math.abs(Math.round(z / 5)) % 4], 0.5 + rr() * 0.4); }
+      for (let i = 0; i < 16; i++) { const a = 0.5 + (Math.PI * 2 - 1) * (i + 0.5) / 16, rd = U.cr - 2.6; put3(TUN_EX + Math.sin(a) * rd, U.cz + Math.cos(a) * rd, CC[i % 4], 1.2 + rr() * 1.1); }
+      for (let i = 0; i < 7; i++) { const a = i * 0.9, rd = 7.6 + (i % 2) * 1.6; put3(TUN_EX + Math.sin(a) * rd, U.cz - 2 + Math.cos(a) * rd, CC[(i + 1) % 4], 0.7 + rr() * 0.5); }
+      const cim = new T.InstancedMesh(new T.ConeGeometry(0.34, 2.1, 5).translate(0, 1.05, 0), new T.MeshBasicMaterial({ color: 0xffffff, fog: false }), CL.length), dm = new T.Object3D(), cc2 = new T.Color();
+      CL.forEach((q, i) => { dm.position.set(q[0], 0, q[1]); dm.rotation.set(0, i, q[3]); dm.scale.setScalar(q[2]); dm.updateMatrix(); cim.setMatrixAt(i, dm.matrix); cim.setColorAt(i, cc2.setHex(q[4])); }); cim.frustumCulled = false; cim.userData.noLos = true; cim.userData.noShadow = true; D.add(cim);
+      const HP = CC.map(c => ({ c: c, a: [] })); CL.forEach((q, i) => { if (i % 3 === 0) HP[CC.indexOf(q[4])].a.push(q[0], 1.3 * q[2], q[1]); });
+      for (let i = 0; i < 70; i++) { const z = U.z0 - rr() * (U.z0 - U.z1), th = 0.5 + rr() * 2.1; HP[i % 4].a.push(tunX(z) + Math.cos(th) * (U.hw - 0.4), Math.sin(th) * (U.h - 0.4), z); }
+      for (let i = 0; i < 60; i++) { const a = rr() * 6.28, el = 0.3 + rr() * 1.15, rd = (U.cr - 0.6) * Math.cos(el); HP[i % 4].a.push(TUN_EX + Math.sin(a) * rd, 13 * Math.sin(el) - 0.4, U.cz + Math.cos(a) * rd); }
+      const hp = HP.map(h => { const ge = new T.BufferGeometry(); ge.setAttribute('position', new T.Float32BufferAttribute(h.a, 3)); const o = new T.Points(ge, new T.PointsMaterial({ map: dotTexEarly, color: h.c, size: 1.5, transparent: true, opacity: 0.8, depthWrite: false, blending: T.AdditiveBlending, fog: false })); o.frustumCulled = false; o.userData.noShadow = true; D.add(o); return o; });
+      { const n = 90, st = new T.InstancedMesh(new T.ConeGeometry(0.5, 2.4, 5).rotateX(Math.PI), new T.MeshBasicMaterial({ color: 0x2a2846, fog: false }), n); for (let i = 0; i < n; i++) { const inCh = i >= 60, z = inCh ? 0 : U.z0 - 4 - rr() * (U.z0 - U.z1 - 8), a = rr() * 6.28, rd = rr() * (U.cr - 5), x = inCh ? TUN_EX + Math.sin(a) * rd : tunX(z) + (rr() - 0.5) * (U.hw * 1.1), zz = inCh ? U.cz + Math.cos(a) * rd : z, top = inCh ? 13 * Math.cos(Math.asin(Math.min(0.99, rd / U.cr))) - 0.2 : Math.sqrt(Math.max(0.1, 1 - Math.pow((x - tunX(z)) / U.hw, 2))) * U.h; dm.position.set(x, top - 0.9, zz); dm.rotation.set(0, i, 0); dm.scale.set(0.6 + rr(), 0.7 + rr() * 1.6, 0.6 + rr()); dm.updateMatrix(); st.setMatrixAt(i, dm.matrix); } st.frustumCulled = false; st.userData.noLos = true; st.userData.noShadow = true; D.add(st); }
+      /* frames: along both tunnel walls and round the chamber */
+      { let k = 0; for (let z = U.z0 - 12; z > U.z1 + 6; z -= 12, k++) { const cx = tunX(z), sz = k % 2 ? 'm' : 's', y = sz === 'm' ? 3.6 : 3.0, off = U.hw * Math.cos(Math.asin(Math.min(0.95, (y + (sz === 'm' ? 2 : 1.5)) / U.h))) - 0.45; addSlot('cave', sz, cx - off, y, z, Math.PI / 2); addSlot('cave', sz, cx + off, y, z - 6, -Math.PI / 2); }
+        for (let i = 0; i < 8; i++) { const a = 0.75 + (Math.PI * 2 - 1.5) * i / 7, y = 4.2, rd = U.cr * Math.cos(Math.asin((y + 2.6) / 13)) - 0.7; addSlot('cave', 'l', TUN_EX + Math.sin(a) * rd, y, U.cz + Math.cos(a) * rd, a + Math.PI); } }
+      /* the door at the back of the beach cave, and stepping through either way */
+      const door = new T.Mesh(new T.TorusGeometry(1.9, 0.16, 6, 22, Math.PI), new T.MeshBasicMaterial({ color: 0x7ff3ff, fog: false })); door.position.set(0, 0.1, -(R - 1.25)); door.scale.y = 1.5; g.add(door);
+      const hole = new T.Mesh(new T.CircleGeometry(1.85, 18, 0, Math.PI), new T.MeshBasicMaterial({ color: 0x04040a, fog: false })); hole.position.set(0, 0.1, -(R - 1.3)); hole.scale.y = 1.5; g.add(hole); const dg = glow(0, 1.6, -(R - 1.6), 0x7ff3ff, 6, 0.4);
+      let warpCd = 0; const warp = (pl, msg) => { warpCd = 2.5; snapTo(pl); const fx = $('#teleFx'); fx.classList.add('on'); setTimeout(() => fx.classList.remove('on'), 160); toast(msg, 3200); };
+      let domeHint = false;
+      anim.push((dt, t) => { if (!started) return; { const ind = Math.hypot(pos.x - C.x, pos.z - C.z) < R - 1.5; if (ind && !domeHint && warpCd <= 0) toast('안쪽의 빛나는 문으로 들어가면 깊은 동굴이 이어져요', 4500); domeHint = ind; } if (warpCd > 0) { warpCd -= dt; }
+        else if (Math.hypot(pos.x - C.x, pos.z - (C.z - (R - 2.5))) < 1.5) warp({ x: tunX(U.z0 - 6), z: U.z0 - 6, h: Math.PI, pitch: 0.14 }, '깊은 동굴로 들어왔어요 · 끝까지 가면 수정 호수가 있어요');
+        else if (pos.z < U.z0 + 1 && pos.z > U.z0 - 1.6 && rockIn(pos.x, pos.z, 0)) warp({ x: C.x, z: C.z - (R - 5.5), h: 0, pitch: 0.16 }, '바닷가 동굴로 나왔어요');
+        if (pos.z > U.z0 + 30) return; lg.material.opacity = 0.3 + 0.1 * Math.sin(t * 1.1); hp.forEach((o, i) => { o.material.opacity = 0.62 + 0.25 * Math.sin(t * (0.8 + i * 0.27) + i); }); });
+      window.__tun = { U: U, tunX: tunX, ex: TUN_EX, rockIn: rockIn };
+    }
     window.__cave = { g: g, C: C };
   }
   window.__nat = { setEco: setEco, eco: () => ECO, ecoPts: () => ECOP.map(q => q.o.geometry.drawRange.count), indoorAt: indoorAt, walkZone: walkZone, zones: () => WALK.map(w => w[0]), builds: () => BUILD.map(b => b.n), natureInside: () => { const m4 = new T.Matrix4(); let n = 0; const ims = FORM.concat(NG.mush ? [NG.mush] : []); scene.traverse(o => { if (o.isInstancedMesh && o.userData.nature && ims.indexOf(o) < 0) ims.push(o); }); ims.forEach(o => { if (!o.isInstancedMesh) return; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); const e = m4.elements; if (Math.hypot(e[0], e[1], e[2]) > 0 && indoorAt(e[12], e[14], 1)) n++; } }); return n; }, scene: () => scene, cam: () => camera, walk: walkable, info: () => ({ calls: renderer.info.render.calls, tri: renderer.info.render.triangles, geo: renderer.info.memory.geometries }), fw: () => FW.map(f => ({ t: f.t, vis: f.o.visible })), jf: () => JF.map(j => j.t), mist: () => GM.map(g => g.p.visible), setT: v => { ATM.t = v; }, jfGo: () => JF.forEach(j => { j.next = 0; }), fwGo: () => FW.forEach(f => { f.next = 0; }), sc: () => SC, swimAt: swimAt, gear: () => GEAR.i, gearVis: () => !!(me.gearP && (me.gearP.tube.visible || me.gearP.gg.visible || me.gearP.duck.visible)), menu: v => { aIdle = 1; setMenu(v); }, dive: l => { DV.lvl = l; }, dv: () => DV, boat: i => { if (i < 0) { BT.on = -1; return; } BT.on = i; DV.lvl = 0; }, boats: () => BOATS, life: () => life.visible, uw: () => sky.visible ? 0 : 1, gY: gY, spot: photoSpot, swimK: swimK, summit: () => SUMMIT, foot: footH, take: takePhoto };
@@ -6923,8 +6977,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (inspect && (Math.hypot(joy.x, joy.y) > 0.2 || keys.w || keys.a || keys.s || keys.d || keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright)) exitInspect();
     if (inspect && cptr.size === 0) camYaw += dt * 0.28;                       /* a slow turn of its own until a finger takes over */
     camTx += ((inspect ? inspect.x : pos.x) - camTx) * f; camTz += ((inspect ? inspect.z : pos.z) - camTz) * f; camTy += ((myGY > 0 ? myGY : myGY * 0.4) + DV.y * 0.9 + (BT.on >= 0 ? 0.5 : 0) - camTy) * f;
-    const inCave = started && Math.hypot(pos.x - CAVE.x, pos.z - CAVE.z) < CAVE.r - 0.6;
-    camDist += ((started ? (inCave ? Math.min(camWant, 8.5) : camWant) : 26) - camDist) * Math.min(1, dt * 3);
+    const inTun = started && pos.z < TUN.z0 + 1 && rockIn(pos.x, pos.z, 0.5), inCave = started && (inTun || Math.hypot(pos.x - CAVE.x, pos.z - CAVE.z) < CAVE.r - 0.6);
+    camDist += ((started ? (inCave ? Math.min(camWant, inTun ? 10 : 8.5) : camWant) : 26) - camDist) * Math.min(1, dt * 3);
     const pe = Math.max(camPitch, 0.08), cp = Math.cos(pe);      /* below 0.08 the camera stops sinking and starts looking up instead */
     /* no clamping to the walls: walls are one-sided, so from outside they vanish and the view stays wide */
     let dx = camTx + Math.sin(camYaw) * cp * camDist;
@@ -6932,7 +6986,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     let dz = camTz + Math.cos(camYaw) * cp * camDist;
     if (DV.y < -0.6 && dx > SEA_X + 1) dy = Math.max(seaFloor(dx, dz) + 0.6, Math.min(dy, -0.4));      /* under water the camera stays under water */
     if (inCave && !inspect) {                                                                          /* in the cave the camera stays inside the rock dome with me */
-      const lim = CAVE.r - 1.9; let k = 1; for (let i = 0; i < 12 && Math.hypot(camTx + (dx - camTx) * k - CAVE.x, camTz + (dz - camTz) * k - CAVE.z) > lim; i++) k -= 0.08;
+      const lim = CAVE.r - 1.9, out = (X, Z) => inTun ? !rockIn(X, Z, 3.2) : Math.hypot(X - CAVE.x, Z - CAVE.z) > lim; let k = 1; for (let i = 0; i < 12 && out(camTx + (dx - camTx) * k, camTz + (dz - camTz) * k); i++) k -= 0.08;
       dx = camTx + (dx - camTx) * k; dz = camTz + (dz - camTz) * k; dy = Math.min(lookY + (dy - lookY) * k, 5.2);
     }
     if (!inCave && !inspect && pos.x > RM.hx + 2 && !(DV.y < -0.6)) {                                            /* on the hills the camera never dips under the ground, and rises when a ridge stands between it and me */
