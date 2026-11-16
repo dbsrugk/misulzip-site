@@ -103,5 +103,7 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   check(await until(p, () => window.__hw.pos.z < -400, null, 40), 'the door at the back of the beach cave leads into the deep cave');
   await p.waitForTimeout(3000); await p.evaluate(() => { const U = window.__tun.U; window.__hw.pos.x = window.__tun.tunX(U.z0 - 0.6); window.__hw.pos.z = U.z0 - 0.6; });
   check(await until(p, () => window.__hw.pos.z > -100, null, 60), 'and the bright arch at its south end leads back out');
+  const isl = await p.evaluate(() => { const I = window.__isle.I, N = window.__nat; return { top: N.gY(I.x, I.z), swimOn: N.swimAt(I.x, I.z), swimOff: N.swimAt(I.x - I.r - 8, I.z), walk: N.walk(I.x - 3, I.z + 4), tower: N.walk(I.tx, I.tz) }; });
+  check(isl.top > 0.5 && isl.swimOn === 0 && isl.swimOff === 1 && isl.walk && !isl.tower, 'the lighthouse isle stands out of the sea and can be walked on (the tower is solid): ' + JSON.stringify(isl));
   await t.close(); process.exit(done(t) ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
