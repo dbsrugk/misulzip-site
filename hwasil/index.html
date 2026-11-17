@@ -1237,6 +1237,25 @@ body.padOpen #hud { visibility: hidden; }
         const bt = new T.Mesh(mergeAll(parts), stoneM); bt.userData.noSkin = true; bt.userData.noLos = true; bt.visible = false; o.add(bt); SKIN.push(bt); }
       const k = new T.Mesh(o.geometry, m2); k.userData.noSkin = true; k.userData.noLos = true; k.visible = false; o.add(k); SKIN.push(k); });
     atmHooks.push(A => { const g2 = 0.12 + 0.95 * Math.min(1, A.night * 1.3); em.setRGB(g2, g2 * 0.95, g2 * 0.85); deco.forEach(m3 => { m3.emissive.copy(em); }); });
+    /* roofs (seen from the hills, the balloons and the far side of the garden), a rose window and twin bell towers on the garden front */
+    { const slate = new T.MeshLambertMaterial({ color: 0x5d6978, flatShading: true, side: T.DoubleSide }), copper = new T.MeshLambertMaterial({ color: 0x6fa58f, flatShading: true }), gold = new T.MeshLambertMaterial({ color: 0xe8c14a, emissive: 0x4a3a08 }), add = m => { m.userData.noSkin = true; m.userData.noLos = true; m.userData.noShadow = true; m.visible = false; scene.add(m); SKIN.push(m); return m; };
+      const tops = BUILD.map(b => { let top = 0; found.forEach(o => { bb.setFromObject(o); bb.getCenter(c); const inb = b.r ? (c.x >= b.r[0] - 1.5 && c.x <= b.r[1] + 1.5 && c.z >= b.r[2] - 1.5 && c.z <= b.r[3] + 1.5) : Math.hypot(c.x - b.c[0], c.z - b.c[1]) <= b.c[2] + 1.5; if (inb && bb.max.y > top) top = bb.max.y; }); return top || RM.h; });
+      BUILD.forEach((b, bi) => { if (b.n.indexOf('동굴') >= 0) return; const top = tops[bi];
+        if (b.c) { const cn = add(new T.Mesh(new T.ConeGeometry(b.c[2] + 1.2, 9, 20), slate)); cn.position.set(b.c[0], top + 4.5, b.c[1]); const fin = add(new T.Mesh(new T.SphereGeometry(0.7, 8, 6), gold)); fin.position.set(b.c[0], top + 9.4, b.c[1]); return; }
+        const x0 = b.r[0] - 0.9, x1 = b.r[1] + 0.9, z0 = b.r[2] - 0.9, z1 = b.r[3] + 0.9, alongZ = (z1 - z0) > (x1 - x0), half = (alongZ ? x1 - x0 : z1 - z0) / 2, rh = Math.min(10, half * 0.62), y0 = top + 0.05, y1 = top + rh, mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+        if (b.n === '로툰다') { const dm = add(new T.Mesh(new T.SphereGeometry(Math.min(x1 - x0, z1 - z0) / 2 * 0.86, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2), copper)); dm.scale.y = 0.72; dm.position.set(mx, top, mz); const lan = add(new T.Mesh(new T.CylinderGeometry(1.6, 1.9, 3, 8), stoneM)); lan.position.set(mx, top + (Math.min(x1 - x0, z1 - z0) / 2 * 0.86) * 0.72 + 1.2, mz); const cp = add(new T.Mesh(new T.ConeGeometry(2.1, 3.2, 8), copper)); cp.position.set(mx, lan.position.y + 3.1, mz); const ball = add(new T.Mesh(new T.SphereGeometry(0.6, 8, 6), gold)); ball.position.set(mx, lan.position.y + 5, mz);
+          const flat = add(new T.Mesh(new T.PlaneGeometry(x1 - x0, z1 - z0), slate)); flat.rotation.x = -Math.PI / 2; flat.position.set(mx, top + 0.03, mz); return; }
+        const P = alongZ ? [x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, mx, y1, z0, mx, y1, z1] : [x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, x0, y1, mz, x1, y1, mz];
+        const I2 = alongZ ? [0, 4, 5, 0, 5, 3, 1, 2, 5, 1, 5, 4, 0, 1, 4, 3, 5, 2] : [0, 1, 5, 0, 5, 4, 3, 4, 5, 3, 5, 2, 0, 4, 3, 1, 2, 5];
+        const ge = new T.BufferGeometry(); ge.setAttribute('position', new T.Float32BufferAttribute(P, 3)); ge.setIndex(I2); const g3 = ge.toNonIndexed(); g3.computeVertexNormals(); add(new T.Mesh(g3, slate));
+        if (b.n === '중앙 홀') { const fl = add(new T.Mesh(new T.ConeGeometry(1.5, 15, 8), slate)); fl.position.set(mx, y1 + 6.5, mz); const fb = add(new T.Mesh(new T.SphereGeometry(0.55, 8, 6), gold)); fb.position.set(mx, y1 + 14.3, mz); } });
+      /* the garden front (east): a big rose window over the door, a bell tower on each side */
+      const rc = document.createElement('canvas'); rc.width = rc.height = 512; const rx = rc.getContext('2d'); rx.fillStyle = '#8f8470'; rx.beginPath(); rx.arc(256, 256, 256, 0, 6.3); rx.fill();
+      for (let ring = 0; ring < 3; ring++) { const r0 = [236, 160, 84][ring], r1 = [168, 92, 0][ring], n = [16, 12, 8][ring]; for (let i = 0; i < n; i++) { rx.fillStyle = GLASS[(i + ring * 2) % 6]; rx.beginPath(); rx.arc(256, 256, r0, i * 6.2832 / n + 0.03, (i + 1) * 6.2832 / n - 0.03); rx.arc(256, 256, r1, (i + 1) * 6.2832 / n - 0.03, i * 6.2832 / n + 0.03, true); rx.closePath(); rx.fill(); } } rx.fillStyle = '#f0e2b0'; rx.beginPath(); rx.arc(256, 256, 30, 0, 6.3); rx.fill();
+      const rt = new T.CanvasTexture(rc), rm = new T.MeshLambertMaterial({ map: rt, emissiveMap: rt, emissive: 0x000000 }); deco.push(rm); const rose = add(new T.Mesh(new T.CircleGeometry(4.6, 32), rm)); rose.position.set(RM.hx + 0.12, tops[0] - 6.2, 0); rose.rotation.y = Math.PI / 2;
+      const twM = new T.MeshLambertMaterial({ map: texA, emissiveMap: texE, emissive: 0x000000 }); deco.push(twM);
+      [-1, 1].forEach(sn => { const tz = sn * 15.5, tx = RM.hx + 2.6, th = tops[0] + 9, tw = add(new T.Mesh(new T.BoxGeometry(5.2, th, 5.2), twM)); tw.position.set(tx, th / 2, tz); const belf = add(new T.Mesh(new T.BoxGeometry(5.8, 0.7, 5.8), stoneM)); belf.position.set(tx, th + 0.35, tz); const sp = add(new T.Mesh(new T.ConeGeometry(4.0, 13, 4), slate)); sp.rotation.y = Math.PI / 4; sp.position.set(tx, th + 7.2, tz); const bl = add(new T.Mesh(new T.SphereGeometry(0.5, 8, 6), gold)); bl.position.set(tx, th + 14, tz);
+        [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(q => { const pn = add(new T.Mesh(new T.ConeGeometry(0.6, 3, 4), stoneM)); pn.position.set(tx + q[0] * 2.5, th + 2.2, tz + q[1] * 2.5); }); }); }
     window.__skin = SKIN; window.__skinDeco = deco.length;
   }
   function updateSkin() { if (!skinBuilt) { if (started) skinBuild(); return; } const on = !indoorAt(pos.x, pos.z, 0.5); if (on !== skinOn) { skinOn = on; SKIN.forEach(k => { k.visible = on; }); } }
@@ -4096,7 +4115,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     ['눈밭', (x, z) => z < OUT.z0 && Math.hypot(x - NORTH.x, z - NORTH.sz) <= NORTH.sr],
     ['깊은 동굴', (x, z) => z < TUN.z0 + 1 && rockIn(x, z, 1.5)],
     ['바다', (x, z) => z >= OUT.z0 && x > OUT.x1 && x <= SWIM.x1 && z >= SWIM.z0 && z <= SWIM.z1 && Math.hypot(x - ISLE.tx, z - ISLE.tz) > 2.3],   /* (the lighthouse itself is solid) */
-    ['들판', (x, z) => x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1]
+    ['들판', (x, z) => x >= OUT.x0 && x <= OUT.x1 && z >= OUT.z0 && z <= OUT.z1 && !(x < RM.hx + 6 && Math.abs(Math.abs(z) - 15.5) < 3.4)]   /* (the two bell towers on the garden front are solid) */
   ];
   function walkable(x, z) { for (let i = 0; i < WALK.length; i++) if (WALK[i][1](x, z)) return true; return false; }
   const walkZone = (x, z) => { for (let i = 0; i < WALK.length; i++) if (WALK[i][1](x, z)) return WALK[i][0]; return ''; };
