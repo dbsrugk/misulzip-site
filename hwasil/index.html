@@ -3608,6 +3608,55 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         at(new T.Mesh(new T.IcosahedronGeometry(1.7, 1), leafA), x, 3.4, z); at(new T.Mesh(new T.IcosahedronGeometry(1.15, 1), leafB), x, 5.3, z);
         colliders.push({ x: x, z: z, r: 1.6 });
       });
+      /* ---- garden renewal: festoon lights from clipped tree to clipped tree and two fountains in the first garden, flower borders round its statue;
+              a tunnel of rose arches over the way in to the second garden. One instanced mesh for every leaf and bloom, one for the bulbs, one Points for their glow ---- */
+      {
+        const BL = [], BUD = [], bcol = [0xffd27a, 0xff9db8, 0x9fd8ff, 0xfff3c4, 0xb7f0a8], wireM = new T.LineBasicMaterial({ color: 0x3b3f47 });
+        const RO = [0xff7fa8, 0xe23b4e, 0xffffff, 0xffd9a0, 0xff9db8], LF = [0x3f8f45, 0x5aa84f, 0x357a3c];
+        const wire = pts => scene.add(new T.Line(new T.BufferGeometry().setFromPoints(pts), wireM));
+        const angs = [-150, -90, -30, 30, 90, 150].map(d => d * Math.PI / 180);
+        angs.forEach((a0, i) => {
+          const a1 = angs[(i + 1) % 6], x0 = GARD.x + Math.sin(a0) * 17, z0 = GARD.z - Math.cos(a0) * 17, x1 = GARD.x + Math.sin(a1) * 17, z1 = GARD.z - Math.cos(a1) * 17, pts = [];
+          for (let k = 0; k <= 22; k++) { const t = k / 22, y = 5.3 - 1.5 * 4 * t * (1 - t), x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t; pts.push(new T.Vector3(x, y, z)); if (k > 0 && k < 22) BL.push({ x: x, y: y - 0.16, z: z, c: bcol[(k + i) % 5] }); }
+          wire(pts);
+        });
+        [-90, 90].forEach(d => {                                                                   /* a tiered fountain east and west of the statue */
+          const x = GARD.x + Math.sin(d * Math.PI / 180) * 24.5, z = GARD.z, wat = new T.MeshLambertMaterial({ color: 0x74c8ea, transparent: true, opacity: 0.86 });
+          at(new T.Mesh(cyl(2.6, 2.8, 0.7, 16), stone), x, 0.35, z); flat(new T.CircleGeometry(2.35, 20), wat, x, 0.72, z);
+          at(new T.Mesh(cyl(0.3, 0.42, 1.9, 8), stone), x, 1.6, z); at(new T.Mesh(cyl(1.15, 0.35, 0.35, 12), stone), x, 2.55, z); flat(new T.CircleGeometry(1.05, 14), wat, x, 2.74, z);
+          at(new T.Mesh(new T.SphereGeometry(0.28, 8, 6), kerb), x, 3.0, z); colliders.push({ x: x, z: z, r: 2.9 });
+          const N = 44, g = new T.BufferGeometry(), pa = new Float32Array(N * 3); g.setAttribute('position', new T.BufferAttribute(pa, 3));
+          const dr = new T.Points(g, new T.PointsMaterial({ color: 0xe8f8ff, size: 0.13, transparent: true, opacity: 0.9, depthWrite: false })); dr.frustumCulled = false; dr.userData.noLos = true; scene.add(dr);
+          anim.push((dt, t) => { if (Math.hypot(pos.x - x, pos.z - z) > 90) return; for (let k = 0; k < N; k++) { const u = (t * 0.55 + k / N * 7.13) % 1, a = k * 2.399, r = 0.15 + 1.75 * u; pa[k * 3] = x + Math.cos(a) * r; pa[k * 3 + 1] = 3.0 + 2.2 * u - 4.5 * u * u; pa[k * 3 + 2] = z + Math.sin(a) * r; } g.attributes.position.needsUpdate = true; });
+        });
+        for (let k = 0; k < 4; k++) {                                                              /* flower borders round the statue, open at the four ways in */
+          const psi = Math.PI / 4 + k * Math.PI / 2 - 0.55, m = new T.Mesh(new T.TorusGeometry(13.6, 0.8, 5, 14, 1.1).rotateX(-Math.PI / 2), leafA); m.rotation.y = psi; m.scale.y = 0.55; m.position.set(GARD.x, 0.12, GARD.z); m.userData.noShadow = true; scene.add(m);
+          for (let j = 0; j < 46; j++) { const u = psi + 0.03 + rnd() * 1.04, r = 13.6 + (rnd() - 0.5) * 1.1; BUD.push({ x: GARD.x + Math.cos(u) * r, y: 0.62 + rnd() * 0.2, z: GARD.z - Math.sin(u) * r, s: 0.24 + rnd() * 0.1, c: RO[(rnd() * 5) | 0] }); }
+        }
+        const zA = [], gz0 = n2 + 2.4;                                                             /* the rose tunnel */
+        for (let z = gz0; z < GARD2.z - 10.5; z += 3.5) zA.push(z);
+        zA.forEach((z, i) => {
+          [-2.7, 2.7].forEach(dx => { at(new T.Mesh(cyl(0.11, 0.14, 3.2, 6), iron), X + dx, 1.6, z); colliders.push({ x: X + dx, z: z, r: 0.3 }); });
+          at(new T.Mesh(new T.TorusGeometry(2.7, 0.09, 5, 14, Math.PI), iron), X, 3.2, z);
+          for (let j = 0; j < 30; j++) {
+            const q = rnd() * (Math.PI + 4.2), leaf = j % 3 !== 0; let x, y;
+            if (q < 2.1) { x = -2.7; y = 0.7 + q * 1.2; } else if (q > Math.PI + 2.1) { x = 2.7; y = 0.7 + (q - Math.PI - 2.1) * 1.2; } else { const a = q - 2.1; x = -Math.cos(a) * 2.7; y = 3.2 + Math.sin(a) * 2.7; }
+            BUD.push({ x: X + x + (rnd() - 0.5) * 0.5, y: y + (rnd() - 0.5) * 0.3, z: z + (rnd() - 0.5) * 0.7, s: leaf ? 0.34 + rnd() * 0.16 : 0.22 + rnd() * 0.1, c: leaf ? LF[(rnd() * 3) | 0] : RO[(rnd() * 5) | 0] });
+          }
+          if (i) [-1, 0, 1].forEach(k => { const a = Math.PI / 2 + k * 0.9, x = X + Math.cos(a) * 2.7, y = 3.2 + Math.sin(a) * 2.7; at(new T.Mesh(bx(0.07, 0.07, 3.5), iron), x, y, z - 1.75); for (let j = 1; j < 5; j++) BL.push({ x: x, y: y - 0.18, z: z - j * 0.7, c: bcol[(j + i + k + 5) % 5] }); });
+        });
+        const bud = new T.InstancedMesh(new T.IcosahedronGeometry(1, 0), new T.MeshLambertMaterial({ color: 0xffffff }), BUD.length), o = new T.Object3D(), c = new T.Color();
+        BUD.forEach((b, i) => { o.position.set(b.x, b.y, b.z); o.rotation.set(rnd() * 3, rnd() * 3, 0); o.scale.setScalar(b.s); o.updateMatrix(); bud.setMatrixAt(i, o.matrix); bud.setColorAt(i, c.setHex(b.c)); });
+        bud.frustumCulled = false; bud.userData.noLos = true; scene.add(bud);
+        const bulbM = new T.MeshBasicMaterial({ color: 0xffffff }), bulb = new T.InstancedMesh(new T.SphereGeometry(0.13, 6, 5), bulbM, BL.length), gp = new Float32Array(BL.length * 3), gc = new Float32Array(BL.length * 3);
+        o.rotation.set(0, 0, 0); o.scale.setScalar(1);
+        BL.forEach((b, i) => { o.position.set(b.x, b.y, b.z); o.updateMatrix(); bulb.setMatrixAt(i, o.matrix); bulb.setColorAt(i, c.setHex(b.c)); gp.set([b.x, b.y, b.z], i * 3); gc.set([c.r, c.g, c.b], i * 3); });
+        bulb.frustumCulled = false; bulb.userData.noLos = bulb.userData.noShadow = true; bulb.castShadow = false; scene.add(bulb);
+        const gg = new T.BufferGeometry(); gg.setAttribute('position', new T.BufferAttribute(gp, 3)); gg.setAttribute('color', new T.BufferAttribute(gc, 3));
+        const halo = new T.Points(gg, new T.PointsMaterial({ map: glowM.map, size: 1.9, vertexColors: true, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, opacity: 0 })); halo.frustumCulled = false; halo.userData.noLos = true; scene.add(halo);
+        atmHooks.push(A => { bulbM.color.setScalar(0.62 + 0.38 * A.night); halo.material.opacity = 0.9 * A.night; halo.visible = A.night > 0.03; });
+        window.__gard = { bulbs: BL.length, buds: BUD.length, arches: zA.length };
+      }
       /* ---- the garden walk: one paved flagstone path from the museum's east door, along the lawn and down the south road to the garden gate,
               with flower beds on both sides, lanterns, benches, a flowered arch and signposts ---- */
       const fc = document.createElement('canvas'); fc.width = fc.height = 256; const fq = fc.getContext('2d');
@@ -3822,37 +3871,80 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     outBench(LAKE.x - LAKE.r - 7.5, LAKE.z - 8, -Math.PI / 2); outBench(LAKE.x - LAKE.r - 7.5, LAKE.z + 8, -Math.PI / 2); blanketAt(LAKE.x - LAKE.r - 6.5, LAKE.z, -Math.PI / 2, 0); blanketAt(LAKE.x - LAKE.r - 6.5, LAKE.z + 15, -Math.PI / 2, 1);
     sign('호숫가', LAKE.x - LAKE.r - 3, LAKE.z - 9);
 
-    /* spot 4: windmill field (looking south over the flowers) */
-    const wm = new T.Group(); wm.position.set(MILL.x, 0, MILL.z); scene.add(wm);
-    put(wm, new T.Mesh(cyl(2.4, 3.6, 10, 12), L(0xf3ead8)), 0, 5, 0);
-    put(wm, new T.Mesh(new T.ConeGeometry(3.3, 3.6, 12), L(0xb5452c)), 0, 11.8, 0);
-    put(wm, new T.Mesh(bx(1.7, 2.6, 0.5), woodD2), 0, 1.3, -3.5);
-    put(wm, new T.Mesh(bx(1.1, 1.1, 0.3), L(0x9cc9e8)), 0, 6, -2.95);
-    const hub = put(wm, new T.Mesh(cyl(0.5, 0.5, 1.2, 8), woodD2), 0, 8.4, -3.2); hub.rotation.x = Math.PI / 2;
-    const blades = new T.Group(); blades.position.set(0, 8.4, -3.9); wm.add(blades);
-    for (let k = 0; k < 4; k++) {
-      const arm = new T.Group(); arm.rotation.z = k * Math.PI / 2; blades.add(arm);
-      put(arm, new T.Mesh(bx(0.22, 7.6, 0.2), woodD2), 0, 3.8, 0);
-      put(arm, new T.Mesh(bx(1.5, 5.2, 0.1), L(0xf6efe0)), 0.85, 4.6, -0.12);
+    /* spot 4: windmill field — a taller mill on a stone base with a gallery deck, a little mill further off, a tulip field in stripes of colour on both sides,
+       a flower cart and hay bales; south of it a sunflower patch with a scarecrow, and rows of lavender west of the path */
+    const KEEP = [[95, 53, 2.4], [129, 53, 2.4], [101, 57, 2.7], [123, 57, 2.7], [97, 48, 1.3], [97.5, 60.6, 2.2], [127, 61, 1.8], [130.5, 63.5, 1.8], [115.5, 99, 1.4]];
+    for (let i = 0; i < 4; i++) KEEP.push([MILL.x + (i - 1.5) * 7, MILL.z - 11.5, 2.3]);
+    function mill(x, z, s, spd) {
+      const wm = new T.Group(); wm.position.set(x, 0, z); wm.scale.setScalar(s); scene.add(wm);
+      put(wm, new T.Mesh(cyl(3.75, 3.95, 1.3, 12), L(0xa9a294)), 0, 0.65, 0);
+      put(wm, new T.Mesh(cyl(2.4, 3.6, 10, 12), L(0xf3ead8)), 0, 5, 0);
+      put(wm, new T.Mesh(cyl(4.15, 4.15, 0.22, 12), woodD2), 0, 4.3, 0);
+      for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6 + Math.PI / 12; put(wm, new T.Mesh(bx(0.14, 0.95, 0.14), woodD2), Math.sin(a) * 4, 4.85, Math.cos(a) * 4); }
+      put(wm, new T.Mesh(new T.TorusGeometry(4, 0.07, 5, 12), woodD2), 0, 5.32, 0).rotation.x = Math.PI / 2;
+      put(wm, new T.Mesh(new T.ConeGeometry(3.3, 3.6, 12), L(0xb5452c)), 0, 11.8, 0); put(wm, new T.Mesh(new T.SphereGeometry(0.3, 8, 6), L(0xe8c15a)), 0, 13.7, 0);
+      put(wm, new T.Mesh(bx(1.7, 2.6, 0.5), woodD2), 0, 2.4, -3.5);
+      put(wm, new T.Mesh(bx(1.1, 1.1, 0.3), L(0x9cc9e8)), 0, 6.6, -2.85);
+      [-1, 1].forEach(k => { put(wm, new T.Mesh(bx(0.3, 1.1, 0.9), L(0x9cc9e8)), k * 2.72, 7.6, 0); });
+      const hub = put(wm, new T.Mesh(cyl(0.5, 0.5, 1.2, 8), woodD2), 0, 9.2, -3.0); hub.rotation.x = Math.PI / 2;
+      const blades = new T.Group(); blades.position.set(0, 9.2, -3.9); wm.add(blades);
+      for (let k = 0; k < 4; k++) {
+        const arm = new T.Group(); arm.rotation.z = k * Math.PI / 2; blades.add(arm);
+        put(arm, new T.Mesh(bx(0.22, 7.6, 0.2), woodD2), 0, 3.8, 0);
+        put(arm, new T.Mesh(bx(1.5, 5.2, 0.1), L(0xf6efe0)), 0.85, 4.6, -0.12);
+        [2.2, 3.4, 4.6, 5.8, 7.0].forEach(y => put(arm, new T.Mesh(bx(1.55, 0.08, 0.14), woodD2), 0.85, y, -0.05));
+      }
+      anim.push(dt => { blades.rotation.z -= dt * spd; });
+      colliders.push({ x: x, z: z, r: 4.2 * s });
+      KEEP.push([x, z, 5.6 * s]);
     }
-    anim.push(dt => { blades.rotation.z -= dt * 0.7; });
-    colliders.push({ x: MILL.x, z: MILL.z, r: 3.6 });
-    /* flowers (instanced) and hay bales */
-    const FN = HI ? 520 : 260, stems = new T.InstancedMesh(cyl(0.04, 0.05, 0.9, 4), sway(L(0x4f9a46), 0.18, 0.45), FN), heads = new T.InstancedMesh(new T.SphereGeometry(0.3, 6, 5), sway(L(0xffffff), 0.2, 0, 'inst'), FN), fd = new T.Object3D(), fc = new T.Color();
-    let fi = 0;
-    for (let tries = 0; tries < 1200 && fi < FN; tries++) {
-      const x = 96 + rnd() * 34, z = 31 + rnd() * 22;
-      if (Math.hypot(x - MILL.x, z - MILL.z) < 5.2) continue;
-      fd.rotation.set(0, 0, 0); fd.scale.setScalar(0.8 + rnd() * 0.6);
-      fd.position.set(x, 0.45 * fd.scale.y, z); fd.updateMatrix(); stems.setMatrixAt(fi, fd.matrix);
-      fd.position.set(x, 0.95 * fd.scale.y, z); fd.updateMatrix(); heads.setMatrixAt(fi, fd.matrix);
-      fc.setHex(PAL[(rnd() * PAL.length) | 0]); heads.setColorAt(fi, fc); fi++;
+    mill(MILL.x, MILL.z, 1.3, 0.7);
+    { const q = [[133, 80], [131, 90], [136, 72]].find(q => !treePts.some(t => Math.hypot(t.x - q[0], t.z - q[1]) < 7)); if (q) mill(q[0], q[1], 0.7, 1.05); }
+    const fieldOK = (x, z, tr) => !KEEP.some(q => Math.hypot(x - q[0], z - q[1]) < q[2]) && !treePts.some(q => Math.hypot(x - q.x, z - q.z) < (tr || 1.8)) && !indoorAt(x, z, 1) && z > SCULPT.z + SCULPT.d / 2 + 2 && x > OUT.x0 + 2 && x < 139;
+    {
+      const TUL = [0xe23b3b, 0xf6c22e, 0xff8fb1, 0xffffff, 0xf08a24, 0x9a5fd0, 0xd9342b, 0xffd9e6], TP = [], dx = HI ? 0.62 : 1.05;
+      const row = (z, x0, x1, c) => { for (let x = x0; x < x1; x += dx) { const xx = x + (rnd() - 0.5) * 0.2, zz = z + (rnd() - 0.5) * 0.25; if (Math.abs(xx - MILL.x) < 1.7 || !fieldOK(xx, zz)) continue; TP.push({ x: xx, z: zz, s: 0.85 + rnd() * 0.35, c: c }); } };
+      for (let k = 0; k < 5; k++) row(49.8 + k * 1.3, 97, 128, TUL[k % 8]);
+      for (let k = 0; k < 16; k++) row(66.5 + k * 1.3, 97, 131, TUL[(k + 5) % 8]);
+      const cartC = TP.length;
+      for (let k = 0; k < 16; k++) TP.push({ x: 97.5 + (rnd() - 0.5) * 1.9, z: 60.6 + (rnd() - 0.5) * 0.9, s: 0.8 + rnd() * 0.3, c: TUL[(rnd() * 8) | 0], y: 1.45 });
+      const stems = new T.InstancedMesh(cyl(0.04, 0.05, 0.9, 4), sway(L(0x4f9a46), 0.18, 0.45), TP.length), heads = new T.InstancedMesh(new T.SphereGeometry(0.26, 6, 5).scale(1, 1.45, 1), sway(L(0xffffff), 0.2, 0, 'inst'), TP.length), fd = new T.Object3D(), fc = new T.Color();
+      TP.forEach((f, i) => {
+        fd.rotation.set(0, 0, 0); fd.scale.setScalar(f.s);
+        fd.position.set(f.x, f.y ? f.y - 0.3 : 0.45 * f.s, f.z); fd.updateMatrix(); stems.setMatrixAt(i, fd.matrix);
+        fd.position.set(f.x, f.y ? f.y + 0.2 : 1.0 * f.s, f.z); fd.updateMatrix(); heads.setMatrixAt(i, fd.matrix); heads.setColorAt(i, fc.setHex(f.c));
+      });
+      stems.frustumCulled = heads.frustumCulled = false; stems.userData.nature = heads.userData.nature = true; scene.add(stems); scene.add(heads);
+      /* the flower cart */
+      { const g = new T.Group(); g.position.set(97.5, 0, 60.6); scene.add(g); put(g, new T.Mesh(bx(2.5, 0.7, 1.4), woodD2), 0, 1.05, 0);
+        [-0.75, 0.75].forEach(k => { put(g, new T.Mesh(cyl(0.62, 0.62, 0.12, 12), L(0x4a3423)), 0.2, 0.62, k).rotation.x = Math.PI / 2; });
+        [-0.5, 0.5].forEach(k => { put(g, new T.Mesh(bx(1.5, 0.09, 0.09), woodD2), -1.9, 1.15, k); }); put(g, new T.Mesh(bx(0.12, 0.9, 0.12), woodD2), -1.1, 0.45, 0); colliders.push({ x: 97.5, z: 60.6, r: 1.5 }); }
+      [[127, 61, 1.1], [130.5, 63.5, 1.1], [128.7, 62.2, 2.85]].forEach(q => {
+        const bale = new T.Mesh(cyl(1.1, 1.1, 1.5, 12), L(0xe6c36a)); bale.rotation.z = Math.PI / 2; bale.rotation.y = q[0]; at(bale, q[0], q[2], q[1]);
+        if (q[2] < 2) colliders.push({ x: q[0], z: q[1], r: 1.5 });
+      });
+      /* sunflowers, all turned to the south-east, and a scarecrow among them */
+      const SF = [];
+      for (let z = 91; z < 108; z += 1.5) for (let x = 104; x < 128; x += (HI ? 1.2 : 1.9)) { const xx = x + (rnd() - 0.5) * 0.5, zz = z + (rnd() - 0.5) * 0.5; if (Math.hypot(xx - 92, zz - 112) < 16 || !fieldOK(xx, zz, 2.6)) continue; SF.push({ x: xx, z: zz, h: 1.9 + rnd() * 0.8 }); }
+      const sStem = new T.InstancedMesh(cyl(0.05, 0.07, 1, 5).translate(0, 0.5, 0), sway(L(0x4f9a46), 0.1, 0), SF.length), sPet = new T.InstancedMesh(cyl(0.5, 0.5, 0.06, 10).rotateX(Math.PI / 2), L(0xf7c81e), SF.length), sMid = new T.InstancedMesh(cyl(0.24, 0.24, 0.1, 8).rotateX(Math.PI / 2).translate(0, 0, 0.03), L(0x5a3a1c), SF.length), sLeaf = new T.InstancedMesh(new T.IcosahedronGeometry(0.3, 0).scale(1.5, 0.25, 0.8), L(0x5aa84f), SF.length);
+      SF.forEach((f, i) => {
+        fd.rotation.set(0, 0, 0); fd.scale.set(1, f.h, 1); fd.position.set(f.x, 0, f.z); fd.updateMatrix(); sStem.setMatrixAt(i, fd.matrix);
+        fd.scale.setScalar(0.85 + rnd() * 0.35); fd.rotation.set(-0.3, 0.75 + (rnd() - 0.5) * 0.5, 0, 'YXZ'); fd.position.set(f.x, f.h, f.z); fd.updateMatrix(); sPet.setMatrixAt(i, fd.matrix); sMid.setMatrixAt(i, fd.matrix);
+        fd.rotation.set(0, rnd() * 6.28, 0.3); fd.scale.setScalar(1); fd.position.set(f.x, f.h * 0.5, f.z); fd.updateMatrix(); sLeaf.setMatrixAt(i, fd.matrix);
+      });
+      [sStem, sPet, sMid, sLeaf].forEach(m => { m.frustumCulled = false; m.userData.nature = true; scene.add(m); });
+      { const g = new T.Group(); g.position.set(115.5, 0, 99); g.rotation.y = 0.75; scene.add(g);
+        put(g, new T.Mesh(cyl(0.09, 0.11, 3.3, 6), woodD2), 0, 1.65, 0); put(g, new T.Mesh(bx(2.6, 0.12, 0.12), woodD2), 0, 2.5, 0);
+        put(g, new T.Mesh(bx(1.0, 1.1, 0.4), L(0xc0392b)), 0, 2.2, 0); put(g, new T.Mesh(new T.SphereGeometry(0.42, 10, 8), L(0xe6cc94)), 0, 3.2, 0);
+        put(g, new T.Mesh(cyl(0.75, 0.75, 0.06, 12), L(0x8a5a2b)), 0, 3.48, 0); put(g, new T.Mesh(new T.ConeGeometry(0.42, 0.6, 10), L(0x8a5a2b)), 0, 3.8, 0); colliders.push({ x: 115.5, z: 99, r: 0.5 }); }
+      /* lavender in long rows */
+      const LV = [], LC = [0x8e6fd1, 0xa58be0, 0x7a5cc4];
+      for (let i = 0; i < 15; i++) for (let z = 79; z < 107.5; z += (HI ? 0.78 : 1.3)) { const x = 60 + i * 1.7, zz = z + (rnd() - 0.5) * 0.2; if (Math.hypot(x - LAKE.x, zz - LAKE.z) < 23 || Math.hypot(x - 92, zz - 112) < 16 || Math.abs(x - 92) < 6.5 || !fieldOK(x, zz, 2.4)) continue; LV.push({ x: x, z: zz, c: LC[i % 3] }); }
+      const lvB = new T.InstancedMesh(new T.IcosahedronGeometry(0.5, 0).scale(1, 0.5, 1), L(0x5c9a52), LV.length), lvH = new T.InstancedMesh(new T.IcosahedronGeometry(0.5, 0).scale(1, 0.85, 1), sway(L(0xffffff), 0.08, 0, 'inst'), LV.length);
+      LV.forEach((f, i) => { fd.rotation.set(0, rnd() * 6.28, 0); fd.scale.setScalar(0.9 + rnd() * 0.3); fd.position.set(f.x, 0.2, f.z); fd.updateMatrix(); lvB.setMatrixAt(i, fd.matrix); fd.position.set(f.x, 0.58, f.z); fd.updateMatrix(); lvH.setMatrixAt(i, fd.matrix); lvH.setColorAt(i, fc.setHex(f.c).multiplyScalar(0.9 + rnd() * 0.2)); });
+      [lvB, lvH].forEach(m => { m.frustumCulled = false; m.userData.nature = true; scene.add(m); });
+      window.__field = { tulips: cartC, sun: SF.length, lav: LV.length };
     }
-    stems.count = heads.count = fi; stems.frustumCulled = heads.frustumCulled = false; scene.add(stems); scene.add(heads);
-    [[103, 36], [121, 45], [124, 34], [100, 49]].forEach(q => {
-      const bale = new T.Mesh(cyl(1.1, 1.1, 1.5, 12), L(0xe6c36a)); bale.rotation.z = Math.PI / 2; at(bale, q[0], 1.1, q[1]);
-      colliders.push({ x: q[0], z: q[1], r: 1.5 });
-    });
     /* the flower-road garden: flower beds around the pedestal, along the inside of the posts and a wide wreath outside, with the south approach left open */
     {
       const GN2 = HI ? 2400 : 1100, st2 = new T.InstancedMesh(cyl(0.04, 0.05, 0.9, 4), sway(L(0x4f9a46), 0.18, 0.45), GN2), hd2 = new T.InstancedMesh(new T.SphereGeometry(0.3, 6, 5), sway(L(0xffffff), 0.2, 0, 'inst'), GN2), d2 = new T.Object3D(), c2 = new T.Color();
