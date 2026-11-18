@@ -6709,6 +6709,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     g.fillStyle = 'rgba(138,74,71,0.16)'; g.fillRect(X(-GG.hw), ZU(GGZ), X(GG.hw) - X(-GG.hw), ZU(GGS) - ZU(GGZ));                    /* the grand gallery */
     g.fillStyle = 'rgba(37,33,29,0.1)'; g.fillRect(X(-RM.hx), ZU(-RM.hz), X(RM.hx) - X(-RM.hx), ZU(RM.hz) - ZU(-RM.hz));                 /* the central hall */
     g.strokeStyle = 'rgba(37,33,29,0.35)'; g.lineWidth = 1; g.strokeRect(X(-RM.hx), ZU(-RM.hz), X(RM.hx) - X(-RM.hx), ZU(RM.hz) - ZU(-RM.hz));
+    g.fillStyle = 'rgba(80,150,200,0.28)'; g.fillRect(X(SEA_X), 0, W - X(SEA_X), H);                                                  /* the sea */
+    g.fillStyle = 'rgba(120,190,225,0.6)'; g.beginPath(); g.ellipse(X(LAKE.x), ZU(LAKE.z), LAKE.r * k, LAKE.r * zk, 0, 0, 6.2832); g.fill();   /* the lake */
+    g.fillStyle = 'rgba(236,222,176,0.95)'; g.beginPath(); g.ellipse(X(ISLE.x), ZU(ISLE.z), (ISLE.r + 3) * k, (ISLE.r + 3) * zk, 0, 0, 6.2832); g.fill();   /* the lighthouse isle */
+    g.fillStyle = 'rgba(120,108,150,0.75)'; g.beginPath(); g.ellipse(X(CAVE.x), ZU(CAVE.z), (CAVE.r + 2) * k, Math.max(7, CAVE.r * CAVE.k * zk), 0, 0, 6.2832); g.fill();   /* the cave */
     g.font = '11px sans-serif'; g.textBaseline = 'middle';
     const hit = [], placed = [];
     PLACES.forEach(pl => {
@@ -6814,6 +6818,14 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     box(64, -92, 122, OUT.z0, 'rgba(110,170,100,0.55)'); box(NORTH.x - 4.5, -128, NORTH.x + 4.5, -92, 'rgba(200,190,160,0.8)'); g.fillStyle = 'rgba(250,252,255,0.95)'; g.beginPath(); g.arc(X(NORTH.x), Z(NORTH.sz), NORTH.sr * k, 0, 6.2832); g.fill();   /* the village, the valley trail, the snowfield */                                  /* the outdoors */
     g.fillStyle = 'rgba(120,190,225,0.9)'; g.beginPath(); g.arc(X(LAKE.x), Z(LAKE.z), LAKE.r * k, 0, 6.2832); g.fill();
     g.fillStyle = 'rgba(80,150,200,0.55)'; g.fillRect(X(SEA_X), 0, W, W);
+    box(126, HILL.z1, SEA_X, OUT.z0, 'rgba(236,222,176,0.9)');                                    /* the north beach */
+    g.fillStyle = 'rgba(236,222,176,0.98)'; g.beginPath(); g.arc(X(ISLE.x), Z(ISLE.z), (ISLE.r + 0.8) * k, 0, 6.2832); g.fill(); g.fillStyle = 'rgba(120,180,100,0.95)'; g.beginPath(); g.arc(X(ISLE.x), Z(ISLE.z), (ISLE.r - 4.5) * k, 0, 6.2832); g.fill(); g.fillStyle = '#d8382e'; g.beginPath(); g.arc(X(ISLE.tx), Z(ISLE.tz), 2.2 * k, 0, 6.2832); g.fill();   /* the lighthouse isle */
+    g.fillStyle = 'rgba(150,138,118,0.95)'; g.beginPath(); g.ellipse(X(CAVE.x), Z(CAVE.z), CAVE.r * k, CAVE.r * CAVE.k * k, 0, 0, 6.2832); g.fill(); g.fillStyle = 'rgba(70,60,110,0.95)'; g.beginPath(); g.ellipse(X(CAVE.x), Z(CAVE.z), (CAVE.r - 2) * k, (CAVE.r - 2) * CAVE.k * k, 0, 0, 6.2832); g.fill(); g.fillStyle = '#5fe6ff'; g.beginPath(); g.arc(X(CAVE.x), Z(CAVE.z), 2.4 * k, 0, 6.2832); g.fill();   /* the cave hall */
+    if (pos.z < TUN.z0 + 80) {                                                                   /* the deep cave: its winding tunnel, the stream and the crystal lake (the rock all round is dark) */
+      g.fillStyle = '#3a3550'; g.fillRect(0, 0, W, W); g.lineCap = 'round'; g.lineJoin = 'round';
+      const path = (w, col) => { g.strokeStyle = col; g.lineWidth = w * k; g.beginPath(); for (let z = TUN.z0; z >= TUN.z1; z -= 6) { const px = X(tunX(z)), pz = Z(z); if (z === TUN.z0) g.moveTo(px, pz); else g.lineTo(px, pz); } g.stroke(); };
+      path(TUN.hw * 2, '#8d86a8'); g.fillStyle = '#8d86a8'; g.beginPath(); g.arc(X(TUN_EX), Z(TUN.cz), TUN.cr * k, 0, 6.2832); g.fill(); path(1.6, '#5fe6ff'); g.fillStyle = '#5fe6ff'; g.beginPath(); g.arc(X(TUN_EX), Z(TUN.cz - 2), 6 * k, 0, 6.2832); g.fill();
+      g.fillStyle = '#fff3c4'; g.beginPath(); g.arc(X(tunX(TUN.z0)), Z(TUN.z0), 3 * k, 0, 6.2832); g.fill(); g.lineCap = 'butt'; }
     g.fillStyle = 'rgba(205,184,138,0.9)'; g.fillRect(X(85) - 8 * k, Z(-50), 16 * k, 50 * k); g.fillRect(X(92) - 8 * k, Z(0), 16 * k, 112 * k);   /* the two long roads */
     box(-RM.hx, -RM.hz, RM.hx, RM.hz, 'rgba(138,74,71,0.55)');                                    /* the central hall */
     box(-GG.hw, GGZ, GG.hw, GGS, 'rgba(138,74,71,0.4)');                                           /* the grand gallery */
@@ -6830,7 +6842,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function renderPlaces() {
     const list = $('#placesList'); list.textContent = ''; const evPin = $('#evPin'); evPin.textContent = '';
     const tabs = $('#placesTabs'); tabs.textContent = '';
-    [['all', '전체'], ['ex', '전시관'], ['wings', '🖼 명화관'], ['out', '야외'], ['mk', '화실·쉼터'], ['map', '🗺 지도']].forEach(t => {
+    [['all', '전체'], ['ex', '전시관'], ['wings', '🖼 명화관'], ['out', '야외'], ['mk', '화실·쉼터'], ['map', '🗺 지도'], ['sea', '🌊 바다·동굴']].forEach(t => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (placesTab === t[0] ? ' on' : ''); b.textContent = t[1];
       b.addEventListener('click', () => { placesTab = t[0]; renderPlaces(); }); tabs.appendChild(b);
     });
@@ -6861,7 +6873,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       row.appendChild(left); row.appendChild(bt);
     }
     PLACES.forEach(pl => {
-      const row = document.createElement('div'); row.className = 'roomRow'; const pc = catOf(pl); if (placesTab !== 'all' && placesTab !== 'map' && placesTab !== pc) row.hidden = true;
+      const row = document.createElement('div'); row.className = 'roomRow'; const pc = catOf(pl); if (placesTab === 'sea' ? ['바닷가', '등대 섬', '동굴 갤러리', '호숫가'].indexOf(pl.name) < 0 : (placesTab !== 'all' && placesTab !== 'map' && placesTab !== pc)) row.hidden = true;
       const left = document.createElement('div'); left.className = 'l';
       const nm = document.createElement('div'); nm.className = 'n'; nm.textContent = pl.name;
       const tg = document.createElement('span'); tg.className = 'catTag ' + pc; tg.textContent = PCAT[pc]; nm.appendChild(tg);
