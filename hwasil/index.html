@@ -3247,7 +3247,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         put(g, new T.Mesh(bx(0.8, 2.0, 0.12), door), -w * 0.28, 1.0, d / 2 + 0.04);
         for (let k = 0; k < 3; k++) { const wx = -w * 0.06 + k * w * 0.26; put(g, new T.Mesh(bx(0.9, 1.05, 0.1), glass), wx, 3.4, d / 2 + 0.04); put(g, new T.Mesh(bx(1.2, 0.28, 0.4), geran), wx, 2.75, d / 2 + 0.2); put(g, new T.Mesh(bx(1.1, 0.14, 0.34), leaf), wx, 3.0, d / 2 + 0.2); }
         put(g, new T.Mesh(bx(w * 0.9, 0.14, 1.1), timberL), 0, 2.3, d / 2 + 0.6);
-        put(g, new T.Mesh(bx(0.7, 1.6, 0.7), L(0xb9ada0)), w * 0.25, h + rh * 0.6, -d * 0.15);
+        put(g, new T.Mesh(bx(0.7, 1.6, 0.7), L(0xb9ada0)), w * 0.25, h + rh * 0.6, -d * 0.15); g.userData.chim = new T.Vector3(w * 0.25, h + rh * 0.6 + 1.0, -d * 0.15);
         return g;
       }
       chalet(64, -76, 0.25, 9, 7, 4.6, roofB); chalet(72, -88, -0.2, 8, 6.4, 4.4, roofR); chalet(101.5, -78, -0.3, 9.4, 7.2, 4.8, roofB); chalet(106, -90, 0.15, 8.2, 6.6, 4.4, roofR); chalet(112, -76, -0.1, 7.6, 6.2, 4.2, roofR); chalet(58, -90, 0.4, 7.4, 6, 4.2, roofB); chalet(121, -86, -0.35, 8, 6.4, 4.4, roofB);
@@ -3269,6 +3269,49 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       [89.4, 94.6].forEach(x => put(V, new T.Mesh(bx(0.4, 3.4, 0.4), timber), x, 1.7, -68)); put(V, new T.Mesh(bx(6.2, 0.36, 0.4), timber), 92, 3.4, -68);
       { const pl = makeNamePlate('알프스 마을'); pl.sprite.scale.set(5.2, 1.3, 1); pl.sprite.position.set(92, 4.4, -68); V.add(pl.sprite); }
       [[64, -76, 4.4], [72, -88, 4], [101.5, -78, 4.6], [106, -90, 4.1], [112, -76, 3.8], [121, -86, 4], [85, -86, 4.3], [85, -79.5, 4.3], [85, -73.6, 2.7]].forEach(q => colliders.push({ x: q[0], z: q[1], r: q[2] }));
+      /* ---- village life: windows that light up at night, smoke from every chimney, street lamps, a well, two market stalls, bunting over the lane, log piles and haystacks ---- */
+      {
+        const sc = document.createElement('canvas'); sc.width = sc.height = 64; const s2 = sc.getContext('2d'), sg = s2.createRadialGradient(32, 32, 0, 32, 32, 32); sg.addColorStop(0, 'rgba(255,255,255,1)'); sg.addColorStop(0.4, 'rgba(255,255,255,0.5)'); sg.addColorStop(1, 'rgba(255,255,255,0)'); s2.fillStyle = sg; s2.fillRect(0, 0, 64, 64);
+        const soft = new T.CanvasTexture(sc), stoneV = L(0xb9ada0), ironV = L(0x3b3f47), paneV = new T.MeshBasicMaterial({ color: 0xfff1c4 }), hay = L(0xe6c36a);
+        V.updateMatrixWorld(true);
+        const CH = V.children.filter(g => g.userData.chim).map(g => g.localToWorld(g.userData.chim.clone())), NP = 7, sp = new Float32Array(CH.length * NP * 3), sgeo = new T.BufferGeometry(); sgeo.setAttribute('position', new T.BufferAttribute(sp, 3));
+        const smoke = new T.Points(sgeo, new T.PointsMaterial({ map: soft, color: 0xe8e6e2, size: 2.3, transparent: true, opacity: 0.4, depthWrite: false })); smoke.frustumCulled = false; smoke.userData.noLos = true; scene.add(smoke);
+        anim.push((dt, t) => { if (pos.z > 10 || pos.z < -260) return; CH.forEach((c, i) => { for (let k = 0; k < NP; k++) { const u = (t * 0.11 + k / NP + i * 0.37) % 1, o = (i * NP + k) * 3; sp[o] = c.x + u * u * 2.6 + Math.sin(t * 0.7 + k * 2 + i) * 0.35 * u; sp[o + 1] = c.y + u * 6.5; sp[o + 2] = c.z + Math.cos(t * 0.5 + k) * 0.3 * u; } }); sgeo.attributes.position.needsUpdate = true; });
+        const LP = [[94.4, -72], [94.4, -86], [89.6, -93], [94.4, -100], [89.6, -70.6], [80.2, -74.6]], hp = new Float32Array(LP.length * 3);
+        LP.forEach((q, i) => { put(V, new T.Mesh(cyl(0.1, 0.15, 3.4, 6), ironV), q[0], 1.7, q[1]); put(V, new T.Mesh(bx(0.5, 0.6, 0.5), paneV), q[0], 3.7, q[1]).userData.noShadow = true; put(V, new T.Mesh(new T.ConeGeometry(0.52, 0.4, 4), ironV), q[0], 4.2, q[1]).rotation.y = Math.PI / 4; hp.set([q[0], 3.7, q[1]], i * 3); colliders.push({ x: q[0], z: q[1], r: 0.3 }); });
+        const hgeo = new T.BufferGeometry(); hgeo.setAttribute('position', new T.BufferAttribute(hp, 3));
+        const halo = new T.Points(hgeo, new T.PointsMaterial({ map: soft, color: 0xffc878, size: 7, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false })); halo.frustumCulled = false; halo.userData.noLos = true; scene.add(halo);
+        atmHooks.push(A => { glass.emissive.setRGB(1.0 * A.night, 0.72 * A.night, 0.32 * A.night); halo.material.opacity = 0.8 * A.night; halo.visible = A.night > 0.03; paneV.color.setHex(0xfff1c4).multiplyScalar(0.6 + 0.4 * A.night); });
+        /* the well */
+        { const x = 97.6, z = -71.3; put(V, new T.Mesh(cyl(1.1, 1.2, 1.0, 12), stoneV), x, 0.5, z); put(V, new T.Mesh(cyl(0.85, 0.85, 0.05, 12), L(0x3f6f9a)), x, 0.86, z);
+          [-1, 1].forEach(k => put(V, new T.Mesh(bx(0.16, 2.6, 0.16), timber), x + k * 1.0, 1.3, z)); put(V, new T.Mesh(cyl(0.09, 0.09, 2.2, 6), timber), x, 2.1, z).rotation.z = Math.PI / 2;
+          const rf = put(V, new T.Mesh(new T.ConeGeometry(1.75, 0.9, 4), roofR), x, 3.05, z); rf.rotation.y = Math.PI / 4; put(V, new T.Mesh(cyl(0.2, 0.16, 0.3, 8), timberL), x + 0.2, 1.25, z); put(V, new T.Mesh(cyl(0.015, 0.015, 0.8, 4), ironV), x + 0.2, 1.7, z); colliders.push({ x: x, z: z, r: 1.35 }); }
+        /* market stalls with striped awnings */
+        const awn = (c1) => { const cv = document.createElement('canvas'); cv.width = 64; cv.height = 8; const q = cv.getContext('2d'); for (let i = 0; i < 8; i++) { q.fillStyle = i % 2 ? '#fbf6ea' : c1; q.fillRect(i * 8, 0, 8, 8); } return new T.MeshLambertMaterial({ map: new T.CanvasTexture(cv), side: T.DoubleSide }); };
+        [[78, -72.2, '#d9342b', 0], [78, -77.8, '#2f7fc4', 1]].forEach(q => {
+          const g = new T.Group(); g.position.set(q[0], 0, q[1]); g.rotation.y = Math.PI / 2; V.add(g);
+          put(g, new T.Mesh(bx(3.2, 1.0, 1.3), timberL), 0, 0.5, 0); put(g, new T.Mesh(bx(3.4, 0.1, 1.5), timber), 0, 1.05, 0);
+          [[-1.6, -0.7, 2.9], [1.6, -0.7, 2.9], [-1.6, 0.7, 2.4], [1.6, 0.7, 2.4]].forEach(c => put(g, new T.Mesh(bx(0.12, c[2], 0.12), timber), c[0], c[2] / 2, c[1]));
+          const a = put(g, new T.Mesh(bx(3.8, 0.06, 2.3), awn(q[2])), 0, 2.72, 0.15); a.rotation.x = 0.3;
+          if (q[3]) { [-1.1, -0.4, 0.3, 1.0].forEach((x, i) => { put(g, new T.Mesh(cyl(0.2, 0.15, 0.3, 8), L(0xb5653c)), x, 1.25, 0.1); put(g, new T.Mesh(new T.IcosahedronGeometry(0.26, 0), L([0xff7fa8, 0xf6c22e, 0xffffff, 0xe23b3b][i])), x, 1.6, 0.1); }); }
+          else { [-1.0, -0.2, 0.7].forEach((x, i) => put(g, new T.Mesh(cyl(0.36, 0.36, 0.22, 12), L(0xf0c040)), x, 1.21 + (i === 1 ? 0.22 : 0), 0.05)); put(g, new T.Mesh(cyl(0.36, 0.36, 0.22, 12), L(0xf0c040)), -0.2, 1.21, 0.05); put(g, new T.Mesh(cyl(0.16, 0.2, 0.5, 8), L(0xc9ccd2)), 1.25, 1.35, -0.2); }
+          colliders.push({ x: q[0], z: q[1], r: 1.7 });
+        });
+        /* bunting over the lane */
+        const FL = [], FC = [0xd9342b, 0xf3c431, 0x3f9b4f, 0x2c6fc8, 0xf6f2ea], wireM = new T.LineBasicMaterial({ color: 0x4a3a2a });
+        [[89.2, 5.6, -77, 96.9, 5.2, -77], [89.2, 5.6, -84, 97.4, 5.0, -82.5], [87.4, 7.5, -71.4, 94.6, 3.5, -68], [89.4, 3.5, -68, 82.9, 7.5, -71.4]].forEach(q => {
+          const pts = [], n = 14; for (let k = 0; k <= n; k++) { const u = k / n, x = q[0] + (q[3] - q[0]) * u, y = q[1] + (q[4] - q[1]) * u - 0.9 * 4 * u * (1 - u), z = q[2] + (q[5] - q[2]) * u; pts.push(new T.Vector3(x, y, z)); if (k > 0 && k < n) FL.push({ x: x, y: y, z: z, ry: Math.atan2(q[3] - q[0], q[5] - q[2]) + Math.PI / 2, c: FC[k % 5] }); }
+          V.add(new T.Line(new T.BufferGeometry().setFromPoints(pts), wireM));
+        });
+        const tri = new T.BufferGeometry(); tri.setAttribute('position', new T.Float32BufferAttribute([-0.22, 0, 0, 0.22, 0, 0, 0, -0.5, 0], 3)); tri.computeVertexNormals();
+        const flags = new T.InstancedMesh(tri, new T.MeshBasicMaterial({ color: 0xffffff, side: T.DoubleSide }), FL.length), fo = new T.Object3D(), fcol = new T.Color();
+        FL.forEach((f, i) => { fo.position.set(f.x, f.y, f.z); fo.rotation.set(0, f.ry, 0); fo.updateMatrix(); flags.setMatrixAt(i, fo.matrix); flags.setColorAt(i, fcol.setHex(f.c)); }); flags.frustumCulled = false; flags.userData.noLos = true; V.add(flags);
+        atmHooks.push(A => { flags.material.color.setScalar(1 - 0.55 * A.night); });
+        /* log piles and haystacks */
+        [[68.6, -81.6, 0.3], [109.6, -82.4, -0.2]].forEach(q => { const g = new T.Group(); g.position.set(q[0], 0, q[1]); g.rotation.y = q[2]; V.add(g); [[-0.5, 0.24], [0, 0.24], [0.5, 0.24], [-0.25, 0.66], [0.25, 0.66], [0, 1.08]].forEach(c => { put(g, new T.Mesh(cyl(0.24, 0.24, 1.7, 7), timber), c[0], c[1], 0).rotation.x = Math.PI / 2; put(g, new T.Mesh(cyl(0.2, 0.2, 1.72, 7), L(0xd9b98a)), c[0], c[1], 0).rotation.x = Math.PI / 2; }); colliders.push({ x: q[0], z: q[1], r: 1.0 }); });
+        [[114, -82], [116.6, -80.4], [78.6, -90.6]].forEach(q => { put(V, new T.Mesh(new T.ConeGeometry(1.35, 2.3, 9), hay), q[0], 1.15, q[1]); put(V, new T.Mesh(cyl(0.06, 0.06, 0.9, 5), timber), q[0], 2.6, q[1]); colliders.push({ x: q[0], z: q[1], r: 1.25 }); });
+        window.__vil = { chim: CH.length, lamps: LP.length, flags: FL.length };
+      }
       const cowM = L(0xf6f2ea), patch = L(0x2b2b2b), cowHeads = [];
       [[74, -72], [81, -75], [92, -70], [99, -72], [106, -72], [86, -92], [96, -94], [70, -96], [114, -94], [78, -84]].forEach((q, i) => {
         const g = new T.Group(); g.position.set(q[0], 0, q[1]); g.rotation.y = (nh(i, 7, 5) - 0.5) * 6; V.add(g);
@@ -3870,6 +3913,46 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     for (let i = 0; i < 4; i++) addEaselAt(LAKE.x - LAKE.r - 3, LAKE.z + (i - 1.5) * 6, Math.PI);          /* on the west shore, the painter looks east over the water (the north shore is the sculpture pavilion) */
     outBench(LAKE.x - LAKE.r - 7.5, LAKE.z - 8, -Math.PI / 2); outBench(LAKE.x - LAKE.r - 7.5, LAKE.z + 8, -Math.PI / 2); blanketAt(LAKE.x - LAKE.r - 6.5, LAKE.z, -Math.PI / 2, 0); blanketAt(LAKE.x - LAKE.r - 6.5, LAKE.z + 15, -Math.PI / 2, 1);
     sign('호숫가', LAKE.x - LAKE.r - 3, LAKE.z - 9);
+    /* ---- lakeside life: a gazebo with fairy lights on the south shore, a duck with her ducklings and a pair of swans on the water, cattails, more lilies, a fishing spot ---- */
+    {
+      const GZ = [[LAKE.x, LAKE.z + 19.5], [LAKE.x - 9, LAKE.z + 17.5], [LAKE.x + 9, LAKE.z + 17.5]].find(q => !treePts.some(t => Math.hypot(t.x - q[0], t.z - q[1]) < 5.2)) || [LAKE.x, LAKE.z + 19.5];
+      const gx = GZ[0], gz = GZ[1], white = L(0xf6f2ea), roofG = L(0x4f8f8a), stoneG = L(0xd8cfba), BLB = [], bc = [0xffd27a, 0xff9db8, 0x9fd8ff, 0xfff3c4];
+      at(new T.Mesh(cyl(3.5, 3.6, 0.1, 6), stoneG), gx, 0.05, gz);
+      for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + Math.PI / 6, x = gx + Math.sin(a) * 3.0, z = gz + Math.cos(a) * 3.0, a2 = a + Math.PI / 3, x2 = gx + Math.sin(a2) * 3.0, z2 = gz + Math.cos(a2) * 3.0;
+        at(new T.Mesh(cyl(0.13, 0.15, 3.3, 8), white), x, 1.65, z); colliders.push({ x: x, z: z, r: 0.3 });
+        const mid = Math.abs(Math.sin(a + Math.PI / 6)) > 0.9;                                    /* east and west sides get a rail, north (the water) and south (the way in) stay open */
+        if (mid) { const r = at(new T.Mesh(bx(3.0, 0.1, 0.1), white), (x + x2) / 2, 1.0, (z + z2) / 2); r.rotation.y = Math.atan2(-(z2 - z), x2 - x); const r2 = at(new T.Mesh(bx(3.0, 0.1, 0.1), white), (x + x2) / 2, 0.5, (z + z2) / 2); r2.rotation.y = r.rotation.y; }
+        for (let j = 1; j < 5; j++) { const u = j / 5; BLB.push({ x: (x + (x2 - x) * u) * 1.0 + (gx - (x + (x2 - x) * u)) * -0.17, y: 3.2 - 0.35 * 4 * u * (1 - u), z: (z + (z2 - z) * u) + (gz - (z + (z2 - z) * u)) * -0.17, c: bc[(j + k) % 4] }); }
+      }
+      { const rf = at(new T.Mesh(new T.ConeGeometry(4.3, 2.3, 6), roofG), gx, 4.45, gz); rf.rotation.y = Math.PI / 6; at(new T.Mesh(new T.SphereGeometry(0.3, 8, 6), L(0xe8c15a)), gx, 5.75, gz); }
+      outBench(gx, gz + 0.9, 0);
+      const bulbM = new T.MeshBasicMaterial({ color: 0xffffff }), bulb = new T.InstancedMesh(new T.SphereGeometry(0.12, 6, 5), bulbM, BLB.length), o = new T.Object3D(), c = new T.Color(), gp = new Float32Array(BLB.length * 3), gc = new Float32Array(BLB.length * 3);
+      BLB.forEach((b, i) => { o.position.set(b.x, b.y, b.z); o.updateMatrix(); bulb.setMatrixAt(i, o.matrix); bulb.setColorAt(i, c.setHex(b.c)); gp.set([b.x, b.y, b.z], i * 3); gc.set([c.r, c.g, c.b], i * 3); });
+      bulb.frustumCulled = false; bulb.userData.noLos = true; scene.add(bulb);
+      const sc = document.createElement('canvas'); sc.width = sc.height = 64; const s2 = sc.getContext('2d'), sg = s2.createRadialGradient(32, 32, 0, 32, 32, 32); sg.addColorStop(0, 'rgba(255,255,255,1)'); sg.addColorStop(0.4, 'rgba(255,255,255,0.45)'); sg.addColorStop(1, 'rgba(255,255,255,0)'); s2.fillStyle = sg; s2.fillRect(0, 0, 64, 64);
+      const gg = new T.BufferGeometry(); gg.setAttribute('position', new T.BufferAttribute(gp, 3)); gg.setAttribute('color', new T.BufferAttribute(gc, 3));
+      const halo = new T.Points(gg, new T.PointsMaterial({ map: new T.CanvasTexture(sc), size: 1.8, vertexColors: true, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, opacity: 0 })); halo.frustumCulled = false; halo.userData.noLos = true; scene.add(halo);
+      atmHooks.push(A => { bulbM.color.setScalar(0.62 + 0.38 * A.night); halo.material.opacity = 0.9 * A.night; halo.visible = A.night > 0.03; });
+      /* birds on the water */
+      const bird = (s, body, beak, neck) => { const g = new T.Group(); g.scale.setScalar(s); scene.add(g); g.userData.noLos = true;
+        const b = put(g, new T.Mesh(new T.SphereGeometry(0.5, 8, 6), body), 0, 0.22, 0); b.scale.set(0.8, 0.6, 1.25); const tl = put(g, new T.Mesh(new T.ConeGeometry(0.2, 0.45, 5), body), 0, 0.42, -0.62); tl.rotation.x = -0.9;
+        if (neck) put(g, new T.Mesh(cyl(0.09, 0.12, neck, 6), body), 0, 0.35 + neck / 2, 0.45).rotation.x = 0.25;
+        put(g, new T.Mesh(new T.SphereGeometry(0.2, 8, 6), body), 0, 0.5 + (neck || 0), 0.5 + (neck ? 0.14 : 0)); const bk = put(g, new T.Mesh(new T.ConeGeometry(0.08, 0.26, 5), beak), 0, 0.47 + (neck || 0), 0.76 + (neck ? 0.14 : 0)); bk.rotation.x = Math.PI / 2; return g; };
+      const brown = L(0x9a6a3a), yel = L(0xf6d04a), org = L(0xf08a24), FLOCK = [{ g: bird(1, brown, org), r: 10.4, ph: 0, sp: 0.07 }];
+      for (let k = 1; k <= 3; k++) FLOCK.push({ g: bird(0.5, yel, org), r: 10.4 + (k % 2 ? 0.25 : -0.25), ph: -k * 0.105, sp: 0.07 });
+      FLOCK.push({ g: bird(1.35, white, org, 0.75), r: 8.1, ph: 2.2, sp: -0.045 }, { g: bird(1.25, white, org, 0.7), r: 7.9, ph: 2.42, sp: -0.045 });
+      anim.push((dt, t) => { if (Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) > 120) return; FLOCK.forEach((f, i) => { const a = f.ph + t * f.sp; f.g.position.set(LAKE.x + Math.cos(a) * f.r, 0.05 + 0.03 * Math.sin(t * 1.6 + i), LAKE.z + Math.sin(a) * f.r); f.g.rotation.y = (f.sp > 0 ? -a : Math.PI - a); }); });
+      /* cattails and lilies */
+      const CT = []; for (let i = 0; i < 60 && CT.length < 28; i++) { const a = rnd() * 6.283; if (Math.sin(a) < -0.55 || Math.cos(a) < -0.7 || Math.hypot(LAKE.x + Math.cos(a) * 14 - gx, LAKE.z + Math.sin(a) * 14 - gz) < 5) continue; const r = LAKE.r + 0.3 + rnd() * 1.1; CT.push({ x: LAKE.x + Math.cos(a) * r, z: LAKE.z + Math.sin(a) * r, h: 1.6 + rnd() * 0.9 }); }
+      const cs = new T.InstancedMesh(cyl(0.035, 0.05, 1, 4).translate(0, 0.5, 0), sway(L(0x7fa650), 0.1, 0), CT.length), chd = new T.InstancedMesh(cyl(0.1, 0.1, 0.5, 6), L(0x6b4423), CT.length);
+      CT.forEach((f, i) => { o.rotation.set(0, 0, 0); o.scale.set(1, f.h, 1); o.position.set(f.x, 0, f.z); o.updateMatrix(); cs.setMatrixAt(i, o.matrix); o.scale.set(1, 1, 1); o.position.set(f.x, f.h - 0.1, f.z); o.updateMatrix(); chd.setMatrixAt(i, o.matrix); });
+      [cs, chd].forEach(m => { m.frustumCulled = false; m.userData.nature = true; scene.add(m); });
+      for (let i = 0; i < 12; i++) { const a = rnd() * 6.28, d = 3 + rnd() * 6, x = LAKE.x + Math.cos(a) * d, z = LAKE.z + Math.sin(a) * d; flat(new T.CircleGeometry(0.55, 10), L(0x3f9a4a), x, 0.1, z); const fl = at(new T.Mesh(new T.ConeGeometry(0.26, 0.3, 7), L(i % 2 ? 0xffffff : 0xf7a8c8)), x, 0.24, z); fl.rotation.x = Math.PI; at(new T.Mesh(new T.SphereGeometry(0.09, 6, 5), L(0xf6d04a)), x, 0.3, z); }
+      /* someone left a rod and a bucket on the east shore */
+      { const x = LAKE.x + LAKE.r + 1.3, z = LAKE.z - 1.5; const rod = at(new T.Mesh(cyl(0.02, 0.04, 3.6, 5), woodD2), x - 1.3, 1.25, z); rod.rotation.z = 1.05; at(new T.Mesh(cyl(0.006, 0.006, 1.9, 3), L(0xdddddd)), x - 2.86, 1.2, z);
+        at(new T.Mesh(new T.SphereGeometry(0.09, 6, 5), L(0xd9342b)), x - 2.86, 0.1, z); at(new T.Mesh(cyl(0.28, 0.22, 0.42, 10), L(0x7f8fa0)), x + 0.5, 0.21, z + 0.8); at(new T.Mesh(bx(0.6, 0.45, 0.4), woodD2), x + 0.3, 0.22, z - 0.5); at(new T.Mesh(cyl(0.05, 0.05, 0.6, 5), woodD2), x - 0.1, 0.3, z).rotation.z = 0.3; }
+      window.__lake = { gazebo: [gx, gz], birds: FLOCK.length, cattails: CT.length };
+    }
 
     /* spot 4: windmill field — a taller mill on a stone base with a gallery deck, a little mill further off, a tulip field in stripes of colour on both sides,
        a flower cart and hay bales; south of it a sunflower patch with a scarecrow, and rows of lavender west of the path */
