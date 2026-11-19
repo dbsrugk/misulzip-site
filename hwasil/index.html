@@ -6334,18 +6334,20 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     /* no dive buttons: in the sea, swimming forward while looking down takes me down, looking up brings me up (Q / E on a keyboard) */
     const sea = swimK(pos.x, pos.z) > 0.6 && BT.on < 0;
     if (DV.lvl !== DV.pl) DV.d = -DIVE_D[DV.lvl];                                    /* set from outside (a boat, the tour, the tests) */
-    if (!sea) DV.d = 0;
+    if (!sea) { DV.d = 0; DV.vy = 0; }
     else if (!teleOn && !goal && !inspect && !pad.open) {
       const iy = Math.max(-1, Math.min(1, joy.y + ((keys['w'] || keys['arrowup']) ? 1 : 0) - ((keys['s'] || keys['arrowdown']) ? 1 : 0)));
-      const look = camPitch > 0.42 ? -Math.min(1, (camPitch - 0.42) / 0.4) : camPitch < 0.18 ? Math.min(1, (0.18 - camPitch) / 0.3) : 0, kv = (keys['q'] ? 1 : 0) - (keys['e'] ? 1 : 0);
-      DV.d = (DV.d || 0) + (iy * look * 4.5 + kv * 4) * dt;
+      camera.getWorldDirection(DV.v || (DV.v = new T.Vector3()));                    /* I swim exactly where the screen points: the camera's own direction, up and down included */
+      const vy = DV.v.y, under = DV.d < -0.5, look = under ? vy : (vy < -0.33 ? vy : 0), kv = (keys['q'] ? 1 : 0) - (keys['e'] ? 1 : 0);
+      DV.vy = lerp(DV.vy || 0, iy * look * 7.5 + kv * 4, Math.min(1, dt * 6)); DV.d = (DV.d || 0) + DV.vy * dt;
+      DV.hk = under ? Math.max(0.3, Math.sqrt(Math.max(0, 1 - vy * vy))) : 1;        /* the steeper I go, the less I move along */
       if (DV.d > -0.9 && iy * look >= 0 && kv >= 0) DV.d += dt * 1.6;                /* near the top I bob back up to the surface */
     }
     DV.d = Math.min(0, Math.max(DV.d || 0, -9.5, seaFloor(pos.x, pos.z) + 1.1));
     DV.lvl = DV.pl = DV.d < -0.9 ? (DV.d < -5.5 ? 2 : 1) : 0;
-    if (sea && !DV.told) { DV.told = 1; toast('🤿 화면을 내려다보며 앞으로 가면 잠수해요 · 올려다보며 가면 떠올라요', 6500); }
+    if (sea && !DV.told) { DV.told = 1; toast('🤿 화면이 보는 방향 그대로 헤엄쳐요 · 내려다보며 앞으로 가면 잠수, 올려다보면 떠올라요', 6500); }
     DV.y += (DV.d - DV.y) * Math.min(1, dt * 4);
-    DV.tilt = lerp(DV.tilt || 0, DV.y < -1 ? (walkAmp > 0.2 ? 1.2 : 0.4) : 0, Math.min(1, dt * 5));
+    DV.tilt = lerp(DV.tilt || 0, DV.y < -1 ? (walkAmp > 0.2 ? 1.2 - Math.max(-0.6, Math.min(0.6, (DV.vy || 0) * 0.14)) : 0.4) : 0, Math.min(1, dt * 5));   /* nose down when diving, up when rising */
     if (DV.y < -1) {
       if (tNow - diveToast > 120) { diveToast = tNow; toast('🤿 바닷속이에요! 물고기·거북이·해파리를 찾아보세요', 4500); funArea('바닷속 다이빙'); }
       bubT -= dt; if (bubT <= 0) { bubT = 0.45; const b = bubs.find(q => !q.on); if (b) { b.on = true; b.v = 1.2 + Math.random() * 0.8; b.m.visible = true; b.m.position.set(pos.x + Math.sin(heading) * 0.5, player.position.y + 1.9, pos.z + Math.cos(heading) * 0.5); } }
@@ -7260,7 +7262,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (BT.on >= 0) rideBoat(dt, ix, iy, m);
     else if (started && !pad.open && !watch.open && m > 0.08) {
       const sy = Math.sin(camYaw), cy = Math.cos(camYaw);
-      const dx = cy * ix - sy * iy, dz = -sy * ix - cy * iy, dl = Math.hypot(dx, dz) || 1, run = (Math.hypot(joy.x, joy.y) > 0.93 || keys['shift']) ? 1.8 : 1, sp = SPEED * m * run;   /* running works indoors too (it used to be outdoors only) */
+      const dx = cy * ix - sy * iy, dz = -sy * ix - cy * iy, dl = Math.hypot(dx, dz) || 1, run = (Math.hypot(joy.x, joy.y) > 0.93 || keys['shift']) ? 1.8 : 1, sp = SPEED * m * run * (DV.y < -0.6 ? (DV.hk || 1) : 1);   /* running works indoors too (it used to be outdoors only) */
       if (!runHinted) { runHinted = true; try { if (!localStorage.getItem('hw-runhint')) { localStorage.setItem('hw-runhint', '1'); toast('조이스틱을 끝까지 밀면 달려요 🏃', 4000); } } catch (e) {} }
       wdx = dx / dl; wdz = dz / dl; curSp = lerp(curSp, sp, 1 - Math.exp(-dt * 10));
       tryMove(wdx * curSp * dt, wdz * curSp * dt);
@@ -7341,10 +7343,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const inTun = started && pos.z < TUN.z0 + 1 && rockIn(pos.x, pos.z, 0.5), inCave = started && (inTun || caveD(pos.x, pos.z) < CAVE.r - 0.6);
     camDist += ((started ? camWant : 26) - camDist) * Math.min(1, dt * 3);   /* the same wide view inside the caves: their rock is one-sided, so a camera outside looks straight in */
     if (window.__caveExt) window.__caveExt(inCave && !inTun); if (window.__caveDark) window.__caveDark(inTun);
-    const pe = Math.max(camPitch, 0.08), cp = Math.cos(pe);      /* below 0.08 the camera stops sinking and starts looking up instead */
+    const uwC = DV.y < -0.6 && pos.x > SEA_X + 1, pe = Math.max(camPitch, uwC ? -0.6 : 0.08), cp = Math.cos(pe);   /* under water the camera may sink below me and look up */      /* below 0.08 the camera stops sinking and starts looking up instead */
     /* no clamping to the walls: walls are one-sided, so from outside they vanish and the view stays wide */
     let dx = camTx + Math.sin(camYaw) * cp * camDist;
-    let dy = (inspect ? inspect.y : 2.4 + camTy) + Math.sin(pe) * camDist, lookY = inspect ? inspect.y : 2.0 + camTy + Math.max(0, 0.08 - camPitch) * 32;
+    let dy = (inspect ? inspect.y : 2.4 + camTy) + Math.sin(pe) * camDist, lookY = inspect ? inspect.y : 2.0 + camTy + (uwC ? 0 : Math.max(0, 0.08 - camPitch) * 32);
     let dz = camTz + Math.cos(camYaw) * cp * camDist;
     if (DV.y < -0.6 && dx > SEA_X + 1) dy = Math.max(seaFloor(dx, dz) + 0.6, Math.min(dy, -0.4));      /* under water the camera stays under water */
     if (!inCave && !inspect && pos.x > RM.hx + 2 && !(DV.y < -0.6)) {                                            /* on the hills the camera never dips under the ground, and rises when a ridge stands between it and me */
