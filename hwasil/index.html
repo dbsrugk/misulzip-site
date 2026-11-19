@@ -169,10 +169,14 @@ button.chip { pointer-events: auto; cursor: pointer; }
 #tourBtn.keep { left: 50%; top: auto !important; bottom: calc(var(--bar) + 40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font-size: 15px; padding: 8px 12px; background: #fff; }
 #swimBar { pointer-events: none; position: fixed; left: 8px; right: 8px; top: calc(140px + env(safe-area-inset-top, 0px)); z-index: 12; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
 #swimBar[hidden] { display: none; }
-body.clean #hud > *:not(#joy):not(#cleanBar):not(#toast), body.clean #areaBanner { visibility: hidden !important; }
+body.clean #hud > *:not(#joy):not(#cleanBar):not(#sceneBar):not(#toast), body.clean #areaBanner { visibility: hidden !important; }
 body.clean #joy { opacity: .35; }
 #cleanBar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 30; display: flex; gap: 8px; pointer-events: auto; }
-#cleanBar[hidden] { display: none; }
+#cleanBar[hidden], #sceneBar[hidden] { display: none; }
+#sceneBar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 30; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: auto; width: min(94vw, 520px); }
+#sceneBar .row { display: flex; gap: 8px; }
+#sceneCap { background: rgba(255,255,255,.92); border: 2.5px solid var(--ink); border-radius: 14px; padding: 7px 14px; font-size: 15px; font-weight: 700; text-align: center; box-shadow: 2px 2px 0 var(--ink); }
+#sceneBar button { pointer-events: auto; font: inherit; font-size: 15px; font-weight: 700; background: rgba(255,255,255,.92); border: 2.5px solid var(--ink); border-radius: 999px; padding: 8px 14px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
 #cleanBar button { pointer-events: auto; font: inherit; font-size: 15px; font-weight: 700; background: rgba(255,255,255,.92); border: 2.5px solid var(--ink); border-radius: 999px; padding: 8px 16px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
 #swimBar .swInfo { background: rgba(255,255,255,.92); border: 2.5px solid var(--ink); border-radius: 999px; padding: 5px 12px; font-size: 14px; font-weight: 700; box-shadow: 2px 2px 0 var(--ink); }
 #swimBar button { pointer-events: auto; font: inherit; font-size: 14px; font-weight: 700; background: #fff; border: 2.5px solid var(--ink); border-radius: 999px; padding: 6px 13px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
@@ -572,6 +576,7 @@ body.padOpen #hud { visibility: hidden; }
     <button class="chip" id="funBtn" type="button">📖 관람 도감</button>
     <button class="chip" id="collabBtn" type="button">🤝 합작 액자</button>
     <button class="chip" id="cleanBtn" type="button">📷 풍경 사진 모드</button>
+    <button class="chip" id="sceneBtn" type="button">🎬 명소 한 바퀴</button>
     <button class="chip" id="timeQuick" type="button">🌗 낮·밤 바꾸기</button>
     <button class="chip" id="wxQuick" type="button">☔ 날씨 바꾸기</button>
     <button class="chip" id="musicBtn" type="button" aria-label="음악 켜고 끄기">🎵 음악</button>
@@ -590,6 +595,7 @@ body.padOpen #hud { visibility: hidden; }
   <button class="sitBtn" id="sitBtn" type="button" hidden>앉아서 그리기</button>
   <button class="sitBtn" id="viewBtn" type="button" hidden>작품 크게 보기</button>
   <button class="sitBtn" id="photoBtn" type="button" hidden>📸 사진 찍기</button>
+  <div id="sceneBar" hidden><div id="sceneCap"></div><div class="row"><button type="button" id="scenePrev">◀ 이전</button><button type="button" id="sceneStop">⏹ 그만 보기</button><button type="button" id="sceneNext">다음 ▶</button></div></div>
   <div id="cleanBar" hidden><button type="button" id="cleanShot">📷 저장</button><button type="button" id="cleanExit">✕ 나가기</button></div>
   <div id="swimBar" hidden><span class="swInfo" id="swInfo">🌊 수영 중</span><span class="swDepth" id="swDepth" title="수심"><i></i></span><button type="button" id="swDive"></button><button type="button" id="swUp"></button><button type="button" id="swGear"></button><button type="button" id="swBoat"></button></div>
   <button class="sitBtn" id="actDots" type="button" hidden aria-label="할 수 있는 일 보기">⋯</button>
@@ -762,7 +768,7 @@ body.padOpen #hud { visibility: hidden; }
     <details id="qBox">
       <summary>그래픽 품질</summary>
       <p class="empty">화면이 느리거나 폰이 뜨거워지면 '낮음'으로 바꿔 보세요. 그림자와 장식(풀, 나비, 꽃가루)이 줄어들어요. 바꾸면 화면을 다시 불러와요.</p>
-      <div class="seg" id="qSeg" role="group" aria-label="그래픽 품질"><button type="button" data-q="hi">높음</button><button type="button" data-q="lo">낮음</button></div>
+      <div class="seg" id="qSeg" role="group" aria-label="그래픽 품질"><button type="button" data-q="hi">높음</button><button type="button" data-q="mid">중간</button><button type="button" data-q="lo">낮음</button></div>
     </details>
     <h3>접속 기록</h3>
     <div id="playStats"></div>
@@ -955,8 +961,9 @@ body.padOpen #hud { visibility: hidden; }
     $('#intro').innerHTML = '<div class="card"><h1>3D를 켜지 못했어요</h1><p>이 기기의 브라우저가 WebGL을 지원하지 않는 것 같아요.</p></div>';
     return;
   }
-  const HI = store('hw-q') !== 'lo';                     /* graphics quality: high (shadows, more grass, butterflies...) or low */
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, HI ? 2 : 1.5));
+  const QV = store('hw-q') === 'lo' ? 'lo' : store('hw-q') === 'mid' ? 'mid' : 'hi', MID = QV === 'mid';   /* three steps: high, middle (same picture, lighter: fewer glow points, no fireworks, a lower drawing scale), low */
+  const HI = QV !== 'lo';                     /* graphics quality: high (shadows, more grass, butterflies...) or low */
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MID ? 1.5 : HI ? 2 : 1.5));
   renderer.shadowMap.enabled = HI; renderer.shadowMap.type = T.PCFSoftShadowMap;
   renderer.setSize(window.innerWidth, window.innerHeight);
   $('#stage').appendChild(renderer.domElement);
@@ -2559,7 +2566,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   let galCol = null, exhibits = [];
   const FD = { s: 2.6, m: 4.0, l: 6.6 };                 /* longest side of the picture area per frame size */
   const FRAME_T = 0.2;
-  const ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'studio'];
+  const ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'sea', 'studio'];
   function roomOf(r) { return ROOMS.indexOf(r) >= 0 ? r : 'gallery'; }
   let emptyTex = null, emptyLabelTex = null, farTex = null, farLabelTex = null, evTex = null, evLabelTex = null;
   function emptyTexs() {                                  /* one shared 'empty frame' picture and label for all the blank frames */
@@ -2735,7 +2742,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       });
     });
     left.forEach(ex => {
-      const sl = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave'].reduce((f, r) => f || slots.find(q => q.room === r && !q.ev && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !q.ev && !used.has(q)), null);
+      const sl = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'sea'].reduce((f, r) => f || slots.find(q => q.room === r && !q.ev && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !q.ev && !used.has(q)), null);
       if (sl) { used.add(sl); assign.set(sl, ex); }
     });
     slots.forEach(sl => {
@@ -5154,7 +5161,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       ['exManual', '직접 고르기', false, () => { closePad(); startHang(w); renderPlaces(); $('#places').hidden = false; }],   /* leave the easel, then pick a frame (the places list helps to walk there) */
       ['exNo', '나중에', false, () => {}]]);
   }
-  const AUTO_ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'studio'];
+  const AUTO_ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'sea', 'studio'];
   function autoCandidates() {
     const SR = { m: 0, l: 1, s: 2 };
     return slots.filter(q => !q.ex && !q.ev).sort((a, b) =>
@@ -5219,7 +5226,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   $('#padSave').addEventListener('click', save);
 
-  const ROOM_NAME = { museum: '대회랑', gallery: '신진 작가관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', cave: '동굴 갤러리', studio: '화실' };
+  const ROOM_NAME = { museum: '대회랑', gallery: '신진 작가관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', cave: '동굴 갤러리', sea: '바닷속 갤러리', studio: '화실' };
   const SIZE_NAME = { s: '작은', m: '보통', l: '큰' };
   async function takeDown(ex) {                           /* only the owner's own frames: the server checks it too */
     if (!galCol) return;
@@ -5429,7 +5436,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   $('#worksBtn').addEventListener('click', () => { renderWorks(); $('#renameInput').value = myName; $('#works').hidden = false; });
   $('#hangClose').addEventListener('click', () => { $('#hang').hidden = true; });
-  document.querySelectorAll('#qSeg button').forEach(b => { b.classList.toggle('on', (b.dataset.q === 'hi') === HI); b.addEventListener('click', () => { if ((b.dataset.q === 'hi') === HI) return; store('hw-q', b.dataset.q); toast('그래픽을 바꾸고 다시 불러와요…', 3000); setTimeout(() => location.reload(), 600); }); });
+  document.querySelectorAll('#qSeg button').forEach(b => { b.classList.toggle('on', b.dataset.q === QV); b.addEventListener('click', () => { if (b.dataset.q === QV) return; store('hw-q', b.dataset.q); toast('그래픽을 바꾸고 다시 불러와요…', 3000); setTimeout(() => location.reload(), 600); }); });
   $('#nameDice').addEventListener('click', () => { $('#nameInput').value = funName(); });
   $('#renameDice').addEventListener('click', () => { $('#renameInput').value = funName(); $('#renameMsg').hidden = true; });
   $('#renameBtn').addEventListener('click', () => {
@@ -6280,7 +6287,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     flies.o.visible = fk > 0.01; flies.m.uniforms.uOp.value = fk; flies.m.uniforms.uT.value = t;
     if (flies.o.visible) { const P = flies.P; for (let i = 0; i < flies.n; i++) { const b = flies.B[i], ph = b[2] * 6.28, wx = wrapTo(b[0] * 400 - 80, pos.x, 120) + 1.3 * Math.sin(t * 0.5 + ph), wz = wrapTo(b[1] * 400 - 80, pos.z, 120) + 1.3 * Math.cos(t * 0.43 + ph * 2); P[i * 3] = wx; P[i * 3 + 1] = wx > SEA_X - 4 ? -200 : Math.max(0, gY(wx, wz)) + 0.5 + b[2] * 2.6 + 0.4 * Math.sin(t * 0.8 + ph * 3); P[i * 3 + 2] = wz; } flies.o.geometry.attributes.position.needsUpdate = true; }
     /* auto quality: if the phone runs slowly for a few seconds, drop the render resolution once (no reload) */
-    if (!window.__aq) window.__aq = { n: 0, s: 0, done: 0, ratio: renderer.getPixelRatio() };
+    if (!window.__aq) { window.__aq = { n: 0, s: 0, done: 0, ratio: renderer.getPixelRatio() }; if (MID) { setEco(true); window.__aq.done = 2; } }
     { const q = window.__aq; if (q.done < 2 && started && dt > 0 && dt < 0.5 && !navigator.webdriver) { q.n++; q.s += dt; if (q.s > 6) { const fps = q.n / q.s; q.n = 0; q.s = 0; if (fps < 26) { if (!q.done && q.ratio > 1) { q.done = 1; renderer.setPixelRatio(1); renderer.setSize(window.innerWidth, window.innerHeight, false); toast('화면이 버벅여서 해상도를 낮췄어요', 4000); } else { q.done = 2; setEco(true); toast('화면이 버벅여서 반짝이 효과를 줄였어요 · 설정에서 속도를 볼 수 있어요', 5000); } } } } }
     WIND.value = t; updateDayLife(dt, t, night, uw); if (pos.x > 100 && !ECO) updateFireworks(dt); else if (ECO && FW[0].o.visible) FW.forEach(f => { f.o.visible = false; f.t = -1; }); updateLakeLanterns(dt, t, night); updateJumpers(dt, night); updateGroundMist(dt, t); updateGlowFlowers(t, night);
     plank.o.visible = uw; plank.m.uniforms.uOp.value = 0.3 + 0.7 * night; plank.m.uniforms.uT.value = t; orbs.o.visible = uw && night > 0.3; orbs.m.uniforms.uOp.value = Math.min(1, (night - 0.3) * 1.6); orbs.m.uniforms.uT.value = t;
@@ -6772,6 +6779,30 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       /* frames: along both tunnel walls and round the chamber */
       { let k = 0; for (let z = U.z0 - 12; z > U.z1 + 6; z -= 12, k++) { const cx = tunX(z), sz = k % 2 ? 'm' : 's', y = sz === 'm' ? 3.6 : 3.0, off = U.hw * Math.cos(Math.asin(Math.min(0.95, (y + (sz === 'm' ? 2 : 1.5)) / U.h))) - 0.45; addSlot('cave', sz, cx - off, y, z, Math.PI / 2); addSlot('cave', sz, cx + off, y, z - 6, -Math.PI / 2); }
         for (let i = 0; i < 8; i++) { const a = 0.75 + (Math.PI * 2 - 1.5) * i / 7, y = 4.2, rd = U.cr * Math.cos(Math.asin((y + 2.6) / 13)) - 0.7; addSlot('cave', 'l', TUN_EX + Math.sin(a) * rd, y, U.cz + Math.cos(a) * rd, a + Math.PI); } }
+      /* ---- the undersea gallery: a ring of eight stone slabs on the sea floor under a buoy off the beach, a giant clam with a glowing pearl in the middle; dive twice to stand among them ---- */
+      { const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; }, cx = 186, cz = 40, RR = 10.5, stoneS = L(0x8fa3a8), stoneD = L(0x6f8389), orbM = new T.MeshBasicMaterial({ color: 0x8ff6ff, fog: false }), hp = [];
+        for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + Math.PI / 8, x = cx + Math.sin(a) * RR, z = cz + Math.cos(a) * RR, fy = seaFloor(x, z);
+          addSlot('sea', 'm', x, fy + 3.5, z, a + Math.PI);
+          const sl = at(new T.Mesh(bx(5.6, 6.8, 0.6), stoneS), x + Math.sin(a) * 0.42, fy + 3.3, z + Math.cos(a) * 0.42); sl.rotation.y = a; const cp = at(new T.Mesh(bx(6.2, 0.5, 1.0), stoneD), x + Math.sin(a) * 0.42, fy + 6.9, z + Math.cos(a) * 0.42); cp.rotation.y = a;
+          at(new T.Mesh(new T.SphereGeometry(0.32, 8, 6), orbM), x + Math.sin(a) * 0.42, fy + 7.6, z + Math.cos(a) * 0.42); hp.push(x + Math.sin(a) * 0.42, fy + 7.6, z + Math.cos(a) * 0.42);
+          const a2 = a + Math.PI / 8, x2 = cx + Math.sin(a2) * (RR + 3), z2 = cz + Math.cos(a2) * (RR + 3), f2 = seaFloor(x2, z2), hh = 2 + (i * 37 % 5); at(new T.Mesh(cyl(0.55, 0.62, hh, 10), stoneS), x2, f2 + hh / 2, z2).rotation.z = (i % 3 - 1) * 0.06; at(new T.Mesh(cyl(0.8, 0.8, 0.35, 10), stoneD), x2, f2 + 0.17, z2); }
+        const fy = seaFloor(cx, cz), shellM = new T.MeshLambertMaterial({ color: 0xf3b8c8, side: T.DoubleSide, flatShading: true });
+        at(new T.Mesh(new T.SphereGeometry(2.4, 12, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), shellM), cx, fy + 1.5, cz).scale.y = 0.6;
+        { const lid = at(new T.Mesh(new T.SphereGeometry(2.4, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), shellM), cx, fy + 1.5, cz - 2.2); lid.scale.y = 0.6; lid.rotation.x = -1.0; lid.position.y = fy + 2.6; }
+        at(new T.Mesh(new T.SphereGeometry(0.75, 14, 10), new T.MeshBasicMaterial({ color: 0xffffff, fog: false })), cx, fy + 1.6, cz); hp.push(cx, fy + 1.6, cz);
+        const sc = document.createElement('canvas'); sc.width = sc.height = 64; const s2 = sc.getContext('2d'), sg = s2.createRadialGradient(32, 32, 0, 32, 32, 32); sg.addColorStop(0, 'rgba(255,255,255,1)'); sg.addColorStop(0.4, 'rgba(255,255,255,0.4)'); sg.addColorStop(1, 'rgba(255,255,255,0)'); s2.fillStyle = sg; s2.fillRect(0, 0, 64, 64);
+        const soft = new T.CanvasTexture(sc), hg = new T.BufferGeometry(); hg.setAttribute('position', new T.Float32BufferAttribute(hp, 3));
+        const halo = new T.Points(hg, new T.PointsMaterial({ map: soft, color: 0x9ff3ff, size: 5.5, transparent: true, opacity: 0.55, depthWrite: false, blending: T.AdditiveBlending, fog: false })); halo.frustumCulled = false; halo.userData.noLos = true; scene.add(halo);
+        const NB = 48, bp = new Float32Array(NB * 3), bg = new T.BufferGeometry(); bg.setAttribute('position', new T.BufferAttribute(bp, 3));
+        const bub = new T.Points(bg, new T.PointsMaterial({ map: soft, color: 0xdff8ff, size: 0.5, transparent: true, opacity: 0.8, depthWrite: false })); bub.frustumCulled = false; bub.userData.noLos = true; scene.add(bub);
+        /* the buoy over it, and a plate on the beach pointing the way */
+        const buoy = new T.Group(); scene.add(buoy); put(buoy, new T.Mesh(new T.SphereGeometry(0.9, 12, 8), L(0xd9342b)), 0, 0.2, 0); put(buoy, new T.Mesh(cyl(0.92, 0.92, 0.3, 12), L(0xffffff)), 0, 0.25, 0); put(buoy, new T.Mesh(cyl(0.06, 0.06, 2.6, 6), L(0x3b3f47)), 0, 1.9, 0); put(buoy, new T.Mesh(bx(0.9, 0.55, 0.05), L(0xf3c431)), 0.5, 2.9, 0);
+        { const pl = makeNamePlate('🤿 바닷속 갤러리 · 여기서 잠수'); pl.sprite.scale.set(8.4, 1.5, 1); pl.sprite.position.set(0, 4.3, 0); buoy.add(pl.sprite); }
+        { at(new T.Mesh(cyl(0.12, 0.14, 2.6, 6), L(0x8a5a34)), 144.5, 1.3, cz); const pl = makeNamePlate('🤿 바닷속 갤러리 → 빨간 부표'); pl.sprite.scale.set(8.4, 1.5, 1); pl.sprite.position.set(144.5, 3.3, cz); scene.add(pl.sprite); }
+        anim.push((dt, t) => { if (pos.x < 60) return; buoy.position.set(cx, 0.1 + 0.12 * Math.sin(t * 1.3), cz); buoy.rotation.z = 0.06 * Math.sin(t * 0.9);
+          if (Math.hypot(pos.x - cx, pos.z - cz) > 70) return; halo.material.opacity = 0.45 + 0.15 * Math.sin(t * 1.7);
+          for (let k = 0; k < NB; k++) { const j = k % 4, u = (t * 0.16 + k * 0.137) % 1, a = j * Math.PI / 2 + 0.4, o = k * 3; bp[o] = cx + Math.sin(a) * 5 + Math.sin(t * 1.3 + k) * 0.25; bp[o + 1] = fy + 0.3 + u * (-fy - 0.4); bp[o + 2] = cz + Math.cos(a) * 5 + Math.cos(t * 1.1 + k * 2) * 0.25; } bg.attributes.position.needsUpdate = true; });
+        window.__seaGal = { x: cx, z: cz, n: 8 }; }
       /* the door at the back of the beach cave, and stepping through either way */
       const door = new T.Mesh(new T.TorusGeometry(2.3, 0.18, 6, 24, Math.PI), new T.MeshBasicMaterial({ color: 0x7ff3ff, fog: false })); door.position.set(0, 0.1, -(R - 1.25)); door.scale.y = 1.5; g.add(door);
       const hole = new T.Mesh(new T.CircleGeometry(2.25, 18, 0, Math.PI), new T.MeshBasicMaterial({ color: 0x0a1030, fog: false })); hole.position.set(0, 0.1, -(R - 1.3)); hole.scale.y = 1.5; g.add(hole); const dg = glow(0, 1.6, -(R - 1.6), 0x7ff3ff, 6, 0.4);
@@ -6973,6 +7004,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   function setClean(on) { document.body.classList.toggle('clean', on); $('#cleanBar').hidden = !on; if (on) { setMenu(false); $('#moreMenu').hidden = true; toast('화면을 끌어 구도를 잡고 「저장」을 눌러 보세요', 3500); } }
   $('#cleanBtn').addEventListener('click', () => { if (started) setClean(true); });
+  /* a look round the sights: every few seconds the next place, the camera turning slowly; the buttons step aside as in photo mode, and at the end I am back where I started */
+  const SCN = { on: false, i: -1, t: 0, back: null, list: ['야외 전시 정원', '꽃길 정원', '풍차 들판', '남쪽 꽃들판', '호숫가', '바닷가', '등대 섬', '동굴 갤러리', '산 전망대', '알프스 마을', '눈밭'].map(n => PLACES.find(q => q.name === n)).filter(Boolean) };
+  function sceneGo(d) { const n = SCN.list.length; SCN.i = ((SCN.i + d) % n + n) % n; const pl = SCN.list[SCN.i]; snapTo(pl); SCN.t = 0; $('#sceneCap').textContent = (SCN.i + 1) + ' / ' + n + ' · ' + pl.name + ' — ' + pl.note; }
+  function setScene(on) { if (on === SCN.on || (on && !SCN.list.length)) return; SCN.on = on; document.body.classList.toggle('clean', on); $('#sceneBar').hidden = !on;
+    if (on) { setMenu(false); $('#moreMenu').hidden = true; goal = null; DV.lvl = 0; SCN.back = { x: pos.x, z: pos.z, h: heading, pitch: camPitch }; SCN.i = -1; sceneGo(1); } else if (SCN.back) { snapTo(SCN.back); SCN.back = null; } }
+  anim.push(dt => { if (!SCN.on) return; camYaw += dt * 0.07; SCN.t += dt; if (SCN.t > 9) sceneGo(1); });
+  $('#sceneBtn').addEventListener('click', () => { if (started) setScene(true); });
+  $('#sceneStop').addEventListener('click', () => setScene(false)); $('#sceneNext').addEventListener('click', () => sceneGo(1)); $('#scenePrev').addEventListener('click', () => sceneGo(-1));
+  window.__scene = { set: setScene, on: () => SCN.on, i: () => SCN.i, n: SCN.list.length, go: sceneGo };
   $('#cleanExit').addEventListener('click', () => setClean(false));
   $('#cleanShot').addEventListener('click', () => { shotReq = true; });
   window.__clean = { set: setClean, shot: () => { shotReq = true; }, pending: () => shotReq };
@@ -7340,7 +7380,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function placeBubbles(dt) { actTick(dt); }
   const PERF = { last: 0, acc: 0, n: 0, saved: 0, d: {} }; try { PERF.d = JSON.parse(localStorage.getItem('hw-perf') || '{}') || {}; } catch (e) { PERF.d = {}; }
   const perfRows = () => Object.keys(PERF.d).map(k => ({ k: k, fps: PERF.d[k][1] > 0 ? PERF.d[k][0] / PERF.d[k][1] : 0, min: PERF.d[k][2], sec: PERF.d[k][1] })).filter(r => r.sec >= 2).sort((a, b) => a.fps - b.fps);
-  const perfText = () => '도토리 미술관 속도 기록 · 화질 ' + (HI ? '높음' : '낮음') + (ECO ? '(가볍게)' : '') + ' · 화면 ' + window.innerWidth + '×' + window.innerHeight + ' @' + (window.devicePixelRatio || 1).toFixed(1) + ' (그리는 배율 ' + renderer.getPixelRatio().toFixed(1) + ')\n' + perfRows().map(r => r.k + ': 평균 ' + r.fps.toFixed(0) + ' / 최저 ' + r.min.toFixed(0) + ' (' + Math.round(r.sec) + '초)').join('\n');
+  const perfText = () => '도토리 미술관 속도 기록 · 화질 ' + (MID ? '중간' : HI ? '높음' : '낮음') + (ECO && !MID ? '(가볍게)' : '') + ' · 화면 ' + window.innerWidth + '×' + window.innerHeight + ' @' + (window.devicePixelRatio || 1).toFixed(1) + ' (그리는 배율 ' + renderer.getPixelRatio().toFixed(1) + ')\n' + perfRows().map(r => r.k + ': 평균 ' + r.fps.toFixed(0) + ' / 최저 ' + r.min.toFixed(0) + ' (' + Math.round(r.sec) + '초)').join('\n');
   window.__perf = { rows: perfRows, text: perfText, d: PERF };
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
