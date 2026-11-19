@@ -577,6 +577,7 @@ body.padOpen #hud { visibility: hidden; }
     <button class="chip" id="collabBtn" type="button">🤝 합작 액자</button>
     <button class="chip" id="cleanBtn" type="button">📷 풍경 사진 모드</button>
     <button class="chip" id="sceneBtn" type="button">🎬 명소 한 바퀴</button>
+    <button class="chip" id="fwBtn" type="button">🎆 불꽃놀이 쏘기</button>
     <button class="chip" id="timeQuick" type="button">🌗 낮·밤 바꾸기</button>
     <button class="chip" id="wxQuick" type="button">☔ 날씨 바꾸기</button>
     <button class="chip" id="musicBtn" type="button" aria-label="음악 켜고 끄기">🎵 음악</button>
@@ -3097,7 +3098,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { name: '알프스 마을', note: '소들이 풀을 뜯는 산골 마을. 교회와 통나무집', x: NORTH.x, z: -76, h: Math.PI, pitch: 0.2 },
     { name: '눈밭', note: '눈 덮인 봉우리 바로 아래, 눈이 내리는 하얀 들판', x: NORTH.x, z: -124, h: Math.PI, pitch: 0.12 },
     { name: '등대 섬', note: '바다 한가운데 작은 섬. 보트를 타거나 헤엄쳐서 올라가요', x: ISLE.x - 3, z: ISLE.z + 5, h: Math.PI * 0.75, pitch: 0.14 },
-    { name: '동굴 갤러리', note: '수정이 빛나는 바닷가 동굴. 안쪽 문으로 깊은 동굴 전시가 이어져요', x: CAVE.x, z: CAVE.z + 6, h: Math.PI, pitch: 0.16 }
+    { name: '동굴 갤러리', note: '수정이 빛나는 바닷가 동굴. 안쪽 문으로 깊은 동굴 전시가 이어져요', x: CAVE.x, z: CAVE.z + 6, h: Math.PI, pitch: 0.16 },
+    { name: '수정 호수', note: '깊은 동굴 끝, 수정이 빛나는 지하 호수', x: TUN_EX, z: TUN.z1 - 4, h: Math.PI, pitch: 0.14 }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
@@ -4019,7 +4021,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const sStem = new T.InstancedMesh(cyl(0.05, 0.07, 1, 5).translate(0, 0.5, 0), sway(L(0x4f9a46), 0.1, 0), SF.length), sPet = new T.InstancedMesh(cyl(0.5, 0.5, 0.06, 10).rotateX(Math.PI / 2), L(0xf7c81e), SF.length), sMid = new T.InstancedMesh(cyl(0.24, 0.24, 0.1, 8).rotateX(Math.PI / 2).translate(0, 0, 0.03), L(0x5a3a1c), SF.length), sLeaf = new T.InstancedMesh(new T.IcosahedronGeometry(0.3, 0).scale(1.5, 0.25, 0.8), L(0x5aa84f), SF.length);
       SF.forEach((f, i) => {
         fd.rotation.set(0, 0, 0); fd.scale.set(1, f.h, 1); fd.position.set(f.x, 0, f.z); fd.updateMatrix(); sStem.setMatrixAt(i, fd.matrix);
-        fd.scale.setScalar(0.85 + rnd() * 0.35); fd.rotation.set(-0.3, 0.75 + (rnd() - 0.5) * 0.5, 0, 'YXZ'); fd.position.set(f.x, f.h, f.z); fd.updateMatrix(); sPet.setMatrixAt(i, fd.matrix); sMid.setMatrixAt(i, fd.matrix);
+        fd.scale.setScalar(0.85 + rnd() * 0.35); fd.rotation.set(-0.3, -2.36 + (rnd() - 0.5) * 0.5, 0, 'YXZ'); fd.position.set(f.x, f.h, f.z); fd.updateMatrix(); sPet.setMatrixAt(i, fd.matrix); sMid.setMatrixAt(i, fd.matrix);
         fd.rotation.set(0, rnd() * 6.28, 0.3); fd.scale.setScalar(1); fd.position.set(f.x, f.h * 0.5, f.z); fd.updateMatrix(); sLeaf.setMatrixAt(i, fd.matrix);
       });
       [sStem, sPet, sMid, sLeaf].forEach(m => { m.frustumCulled = false; m.userData.nature = true; scene.add(m); });
@@ -6289,7 +6291,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     /* auto quality: if the phone runs slowly for a few seconds, drop the render resolution once (no reload) */
     if (!window.__aq) { window.__aq = { n: 0, s: 0, done: 0, ratio: renderer.getPixelRatio() }; if (MID) { setEco(true); window.__aq.done = 2; } }
     { const q = window.__aq; if (q.done < 2 && started && dt > 0 && dt < 0.5 && !navigator.webdriver) { q.n++; q.s += dt; if (q.s > 6) { const fps = q.n / q.s; q.n = 0; q.s = 0; if (fps < 26) { if (!q.done && q.ratio > 1) { q.done = 1; renderer.setPixelRatio(1); renderer.setSize(window.innerWidth, window.innerHeight, false); toast('화면이 버벅여서 해상도를 낮췄어요', 4000); } else { q.done = 2; setEco(true); toast('화면이 버벅여서 반짝이 효과를 줄였어요 · 설정에서 속도를 볼 수 있어요', 5000); } } } } }
-    WIND.value = t; updateDayLife(dt, t, night, uw); if (pos.x > 100 && !ECO) updateFireworks(dt); else if (ECO && FW[0].o.visible) FW.forEach(f => { f.o.visible = false; f.t = -1; }); updateLakeLanterns(dt, t, night); updateJumpers(dt, night); updateGroundMist(dt, t); updateGlowFlowers(t, night);
+    WIND.value = t; updateDayLife(dt, t, night, uw); if ((pos.x > 100 && !ECO) || FWS.t > 0) updateFireworks(dt); else if (ECO && FW[0].o.visible) FW.forEach(f => { f.o.visible = false; f.t = -1; }); updateLakeLanterns(dt, t, night); updateJumpers(dt, night); updateGroundMist(dt, t); updateGlowFlowers(t, night);
     plank.o.visible = uw; plank.m.uniforms.uOp.value = 0.3 + 0.7 * night; plank.m.uniforms.uT.value = t; orbs.o.visible = uw && night > 0.3; orbs.m.uniforms.uOp.value = Math.min(1, (night - 0.3) * 1.6); orbs.m.uniforms.uT.value = t;
     shafts.visible = uw && night < 0.8; 
     if (uw) {
@@ -6620,10 +6622,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const k = Math.max(0, Math.min(1, (night - 0.3) / 0.5)) * (1 - ATM.rain * 0.6) * (started && pos.x > RM.hx + 2 && pos.x < SEA_X - 4 && !(DV.y < -0.6) ? 1 : 0);
     GFL.forEach((g, gi) => { g.o.visible = k > 0.02; if (!g.o.visible) return; g.m.uniforms.uOp.value = k * 0.95; g.m.uniforms.uT.value = t + gi; const P = g.P; for (let i = 0; i < g.n; i++) { const b = g.B[i], wx = wrapTo(b[0] * 500 + gi * 37, pos.x, 100), wz = wrapTo(b[1] * 500 + gi * 91, pos.z, 100); P[i * 3] = wx; P[i * 3 + 1] = Math.max(0, gY(wx, wz)) + 0.35 + b[2] * 0.4; P[i * 3 + 2] = wz; } g.o.geometry.attributes.position.needsUpdate = true; });
   }
+  const FWS = { t: 0 };                                    /* a show I set off myself: half a minute of bursts in front of me, whatever the hour or the weather */
   function updateFireworks(dt) {
-    const ok = started && ATM.night > 0.85 && ATM.cloud < 0.3 && ATM.rain < 0.1 && !(DV.y < -0.6);
+    const show = FWS.t > 0; if (show) FWS.t -= dt;
+    const ok = started && !(DV.y < -0.6) && (show || (ATM.night > 0.85 && ATM.cloud < 0.3 && ATM.rain < 0.1));
     FW.forEach((f, fi) => {
-      if (f.t < 0) { f.o.visible = false; if (ok) { f.next -= dt; if (f.next <= 0) { f.t = 0; f.next = 7 + Math.random() * 9; f.cx = 215 + Math.random() * 110; f.cz = -110 + Math.random() * 260; f.cy = 60 + Math.random() * 35; f.col.setHSL(Math.random(), 0.9, 0.62); } } return; }
+      if (f.t < 0) { f.o.visible = false; if (ok) { f.next -= dt; if (f.next <= 0) { f.t = 0; f.next = show ? 0.5 + Math.random() * 1.6 : 7 + Math.random() * 9; if (show) { const a = camYaw + Math.PI + (Math.random() - 0.5) * 1.3, d = 80 + Math.random() * 60; f.cx = pos.x + Math.sin(a) * d; f.cz = pos.z + Math.cos(a) * d; f.cy = 42 + Math.random() * 34; } else { f.cx = 215 + Math.random() * 110; f.cz = -110 + Math.random() * 260; f.cy = 60 + Math.random() * 35; } f.col.setHSL(Math.random(), 0.9, 0.62); } } return; }
       f.t += dt; const rise = 1.4, T0 = f.t - rise; f.o.visible = true;
       if (T0 < 0) { const k = f.t / rise, y = f.cy * k * (2 - k) * 0.9; for (let i = 0; i < f.n; i++) { f.P[i * 3] = f.cx; f.P[i * 3 + 1] = i < 3 ? y - i * 2 : -500; f.P[i * 3 + 2] = f.cz; f.C[i * 3] = 1; f.C[i * 3 + 1] = 0.85; f.C[i * 3 + 2] = 0.5; } f.m.opacity = 0.9; }
       else { const dur = 3.2; if (T0 > dur) { f.t = -1; return; } const fade = 1 - T0 / dur; for (let i = 0; i < f.n; i++) { const d = f.D[i], dr = Math.exp(-T0 * 1.1); f.P[i * 3] = f.cx + d[0] * (1 - dr) / 1.1; f.P[i * 3 + 1] = f.cy + d[1] * (1 - dr) / 1.1 - 4.5 * T0 * T0; f.P[i * 3 + 2] = f.cz + d[2] * (1 - dr) / 1.1; const tw = 0.6 + 0.4 * Math.sin(T0 * 14 + i); f.C[i * 3] = f.col.r * tw; f.C[i * 3 + 1] = f.col.g * tw; f.C[i * 3 + 2] = f.col.b * tw; } f.m.opacity = Math.min(1, fade * 1.6); }
@@ -6675,7 +6679,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         for (let i = 0; i < 8; i++) { const lf = new T.Mesh(new T.ConeGeometry(0.55, 3.6, 4), leafM); lf.scale.set(1, 1, 0.14); const piv = new T.Group(); piv.position.set(x, y, 0); piv.rotation.y = i * Math.PI / 4 + pi; lf.position.set(1.55, -0.35, 0); lf.rotation.z = -Math.PI / 2 - 0.42; piv.add(lf); pg2.add(piv); } G.add(pg2); });
       const rkM = LMf(0x9c917d); for (let i = 0; i < 9; i++) { const a = rr() * 6.28, d = I.r - 0.6 + rr() * 1.6, rk = new T.Mesh(new T.IcosahedronGeometry(0.5 + rr() * 0.7, 0), rkM); rk.position.set(I.x + Math.sin(a) * d, 0.2, I.z + Math.cos(a) * d); rk.scale.y = 0.7; rk.rotation.y = rr() * 6; rk.userData.noLos = true; G.add(rk); }
       const FC = [0xff7aa8, 0xffd84a, 0xffffff, 0xc79bff]; for (let i = 0; i < 26; i++) { const a = rr() * 6.28, d = rr() * (I.r - 4.5), x = I.x + Math.sin(a) * d, z = I.z + Math.cos(a) * d; if (Math.hypot(x - I.tx, z - I.tz) < 2.8) continue; const f = new T.Mesh(new T.SphereGeometry(0.16, 6, 5), new T.MeshLambertMaterial({ color: FC[i % 4] })); f.position.set(x, isleH(x, z) + 0.22, z); G.add(f); }
-      const bx = I.x + 4.6, bz = I.z + 5.2, by = isleH(bx, bz), bn = new T.Group(); bn.position.set(bx, by, bz); bn.rotation.y = Math.atan2(bx - I.x, bz - I.z); const seat = new T.Mesh(new T.BoxGeometry(2.2, 0.14, 0.6), wood); seat.position.y = 0.6; const back = new T.Mesh(new T.BoxGeometry(2.2, 0.6, 0.12), wood); back.position.set(0, 1.0, -0.28); bn.add(seat, back); [-0.9, 0.9].forEach(xx => { const lg2 = new T.Mesh(new T.BoxGeometry(0.14, 0.6, 0.5), wd2); lg2.position.set(xx, 0.3, 0); bn.add(lg2); }); G.add(bn); }
+      const bx = I.x + 4.6, bz = I.z + 5.2, by = isleH(bx, bz), bn = new T.Group(); bn.position.set(bx, by, bz); bn.rotation.y = Math.atan2(bx - I.x, bz - I.z); const seat = new T.Mesh(new T.BoxGeometry(2.2, 0.14, 0.6), wood); seat.position.y = 0.6; const back = new T.Mesh(new T.BoxGeometry(2.2, 0.6, 0.12), wood); back.position.set(0, 1.0, -0.28); bn.add(seat, back); [-0.9, 0.9].forEach(xx => { const lg2 = new T.Mesh(new T.BoxGeometry(0.14, 0.6, 0.5), wd2); lg2.position.set(xx, 0.3, 0); bn.add(lg2); }); G.add(bn); bn.scale.setScalar(1.55); { const hb = new T.Mesh(new T.BoxGeometry(2.5, 1.2, 1.1), hitMat); hb.position.y = 0.6; hb.userData.bench = benches.length; bn.add(hb); hitList.push(hb); benches.push({ x: bx, z: bz, ry: bn.rotation.y + Math.PI }); } }
     window.__isle = { I: I, G: G };
   }
   /* ---------- the cave gallery: a sandy sea cliff on the north beach with a wide hall inside (crystals, a glowing pool, strings of lights); the pictures hang deeper in, in the tunnel and the chamber ---------- */
@@ -6899,7 +6903,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   /* places are grouped into three kinds: exhibition halls, outdoors, and making/resting; the sheet can filter by kind or show a map */
   const PCAT = { ex: '전시관', out: '야외', mk: '화실·쉼터' }, PCOL = { ex: '#8a4a47', out: '#3f7a4f', mk: '#3f6fa8' };
-  const catOf = pl => ['알프스 마을', '눈밭', '동굴 갤러리', '등대 섬', '산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원', '남쪽 꽃들판', '숲속 쉼터'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
+  const catOf = pl => ['알프스 마을', '눈밭', '동굴 갤러리', '수정 호수', '등대 섬', '산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원', '남쪽 꽃들판', '숲속 쉼터'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
   let placesTab = 'all';
   const EVENT_PLACE = { name: '🎁 이벤트존', note: '내 그림을 걸어보세요 · 별관 서쪽 벽 (@dotori_museum)', x: -4.5, z: GZ1 + 16, h: -Math.PI / 2, pitch: 0.15 };
   function drawPlacesMap() {
@@ -7005,12 +7009,14 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function setClean(on) { document.body.classList.toggle('clean', on); $('#cleanBar').hidden = !on; if (on) { setMenu(false); $('#moreMenu').hidden = true; toast('화면을 끌어 구도를 잡고 「저장」을 눌러 보세요', 3500); } }
   $('#cleanBtn').addEventListener('click', () => { if (started) setClean(true); });
   /* a look round the sights: every few seconds the next place, the camera turning slowly; the buttons step aside as in photo mode, and at the end I am back where I started */
-  const SCN = { on: false, i: -1, t: 0, back: null, list: ['야외 전시 정원', '꽃길 정원', '풍차 들판', '남쪽 꽃들판', '호숫가', '바닷가', '등대 섬', '동굴 갤러리', '산 전망대', '알프스 마을', '눈밭'].map(n => PLACES.find(q => q.name === n)).filter(Boolean) };
+  const SCN = { on: false, i: -1, t: 0, back: null, list: ['야외 전시 정원', '꽃길 정원', '풍차 들판', '남쪽 꽃들판', '호숫가', '바닷가', '등대 섬', '동굴 갤러리', '수정 호수', '산 전망대', '알프스 마을', '눈밭'].map(n => PLACES.find(q => q.name === n)).filter(Boolean) };
   function sceneGo(d) { const n = SCN.list.length; SCN.i = ((SCN.i + d) % n + n) % n; const pl = SCN.list[SCN.i]; snapTo(pl); SCN.t = 0; $('#sceneCap').textContent = (SCN.i + 1) + ' / ' + n + ' · ' + pl.name + ' — ' + pl.note; }
   function setScene(on) { if (on === SCN.on || (on && !SCN.list.length)) return; SCN.on = on; document.body.classList.toggle('clean', on); $('#sceneBar').hidden = !on;
     if (on) { setMenu(false); $('#moreMenu').hidden = true; goal = null; DV.lvl = 0; SCN.back = { x: pos.x, z: pos.z, h: heading, pitch: camPitch }; SCN.i = -1; sceneGo(1); } else if (SCN.back) { snapTo(SCN.back); SCN.back = null; } }
   anim.push(dt => { if (!SCN.on) return; camYaw += dt * 0.07; SCN.t += dt; if (SCN.t > 9) sceneGo(1); });
   $('#sceneBtn').addEventListener('click', () => { if (started) setScene(true); });
+  $('#fwBtn').addEventListener('click', () => { if (!started) return; if (indoorAt(pos.x, pos.z, 0)) { toast('🎆 불꽃놀이는 밖에서 쏠 수 있어요', 2500); return; } FWS.t = 30; FW.forEach((f, i) => { if (f.t < 0) f.next = i * 0.6; }); $('#moreMenu').hidden = true; toast(ATM.night > 0.5 ? '🎆 불꽃놀이 시작! 하늘을 보세요' : '🎆 불꽃놀이 시작! 밤에 쏘면 더 예뻐요', 3000); });
+  window.__fw = { t: () => FWS.t, vis: () => FW.filter(f => f.o.visible).length };
   $('#sceneStop').addEventListener('click', () => setScene(false)); $('#sceneNext').addEventListener('click', () => sceneGo(1)); $('#scenePrev').addEventListener('click', () => sceneGo(-1));
   window.__scene = { set: setScene, on: () => SCN.on, i: () => SCN.i, n: SCN.list.length, go: sceneGo };
   $('#cleanExit').addEventListener('click', () => setClean(false));
@@ -7088,7 +7094,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       row.appendChild(left); row.appendChild(bt);
     }
     PLACES.forEach(pl => {
-      const row = document.createElement('div'); row.className = 'roomRow'; const pc = catOf(pl); if (placesTab === 'sea' ? ['바닷가', '등대 섬', '동굴 갤러리', '호숫가'].indexOf(pl.name) < 0 : (placesTab !== 'all' && placesTab !== 'map' && placesTab !== pc)) row.hidden = true;
+      const row = document.createElement('div'); row.className = 'roomRow'; const pc = catOf(pl); if (placesTab === 'sea' ? ['바닷가', '등대 섬', '동굴 갤러리', '수정 호수', '호숫가'].indexOf(pl.name) < 0 : (placesTab !== 'all' && placesTab !== 'map' && placesTab !== pc)) row.hidden = true;
       const left = document.createElement('div'); left.className = 'l';
       const nm = document.createElement('div'); nm.className = 'n'; nm.textContent = pl.name;
       const tg = document.createElement('span'); tg.className = 'catTag ' + pc; tg.textContent = PCAT[pc]; nm.appendChild(tg);
