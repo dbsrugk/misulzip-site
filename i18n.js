@@ -468,6 +468,7 @@ window.I18N.en = {
     body_leg:["Human Leg", "Knee, calf and the line down to the ankle"],
     animal_peacock:["Indian Peacock","Iridescent blue neck and a fan of eyed tail feathers"],
     item_compass:["Brass Pocket Compass","An open hinged lid, a glass-covered dial and a bail ring in polished brass"],
+    item_headphones:["Over-Ear Headphones","Orange suede cushions, perforated metal cups and a cream leather headband"],
     guitar:["Acoustic Guitar","Warm wood, sweeping curves and steel strings"],
     tex_wood:["Wood Grain", "Grain lines, knots and a satin sheen"],
     tex_stone:["Granite Stone", "Speckled grain, rough faces and hard edges"],
