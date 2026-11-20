@@ -6715,6 +6715,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const k = Math.max(0, Math.min(1, (night - 0.3) / 0.5)) * (1 - ATM.rain * 0.6) * (started && pos.x > RM.hx + 2 && pos.x < SEA_X - 4 && !(DV.y < -0.6) ? 1 : 0);
     GFL.forEach((g, gi) => { g.o.visible = k > 0.02; if (!g.o.visible) return; g.m.uniforms.uOp.value = k * 0.95; g.m.uniforms.uT.value = t + gi; const P = g.P; for (let i = 0; i < g.n; i++) { const b = g.B[i], wx = wrapTo(b[0] * 500 + gi * 37, pos.x, 100), wz = wrapTo(b[1] * 500 + gi * 91, pos.z, 100); P[i * 3] = wx; P[i * 3 + 1] = Math.max(0, gY(wx, wz)) + 0.35 + b[2] * 0.4; P[i * 3 + 2] = wz; } g.o.geometry.attributes.position.needsUpdate = true; });
   }
+  let caveSeen = false;
   const FWS = { t: 0 };                                    /* a show I set off myself: half a minute of bursts in front of me, whatever the hour or the weather */
   function updateFireworks(dt) {
     const show = FWS.t > 0; if (show) FWS.t -= dt;
@@ -6818,7 +6819,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     crys(-3.1, -(R - 1.9), CC[0], 1.5); crys(3.1, -(R - 1.9), CC[1], 1.5);                                       /* two tall crystals frame the door at the back */
     { const cap = new T.SphereGeometry(0.42, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), stem = new T.CylinderGeometry(0.09, 0.12, 0.5, 5), stemM = BM(0xe8e2ff), MC = [0x9ff6ff, 0xffa8e6, 0xcfb0ff, 0xb6ffc9];
       for (let i = 0; i < 16; i++) { const a = a0 + 0.25 + (a1 - a0 - 0.5) * rr(), rd = R - 2.6 - rr() * 1.6, x = Math.sin(a) * rd, z = Math.cos(a) * rd, sc = 0.6 + rr() * 0.9, s1 = new T.Mesh(stem, stemM), c1 = new T.Mesh(cap, BM(MC[i % 4])); s1.position.set(x, 0.25 * sc, z); s1.scale.set(sc, sc, sc / C.k); c1.position.set(x, 0.48 * sc, z); c1.scale.set(sc, sc * 0.8, sc / C.k); g.add(s1, c1); } }
-    { const n = 34, st = new T.InstancedMesh(new T.ConeGeometry(0.42, 2.2, 5).rotateX(Math.PI).translate(0, -1.1, 0), BM(0x2a2846), n), dm = new T.Object3D(); for (let i = 0; i < n; i++) { const a = rr() * 6.28, rd = rr() * (R - 2.2), top = H * Math.cos(Math.asin(Math.min(0.98, rd / R))); dm.position.set(Math.sin(a) * rd, top - 0.45, Math.cos(a) * rd); dm.rotation.set(0, i, 0); dm.scale.set(0.7 + rr(), 0.6 + rr() * 1.7, (0.7 + rr()) / C.k); dm.updateMatrix(); st.setMatrixAt(i, dm.matrix); } st.frustumCulled = false; st.userData.noLos = true; st.userData.noShadow = true; g.add(st); }
+    { const n = 34, st = new T.InstancedMesh(new T.ConeGeometry(0.42, 2.2, 5).rotateX(Math.PI).translate(0, -1.1, 0), BM(0x2a2846), n), dm = new T.Object3D(); for (let i = 0; i < n; i++) { const a = rr() * 6.28, rd = rr() * (R - 2.2), top = H * Math.cos(Math.asin(Math.min(0.98, rd / R))); dm.position.set(Math.sin(a) * rd, top - 0.45, Math.cos(a) * rd); dm.rotation.set(0, i, 0); dm.scale.set(0.7 + rr(), 0.6 + rr() * 1.7, (0.7 + rr()) / C.k); dm.updateMatrix(); st.setMatrixAt(i, dm.matrix); } st.frustumCulled = false; st.userData.noLos = true; st.userData.noShadow = true; g.add(st);
+      /* a stalactite that hangs between the camera and me steps aside (its instance shrinks to nothing) */
+      let base = null, wp = null; const hid = new Uint8Array(n), ZERO = new T.Matrix4().makeScale(0, 0, 0);
+      window.__caveSt = (cx, cz, px, pz) => {
+        if (!base) { g.updateMatrixWorld(true); base = []; wp = []; for (let i = 0; i < n; i++) { const m = new T.Matrix4(); st.getMatrixAt(i, m); base.push(m); wp.push(new T.Vector3().setFromMatrixPosition(m).applyMatrix4(g.matrixWorld)); } }
+        const dx = px - cx, dz = pz - cz, l2 = dx * dx + dz * dz || 1; let ch = false;
+        for (let i = 0; i < n; i++) { const u = Math.max(0, Math.min(1, ((wp[i].x - cx) * dx + (wp[i].z - cz) * dz) / l2)), h = Math.hypot(wp[i].x - cx - dx * u, wp[i].z - cz - dz * u) < 1.9 ? 1 : 0; if (h !== hid[i]) { hid[i] = h; st.setMatrixAt(i, h ? ZERO : base[i]); ch = true; } }
+        if (ch) st.instanceMatrix.needsUpdate = true; return hid.reduce((a, b) => a + b, 0);
+      }; }
     /* strings of little lights hanging from the roof, and stars on the roof itself (one set of points) */
     const lights = (function () { const P = [], Cl = [], c1 = new T.Color(); for (let i = 0; i < 14; i++) { const a = rr() * 6.28, rd = 1.5 + rr() * (R - 4), top = H * Math.cos(Math.asin(Math.min(0.98, rd / R))) - 0.3, n = 4 + Math.floor(rr() * 4), col = CC[i % 4]; for (let k = 0; k < n; k++) { P.push(Math.sin(a) * rd, top - 0.5 - k * 0.62, Math.cos(a) * rd); c1.setHex(col); Cl.push(c1.r, c1.g, c1.b); } }
       for (let i = 0; i < 70; i++) { const a = rr() * 6.28, el = 0.3 + rr() * 1.2, rd = (R - 0.35) * Math.cos(el); P.push(Math.sin(a) * rd, H * Math.sin(el) - 0.25, Math.cos(a) * rd); c1.setHex(CC[i % 4]); Cl.push(c1.r, c1.g, c1.b); }
@@ -7424,6 +7433,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const inTun = started && pos.z < TUN.z0 + 1 && rockIn(pos.x, pos.z, 0.5), inCave = started && (inTun || caveD(pos.x, pos.z) < CAVE.r - 0.6);
     camDist += ((started ? camWant : 26) - camDist) * Math.min(1, dt * 3);   /* the same wide view inside the caves: their rock is one-sided, so a camera outside looks straight in */
     if (window.__caveExt) window.__caveExt(inCave && !inTun); if (window.__caveDark) window.__caveDark(inTun);
+    if (inCave && !inTun && window.__caveSt) window.__caveSt(camera.position.x, camera.position.z, pos.x, pos.z);
+    if (inTun || caveSeen) { caveSeen = inTun; for (let i = 0; i < slots.length; i++) { const q = slots[i]; if (q.room !== 'cave') continue; q.g.visible = !inTun || (camera.position.x - q.x) * Math.sin(q.ry) + (camera.position.z - q.z) * Math.cos(q.ry) > -0.4; } }   /* in the deep cave a picture seen from behind (the camera is outside the rock) steps aside */
     const uwC = DV.y < -0.6 && pos.x > SEA_X + 1, pe = Math.max(camPitch, uwC ? -0.6 : 0.08), cp = Math.cos(pe);   /* under water the camera may sink below me and look up */      /* below 0.08 the camera stops sinking and starts looking up instead */
     /* no clamping to the walls: walls are one-sided, so from outside they vanish and the view stays wide */
     let dx = camTx + Math.sin(camYaw) * cp * camDist;
