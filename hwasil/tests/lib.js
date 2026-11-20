@@ -63,7 +63,7 @@ async function start(opts) {
       }
       return r.abort();                                      /* fonts etc. */
     });
-    await p.goto('https://local.test/hwasil/' + (query || ''));
+    await p.goto('https://local.test/hwasil/' + (query || ''), { timeout: 90000 });   /* a second client loads while the first is already drawing: on a software renderer that takes a while */
     await p.waitForTimeout(1000);
     return p;
   }
