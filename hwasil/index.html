@@ -2728,6 +2728,53 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     studio(W, 'x', -RM.hx, Math.PI / 2); studio(E, 'x', RM.hx, -Math.PI / 2); studio(S, 'z', RM.hz, Math.PI);
     studio(up(W), 'x', -RM.hx, Math.PI / 2); studio(up(E), 'x', RM.hx, -Math.PI / 2); studio(up(S), 'z', RM.hz, Math.PI);
   })();
+  /* ---------- the four plain exhibition rooms get furnished: a floor medallion under the carpet, two benches facing the pictures, urns on plinths, palms in the corners,
+     a soft shaft of light from the ceiling and two slow mobiles hanging high up, each room in its own colour and shape ---------- */
+  (function () {
+    const brass = L(0xc9a24a), wd = L(0x5a3a26), plas = L(0xf3efe7), lineM = new T.LineBasicMaterial({ color: 0x8a8378 });
+    const ROOMSX = [
+      { cx: 0, cz: (GZ0 + GZ1) / 2, hx: GX, hz: GL / 2, ax: 'z', col: 0x9a2f2f, pal: [0xd9342b, 0xf3c431, 0xf08a24, 0xec7fb0], geo: new T.OctahedronGeometry(0.55, 0) },
+      { cx: 0, cz: (GZ1 + GZ2) / 2, hx: GX, hz: (GZ2 - GZ1) / 2, ax: 'z', col: 0x2f5d7a, pal: [0x2c47c8, 0x1fa3a3, 0x9fd8ff, 0xffffff], geo: new T.SphereGeometry(0.5, 10, 8) },
+      { cx: (-GX + W1X) / 2, cz: WZ, hx: 15, hz: 15, ax: 'x', col: 0x9a6a3a, pal: [0xc77a4a, 0xf3c431, 0x7b5a36, 0xfff3c4], geo: new T.BoxGeometry(0.75, 0.75, 0.75) },
+      { cx: (W1X + W2X) / 2, cz: WZ, hx: 15, hz: 15, ax: 'x', col: 0x3c6e52, pal: [0x3f9b4f, 0x68b866, 0xb7f0a8, 0xf3c431], geo: new T.ConeGeometry(0.45, 0.95, 6) }
+    ];
+    const shaftM = new T.MeshBasicMaterial({ color: 0xfff0c8, transparent: true, opacity: 0.05, side: T.DoubleSide, depthWrite: false, blending: T.AdditiveBlending, fog: false });
+    atmHooks.push(A => { shaftM.opacity = 0.022 + 0.045 * (1 - A.night); });
+    const spin = [];
+    ROOMSX.forEach((r, ri) => {
+      const zx = r.ax === 'z', P = (a, b) => zx ? [r.cx + a, r.cz + b] : [r.cx + b, r.cz + a];      /* a = across the carpet, b = along it */
+      const md = new T.Mesh(new T.CircleGeometry(5.6, 48), new T.MeshLambertMaterial({ color: r.col, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); md.rotation.x = -Math.PI / 2; md.position.set(r.cx, 0.012, r.cz); md.userData.noShadow = true; scene.add(md);
+      const rg = new T.Mesh(new T.RingGeometry(5.6, 6.15, 48), brass); rg.rotation.x = -Math.PI / 2; rg.position.set(r.cx, 0.016, r.cz); rg.userData.noShadow = true; scene.add(rg);
+      const r2 = new T.Mesh(new T.RingGeometry(3.6, 3.85, 40), brass); r2.rotation.x = -Math.PI / 2; r2.position.set(r.cx, 0.018, r.cz); r2.userData.noShadow = true; scene.add(r2);
+      [-1, 1].forEach(sd => {                                                                     /* benches either side of the carpet, each facing its wall */
+        const q = P(sd * 6.2, 0), ry = zx ? (sd < 0 ? Math.PI / 2 : -Math.PI / 2) : (sd < 0 ? 0 : Math.PI), g = new T.Group(); g.position.set(q[0], 0, q[1]); g.rotation.y = ry; scene.add(g);
+        put(g, new T.Mesh(bx(3.4, 0.35, 1.2), L(r.col)), 0, 1.15, 0); put(g, new T.Mesh(bx(3.6, 0.2, 1.4), wd), 0, 0.95, 0); [-1.5, 1.5].forEach(dx => put(g, new T.Mesh(bx(0.3, 0.95, 1.1), wd), dx, 0.47, 0));
+        colliders.push({ x: q[0], z: q[1], r: 1.3 }); const hb = put(g, new T.Mesh(bx(3.8, 1.8, 1.6), hitMat), 0, 0.9, 0); hb.userData.bench = benches.length; hitList.push(hb); benches.push({ x: q[0], z: q[1], ry: ry });
+      });
+      const pts = [[0, 0], [0.55, 0], [0.62, 0.12], [0.5, 0.35], [0.72, 0.9], [0.86, 1.5], [0.7, 2.0], [0.42, 2.25], [0.5, 2.35], [0.58, 2.45], [0.5, 2.55]].map(q => new T.Vector2(q[0], q[1])), urnG = new T.LatheGeometry(pts, 16);
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach((d, k) => {                                    /* urns on plinths at the four quarters */
+        const q = P(d[0] * 8.6, d[1] * 9.4), g = new T.Group(); g.position.set(q[0], 0, q[1]); g.scale.setScalar(1.15); scene.add(g);
+        put(g, new T.Mesh(bx(1.5, 0.9, 1.5), plas), 0, 0.45, 0); put(g, new T.Mesh(urnG, L(k % 2 ? r.pal[0] : r.col)), 0, 0.9, 0); put(g, new T.Mesh(cyl(0.6, 0.6, 0.08, 16), brass), 0, 3.4, 0); colliders.push({ x: q[0], z: q[1], r: 1.0 });
+      });
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(d => {                                         /* a palm in every corner that has no picture beside it */
+        const x = r.cx + d[0] * (r.hx - 1.7), z = r.cz + d[1] * (r.hz - 1.7); if (slots.some(q => Math.hypot(q.x - x, q.z - z) < 3.1)) return;
+        const pg = new T.Group(); pg.position.set(x, 0, z); scene.add(pg); put(pg, new T.Mesh(cyl(0.7, 0.52, 1.1, 10), L(0xc77a4a)), 0, 0.55, 0); put(pg, new T.Mesh(cyl(0.12, 0.16, 2.6, 6), L(0x7b5a36)), 0, 2.3, 0);
+        for (let k = 0; k < 8; k++) { const a = k / 8 * 6.28 + ri, lf = new T.Mesh(new T.ConeGeometry(0.34, 2.6, 5), L(k % 2 ? 0x4fa45a : 0x68b866)); lf.position.set(Math.sin(a) * 0.9, 3.9, Math.cos(a) * 0.9); lf.rotation.set(Math.cos(a) * 1.0, 0, -Math.sin(a) * 1.0); pg.add(lf); }
+        colliders.push({ x: x, z: z, r: 0.8 });
+      });
+      const sh = new T.Mesh(new T.CylinderGeometry(2.2, 6.2, RM.h - 0.4, 24, 1, true), shaftM); sh.position.set(r.cx, (RM.h - 0.4) / 2 + 0.2, r.cz); sh.userData.noShadow = sh.userData.noLos = true; sh.renderOrder = 3; scene.add(sh);
+      [-1, 1].forEach(sd => {                                                                     /* mobiles: seven shapes on a slow ring, hung from the ceiling */
+        const q = P(sd * 7.5, sd * 4), g = new T.Group(), y0 = 11 + sd * 1.2; g.position.set(q[0], y0, q[1]); g.userData.noShadow = g.userData.noLos = true; scene.add(g);
+        scene.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(q[0], y0 + 0.9, q[1]), new T.Vector3(q[0], RM.h, q[1])]), lineM));
+        put(g, new T.Mesh(new T.TorusGeometry(2.3, 0.04, 4, 28), brass), 0, 0.9, 0).rotation.x = Math.PI / 2;
+        for (let k = 0; k < 7; k++) { const a = k / 7 * 6.283, dy = -0.6 - (k * 37 % 5) * 0.42, m = put(g, new T.Mesh(r.geo, L(r.pal[k % 4])), Math.sin(a) * 2.3, dy, Math.cos(a) * 2.3); m.rotation.set(k, k * 2, 0);
+          g.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(Math.sin(a) * 2.3, 0.9, Math.cos(a) * 2.3), new T.Vector3(Math.sin(a) * 2.3, dy, Math.cos(a) * 2.3)]), lineM)); }
+        spin.push({ g: g, s: sd * 0.16, x: q[0], z: q[1] });
+      });
+    });
+    anim.push(dt => { if (pos.z < RM.hz - 12 || pos.x > GX + 12) return; spin.forEach(q => { q.g.rotation.y += dt * q.s; }); });
+    window.__rooms = { n: ROOMSX.length, mobiles: spin.length };
+  })();
   if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '빈액자눌러서걸기작품제목화가').then(() => { emptyTexs(); paintEmpty(); slots.forEach(sl => { if (sl.live && sl.exFull) drawSlot(sl, sl.exFull); }); }).catch(() => {});
   function setExhibits(docs) {
     exhibits = docs;
@@ -6815,7 +6862,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         const NB = 48, bp = new Float32Array(NB * 3), bg = new T.BufferGeometry(); bg.setAttribute('position', new T.BufferAttribute(bp, 3));
         const bub = new T.Points(bg, new T.PointsMaterial({ map: soft, color: 0xdff8ff, size: 0.5, transparent: true, opacity: 0.8, depthWrite: false })); bub.frustumCulled = false; bub.userData.noLos = true; scene.add(bub);
         /* the buoy over it, and a plate on the beach pointing the way */
-        const buoy = new T.Group(); scene.add(buoy); put(buoy, new T.Mesh(new T.SphereGeometry(0.9, 12, 8), L(0xd9342b)), 0, 0.2, 0); put(buoy, new T.Mesh(cyl(0.92, 0.92, 0.3, 12), L(0xffffff)), 0, 0.25, 0); put(buoy, new T.Mesh(cyl(0.06, 0.06, 2.6, 6), L(0x3b3f47)), 0, 1.9, 0); put(buoy, new T.Mesh(bx(0.9, 0.55, 0.05), L(0xf3c431)), 0.5, 2.9, 0);
+        const buoy = new T.Group(); buoy.position.set(cx, 0.1, cz); scene.add(buoy); put(buoy, new T.Mesh(new T.SphereGeometry(0.9, 12, 8), L(0xd9342b)), 0, 0.2, 0); put(buoy, new T.Mesh(cyl(0.92, 0.92, 0.3, 12), L(0xffffff)), 0, 0.25, 0); put(buoy, new T.Mesh(cyl(0.06, 0.06, 2.6, 6), L(0x3b3f47)), 0, 1.9, 0); put(buoy, new T.Mesh(bx(0.9, 0.55, 0.05), L(0xf3c431)), 0.5, 2.9, 0);
         { const pl = makeNamePlate('🤿 바닷속 갤러리 · 여기서 잠수'); pl.sprite.scale.set(8.4, 1.5, 1); pl.sprite.position.set(0, 4.3, 0); buoy.add(pl.sprite); }
         { at(new T.Mesh(cyl(0.12, 0.14, 2.6, 6), L(0x8a5a34)), 144.5, 1.3, cz); const pl = makeNamePlate('🤿 바닷속 갤러리 → 빨간 부표'); pl.sprite.scale.set(8.4, 1.5, 1); pl.sprite.position.set(144.5, 3.3, cz); scene.add(pl.sprite); }
         anim.push((dt, t) => { if (pos.x < 60) return; buoy.position.set(cx, 0.1 + 0.12 * Math.sin(t * 1.3), cz); buoy.rotation.z = 0.06 * Math.sin(t * 0.9);

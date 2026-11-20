@@ -87,6 +87,7 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   check(await p.evaluate(() => window.__nat.gear() === 1 && window.__nat.gearVis()), 'a swim ring is on');
   await p.evaluate(() => { window.__hw.setYaw(0.4); window.__hw.setPitch(0.3); }); await p.waitForTimeout(1500);
   await p.screenshot({ path: t.out('lake.png') });
+  { const rm = await p.evaluate(() => ({ r: window.__rooms, w: [window.__nat.walk(0, 39), window.__nat.walk(-29, 39), window.__nat.walk(0, 69), window.__nat.walk(-59, 39)] })); check(rm.r && rm.r.n === 4 && rm.r.mobiles === 8 && rm.w.every(Boolean), 'the four exhibition rooms are furnished and the carpet through each stays clear: ' + JSON.stringify(rm)); }
   await p.evaluate(() => { window.__hw.pos.x = 40; window.__hw.pos.z = 54; }); await p.waitForTimeout(2500);
   check(await p.evaluate(() => !window.__nat.gearVis()), 'the ring is hidden on dry land');
   const inside = await p.evaluate(() => { let n = 0; window.__nat.scene().traverse(o => { if (!o.isInstancedMesh || !o.visible) return; const M = o.instanceMatrix.array; for (let i = 0; i < o.count; i++) { const x = M[i * 16 + 12], y = M[i * 16 + 13], z = M[i * 16 + 14]; if (Math.hypot(M[i * 16], M[i * 16 + 1], M[i * 16 + 2]) > 0 && Math.abs(x) < 15 && z < -70 && z > -320 && y > 0.6) n++; } }); return n; });
