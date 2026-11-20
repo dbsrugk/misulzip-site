@@ -87,6 +87,7 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   check(await p.evaluate(() => window.__nat.gear() === 1 && window.__nat.gearVis()), 'a swim ring is on');
   await p.evaluate(() => { window.__hw.setYaw(0.4); window.__hw.setPitch(0.3); }); await p.waitForTimeout(1500);
   await p.screenshot({ path: t.out('lake.png') });
+  { const sn = await p.evaluate(() => ({ s: window.__snow, w: [window.__nat.walk(92, -120), window.__nat.walk(92, -134), window.__nat.walk(85, -41), window.__nat.walk(93, -53)] })); check(sn.s && sn.s.penguins === 4 && sn.w.every(Boolean), 'the snowfield has penguins and lamps, and the ways through it and the viewpoint stay open: ' + JSON.stringify(sn)); }
   { const rm = await p.evaluate(() => ({ r: window.__rooms, w: [window.__nat.walk(0, 39), window.__nat.walk(-29, 39), window.__nat.walk(0, 69), window.__nat.walk(-59, 39)] })); check(rm.r && rm.r.n === 4 && rm.r.mobiles === 8 && rm.w.every(Boolean), 'the four exhibition rooms are furnished and the carpet through each stays clear: ' + JSON.stringify(rm)); }
   await p.evaluate(() => { window.__hw.pos.x = 40; window.__hw.pos.z = 54; }); await p.waitForTimeout(2500);
   check(await p.evaluate(() => !window.__nat.gearVis()), 'the ring is hidden on dry land');
