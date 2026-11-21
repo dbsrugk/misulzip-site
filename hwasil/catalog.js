@@ -173,5 +173,27 @@ window.MUSEUM_HOUSES = [
       blurb: '과일을 둘러싸고 붓 자국이 빙글빙글 돌아요. 보라와 노랑처럼 서로 반대되는 색을 나란히 놓아 더 환해 보이게 했어요.' },
     { id: 'gv_adeline', title: '아델린 라부', artist: '빈센트 반 고흐', year: '1890년', place: '클리블랜드 미술관 (미국)', w: 50.5, h: 50.2, img: 'art/gv_adeline.jpg',
       blurb: '고흐가 마지막으로 머문 여관집 딸 아델린이에요. 고흐는 생의 마지막 여름에 이 소녀를 세 번 그렸어요.' }
+  ] },
+  { id: 'monet', name: '모네의 정원', note: '수련 연못과 초록 다리를 직접 건너요', pieces: [
+    { id: 'mo_bridge', title: '수련 연못 (일본식 다리)', artist: '클로드 모네', year: '1900년', place: '시카고 미술관 (미국)', w: 101, h: 89.8, img: 'art/mo_bridge.jpg',
+      blurb: '모네가 자기 집 정원에 직접 만든 연못과 초록 다리예요. 모네는 이 다리를 여러 번 그렸어요. 방금 건너온 다리가 바로 이 다리예요!' },
+    { id: 'mo_lilies06', title: '수련', artist: '클로드 모네', year: '1906년', place: '시카고 미술관 (미국)', w: 94.1, h: 89.9, img: 'art/mo_lilies06.jpg',
+      blurb: '하늘도 땅도 없이 물 위만 그렸어요. 물에 비친 구름과 떠 있는 수련 잎이 한 화면에 함께 있어요.' },
+    { id: 'mo_pond17', title: '수련 연못', artist: '클로드 모네', year: '1917~19년', place: '시카고 미술관 (미국)', w: 201.9, h: 130.2, img: 'art/mo_pond17.jpg',
+      blurb: '나이가 들어 눈이 잘 보이지 않게 된 뒤에도 모네는 연못을 계속 그렸어요. 붓 자국이 훨씬 크고 자유로워졌어요.' },
+    { id: 'mo_irises', title: '붓꽃', artist: '클로드 모네', year: '1914~17년', place: '시카고 미술관 (미국)', w: 200.7, h: 200, img: 'art/mo_irises.jpg',
+      blurb: '연못가에 핀 붓꽃을 가로세로 2미터나 되는 큰 캔버스에 그렸어요. 가까이서 보면 붓 자국뿐인데 멀리서 보면 꽃밭이 돼요.' },
+    { id: 'mo_agapanthus', title: '수련 (아가판투스)', artist: '클로드 모네', year: '1915~26년경', place: '클리블랜드 미술관 (미국)', w: 425.6, h: 201.3, img: 'art/mo_agapanthus.jpg',
+      blurb: '가로가 4미터가 넘는 아주 큰 그림이에요. 원래 세 폭이 나란히 이어지는 그림의 왼쪽 부분이고, 나머지 두 폭은 다른 미술관에 있어요.' },
+    { id: 'mo_wheat', title: '건초더미 (늦여름)', artist: '클로드 모네', year: '1890~91년', place: '시카고 미술관 (미국)', w: 100.5, h: 60, img: 'art/mo_wheat.jpg',
+      blurb: '모네는 집 근처 밭의 건초더미를 계절과 시간을 바꿔 가며 스물다섯 번쯤 그렸어요. 같은 것도 빛에 따라 전혀 달라 보인다는 걸 보여 주려고요.' },
+    { id: 'mo_wheatsnow', title: '건초더미 (눈 온 날 해 질 녘)', artist: '클로드 모네', year: '1890~91년', place: '시카고 미술관 (미국)', w: 100.4, h: 65.3, img: 'art/mo_wheatsnow.jpg',
+      blurb: '늦여름 그림과 같은 건초더미인데 이번엔 겨울 저녁이에요. 하얀 눈이 분홍과 파랑으로 물들었어요.' },
+    { id: 'mo_poppy', title: '양귀비 들판 (지베르니)', artist: '클로드 모네', year: '1890~91년', place: '시카고 미술관 (미국)', w: 93.4, h: 61.2, img: 'art/mo_poppy.jpg',
+      blurb: '모네가 살던 마을 지베르니의 들판이에요. 빨간 양귀비꽃이 띠처럼 길게 펼쳐져 있어요.' },
+    { id: 'mo_house', title: '아르장퇴유의 화가의 집', artist: '클로드 모네', year: '1873년', place: '시카고 미술관 (미국)', w: 73.3, h: 60.2, img: 'art/mo_house.jpg',
+      blurb: '모네가 젊을 때 살던 집 마당이에요. 굴렁쇠를 든 아이는 아들 장이고, 문가에 선 사람은 아내 카미유예요.' },
+    { id: 'mo_parliament', title: '런던 국회의사당', artist: '클로드 모네', year: '1900~01년', place: '시카고 미술관 (미국)', w: 92.8, h: 81.2, img: 'art/mo_parliament.jpg',
+      blurb: '안개 낀 템스 강 너머로 국회의사당이 보여요. 모네는 런던의 안개가 햇빛을 물들이는 모습을 좋아했어요.' }
   ] }
 ];
