@@ -5878,7 +5878,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     old.group.remove(r.shadow); old.group.remove(r.plate.sprite); scene.remove(old.group); disposeAvatar(old);
     nu.group.add(r.shadow); nu.group.add(r.plate.sprite); scene.add(nu.group); r.av = nu; r.look = code;
   }
-  let myEmote = { id: '', n: 0 };
+  let myEmote = { id: '', n: 0 }, myFw = 0;                 /* myFw: how many firework shows I have set off; friends near me see each one start */
   function addRemote(p) {
     const pr = p.presence || {};
     const look = lookOf(pr);
@@ -5905,6 +5905,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const lc = lookOf(pr).join(''); if (lc !== r.look) rebuildRemote(r, lc);
       const mt = Number(pr.mt) || 0;                                         /* a new emote counter = play it (but not the old one when I just arrived) */
       if (r.mt === undefined) r.mt = mt; else if (mt !== r.mt) { r.mt = mt; const em = EMOTES.find(q => q.id === pr.m); if (em) startEmote(r.av, em); }
+      { const fw = Number(pr.fw) || 0; if (r.fw === undefined) r.fw = fw; else if (fw !== r.fw) { r.fw = fw; if (started && Math.hypot(pr.x - pos.x, pr.z - pos.z) < 260 && !indoorAt(pos.x, pos.z, 0)) { FWS.t = 30; FWS.src = { x: pr.x, z: pr.z }; FW.forEach((f, i) => { if (f.t < 0) f.next = i * 0.6; }); toast('🎆 ' + nm + ' 님이 불꽃놀이를 쏘았어요!', 3000); } } }
       r.pt = Math.max(0, Math.min(99999, Number(pr.pt) || 0));
       const rn = Number(pr.rn) || 0;
       if (r.rn === undefined) r.rn = rn; else if (rn !== r.rn) { r.rn = rn; if (typeof pr.rs === 'string') spawnRx(slots.find(q => q.id === pr.rs) || extraSlots.find(q => q.id === pr.rs), Number(pr.rx)); }
@@ -5933,7 +5934,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function pushPresence(force) {
     if (!roomNS || !started) return;
     const now = performance.now();
-    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n, rx: myRx.i, rs: myRx.s, rn: myRx.n, pt: playMin(), dv: DV.lvl, bt: BT.on + 1, gr: GEAR.i };
+    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n, rx: myRx.i, rs: myRx.s, rn: myRx.n, pt: playMin(), dv: DV.lvl, bt: BT.on + 1, gr: GEAR.i, fw: myFw };
     const k = patch.pt + ',' + patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.s + ',' + patch.a + ',' + patch.mt + ',' + patch.rn + ',' + patch.dv + ',' + patch.bt + ',' + patch.gr;
     if (!force && (k === lastSent || now - lastSend < 100 + Math.min(200, (inRoomCount - 1) * 12))) return;
     lastSend = now; lastSent = k;
@@ -6685,6 +6686,33 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const K = 170, kl = new T.InstancedMesh(new T.ConeGeometry(0.2, 7, 4).translate(0, 3.5, 0), new T.MeshLambertMaterial({ color: 0x2f8f4a }), K), kd = [];
       for (let i = 0; i < K; i++) { const r = R[i % R.length], a = RS() * 6.28, d = 6 + RS() * 12, x = r[0] + Math.cos(a) * d, z = r[1] + Math.sin(a) * d; kd.push([x, seaFloor(x, z) - 0.1, z, RS() * 6, Math.min(0.7 + RS() * 0.9, Math.max(0.1, (-seaFloor(x, z) - 1) / 7))]); }
       kl.frustumCulled = false; life.add(kl); SE.kelp = { im: kl, d: kd }; }
+    /* ---- more to find under the sea: a path of little lights from the undersea gallery through three rock arches to the wreck, a treasure chest spilling gold beside it,
+            and a giant stone hand holding a glowing pearl ---- */
+    { const rock = new T.MeshLambertMaterial({ color: 0x5f7480, flatShading: true }), rock2 = new T.MeshLambertMaterial({ color: 0x4d626e, flatShading: true }), HP = [], HC = [], tc = new T.Color();
+      const halo = (x, y, z, hex) => { HP.push(x, y, z); tc.setHex(hex); HC.push(tc.r, tc.g, tc.b); };
+      const route = z => 186.5 + (z - 52) / 60 * 3.5 + Math.sin(z * 0.11) * 2.2, LC = [0x8ff6ff, 0xffa8e6, 0xb6ffc9, 0xfff3a0];
+      for (let z = 54, i = 0; z <= 112; z += 4.5, i++) { const sd = i % 2 ? 1 : -1, x = route(z) + sd * 2.6, fy = seaFloor(x, z), m = new T.Mesh(new T.SphereGeometry(0.22, 8, 6), new T.MeshBasicMaterial({ color: LC[i % 4], fog: false })); m.position.set(x, fy + 0.55, z); life.add(m);
+        const st = new T.Mesh(new T.CylinderGeometry(0.04, 0.07, 0.5, 5), mt(0x2f5d5a)); st.position.set(x, fy + 0.25, z); life.add(st); halo(x, fy + 0.55, z, LC[i % 4]); }
+      [64, 82, 100].forEach((z, i) => { const x = route(z), fy = seaFloor(x, z), a = new T.Mesh(new T.TorusGeometry(4.6, 1.15, 5, 9, Math.PI), i % 2 ? rock2 : rock); a.position.set(x, fy - 0.4, z); a.rotation.y = Math.atan2(route(z + 1) - route(z - 1), 2) + (i - 1) * 0.12; a.scale.set(1, 1.05 + i * 0.12, 1.5); life.add(a);
+        for (let k = 0; k < 5; k++) { const b = new T.Mesh(new T.IcosahedronGeometry(0.9 + (k * 37 % 5) * 0.22, 0), k % 2 ? rock : rock2); b.position.set(x + (k % 2 ? 1 : -1) * (4.9 + (k % 3) * 0.7), fy + 0.3, z + (k - 2) * 0.9); life.add(b); }
+        halo(x - 4.2, fy + 1.4, z, 0x8ff6ff); halo(x + 4.2, fy + 1.4, z, 0xffa8e6); });
+      /* the chest */
+      { const cx = 186.6, cz = 121.5, fy = seaFloor(cx, cz), g = new T.Group(); g.position.set(cx, fy + 0.05, cz); g.rotation.y = -0.6; g.rotation.z = 0.08; life.add(g); const wd = mt(0x7a4a26), brs = mt(0xd9a93a), gold = new T.MeshBasicMaterial({ color: 0xffd34d, fog: false });
+        put(g, new T.Mesh(new T.BoxGeometry(2.6, 1.3, 1.6), wd), 0, 0.65, 0); [-1.0, 0, 1.0].forEach(x => put(g, new T.Mesh(new T.BoxGeometry(0.16, 1.36, 1.66), brs), x, 0.65, 0));
+        const lid = new T.Group(); lid.position.set(0, 1.3, -0.8); lid.rotation.x = -1.15; g.add(lid); put(lid, new T.Mesh(new T.CylinderGeometry(0.8, 0.8, 2.6, 10, 1, false, 0, Math.PI), wd), 0, 0, 0.8).rotation.set(0, 0, Math.PI / 2); [-1.0, 0, 1.0].forEach(x => put(lid, new T.Mesh(new T.CylinderGeometry(0.83, 0.83, 0.16, 10, 1, false, 0, Math.PI), brs), x, 0, 0.8).rotation.set(0, 0, Math.PI / 2));
+        for (let k = 0; k < 26; k++) { const inside = k < 16, m = new T.Mesh(new T.CylinderGeometry(0.17, 0.17, 0.05, 8), gold); m.position.set(inside ? ((k * 53 % 20) / 10 - 1) * 1.05 : ((k * 31 % 20) / 10 - 1) * 2.4, inside ? 1.32 + (k % 3) * 0.06 : 0.04, inside ? ((k * 17 % 10) / 10 - 0.5) * 1.1 : 1.2 + (k * 13 % 10) / 10 * 1.3); m.rotation.set(k, k * 2, 0); g.add(m); }
+        [[0.5, 1.5, 0.1, 0xff5a7a], [-0.6, 1.48, -0.2, 0x5ad1ff], [0.1, 1.55, 0.3, 0x7dff9a], [1.6, 0.15, 1.7, 0xc98bff]].forEach(q => put(g, new T.Mesh(new T.OctahedronGeometry(0.2, 0), new T.MeshBasicMaterial({ color: q[3], fog: false })), q[0], q[1], q[2]));
+        halo(cx, fy + 1.7, cz, 0xffd34d); halo(cx, fy + 1.7, cz, 0xffe9a0); }
+      /* the hand */
+      { const hx = 201, hz = 74, fy = seaFloor(hx, hz), g = new T.Group(); g.position.set(hx, fy - 0.6, hz); g.rotation.set(0.1, -1.1, 0.06); life.add(g);
+        put(g, new T.Mesh(new T.CylinderGeometry(1.5, 1.9, 3.4, 7), rock), 0, 1.4, 0); put(g, new T.Mesh(new T.BoxGeometry(3.6, 2.6, 1.3), rock), 0, 4.1, 0);
+        [[-1.35, 2.4, 0.5], [-0.45, 2.9, 0.42], [0.45, 2.8, 0.42], [1.3, 2.3, 0.38]].forEach((f, i) => { const fg = new T.Group(); fg.position.set(f[0], 5.3, 0); fg.rotation.x = 0.35 + i * 0.03; g.add(fg); put(fg, new T.Mesh(new T.CylinderGeometry(f[2], f[2] * 1.1, f[1] * 0.55, 6), i % 2 ? rock2 : rock), 0, f[1] * 0.27, 0); const tip = new T.Group(); tip.position.set(0, f[1] * 0.55, 0); tip.rotation.x = 0.7; fg.add(tip); put(tip, new T.Mesh(new T.CylinderGeometry(f[2] * 0.8, f[2], f[1] * 0.5, 6), i % 2 ? rock : rock2), 0, f[1] * 0.25, 0); });
+        { const th = new T.Group(); th.position.set(-2.0, 3.6, 0.3); th.rotation.set(0.5, 0, 0.75); g.add(th); put(th, new T.Mesh(new T.CylinderGeometry(0.45, 0.55, 2.0, 6), rock2), 0, 1.0, 0); }
+        const pearl = put(g, new T.Mesh(new T.SphereGeometry(1.15, 16, 12), new T.MeshBasicMaterial({ color: 0xf2fbff, fog: false })), 0, 6.3, 1.5); g.updateMatrixWorld(true); const pw = pearl.getWorldPosition(new T.Vector3()); halo(pw.x, pw.y, pw.z, 0xbfefff); halo(pw.x, pw.y, pw.z, 0xffffff); }
+      const cv = document.createElement('canvas'); cv.width = cv.height = 64; const c2 = cv.getContext('2d'), gr = c2.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,0.4)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); c2.fillStyle = gr; c2.fillRect(0, 0, 64, 64);
+      const hg = new T.BufferGeometry(); hg.setAttribute('position', new T.Float32BufferAttribute(HP, 3)); hg.setAttribute('color', new T.Float32BufferAttribute(HC, 3));
+      const hl = new T.Points(hg, new T.PointsMaterial({ map: new T.CanvasTexture(cv), size: 4.2, vertexColors: true, transparent: true, opacity: 0.6, depthWrite: false, blending: T.AdditiveBlending, fog: false })); hl.frustumCulled = false; hl.userData.noLos = true; life.add(hl);
+      SE.glow = hl; window.__undersea = { lights: HP.length / 3 }; }
     /* manta rays and a whale */
     for (let i = 0; i < 3; i++) { const g = new T.Group(), body = new T.Mesh(new T.SphereGeometry(1, 8, 4).scale(2.2, 0.18, 1.5), mt(0x3a4a5a)); g.add(body); const tl = new T.Mesh(new T.CylinderGeometry(0.03, 0.06, 3, 4), mt(0x3a4a5a)); tl.rotation.z = Math.PI / 2; tl.position.x = -3; g.add(tl); const wl = new T.Mesh(new T.PlaneGeometry(2.6, 1.4), mt(0x3a4a5a)); wl.rotation.x = -Math.PI / 2; g.add(wl); life.add(g); SE.manta.push({ g: g, cx: 185 + i * 8, cz: 50 + i * 90, R: 20 + RS() * 10, w: 0.05 + RS() * 0.03, ph: RS() * 6, y: -(5 + RS() * 3) }); }
     { const g = new T.Group(), bd = new T.Mesh(new T.SphereGeometry(1, 12, 8).scale(7, 2.2, 2.4), mt(0x3d5d7a)); g.add(bd); const bl = new T.Mesh(new T.SphereGeometry(1, 10, 6).scale(5, 1.4, 2.2), mt(0xcfd8dc)); bl.position.set(0.5, -0.9, 0); g.add(bl);
@@ -6767,7 +6795,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const show = FWS.t > 0; if (show) FWS.t -= dt;
     const ok = started && !(DV.y < -0.6) && (show || (ATM.night > 0.85 && ATM.cloud < 0.3 && ATM.rain < 0.1));
     FW.forEach((f, fi) => {
-      if (f.t < 0) { f.o.visible = false; if (ok) { f.next -= dt; if (f.next <= 0) { f.t = 0; f.next = show ? 0.5 + Math.random() * 1.6 : 7 + Math.random() * 9; if (show) { const a = camYaw + Math.PI + (Math.random() - 0.5) * 1.3, d = 80 + Math.random() * 60; f.cx = pos.x + Math.sin(a) * d; f.cz = pos.z + Math.cos(a) * d; f.cy = 42 + Math.random() * 34; } else { f.cx = 215 + Math.random() * 110; f.cz = -110 + Math.random() * 260; f.cy = 60 + Math.random() * 35; } f.col.setHSL(Math.random(), 0.9, 0.62); } } return; }
+      if (f.t < 0) { f.o.visible = false; if (ok) { f.next -= dt; if (f.next <= 0) { f.t = 0; f.next = show ? 0.5 + Math.random() * 1.6 : 7 + Math.random() * 9; if (show && FWS.src) { f.cx = FWS.src.x + (Math.random() - 0.5) * 90; f.cz = FWS.src.z + (Math.random() - 0.5) * 90; f.cy = 48 + Math.random() * 34; } else if (show) { const a = camYaw + Math.PI + (Math.random() - 0.5) * 1.3, d = 80 + Math.random() * 60; f.cx = pos.x + Math.sin(a) * d; f.cz = pos.z + Math.cos(a) * d; f.cy = 42 + Math.random() * 34; } else { f.cx = 215 + Math.random() * 110; f.cz = -110 + Math.random() * 260; f.cy = 60 + Math.random() * 35; } f.col.setHSL(Math.random(), 0.9, 0.62); } } return; }
       f.t += dt; const rise = 1.4, T0 = f.t - rise; f.o.visible = true;
       if (T0 < 0) { const k = f.t / rise, y = f.cy * k * (2 - k) * 0.9; for (let i = 0; i < f.n; i++) { f.P[i * 3] = f.cx; f.P[i * 3 + 1] = i < 3 ? y - i * 2 : -500; f.P[i * 3 + 2] = f.cz; f.C[i * 3] = 1; f.C[i * 3 + 1] = 0.85; f.C[i * 3 + 2] = 0.5; } f.m.opacity = 0.9; }
       else { const dur = 3.2; if (T0 > dur) { f.t = -1; return; } const fade = 1 - T0 / dur; for (let i = 0; i < f.n; i++) { const d = f.D[i], dr = Math.exp(-T0 * 1.1); f.P[i * 3] = f.cx + d[0] * (1 - dr) / 1.1; f.P[i * 3 + 1] = f.cy + d[1] * (1 - dr) / 1.1 - 4.5 * T0 * T0; f.P[i * 3 + 2] = f.cz + d[2] * (1 - dr) / 1.1; const tw = 0.6 + 0.4 * Math.sin(T0 * 14 + i); f.C[i * 3] = f.col.r * tw; f.C[i * 3 + 1] = f.col.g * tw; f.C[i * 3 + 2] = f.col.b * tw; } f.m.opacity = Math.min(1, fade * 1.6); }
@@ -6788,6 +6816,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (SE.kelp) { const K = SE.kelp; for (let i = 0; i < K.d.length; i++) { const q = K.d[i]; oo2.position.set(q[0], q[1], q[2]); oo2.rotation.set(0.2 * Math.sin(t * 0.8 + q[3]), q[3], 0.2 * Math.cos(t * 0.7 + q[3])); oo2.scale.set(1, q[4], 1); oo2.updateMatrix(); K.im.setMatrixAt(i, oo2.matrix); } K.im.instanceMatrix.needsUpdate = true; }
     SE.reef && SE.reef.material.emissive.setRGB(0.18 * night, 0.07 * night, 0.22 * night);
     SE.manta.forEach(m => { const a = m.ph + m.w * t, x = m.cx + Math.cos(a) * m.R, z = m.cz + Math.sin(a) * m.R; m.g.position.set(x, Math.max(seaFloor(x, z) + 2, m.y + Math.sin(t * 0.4 + m.ph)), z); m.g.rotation.y = Math.atan2(-Math.cos(a), -Math.sin(a)); m.g.rotation.z = 0.12 * Math.sin(t * 1.2 + m.ph); m.g.children[2].rotation.x = -Math.PI / 2 + 0.25 * Math.sin(t * 1.6 + m.ph); });
+    if (SE.glow) SE.glow.material.opacity = 0.5 + 0.15 * Math.sin(t * 1.8);
     if (SE.whale) { const w = SE.whale, a = w.w * t, x = w.cx + Math.cos(a) * w.R * 0.3, z = w.cz + Math.sin(a) * w.R; w.g.position.set(x, w.y + Math.sin(t * 0.15) * 1.5, z); w.g.rotation.y = Math.atan2(-Math.cos(a) * 0.3, -Math.sin(a)) + 0; w.fl.rotation.x = 0.25 * Math.sin(t * 0.8); }
   }
   const oo2 = new T.Object3D();
@@ -7166,7 +7195,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (on) { setMenu(false); $('#moreMenu').hidden = true; goal = null; DV.lvl = 0; SCN.back = { x: pos.x, z: pos.z, h: heading, pitch: camPitch }; SCN.i = -1; sceneGo(1); } else if (SCN.back) { snapTo(SCN.back); SCN.back = null; } }
   anim.push(dt => { if (!SCN.on) return; camYaw += dt * 0.07; SCN.t += dt; if (SCN.t > 9) sceneGo(1); });
   $('#sceneBtn').addEventListener('click', () => { if (started) setScene(true); });
-  $('#fwBtn').addEventListener('click', () => { if (!started) return; if (indoorAt(pos.x, pos.z, 0)) { toast('🎆 불꽃놀이는 밖에서 쏠 수 있어요', 2500); return; } FWS.t = 30; FW.forEach((f, i) => { if (f.t < 0) f.next = i * 0.6; }); $('#moreMenu').hidden = true; toast(ATM.night > 0.5 ? '🎆 불꽃놀이 시작! 하늘을 보세요' : '🎆 불꽃놀이 시작! 밤에 쏘면 더 예뻐요', 3000); });
+  $('#fwBtn').addEventListener('click', () => { if (!started) return; if (indoorAt(pos.x, pos.z, 0)) { toast('🎆 불꽃놀이는 밖에서 쏠 수 있어요', 2500); return; } FWS.t = 30; FWS.src = null; myFw++; pushPresence(true); FW.forEach((f, i) => { if (f.t < 0) f.next = i * 0.6; }); $('#moreMenu').hidden = true; toast(ATM.night > 0.5 ? '🎆 불꽃놀이 시작! 하늘을 보세요' : '🎆 불꽃놀이 시작! 밤에 쏘면 더 예뻐요', 3000); });
   window.__fw = { t: () => FWS.t, vis: () => FW.filter(f => f.o.visible).length };
   $('#sceneStop').addEventListener('click', () => setScene(false)); $('#sceneNext').addEventListener('click', () => sceneGo(1)); $('#scenePrev').addEventListener('click', () => sceneGo(-1));
   window.__scene = { set: setScene, on: () => SCN.on, i: () => SCN.i, n: SCN.list.length, go: sceneGo };
