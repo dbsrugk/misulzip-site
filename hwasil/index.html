@@ -1088,12 +1088,12 @@ body.padOpen #hud { visibility: hidden; }
   const bayZ = b => wingZ(Math.floor(b / 2)) - GG.bay * (b % 2) - GG.bay / 2;   /* z of the middle of a picture bay */
   const gapZ = i => GGS - 32 * GGAPW[i] - GGAP * i - GGAP / 2;                  /* z of the middle of round hall i */
   /* the gallery building runs north under the hill: nothing from the outdoors (trees, flowers, mushrooms, clouds) may stand inside its footprint */
-  const GOGH = { x0: 37, x1: 59, z0: 213, z1: 231, h: 11 };   /* Van Gogh's Yellow House, in the pocket between the two gardens */
+  const GOGH = { x0: 35, x1: 65, z0: 206, z1: 234, h: 15 };   /* Van Gogh's Yellow House, in the pocket between the two gardens */
   const inGogh = (x, z, m) => x > GOGH.x0 - (m || 0) && x < GOGH.x1 + (m || 0) && z > GOGH.z0 - (m || 0) && z < GOGH.z1 + (m || 0);
-  const MONET = { cx: 42.5, cz: 268, rx: 5.5, rz: 19, bz: 268, bx0: 35.6, bx1: 49.6, bw: 1.6, bh: 1.7 };   /* Monet's pond and its bridge, west of the flower-road garden */
+  const MONET = { cx: 45.5, cz: 106, rx: 6.5, rz: 18, bz: 106, bx0: 37.2, bx1: 53.8, bw: 1.9, bh: 1.9 };   /* Monet's pond and its bridge, in the wide meadow south-west of the lake (it has room to breathe there) */
   const monetK = (x, z) => { const e = Math.pow((x - MONET.cx) / MONET.rx, 2) + Math.pow((z - MONET.cz) / MONET.rz, 2); return e < 1 ? Math.min(1, (1 - e) * 5) : 0; };
   const monetY = (x, z) => Math.abs(z - MONET.bz) < MONET.bw + 0.05 && x > MONET.bx0 && x < MONET.bx1 ? MONET.bh * Math.sin(Math.PI * (x - MONET.bx0) / (MONET.bx1 - MONET.bx0)) : -0.38 * monetK(x, z);   /* up over the bridge, knee-deep among the lilies */
-  const HOKU = { x0: 129.5, x1: 141.5, z0: 212, z1: 232, wx: 180, wz: 222 };   /* Hokusai's wave pavilion on the beach, and where the Great Wave stands in the sea */
+  const HOKU = { x0: 125, x1: 145, z0: 204, z1: 240, wx: 184, wz: 222 };   /* Hokusai's wave pavilion on the beach, and where the Great Wave stands in the sea */
   const inHoku = (x, z, m) => x > HOKU.x0 - (m || 0) && x < HOKU.x1 + (m || 0) && z > HOKU.z0 - (m || 0) && z < HOKU.z1 + (m || 0);
   /* THE BUILDING TABLE: every roofed footprint in one place. Anything from the outdoors (trees, flowers, mushrooms, clouds, leaves) asks indoorAt() before it stands or shows somewhere. A new building = one more row here. */
   const CAVE = { x: 135.5, z: -76.2, r: 9.5, k: 1.45, mouth: 0.4, h: 10 };   /* k: the hall is longer (north-south) than it is wide */
@@ -1136,7 +1136,7 @@ body.padOpen #hud { visibility: hidden; }
   const gY = (x, z) => {
     let y = 0;
     if (x >= HILL.x0 && x <= HILL.x1 && z >= HILL.z0 && z <= -88) { const h = footH(x, z); if (h > 0.05) y = h + 0.1; }
-    return y - 0.95 * swimK(x, z) - 0.62 * lakeK(x, z) + (x > SEA_X ? isleH(x, z) : 0) + (x < 56 && z > 240 ? monetY(x, z) : 0);
+    return y - 0.95 * swimK(x, z) - 0.62 * lakeK(x, z) + (x > SEA_X ? isleH(x, z) : 0) + (x < 60 && z > 82 && z < 130 ? monetY(x, z) : 0);
   };
   const colliders = [];
   function plankTexture() {
@@ -2795,8 +2795,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   /* ---------- houses of the masters, 1: Van Gogh's Yellow House. Outside, the yellow house of Arles with green shutters and a cafe terrace under a lantern;
      inside, one big room that IS "The Bedroom": blue walls, plank floor, the yellow bed with its red blanket, the straw chairs, the table with the jug, and ten of his pictures on the walls.
      Walls and ceiling are one-sided (seen only from inside) and the outside shell steps aside while I am in, so the camera always looks in, as in the museum. ---------- */
-  function hangCat(c, room, x, z, ry, wallAx, wallLim, inDir, lightHex) {
-    const long = Math.max(c.w, c.h), Dm = Math.round(clamp(3.6 + 2.2 * Math.log2(long / 77), 3.0, 11) * 10) / 10, size = Dm >= 7 ? 'l' : Dm >= 4.2 ? 'm' : 's';
+  function hangCat(c, room, x, z, ry, wallAx, wallLim, inDir, lightHex, minD) {
+    const long = Math.max(c.w, c.h), Dm = Math.round(clamp(3.6 + 2.2 * Math.log2(long / 77), minD || 3.0, 11) * 10) / 10, size = Dm >= 7 ? 'l' : Dm >= 4.2 ? 'm' : 's';
     const asp = clamp(c.w / c.h, 0.5, 2), hh = (asp >= 1 ? Dm / asp : Dm) / 2, y = 3.4 + hh, g = addSlot(room, size, x, y, z, ry, Dm), brassH = L(0xd9b35a);
     if (wallAx) hang(g, wallAx, wallLim, inDir);
     const sl = slots[slots.length - 1]; sl.reserved = true; sl.cat = c;
@@ -2808,7 +2808,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   (function () {
     const H = (window.MUSEUM_HOUSES || []).find(q => q.id === 'gogh'); if (!H) return;
-    const G = GOGH, x0 = G.x0, x1 = G.x1, z0 = G.z0, z1 = G.z1, hh = G.h, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, Dp = z1 - z0, DW = 5.2, DH = 6.2;
+    const G = GOGH, x0 = G.x0, x1 = G.x1, z0 = G.z0, z1 = G.z1, hh = G.h, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, Dp = z1 - z0, DW = 6.4, DH = 7.4;
     const strokes = (base, cols, n, w, h, len, horiz) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d'); g.fillStyle = base; g.fillRect(0, 0, w, h); let s = 7;
       const r = () => (s = (s * 16807) % 2147483647) / 2147483647; g.lineCap = 'round';
       for (let i = 0; i < n; i++) { g.strokeStyle = cols[(r() * cols.length) | 0]; g.globalAlpha = 0.35 + r() * 0.4; g.lineWidth = 3 + r() * 5; const x = r() * w, y = r() * h, a = horiz ? (r() - 0.5) * 0.25 : r() * 6.28; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * len * (0.5 + r()), y + Math.sin(a) * len * (0.5 + r())); g.stroke(); }
@@ -2818,9 +2818,10 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const wallM = (t, rx, ry) => { const tt = t.clone(); tt.needsUpdate = true; tt.repeat.set(rx, ry); return new T.MeshLambertMaterial({ map: tt }); };
     const plane = (grp, w, h, mat, x, y, z, ry, rxx) => { const m = new T.Mesh(new T.PlaneGeometry(w, h), mat); m.position.set(x, y, z); m.rotation.y = ry || 0; if (rxx) m.rotation.x = rxx; m.userData.noShadow = true; grp.add(m); return m; };
     /* inside: four walls facing in, floor, ceiling */
-    const wN = wallM(wallT, W / 5, hh / 5), wS = wallM(wallT, Dp / 5, hh / 5), seg = (z1 - cz - DW / 2);
+    const wallB = (t, rx, ry) => { const tt = t.clone(); tt.needsUpdate = true; tt.repeat.set(rx, ry); return new T.MeshBasicMaterial({ map: tt, color: 0xf2f2f2 }); };   /* the room's blue walls glow evenly, like the painting */
+    const wN = wallB(wallT, W / 5, hh / 5), wS = wallB(wallT, Dp / 5, hh / 5), seg = (z1 - cz - DW / 2);
     plane(WALLS, W, hh, wN, cx, hh / 2, z0, 0); plane(WALLS, W, hh, wN, cx, hh / 2, z1, Math.PI); plane(WALLS, Dp, hh, wS, x0, hh / 2, cz, Math.PI / 2);
-    plane(WALLS, seg, hh, wallM(wallT, seg / 5, hh / 5), x1, hh / 2, z0 + seg / 2, -Math.PI / 2); plane(WALLS, seg, hh, wallM(wallT, seg / 5, hh / 5), x1, hh / 2, z1 - seg / 2, -Math.PI / 2); plane(WALLS, DW, hh - DH, wallM(wallT, 1, 1), x1, DH + (hh - DH) / 2, cz, -Math.PI / 2);
+    plane(WALLS, seg, hh, wallB(wallT, seg / 5, hh / 5), x1, hh / 2, z0 + seg / 2, -Math.PI / 2); plane(WALLS, seg, hh, wallB(wallT, seg / 5, hh / 5), x1, hh / 2, z1 - seg / 2, -Math.PI / 2); plane(WALLS, DW, hh - DH, wallB(wallT, 1, 1), x1, DH + (hh - DH) / 2, cz, -Math.PI / 2);
     const fl = plane(IN, W, Dp, wallM(floorT, W / 6, Dp / 6), cx, 0.035, cz, 0, -Math.PI / 2); fl.material.polygonOffset = true; fl.material.polygonOffsetFactor = -2; fl.material.polygonOffsetUnits = -2;
     plane(WALLS, W, Dp, L(0xe9e2cf), cx, hh, cz, 0, Math.PI / 2);
     [[cx, z0 + 0.06, 0, W], [cx, z1 - 0.06, Math.PI, W], [x0 + 0.06, cz, Math.PI / 2, Dp]].forEach(q => { const b = new T.Mesh(bx(q[3], 0.5, 0.1), L(0x4f7a52)); b.position.set(q[0], 0.3, q[1]); b.rotation.y = q[2]; IN.add(b); });
@@ -2828,21 +2829,21 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     for (let x = x0; x <= x1 + 0.01; x += 1.1) colliders.push({ x: x, z: z0 - 0.5, r: 0.75 }, { x: x, z: z1 + 0.5, r: 0.75 });
     for (let z = z0; z <= z1 + 0.01; z += 1.1) { colliders.push({ x: x0 - 0.5, z: z, r: 0.75 }); if (Math.abs(z - cz) > DW / 2 + 0.4) colliders.push({ x: x1 + 0.5, z: z, r: 0.75 }); }
     /* the ten pictures: three each on the north, south and west walls, one beside the door */
-    const P = H.pieces, xs = [x0 + 4.4, cx, x1 - 4.4], zs = [z0 + 3.6, cz, z1 - 3.6];
-    hangCat(P[0], 'gogh', x0 + 0.1, zs[1], Math.PI / 2, 'x', x0, 1, 0xfff0b0);                                  /* The Bedroom faces the door */
-    [P[1], P[2], P[3]].forEach((c, i) => hangCat(c, 'gogh', xs[i], z0 + 0.1, 0, 'z', z0, 1));
-    [P[4], P[5], P[6]].forEach((c, i) => hangCat(c, 'gogh', xs[i], z1 - 0.1, Math.PI, 'z', z1, -1));
-    hangCat(P[7], 'gogh', x0 + 0.1, zs[0], Math.PI / 2, 'x', x0, 1); hangCat(P[8], 'gogh', x0 + 0.1, zs[2], Math.PI / 2, 'x', x0, 1);
-    hangCat(P[9], 'gogh', x1 - 0.1, z1 - seg / 2, -Math.PI / 2, 'x', x1, -1);
+    const P = H.pieces, xs = [x0 + 5.6, cx, x1 - 5.6], zs = [z0 + 5.4, cz, z1 - 5.4];
+    hangCat(P[0], 'gogh', x0 + 0.1, zs[1], Math.PI / 2, 'x', x0, 1, 0xfff0b0, 5.2);                                  /* The Bedroom faces the door */
+    [P[1], P[2], P[3]].forEach((c, i) => hangCat(c, 'gogh', xs[i], z0 + 0.1, 0, 'z', z0, 1, 0, 4.0));
+    [P[4], P[5], P[6]].forEach((c, i) => hangCat(c, 'gogh', xs[i], z1 - 0.1, Math.PI, 'z', z1, -1, 0, 4.0));
+    hangCat(P[7], 'gogh', x0 + 0.1, zs[0], Math.PI / 2, 'x', x0, 1, 0, 4.0); hangCat(P[8], 'gogh', x0 + 0.1, zs[2], Math.PI / 2, 'x', x0, 1, 0, 4.0);
+    hangCat(P[9], 'gogh', x1 - 0.1, z1 - seg / 2, -Math.PI / 2, 'x', x1, -1, 0, 4.0);
     /* the bedroom itself, in the middle of the room */
-    const bedW = L(0xe2a233), straw = L(0xcdb45c), red = L(0xc63a2b), white = L(0xf4efe2), tableW = L(0xb9783a), F = new T.Group(); F.position.set(cx + 0.5, 0, cz); F.scale.setScalar(1.3); IN.add(F);
+    const bedW = L(0xe2a233), straw = L(0xcdb45c), red = L(0xc63a2b), white = L(0xf4efe2), tableW = L(0xb9783a), F = new T.Group(); F.position.set(cx + 0.5, 0, cz); F.scale.setScalar(1.7); IN.add(F);
     put(F, new T.Mesh(bx(0.3, 3.0, 3.0), bedW), -1.9, 1.5, 0); put(F, new T.Mesh(bx(0.3, 2.0, 3.0), bedW), 3.1, 1.0, 0); [-1.5, 1.5].forEach(z => put(F, new T.Mesh(bx(5.0, 0.7, 0.2), bedW), 0.6, 0.95, z));
     put(F, new T.Mesh(bx(4.8, 0.6, 2.8), white), 0.6, 1.3, 0); put(F, new T.Mesh(bx(3.3, 0.3, 2.9), red), 1.4, 1.68, 0); [-0.7, 0.7].forEach(z => put(F, new T.Mesh(bx(0.9, 0.35, 1.1), white), -1.2, 1.75, z));
     const chair = (x, z, ry) => { const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry; F.add(g); put(g, new T.Mesh(bx(1.0, 0.14, 1.0), straw), 0, 1.0, 0); [[-0.42, -0.42], [0.42, -0.42], [-0.42, 0.42], [0.42, 0.42]].forEach(q => put(g, new T.Mesh(bx(0.11, q[1] < 0 ? 2.3 : 1.0, 0.11), bedW), q[0], q[1] < 0 ? 1.15 : 0.5, q[1])); [1.5, 1.9, 2.2].forEach(y => put(g, new T.Mesh(bx(0.9, 0.12, 0.07), bedW), 0, y, -0.42)); };
     chair(-3.6, 1.6, 0.9); chair(0.6, -2.7, 0.15);
     { const g = new T.Group(); g.position.set(-3.4, 0, -1.9); F.add(g); put(g, new T.Mesh(bx(1.5, 0.12, 1.1), tableW), 0, 1.5, 0); [[-0.65, -0.45], [0.65, -0.45], [-0.65, 0.45], [0.65, 0.45]].forEach(q => put(g, new T.Mesh(bx(0.1, 1.5, 0.1), tableW), q[0], 0.75, q[1])); put(g, new T.Mesh(bx(1.3, 0.25, 0.06), tableW), 0, 1.25, 0.5);
       put(g, new T.Mesh(cyl(0.2, 0.26, 0.6, 10), L(0x4f7fc0)), -0.3, 1.86, 0); put(g, new T.Mesh(cyl(0.34, 0.24, 0.2, 12), white), 0.3, 1.66, 0.1); put(g, new T.Mesh(cyl(0.07, 0.09, 0.45, 8), L(0x7fb08a)), 0.45, 1.78, -0.3); }
-    colliders.push({ x: cx + 1.3, z: cz, r: 2.6 }, { x: cx + 3.6, z: cz, r: 2.3 }, { x: cx - 1.2, z: cz, r: 2.3 }, { x: cx - 4.2, z: cz + 2.1, r: 0.9 }, { x: cx - 3.9, z: cz - 2.5, r: 1.2 }, { x: cx + 1.3, z: cz - 3.5, r: 0.9 });
+    colliders.push({ x: cx + 1.5, z: cz, r: 3.2 }, { x: cx + 4.4, z: cz, r: 2.8 }, { x: cx - 1.2, z: cz, r: 2.8 }, { x: cx - 5.6, z: cz + 2.7, r: 1.1 }, { x: cx - 5.3, z: cz - 3.2, r: 1.5 }, { x: cx + 1.5, z: cz - 4.6, r: 1.1 });
     /* his straw hat and blue smock on pegs by the door, an easel with a canvas just begun */
     { const g = new T.Group(); g.position.set(x1 - 0.25, 0, z0 + seg / 2); g.rotation.y = -Math.PI / 2; IN.add(g); hang(g, 'x', x1, -1); put(g, new T.Mesh(bx(3.2, 0.25, 0.12), tableW), 0, 4.6, 0); [-1.1, 0, 1.1].forEach(x => put(g, new T.Mesh(cyl(0.05, 0.05, 0.4, 6), tableW), x, 4.6, 0.2).rotation.x = Math.PI / 2);
       put(g, new T.Mesh(cyl(0.75, 0.75, 0.06, 14), straw), -1.1, 4.4, 0.42).rotation.x = Math.PI / 2 - 0.2; put(g, new T.Mesh(new T.SphereGeometry(0.36, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), straw), -1.1, 4.42, 0.46).rotation.x = Math.PI / 2 - 0.2;
@@ -2854,14 +2855,14 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const eM = wallM(extT, W / 5, hh / 5), green = L(0x3f7a52), frameW = L(0xf6efe0), o = 0.28;
     plane(EXT, W + 2 * o, hh, eM, cx, hh / 2, z0 - o, Math.PI); plane(EXT, W + 2 * o, hh, eM, cx, hh / 2, z1 + o, 0); plane(EXT, Dp + 2 * o, hh, wallM(extT, Dp / 5, hh / 5), x0 - o, hh / 2, cz, -Math.PI / 2);
     plane(EXT, seg + o, hh, wallM(extT, seg / 5, hh / 5), x1 + o, hh / 2, z0 + seg / 2 - o / 2, Math.PI / 2); plane(EXT, seg + o, hh, wallM(extT, seg / 5, hh / 5), x1 + o, hh / 2, z1 - seg / 2 + o / 2, Math.PI / 2); plane(EXT, DW, hh - DH, wallM(extT, 1, 1), x1 + o, DH + (hh - DH) / 2, cz, Math.PI / 2);
-    const win = (x, y, z, ry) => { const g = new T.Group(); g.position.set(x, y, z); g.rotation.y = ry; EXT.add(g); put(g, new T.Mesh(bx(1.5, 2.3, 0.12), L(0x7fa9cc)), 0, 0, 0.02); put(g, new T.Mesh(bx(1.7, 0.14, 0.2), frameW), 0, -1.2, 0.06); [-1.2, 1.2].forEach(dx => put(g, new T.Mesh(bx(0.8, 2.4, 0.1), green), dx, 0, 0.08)); };
-    [3.2, 7.9].forEach(y => { [-7, -2.4, 2.4, 7].forEach(dx => { win(cx + dx, y, z0 - o - 0.02, Math.PI); win(cx + dx, y, z1 + o + 0.02, 0); }); [-5.5, 0, 5.5].forEach(dz => win(x0 - o - 0.02, y, cz + dz, -Math.PI / 2)); [-6.6, 6.6].forEach(dz => win(x1 + o + 0.02, y, cz + dz, Math.PI / 2)); });
+    const win = (x, y, z, ry) => { const g = new T.Group(); g.position.set(x, y, z); g.rotation.y = ry; EXT.add(g); put(g, new T.Mesh(bx(1.5, 2.3, 0.12), L(0x7fa9cc)), 0, 0, 0.02); put(g, new T.Mesh(bx(1.7, 0.14, 0.2), frameW), 0, -1.2, 0.06); [-1.2, 1.2].forEach(dx => put(g, new T.Mesh(bx(0.8, 2.4, 0.1), green), dx, 0, 0.08)); g.scale.setScalar(1.45); };
+    [3.6, 10.6].forEach(y => { [-11, -3.7, 3.7, 11].forEach(dx => { win(cx + dx, y, z0 - o - 0.02, Math.PI); win(cx + dx, y, z1 + o + 0.02, 0); }); [-9, 0, 9].forEach(dz => win(x0 - o - 0.02, y, cz + dz, -Math.PI / 2)); [-9.4, 9.4].forEach(dz => win(x1 + o + 0.02, y, cz + dz, Math.PI / 2)); });
     [-1, 1].forEach(sd => { const d = new T.Mesh(bx(0.16, DH, DW / 2), green); d.position.set(x1 + o + 1.2, DH / 2, cz + sd * (DW / 2 + 1.25)); d.rotation.y = sd * 1.1; EXT.add(d); }); { const b = new T.Mesh(bx(0.3, 0.4, DW + 0.8), frameW); b.position.set(x1 + o + 0.05, DH + 0.2, cz); EXT.add(b); }
-    const rM = new T.MeshLambertMaterial({ map: roofT, side: T.DoubleSide }); roofT.repeat.set(4, 2); const rh = 4.6, ov = 1.2, sl = Math.hypot(Dp / 2 + ov, rh);
+    const rM = new T.MeshLambertMaterial({ map: roofT, side: T.DoubleSide }); roofT.repeat.set(4, 2); const rh = 6.4, ov = 1.5, sl = Math.hypot(Dp / 2 + ov, rh);
     [-1, 1].forEach(sd => { const r = new T.Mesh(new T.PlaneGeometry(W + 2 * ov, sl), rM); r.position.set(cx, hh + rh / 2, cz + sd * (Dp / 2 + ov) / 2); r.rotation.x = sd * (Math.PI / 2 - Math.atan2(rh, Dp / 2 + ov)) - (sd > 0 ? 0 : 0); r.rotation.x = -Math.PI / 2 + sd * Math.atan2(rh, Dp / 2 + ov); r.userData.noShadow = true; EXT.add(r); });
     [x0 - o, x1 + o].forEach(x => { const s = new T.Shape(); s.moveTo(-Dp / 2 - o, 0); s.lineTo(Dp / 2 + o, 0); s.lineTo(0, rh * (Dp / 2 + o) / (Dp / 2 + ov)); s.closePath(); const m = new T.Mesh(new T.ShapeGeometry(s), new T.MeshLambertMaterial({ map: eM.map, side: T.DoubleSide })); m.position.set(x, hh, cz); m.rotation.y = Math.PI / 2; EXT.add(m); });
     put(EXT, new T.Mesh(bx(1.3, 2.6, 1.3), L(0xb9ada0)), cx - 5, hh + rh * 0.55 + 0.6, cz - 3);
-    { const pl = makeNamePlate('고흐의 노란 집'); pl.sprite.scale.set(7.5, 1.9, 1); pl.sprite.position.set(x1 + 1.4, DH + 2.0, cz); EXT.add(pl.sprite); }
+    { const pl = makeNamePlate('고흐의 노란 집'); pl.sprite.scale.set(9, 2.3, 1); pl.sprite.position.set(x1 + 1.4, DH + 2.2, cz); EXT.add(pl.sprite); }
     /* the cafe terrace by night: a yellow awning, round tables, a lantern that glows after dark; sunflowers along the wall; a sandy lane to the garden walk */
     const aw = new T.Mesh(bx(4.6, 0.12, 6.4), new T.MeshLambertMaterial({ color: 0xf6c832, side: T.DoubleSide })); aw.position.set(x1 + o + 2.2, 5.0, z1 - 3.4); aw.rotation.z = -0.22; scene.add(aw); [z1 - 6.4, z1 - 0.4].forEach(z => { const p = new T.Mesh(cyl(0.08, 0.08, 4.5, 6), L(0x3b3f47)); p.position.set(x1 + o + 4.3, 2.25, z); scene.add(p); colliders.push({ x: x1 + o + 4.3, z: z, r: 0.3 }); });
     [[x1 + 2.6, z1 - 5.0], [x1 + 2.9, z1 - 1.8], [x1 + 6.6, z1 - 3.2]].forEach(q => { const t = new T.Mesh(cyl(0.9, 0.9, 0.1, 14), white); t.position.set(q[0], 1.5, q[1]); scene.add(t); const lg = new T.Mesh(cyl(0.08, 0.3, 1.5, 8), L(0x3b3f47)); lg.position.set(q[0], 0.75, q[1]); scene.add(lg); colliders.push({ x: q[0], z: q[1], r: 1.0 });
@@ -2919,15 +2920,14 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { const g = new T.Group(); g.position.set(M.cx + 1.6, 0.12, M.cz + 9.5); g.rotation.y = 0.5; scene.add(g); put(g, new T.Mesh(bx(3.4, 0.3, 1.3), greenD), 0, 0.1, 0); [-0.65, 0.65].forEach(z => put(g, new T.Mesh(bx(3.6, 0.5, 0.1), green), 0, 0.35, z)); [-1.75, 1.75].forEach(x => put(g, new T.Mesh(bx(0.1, 0.5, 1.3), green), x, 0.35, 0)); put(g, new T.Mesh(bx(0.5, 0.08, 1.2), woodS), 0.2, 0.4, 0); }
     /* the pictures on garden stands */
     const stand = (c, x, z, ry) => { const sl = hangCat(c, 'monet', x, z, ry), Dw = sl.D, hx = Math.cos(ry), hz = -Math.sin(ry), bxk = -Math.sin(ry) * 0.25, bzk = -Math.cos(ry) * 0.25; [-1, 1].forEach(sd => { at(new T.Mesh(cyl(0.11, 0.14, 3.6, 6), woodS), x + hx * sd * (Dw * 0.42) + bxk, 1.8, z + hz * sd * (Dw * 0.42) + bzk); colliders.push({ x: x + hx * sd * (Dw * 0.42), z: z + hz * sd * (Dw * 0.42), r: 0.4 }); }); colliders.push({ x: x, z: z, r: 0.5 }); return sl; };
-    const wx = Math.max(OUT.x0 + 1.1, M.cx - M.rx - 4.2), ex = M.cx + M.rx + 5.4;
-    stand(by('agapanthus'), M.cx, M.cz - M.rz - 9, 0); stand(by('irises'), M.cx + 0.5, M.cz + M.rz + 8.5, Math.PI);
-    stand(by('pond17'), wx, M.cz - 20, Math.PI / 2); stand(by('lilies06'), wx, M.cz - 12.5, Math.PI / 2); stand(by('bridge'), wx, M.cz - 6.2, Math.PI / 2);
-    stand(by('poppy'), wx, M.cz + 6.2, Math.PI / 2); stand(by('wheat'), wx, M.cz + 12.6, Math.PI / 2); stand(by('wheatsnow'), wx, M.cz + 19, Math.PI / 2);
-    stand(by('house'), ex, M.cz - 10, -Math.PI / 2); stand(by('parliament'), ex, M.cz + 11, -Math.PI / 2);
+    const wx = M.cx - M.rx - 4.6, ex = M.cx + M.rx + 5.6, zz = [-15.5, -7.5, 7.5, 15.5];                 /* wide banks: the pictures stand well back from the water, eight metres apart */
+    stand(by('agapanthus'), M.cx, M.cz - M.rz - 9, 0); stand(by('irises'), M.cx, M.cz + M.rz + 9, Math.PI);
+    [by('pond17'), by('lilies06'), by('bridge'), by('poppy')].forEach((c, i) => stand(c, wx, M.cz + zz[i], Math.PI / 2));
+    [by('house'), by('parliament'), by('wheat'), by('wheatsnow')].forEach((c, i) => stand(c, ex, M.cz + zz[i], -Math.PI / 2));
     /* a sandy path from the Yellow House lane, a name plate, lamps for the night */
     const lane = (xa, za, xb, zb) => { const len = Math.hypot(xb - xa, zb - za), m = new T.Mesh(new T.PlaneGeometry(3.2, len + 1.5), new T.MeshLambertMaterial({ color: 0xe6d3a3, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.rotation.x = -Math.PI / 2; m.rotation.z = Math.atan2(xb - xa, zb - za) * -1; m.position.set((xa + xb) / 2, 0.04, (za + zb) / 2); m.userData.noShadow = true; scene.add(m); };
-    lane(64, 223, 62, 236); lane(62, 236, M.cx + M.rx + 2.6, M.cz - M.rz - 3); lane(M.cx + M.rx + 2.6, M.cz - M.rz - 3, M.cx + M.rx + 2.6, M.cz + M.rz + 2); lane(M.cx - M.rx - 1.9, M.cz - M.rz - 2, M.cx - M.rx - 1.9, M.cz + M.rz + 2); lane(M.cx - M.rx - 1.9, M.cz - M.rz - 3, M.cx + M.rx + 2.6, M.cz - M.rz - 3); lane(M.cx - M.rx - 1.9, M.cz + M.rz + 3, M.cx + M.rx + 2.6, M.cz + M.rz + 3);
-    { at(new T.Mesh(cyl(0.12, 0.14, 2.6, 6), woodS), 60.5, 1.3, 238); const pl = makeNamePlate('모네의 정원'); pl.sprite.scale.set(6.4, 1.8, 1); pl.sprite.position.set(60.5, 3.4, 238); scene.add(pl.sprite); }
+    lane(M.cx + M.rx + 2.4, M.cz - M.rz - 3, M.cx + M.rx + 2.4, M.cz + M.rz + 3); lane(M.cx - M.rx - 2.2, M.cz - M.rz - 3, M.cx - M.rx - 2.2, M.cz + M.rz + 3); lane(M.cx - M.rx - 2.2, M.cz - M.rz - 3.2, M.cx + M.rx + 2.4, M.cz - M.rz - 3.2); lane(M.cx - M.rx - 2.2, M.cz + M.rz + 3.2, M.cx + M.rx + 2.4, M.cz + M.rz + 3.2); lane(M.cx + M.rx + 2.4, M.cz - M.rz - 3, 59, 73);   /* round the pond, and up to the lake shore */
+    { at(new T.Mesh(cyl(0.12, 0.14, 2.6, 6), woodS), 58.5, 1.3, 77.5); const pl = makeNamePlate('모네의 정원'); pl.sprite.scale.set(6.4, 1.8, 1); pl.sprite.position.set(58.5, 3.4, 77.5); scene.add(pl.sprite); }
     const LP = [[M.bx0 - 0.9, M.bz - 2.6], [M.bx1 + 0.9, M.bz + 2.6], [M.cx + M.rx + 4.4, M.cz - M.rz - 1], [M.cx - M.rx - 0.6, M.cz + M.rz + 1.5]], HPp = [], pane = new T.MeshBasicMaterial({ color: 0xfff1c4 });
     LP.forEach(q => { at(new T.Mesh(cyl(0.09, 0.13, 3.2, 6), greenD), q[0], 1.6, q[1]); at(new T.Mesh(new T.SphereGeometry(0.34, 10, 8), pane), q[0], 3.4, q[1]).userData.noShadow = true; HPp.push(q[0], 3.4, q[1]); colliders.push({ x: q[0], z: q[1], r: 0.3 }); });
     const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 64; const c2 = cv2.getContext('2d'), gr = c2.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,0.4)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); c2.fillStyle = gr; c2.fillRect(0, 0, 64, 64);
@@ -2939,34 +2939,34 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
      and out in the water the Great Wave itself, as tall as a house, curling over with Mount Fuji small beneath its crest, just as in the print. ---------- */
   (function () {
     const H = (window.MUSEUM_HOUSES || []).find(q => q.id === 'hokusai'); if (!H) return;
-    const K = HOKU, x0 = K.x0, x1 = K.x1, z0 = K.z0, z1 = K.z1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, Dp = z1 - z0, hh = 6.4, P = H.pieces, by = k => P.find(q => q.id === 'hk_' + k);
+    const K = HOKU, x0 = K.x0, x1 = K.x1, z0 = K.z0, z1 = K.z1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, Dp = z1 - z0, hh = 9.4, P = H.pieces, by = k => P.find(q => q.id === 'hk_' + k);
     const red = L(0xc8402f), redD = L(0x9a2f24), woodP = L(0xb98a5a), tile = L(0x2f4a5a), at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
     const IN = new T.Group(), ROOF = new T.Group(); scene.add(IN); scene.add(ROOF);
     /* deck, paper walls (one-sided, facing in) with a doorway in the west wall, pillars */
     { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d'); g.fillStyle = '#c9a070'; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#bf9565' : '#d3ab7c'; g.fillRect(0, i * 32, 256, 30); } const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(W / 6, Dp / 6);
       const fl = new T.Mesh(new T.PlaneGeometry(W + 1.2, Dp + 1.2), new T.MeshLambertMaterial({ map: t, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); fl.rotation.x = -Math.PI / 2; fl.position.set(cx, 0.045, cz); fl.userData.noShadow = true; IN.add(fl); }
-    const shoji = (w) => { const cv = document.createElement('canvas'); cv.width = 256; cv.height = 256; const g = cv.getContext('2d'); g.fillStyle = '#f6f0e2'; g.fillRect(0, 0, 256, 256); g.strokeStyle = '#8a6a44'; g.lineWidth = 5; for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(i * 64, 0); g.lineTo(i * 64, 256); g.stroke(); } for (let j = 0; j <= 4; j++) { g.beginPath(); g.moveTo(0, j * 64); g.lineTo(256, j * 64); g.stroke(); } const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(w / 4.2, hh / 4.2); return new T.MeshLambertMaterial({ map: t }); };
+    const shoji = (w) => { const cv = document.createElement('canvas'); cv.width = 256; cv.height = 256; const g = cv.getContext('2d'); g.fillStyle = '#f6f0e2'; g.fillRect(0, 0, 256, 256); g.strokeStyle = '#8a6a44'; g.lineWidth = 5; for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(i * 64, 0); g.lineTo(i * 64, 256); g.stroke(); } for (let j = 0; j <= 4; j++) { g.beginPath(); g.moveTo(0, j * 64); g.lineTo(256, j * 64); g.stroke(); } const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(w / 4.2, hh / 4.2); return new T.MeshBasicMaterial({ map: t, color: 0xf4f1ea }); };   /* paper walls keep their own light, whatever the sun is doing */
     const wall = (w, x, z, ry) => { const m = new T.Mesh(new T.PlaneGeometry(w, hh), shoji(w)); m.position.set(x, hh / 2, z); m.rotation.y = ry; m.userData.noShadow = true; IN.add(m); const b = new T.Mesh(bx(w, 0.35, 0.16), redD); b.position.set(x, 0.2, z); b.rotation.y = ry; IN.add(b); };
-    const DW = 4.4, seg = (Dp - DW) / 2;
+    const DW = 6.4, seg = (Dp - DW) / 2;
     wall(W, cx, z0, 0); wall(W, cx, z1, Math.PI); wall(seg, x0, z0 + seg / 2, Math.PI / 2); wall(seg, x0, z1 - seg / 2, Math.PI / 2);
     for (let x = x0; x <= x1 + 0.01; x += 1.1) colliders.push({ x: x, z: z0 - 0.4, r: 0.7 }, { x: x, z: z1 + 0.4, r: 0.7 });
     for (let z = z0; z <= z1 + 0.01; z += 1.1) if (Math.abs(z - cz) > DW / 2 + 0.5) colliders.push({ x: x0 - 0.4, z: z, r: 0.7 });
-    [[x0, z0], [x0, z1], [x1, z0], [x1, z1], [x1, cz - 5], [x1, cz + 5], [x0, cz - DW / 2], [x0, cz + DW / 2]].forEach(q => { at(new T.Mesh(cyl(0.34, 0.38, hh, 10), red), q[0], hh / 2, q[1]); at(new T.Mesh(cyl(0.5, 0.5, 0.3, 10), L(0x8c857a)), q[0], 0.15, q[1]); colliders.push({ x: q[0], z: q[1], r: 0.5 }); });
-    [-1, 1].forEach(sd => { const r = at(new T.Mesh(bx(0.14, 0.14, Dp / 2 - 3.4), red), x1, 1.3, cz + sd * (Dp / 4 + 1.7)); const r2 = at(new T.Mesh(bx(0.1, 0.1, Dp / 2 - 3.4), red), x1, 0.7, cz + sd * (Dp / 4 + 1.7)); for (let z = 3.6; z < Dp / 2; z += 1.2) colliders.push({ x: x1 + 0.2, z: cz + sd * z, r: 0.6 }); });
+    [[x0, z0], [x0, z1], [x1, z0], [x1, z1], [x1, cz - 7], [x1, cz + 7], [x0, cz - DW / 2], [x0, cz + DW / 2]].forEach(q => { at(new T.Mesh(cyl(0.34, 0.38, hh, 10), red), q[0], hh / 2, q[1]); at(new T.Mesh(cyl(0.5, 0.5, 0.3, 10), L(0x8c857a)), q[0], 0.15, q[1]); colliders.push({ x: q[0], z: q[1], r: 0.5 }); });
+    [-1, 1].forEach(sd => { const r = at(new T.Mesh(bx(0.14, 0.14, Dp / 2 - 7), red), x1, 1.3, cz + sd * (Dp / 4 + 3.5)); const r2 = at(new T.Mesh(bx(0.1, 0.1, Dp / 2 - 7), red), x1, 0.7, cz + sd * (Dp / 4 + 3.5)); for (let z = 7.2; z < Dp / 2; z += 1.2) colliders.push({ x: x1 + 0.2, z: cz + sd * z, r: 0.6 }); });
     /* the roof: a low hipped roof with a second small one on top, red beams under the eaves; it steps aside while I stand under it */
-    { const r1 = new T.Mesh(new T.ConeGeometry(1, 3.6, 4), tile); r1.rotation.y = Math.PI / 4; r1.scale.set((W + 5) / 1.414, 1, (Dp + 5) / 1.414); r1.position.set(cx, hh + 1.8, cz); ROOF.add(r1);
-      const r2 = new T.Mesh(new T.ConeGeometry(1, 2.6, 4), L(0x38596b)); r2.rotation.y = Math.PI / 4; r2.scale.set((W - 3) / 1.414, 1, (Dp - 6) / 1.414); r2.position.set(cx, hh + 4.6, cz); ROOF.add(r2);
-      const e = new T.Mesh(bx(W + 5.2, 0.3, Dp + 5.2), redD); e.position.set(cx, hh - 0.05, cz); ROOF.add(e); const rd = new T.Mesh(bx(0.5, 0.5, Dp - 9), L(0xd9b35a)); rd.position.set(cx, hh + 5.95, cz); ROOF.add(rd); }
+    { const r1 = new T.Mesh(new T.ConeGeometry(1, 5.4, 4), tile); r1.rotation.y = Math.PI / 4; r1.scale.set((W + 6) / 1.414, 1, (Dp + 6) / 1.414); r1.position.set(cx, hh + 2.7, cz); ROOF.add(r1);
+      const r2 = new T.Mesh(new T.ConeGeometry(1, 4.0, 4), L(0x38596b)); r2.rotation.y = Math.PI / 4; r2.scale.set((W - 5) / 1.414, 1, (Dp - 10) / 1.414); r2.position.set(cx, hh + 6.6, cz); ROOF.add(r2);
+      const e = new T.Mesh(bx(W + 6.2, 0.3, Dp + 6.2), redD); e.position.set(cx, hh - 0.05, cz); ROOF.add(e); const rd = new T.Mesh(bx(0.5, 0.5, Dp - 16), L(0xd9b35a)); rd.position.set(cx, hh + 8.7, cz); ROOF.add(rd); }
     [[cx, z0, W], [cx, z1, W]].forEach(q => { const b = new T.Mesh(bx(q[2] + 1, 0.4, 0.4), red); b.position.set(q[0], hh - 0.5, q[1]); IN.add(b); }); [x0, x1].forEach(x => { const b = new T.Mesh(bx(0.4, 0.4, Dp + 1), red); b.position.set(x, hh - 0.5, cz); IN.add(b); });
     /* the prints: three on the north wall, three on the south, two either side of the west door */
-    const xs = [x0 + 2.6, cx, x1 - 2.6];
-    [by('storm'), by('kajika'), by('ejiri')].forEach((c, i) => hangCat(c, 'hokusai', xs[i], z0 + 0.1, 0, 'z', z0, 1));
-    [by('choshi'), by('whale'), by('suwa')].forEach((c, i) => hangCat(c, 'hokusai', xs[i], z1 - 0.1, Math.PI, 'z', z1, -1));
-    hangCat(by('amida'), 'hokusai', x0 + 0.1, z0 + 2.3, Math.PI / 2, 'x', x0, 1); hangCat(by('mannen'), 'hokusai', x0 + 0.1, z0 + 5.9, Math.PI / 2, 'x', x0, 1);
-    hangCat(by('hydrangea'), 'hokusai', x0 + 0.1, z1 - 5.9, Math.PI / 2, 'x', x0, 1); hangCat(by('bullfinch'), 'hokusai', x0 + 0.1, z1 - 2.3, Math.PI / 2, 'x', x0, 1);
+    const xs = [x0 + 3.8, cx, x1 - 3.8], MD = 4.2;                                                       /* the prints hang larger here, and well apart */
+    [by('storm'), by('kajika'), by('ejiri')].forEach((c, i) => hangCat(c, 'hokusai', xs[i], z0 + 0.1, 0, 'z', z0, 1, 0, MD));
+    [by('choshi'), by('whale'), by('suwa')].forEach((c, i) => hangCat(c, 'hokusai', xs[i], z1 - 0.1, Math.PI, 'z', z1, -1, 0, MD));
+    hangCat(by('amida'), 'hokusai', x0 + 0.1, z0 + 4.2, Math.PI / 2, 'x', x0, 1, 0, MD); hangCat(by('mannen'), 'hokusai', x0 + 0.1, z0 + 10.8, Math.PI / 2, 'x', x0, 1, 0, MD);
+    hangCat(by('hydrangea'), 'hokusai', x0 + 0.1, z1 - 10.8, Math.PI / 2, 'x', x0, 1, 0, MD); hangCat(by('bullfinch'), 'hokusai', x0 + 0.1, z1 - 4.2, Math.PI / 2, 'x', x0, 1, 0, MD);
     /* paper lanterns along the sea side, two floor cushions and a low table */
     const LN = [], lanM = new T.MeshBasicMaterial({ color: 0xfff1d8 });
-    for (let z = z0 + 2; z <= z1 - 1.9; z += 4) { const l = at(new T.Mesh(new T.SphereGeometry(0.5, 10, 8), lanM), x1 + 0.9, hh - 1.6, z); l.scale.y = 1.25; l.userData.noShadow = true; at(new T.Mesh(cyl(0.02, 0.02, 0.9, 4), redD), x1 + 0.9, hh - 0.6, z); at(new T.Mesh(cyl(0.3, 0.3, 0.1, 8), redD), x1 + 0.9, hh - 0.95, z); LN.push(x1 + 0.9, hh - 1.6, z); }
+    for (let z = z0 + 2; z <= z1 - 1.9; z += 5.33) { const l = at(new T.Mesh(new T.SphereGeometry(0.5, 10, 8), lanM), x1 + 0.9, hh - 1.6, z); l.scale.y = 1.25; l.userData.noShadow = true; at(new T.Mesh(cyl(0.02, 0.02, 0.9, 4), redD), x1 + 0.9, hh - 0.6, z); at(new T.Mesh(cyl(0.3, 0.3, 0.1, 8), redD), x1 + 0.9, hh - 0.95, z); LN.push(x1 + 0.9, hh - 1.6, z); }
     { at(new T.Mesh(bx(2.4, 0.16, 1.4), L(0x5a3a26)), cx + 1, 0.75, cz); [[-1, -0.55], [1, -0.55], [-1, 0.55], [1, 0.55]].forEach(q => at(new T.Mesh(bx(0.14, 0.7, 0.14), L(0x5a3a26)), cx + 1 + q[0], 0.37, cz + q[1])); at(new T.Mesh(cyl(0.22, 0.16, 0.3, 10), L(0x3f6fa8)), cx + 0.6, 0.98, cz); at(new T.Mesh(cyl(0.12, 0.1, 0.16, 8), L(0xf6f2ea)), cx + 1.5, 0.92, cz + 0.2);
       [[cx + 1, cz - 1.9], [cx + 1, cz + 1.9]].forEach(q => at(new T.Mesh(bx(1.5, 0.22, 1.5), L(0x3f5f9a)), q[0], 0.15, q[1])); colliders.push({ x: cx + 1, z: cz, r: 1.4 }); }
     /* THE WAVE: the print's profile cut out and given depth, seen side-on from the pavilion; foam claws along the crest, spray beneath the lip, a smaller wave before it, Fuji far behind */
@@ -2984,7 +2984,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const foam = new T.InstancedMesh(new T.IcosahedronGeometry(1, 0), foamM, FO.length), o = new T.Object3D(); FO.forEach((q, i) => { o.position.set(q[0], q[1], q[2]); o.rotation.set(i, i * 2, 0); o.scale.setScalar(q[3]); o.updateMatrix(); foam.setMatrixAt(i, o.matrix); }); foam.frustumCulled = false; foam.userData.noShadow = foam.userData.noLos = true; scene.add(foam);
     { const fj = at(new T.Mesh(new T.ConeGeometry(24, 19, 20), L(0x5f7fa8)), K.wx + 78, 7.5, K.wz + 6); fj.userData.noShadow = fj.userData.noLos = true; const cap = at(new T.Mesh(new T.ConeGeometry(7.2, 5.7, 20), L(0xf6f4ec)), K.wx + 78, 14.2, K.wz + 6); cap.userData.noShadow = cap.userData.noLos = true; }
     /* a red gate standing in the shallows, a lane from the garden walk, the name, and the lanterns' glow at night */
-    { const gx = x1 + 13, gz = cz + 17, g = new T.Group(); g.position.set(gx, 0, gz); g.rotation.y = 0.5; scene.add(g); [-2.6, 2.6].forEach(z => put(g, new T.Mesh(cyl(0.3, 0.36, 7.4, 10), red), 0, 3.0, z)); put(g, new T.Mesh(bx(0.5, 0.5, 7.6), red), 0, 5.6, 0); put(g, new T.Mesh(bx(0.7, 0.5, 9.2), redD), 0, 6.9, 0); put(g, new T.Mesh(bx(0.8, 0.22, 9.8), L(0x2a2a2a)), 0, 7.25, 0); put(g, new T.Mesh(bx(0.4, 0.9, 0.5), red), 0, 6.2, 0); colliders.push({ x: gx, z: gz, r: 0.6 }); }
+    { const gx = x1 + 11, gz = cz + 26, g = new T.Group(); g.position.set(gx, 0, gz); g.rotation.y = 0.5; scene.add(g); [-2.6, 2.6].forEach(z => put(g, new T.Mesh(cyl(0.3, 0.36, 7.4, 10), red), 0, 3.0, z)); put(g, new T.Mesh(bx(0.5, 0.5, 7.6), red), 0, 5.6, 0); put(g, new T.Mesh(bx(0.7, 0.5, 9.2), redD), 0, 6.9, 0); put(g, new T.Mesh(bx(0.8, 0.22, 9.8), L(0x2a2a2a)), 0, 7.25, 0); put(g, new T.Mesh(bx(0.4, 0.9, 0.5), red), 0, 6.2, 0); colliders.push({ x: gx, z: gz, r: 0.6 }); }
     { const ln = new T.Mesh(new T.PlaneGeometry(x0 - 92.6, 3.8), new T.MeshLambertMaterial({ color: 0xe6d3a3, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); ln.rotation.x = -Math.PI / 2; ln.position.set((x0 + 92.6) / 2, 0.04, cz); ln.userData.noShadow = true; scene.add(ln);
       at(new T.Mesh(cyl(0.12, 0.14, 2.6, 6), woodP), x0 - 2.2, 1.3, cz - 4.4); const pl = makeNamePlate('호쿠사이 파도관'); pl.sprite.scale.set(7.2, 1.8, 1); pl.sprite.position.set(x0 - 2.2, 3.4, cz - 4.4); scene.add(pl.sprite); }
     const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 64; const c2 = cv2.getContext('2d'), gr = c2.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,0.4)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); c2.fillStyle = gr; c2.fillRect(0, 0, 64, 64);
@@ -3414,7 +3414,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { name: '수정 호수', note: '깊은 동굴 끝, 수정이 빛나는 지하 호수', x: TUN_EX, z: TUN.z1 - 4, h: Math.PI, pitch: 0.14 },
     { name: '고흐의 노란 집', note: '「아를의 침실」 속으로 들어가는 명화의 집. 고흐 그림 10점', x: GOGH.x1 + 9, z: (GOGH.z0 + GOGH.z1) / 2, h: -Math.PI / 2, pitch: 0.2 },
     { name: '모네의 정원', note: '수련 연못과 초록 다리를 직접 건너는 정원. 모네 그림 10점', x: MONET.cx + MONET.rx + 2.6, z: MONET.cz - MONET.rz - 3, h: 0.25, pitch: 0.28 },
-    { name: '호쿠사이 파도관', note: '바다에 선 큰 파도를 바라보는 붉은 정자. 호쿠사이 판화 10점', x: HOKU.x1 + 5, z: (HOKU.z0 + HOKU.z1) / 2 + 8, h: Math.PI / 2 + 0.5, pitch: 0.12 }
+    { name: '호쿠사이 파도관', note: '바다에 선 큰 파도를 바라보는 붉은 정자. 호쿠사이 판화 10점', x: HOKU.x1 + 3, z: (HOKU.z0 + HOKU.z1) / 2 + 12, h: Math.PI / 2 + 0.5, pitch: 0.12 }
   ];
   (function () {
     const at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
@@ -3734,7 +3734,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const rr2 = LAKE.r + 4 + rnd() * 3; treePts.push({ x: LAKE.x + Math.cos(a) * rr2, z: LAKE.z + Math.sin(a) * rr2, s: 0.55 + rnd() * 0.25, round: true });
     }
     const dm = new T.Object3D(), gc = new T.Color(), pine = [], round = [];
-    treePts.forEach(q => { const rd = q.round || rnd() < 0.4; if ((Math.abs(q.x - SCULPT.x) < 17 && q.z < SCULPT.z - SCULPT.d / 2 && q.z > SCULPT.z - SCULPT.d / 2 - 17) || (q.x > GOGH.x0 - 6 && q.x < 91 && q.z > GOGH.z0 - 7 && q.z < GOGH.z1 + 7) || (q.x < 59 && q.z > 232 && q.z < 304) || (q.x > 93 && q.z > 214 && q.z < 230) || (q.x > HOKU.x0 - 6 && q.z > HOKU.z0 - 6 && q.z < HOKU.z1 + 6) || (q.x < 67 && q.z > 222 && q.z < 242)) { q.x = -999; return; }   /* no tree stands in front of the sculpture pavilion's entrance (the random numbers are still drawn, so nothing else moves) */
+    treePts.forEach(q => { const rd = q.round || rnd() < 0.4; if ((Math.abs(q.x - SCULPT.x) < 17 && q.z < SCULPT.z - SCULPT.d / 2 && q.z > SCULPT.z - SCULPT.d / 2 - 17) || (q.x > GOGH.x0 - 6 && q.x < 91 && q.z > GOGH.z0 - 7 && q.z < GOGH.z1 + 7) || (q.x > 93 && q.z > 214 && q.z < 230) || (q.x > HOKU.x0 - 6 && q.z > HOKU.z0 - 6 && q.z < HOKU.z1 + 6) || (q.x < 61 && q.z > 72 && q.z < 138)) { q.x = -999; return; }   /* no tree stands in front of the sculpture pavilion's entrance (the random numbers are still drawn, so nothing else moves) */
       (rd ? round : pine).push(q); colliders.push({ x: q.x, z: q.z, r: 0.9 }); });
     const instMesh = (geo, mat, n) => { const m = new T.InstancedMesh(geo, mat, n); m.frustumCulled = false; if (HI) m.castShadow = true; scene.add(m); return m; };   /* instanced meshes are culled by the origin otherwise */
     /* faceted, hand-painted looking foliage: every crown is one merged geometry with a dark-to-light gradient painted into its vertex colours */
@@ -6422,7 +6422,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (x > RM.hx - 0.5) {
       if (inGogh(x, z, 0.5)) return '고흐의 노란 집';
       if (inHoku(x, z, 1.5)) return '호쿠사이 파도관';
-      if (x < 57 && z > 236 && z < 300) return '모네의 정원';
+      if (x < 59.5 && z > 76 && z < 136) return '모네의 정원';
       if (caveD(x, z) < CAVE.r + 0.3) return '동굴 갤러리';
       if (x > SEA_X && isleK(x, z) > 0.4) return '등대 섬';
       if (z < TUN.z0 + 2 && rockIn(x, z, 0)) return '깊은 동굴';
@@ -7751,7 +7751,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     if (window.__goghIn) window.__goghIn(started && inGogh(pos.x, pos.z, 0.2), inGogh(camera.position.x, camera.position.z, 0.6));
     if (window.__caveExt) window.__caveExt(inCave && !inTun); if (window.__caveDark) window.__caveDark(inTun);
     if (inCave && !inTun && window.__caveSt) window.__caveSt(camera.position.x, camera.position.z, pos.x, pos.z);
-    if (pos.x < 75 && pos.z > 215) { for (let i = 0; i < slots.length; i++) { const q = slots[i]; if (q.room !== 'monet') continue; q.g.visible = (camera.position.x - q.x) * Math.sin(q.ry) + (camera.position.z - q.z) * Math.cos(q.ry) > -0.4; } }   /* a garden picture seen from behind steps aside, so its back never fills the view */
+    if (pos.x < 85 && pos.z > 60 && pos.z < 150) { for (let i = 0; i < slots.length; i++) { const q = slots[i]; if (q.room !== 'monet') continue; q.g.visible = (camera.position.x - q.x) * Math.sin(q.ry) + (camera.position.z - q.z) * Math.cos(q.ry) > -0.4; } }   /* a garden picture seen from behind steps aside, so its back never fills the view */
     if (inTun || caveSeen) { caveSeen = inTun; for (let i = 0; i < slots.length; i++) { const q = slots[i]; if (q.room !== 'cave') continue; q.g.visible = !inTun || (camera.position.x - q.x) * Math.sin(q.ry) + (camera.position.z - q.z) * Math.cos(q.ry) > -0.4; } }   /* in the deep cave a picture seen from behind (the camera is outside the rock) steps aside */
     const uwC = DV.y < -0.6 && pos.x > SEA_X + 1, pe = Math.max(camPitch, uwC ? -0.6 : 0.08), cp = Math.cos(pe);   /* under water the camera may sink below me and look up */      /* below 0.08 the camera stops sinking and starts looking up instead */
     /* no clamping to the walls: walls are one-sided, so from outside they vanish and the view stays wide */
