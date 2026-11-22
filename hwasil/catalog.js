@@ -195,5 +195,27 @@ window.MUSEUM_HOUSES = [
       blurb: '모네가 젊을 때 살던 집 마당이에요. 굴렁쇠를 든 아이는 아들 장이고, 문가에 선 사람은 아내 카미유예요.' },
     { id: 'mo_parliament', title: '런던 국회의사당', artist: '클로드 모네', year: '1900~01년', place: '시카고 미술관 (미국)', w: 92.8, h: 81.2, img: 'art/mo_parliament.jpg',
       blurb: '안개 낀 템스 강 너머로 국회의사당이 보여요. 모네는 런던의 안개가 햇빛을 물들이는 모습을 좋아했어요.' }
+  ] },
+  { id: 'hokusai', name: '호쿠사이 파도관', note: '바다에 선 큰 파도를 바라보는 정자', pieces: [
+    { id: 'hk_storm', title: '산 아래의 소나기', artist: '가쓰시카 호쿠사이', year: '1830~33년경', place: '시카고 미술관 (미국)', w: 37.6, h: 25.7, img: 'art/hk_storm.jpg',
+      blurb: '후지산 꼭대기는 맑은데 산 아래에는 번개가 쳐요. 「붉은 후지」와 짝을 이루는 그림이라 「검은 후지」라고도 불러요.' },
+    { id: 'hk_kajika', title: '가이 지방 가지카자와', artist: '가쓰시카 호쿠사이', year: '1830~33년경', place: '시카고 미술관 (미국)', w: 36.7, h: 25.8, img: 'art/hk_kajika.jpg',
+      blurb: '거친 물살 위 바위 끝에서 어부가 그물 줄을 당기고 있어요. 바위와 어부와 줄이 만드는 세모 모양이 멀리 보이는 후지산과 닮았어요.' },
+    { id: 'hk_ejiri', title: '스루가 지방 에지리', artist: '가쓰시카 호쿠사이', year: '1830~33년경', place: '시카고 미술관 (미국)', w: 37.5, h: 26.2, img: 'art/hk_ejiri.jpg',
+      blurb: '갑자기 분 센 바람에 종이와 삿갓이 하늘로 날아가요. 눈에 보이지 않는 바람을 날아가는 물건으로 그려 냈어요.' },
+    { id: 'hk_mannen', title: '후카가와 만넨 다리 아래', artist: '가쓰시카 호쿠사이', year: '1830~33년경', place: '시카고 미술관 (미국)', w: 37.2, h: 25.8, img: 'art/hk_mannen.jpg',
+      blurb: '둥글게 솟은 큰 다리 아래로 멀리 작은 후지산이 보여요. 다리 위로는 사람들이 바쁘게 지나가요.' },
+    { id: 'hk_amida', title: '기소 깊은 곳의 아미다 폭포', artist: '가쓰시카 호쿠사이', year: '1833년경', place: '시카고 미술관 (미국)', w: 25.4, h: 38.2, img: 'art/hk_amida.jpg',
+      blurb: '여러 지방의 폭포를 찾아다니며 그린 연작 가운데 하나예요. 둥근 구멍에서 물이 쏟아지고, 절벽 위에서는 사람들이 소풍을 즐겨요.' },
+    { id: 'hk_suwa', title: '시나노 지방 스와 호수', artist: '가쓰시카 호쿠사이', year: '1830~33년경', place: '시카고 미술관 (미국)', w: 37.5, h: 25.8, img: 'art/hk_suwa.jpg',
+      blurb: '언덕 위 소나무 두 그루와 작은 오두막 너머로 넓은 호수와 후지산이 펼쳐져요.' },
+    { id: 'hk_choshi', title: '시모사 지방 조시의 고깃배', artist: '가쓰시카 호쿠사이', year: '1833~34년경', place: '시카고 미술관 (미국)', w: 25.8, h: 18.9, img: 'art/hk_choshi.jpg',
+      blurb: '「바다의 천 가지 모습」이라는 연작이에요. 큰 파도 사이로 고깃배가 아슬아슬하게 나아가요. 바다에 선 큰 파도와 견주어 보세요.' },
+    { id: 'hk_whale', title: '고토 앞바다의 고래잡이', artist: '가쓰시카 호쿠사이', year: '1831~33년경', place: '시카고 미술관 (미국)', w: 25.7, h: 19, img: 'art/hk_whale.jpg',
+      blurb: '같은 바다 연작이에요. 작은 배 여러 척이 커다란 고래를 둘러싸고 있어요.' },
+    { id: 'hk_hydrangea', title: '수국과 제비', artist: '가쓰시카 호쿠사이', year: '1833~34년경', place: '시카고 미술관 (미국)', w: 38.5, h: 26.1, img: 'art/hk_hydrangea.jpg',
+      blurb: '호쿠사이는 풍경뿐 아니라 꽃과 새도 잘 그렸어요. 탐스러운 수국 위로 제비가 재빠르게 날아가요.' },
+    { id: 'hk_bullfinch', title: '피리새와 수양벚나무', artist: '가쓰시카 호쿠사이', year: '1834년경', place: '시카고 미술관 (미국)', w: 19.1, h: 25.4, img: 'art/hk_bullfinch.jpg',
+      blurb: '거꾸로 매달린 작은 새와 늘어진 벚꽃 가지예요. 진한 파란 바탕 덕분에 분홍 꽃이 더 또렷해 보여요.' }
   ] }
 ];
