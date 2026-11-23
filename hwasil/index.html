@@ -3646,7 +3646,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         put(g, new T.Mesh(bx(1.6, 3.2, 0.1), glass), 0, 8.2, 10.52); [-2.7, 2.7].forEach(dx => [-3, 3].forEach(dz => put(g, new T.Mesh(bx(0.1, 2.4, 1.0), glass), dx * 1.5, 3.6, dz + 0.0)));
       }
       /* fences round a meadow and the cows grazing in it */
-      const fenceL = (x0, z0, x1, z1) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 3)); for (let i = 0; i <= n; i++) put(V, new T.Mesh(bx(0.22, 1.3, 0.22), timber), x0 + (x1 - x0) * i / n, 0.65, z0 + (z1 - z0) * i / n); const r = put(V, new T.Mesh(bx(Math.hypot(x1 - x0, z1 - z0), 0.16, 0.14), timberL), (x0 + x1) / 2, 1.0, (z0 + z1) / 2); r.rotation.y = -Math.atan2(z1 - z0, x1 - x0); };
+      const fenceL = (x0, z0, x1, z1) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 3)); for (let i = 0; i <= n; i++) put(V, new T.Mesh(bx(0.22, 1.3, 0.22), timber), x0 + (x1 - x0) * i / n, 0.65, z0 + (z1 - z0) * i / n); const r = put(V, new T.Mesh(bx(Math.hypot(x1 - x0, z1 - z0), 0.16, 0.14), timberL), (x0 + x1) / 2, 1.0, (z0 + z1) / 2); r.rotation.y = -Math.atan2(z1 - z0, x1 - x0); const m = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / 1.0)); for (let i = 0; i <= m; i++) colliders.push({ x: x0 + (x1 - x0) * i / m, z: z0 + (z1 - z0) * i / m, r: 0.5 }); };   /* the fences are solid now that the meadows outside them are open: the gate is the way in */
       fenceL(66, -68, 89.4, -68); fenceL(94.6, -68, 108, -68); fenceL(66, -68, 62, -100); fenceL(108, -68, 124, -98);                 /* a gate in the front fence: the village is open now */
       [89.4, 94.6].forEach(x => put(V, new T.Mesh(bx(0.4, 3.4, 0.4), timber), x, 1.7, -68)); put(V, new T.Mesh(bx(6.2, 0.36, 0.4), timber), 92, 3.4, -68);
       { const pl = makeNamePlate('알프스 마을'); pl.sprite.scale.set(5.2, 1.3, 1); pl.sprite.position.set(92, 4.4, -68); V.add(pl.sprite); }
@@ -4713,6 +4713,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     ['동쪽 문', (x, z) => Math.abs(z) <= DOOR - 0.5 && x > RM.hx - 1.01 && x <= OUT.x0 + 0.01],
     ['마을 문', (x, z) => z < OUT.z0 && Math.abs(x - NORTH.x) <= 2.1 && z >= -70.6],
     ['알프스 마을', (x, z) => z >= -92 && z <= -70.4 && x >= 67 + (-68 - z) * -0.125 && x <= 107 + (-68 - z) * 0.533],
+    ['마을 들판', (x, z) => z >= -92.4 && z <= OUT.z0 + 0.1 && x >= 44 && x <= 148 && !(caveD(x, z) < CAVE.r + 1.3)],   /* the meadows either side of the village, from the foothills down to the field: nothing invisible in the way */
     ['골짜기 길', (x, z) => Math.abs(x - NORTH.x) <= 4.5 && z >= -128 && z < -91.9],
     ['산자락', (x, z) => x >= HILL.x0 && x <= 148 && z >= HILL.z0 && z <= HILL.z1],
     ['해안 길', (x, z) => { if (!(x >= 126 && x <= 148 && z > HILL.z1 && z < OUT.z0)) return false; const d = caveD(x, z); return d < CAVE.r - 1.1 || d > CAVE.r + 1.3 || caveAng(x, z) < CAVE.mouth * 0.72; }],   /* the cave's rock wall is solid except at its mouth */
