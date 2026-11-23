@@ -1070,6 +1070,12 @@ body.padOpen #hud { visibility: hidden; }
     sh.fragmentShader = 'varying vec3 vGw;\nfloat gh(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }\nfloat gn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(mix(gh(i), gh(i + vec3(1.0, 0.0, 0.0)), f.x), mix(gh(i + vec3(0.0, 1.0, 0.0)), gh(i + vec3(1.0, 1.0, 0.0)), f.x), f.y), mix(mix(gh(i + vec3(0.0, 0.0, 1.0)), gh(i + vec3(1.0, 0.0, 1.0)), f.x), mix(gh(i + vec3(0.0, 1.0, 1.0)), gh(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z); }\n' + sh.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = vec4( diffuse, opacity );\ndiffuseColor.rgb *= 0.86 + 0.18 * gn(vGw * 0.9) + 0.12 * gn(vGw * vec3(6.0, 2.2, 6.0));');
   };
   const L = (c, o) => { const m = new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: toonGrad }, o || {})); if (GRAIN) { m.onBeforeCompile = grainFn; m.customProgramCacheKey = () => 'grain'; } return m; };
+  /* roof tiles drawn by the shader: rows by height, columns staggered row by row, each tile lit at its top, shadowed at its lower lip and tinted a little differently. R rows and C columns per metre */
+  const tiled = (m, R, C) => { R = (R || 2.2).toFixed(2); C = (C || 2.4).toFixed(2); const g = m.onBeforeCompile === grainFn;
+    m.onBeforeCompile = sh => { if (g) grainFn(sh);
+      sh.vertexShader = 'varying vec3 vTp;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvTp = position;');
+      sh.fragmentShader = 'varying vec3 vTp;\nfloat th(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n' + sh.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = vec4( diffuse, opacity );\n{ float ry = vTp.y * ' + R + '; float rw = floor(ry), fy = fract(ry); float tu = (vTp.x + vTp.z) * ' + C + ' + rw * 0.5; float cu = floor(tu), fx = fract(tu); float ts = 0.8 + 0.3 * fy; ts *= 1.0 - 0.32 * (1.0 - smoothstep(0.0, 0.16, fy)); ts *= 1.0 - 0.24 * (1.0 - smoothstep(0.0, 0.1, fx)); ts *= 0.9 + 0.2 * th(vec2(rw, cu)); diffuseColor.rgb *= ts; }'); };
+    m.customProgramCacheKey = () => 'tile' + R + '_' + C + (g ? 'g' : ''); return m; };
   /* wind: bends vertices with their height. mode 'local' uses the vertex height (+base), 'inst' the instance's own height */
   const swayT = { value: 0 };
   function sway(mat, amp, base, mode) {
@@ -1176,13 +1182,15 @@ body.padOpen #hud { visibility: hidden; }
   /* ground outside the building, seen when the far camera looks in over a wall */
   function grassTexture() {
     const S = 512, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d'), r = mulberry32(31);
-    x.fillStyle = '#8fbc68'; x.fillRect(0, 0, S, S);
+    x.fillStyle = '#7fae62'; x.fillRect(0, 0, S, S);
     const wrap = (px, py, rad, col) => { x.fillStyle = col; for (let dx = -S; dx <= S; dx += S) for (let dy = -S; dy <= S; dy += S) { x.beginPath(); x.arc(px + dx, py + dy, rad, 0, 6.2832); x.fill(); } };
     for (let i = 0; i < 40; i++) wrap(r() * S, r() * S, 50 + r() * 80, r() < 0.5 ? 'rgba(190,214,110,0.16)' : 'rgba(86,142,86,0.16)');      /* broad sunny and shady lawns */
     for (let i = 0; i < 560; i++) wrap(r() * S, r() * S, 8 + r() * 26, r() < 0.5 ? 'rgba(170,208,112,0.2)' : 'rgba(104,154,82,0.2)');
     x.strokeStyle = 'rgba(70,122,56,0.38)'; x.lineWidth = 1.5;
     for (let i = 0; i < 2400; i++) { const px = r() * S, py = r() * S; x.beginPath(); x.moveTo(px, py); x.lineTo(px + (r() - 0.5) * 5, py - 3 - r() * 5); x.stroke(); }
-    for (let i = 0; i < 90; i++) { x.fillStyle = ['rgba(255,255,255,0.75)', 'rgba(255,214,90,0.7)', 'rgba(247,170,200,0.65)'][i % 3]; x.beginPath(); x.arc(r() * S, r() * S, 1.6 + r() * 1.2, 0, 6.2832); x.fill(); }   /* tiny clover flowers */
+    for (let i = 0; i < 70; i++) wrap(r() * S, r() * S, 14 + r() * 30, r() < 0.6 ? 'rgba(52,92,60,0.2)' : 'rgba(124,116,70,0.16)');   /* deep mossy shade and a little bare earth */
+    for (let i = 0; i < 3200; i++) { const px = r() * S, py = r() * S, k = r(); x.strokeStyle = k < 0.45 ? 'rgba(46,96,52,0.5)' : k < 0.8 ? 'rgba(150,196,104,0.45)' : 'rgba(206,214,130,0.4)'; x.lineWidth = 1 + r(); x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + (r() - 0.5) * 4, py - 4, px + (r() - 0.5) * 8, py - 5 - r() * 7); x.stroke(); }   /* blades of three greens */
+    for (let i = 0; i < 60; i++) { x.fillStyle = ['rgba(255,255,255,0.75)', 'rgba(255,214,90,0.7)', 'rgba(247,170,200,0.65)'][i % 3]; x.beginPath(); x.arc(r() * S, r() * S, 1.6 + r() * 1.2, 0, 6.2832); x.fill(); }   /* tiny clover flowers */
     const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(650 / 32, 1000 / 32); t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
     return t;
   }
@@ -1268,7 +1276,7 @@ body.padOpen #hud { visibility: hidden; }
       const k = new T.Mesh(o.geometry, m2); k.userData.noSkin = true; k.userData.noLos = true; k.visible = false; o.add(k); SKIN.push(k); });
     atmHooks.push(A => { const g2 = 0.12 + 0.95 * Math.min(1, A.night * 1.3); em.setRGB(g2, g2 * 0.95, g2 * 0.85); deco.forEach(m3 => { m3.emissive.copy(em); }); });
     /* roofs (seen from the hills, the balloons and the far side of the garden), a rose window and twin bell towers on the garden front */
-    { const slate = new T.MeshLambertMaterial({ color: 0x5d6978, flatShading: true, side: T.DoubleSide }), copper = new T.MeshLambertMaterial({ color: 0x6fa58f, flatShading: true }), gold = new T.MeshLambertMaterial({ color: 0xe8c14a, emissive: 0x4a3a08 }), add = m => { m.userData.noSkin = true; m.userData.noLos = true; m.userData.noShadow = true; m.visible = false; scene.add(m); SKIN.push(m); return m; };
+    { const slate = tiled(new T.MeshLambertMaterial({ color: 0x5d6978, side: T.DoubleSide }), 1.1, 1.0), copper = new T.MeshLambertMaterial({ color: 0x6fa58f, flatShading: true }), gold = new T.MeshLambertMaterial({ color: 0xe8c14a, emissive: 0x4a3a08 }), add = m => { m.userData.noSkin = true; m.userData.noLos = true; m.userData.noShadow = true; m.visible = false; scene.add(m); SKIN.push(m); return m; };
       const tops = BUILD.map(b => { let top = 0; found.forEach(o => { bb.setFromObject(o); bb.getCenter(c); const inb = b.r ? (c.x >= b.r[0] - 1.5 && c.x <= b.r[1] + 1.5 && c.z >= b.r[2] - 1.5 && c.z <= b.r[3] + 1.5) : Math.hypot(c.x - b.c[0], c.z - b.c[1]) <= b.c[2] + 1.5; if (inb && bb.max.y > top) top = bb.max.y; }); return top || RM.h; });
       BUILD.forEach((b, bi) => { if (b.n.indexOf('동굴') >= 0) return; const top = tops[bi];
         if (b.c) { const cn = add(new T.Mesh(new T.ConeGeometry(b.c[2] + 1.2, 9, 20), slate)); cn.position.set(b.c[0], top + 4.5, b.c[1]); const fin = add(new T.Mesh(new T.SphereGeometry(0.7, 8, 6), gold)); fin.position.set(b.c[0], top + 9.4, b.c[1]); return; }
@@ -2955,7 +2963,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   (function () {
     const H = (window.MUSEUM_HOUSES || []).find(q => q.id === 'hokusai'); if (!H) return;
     const K = HOKU, x0 = K.x0, x1 = K.x1, z0 = K.z0, z1 = K.z1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, Dp = z1 - z0, hh = 9.4, P = H.pieces, by = k => P.find(q => q.id === 'hk_' + k);
-    const red = L(0xc8402f), redD = L(0x9a2f24), woodP = L(0xb98a5a), tile = L(0x2f4a5a), at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
+    const red = L(0xc8402f), redD = L(0x9a2f24), woodP = L(0xb98a5a), tile = tiled(L(0x2f4a5a)), at = (m, x, y, z) => { m.position.set(x, y, z); scene.add(m); return m; };
     const IN = new T.Group(), ROOF = new T.Group(); scene.add(IN); scene.add(ROOF);
     /* deck, paper walls (one-sided, facing in) with a doorway in the west wall, pillars */
     { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d'); g.fillStyle = '#c9a070'; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#bf9565' : '#d3ab7c'; g.fillRect(0, i * 32, 256, 30); } const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(W / 6, Dp / 6);
@@ -2969,8 +2977,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     [[x0, z0], [x0, z1], [x1, z0], [x1, z1], [x1, cz - 7], [x1, cz + 7], [x0, cz - DW / 2], [x0, cz + DW / 2]].forEach(q => { at(new T.Mesh(cyl(0.34, 0.38, hh, 10), red), q[0], hh / 2, q[1]); at(new T.Mesh(cyl(0.5, 0.5, 0.3, 10), L(0x8c857a)), q[0], 0.15, q[1]); colliders.push({ x: q[0], z: q[1], r: 0.5 }); });
     [-1, 1].forEach(sd => { const r = at(new T.Mesh(bx(0.14, 0.14, Dp / 2 - 7), red), x1, 1.3, cz + sd * (Dp / 4 + 3.5)); const r2 = at(new T.Mesh(bx(0.1, 0.1, Dp / 2 - 7), red), x1, 0.7, cz + sd * (Dp / 4 + 3.5)); for (let z = 7.2; z < Dp / 2; z += 1.2) colliders.push({ x: x1 + 0.2, z: cz + sd * z, r: 0.6 }); });
     /* the roof: a low hipped roof with a second small one on top, red beams under the eaves; it steps aside while I stand under it */
-    { const r1 = new T.Mesh(new T.ConeGeometry(1, 5.4, 4), tile); r1.rotation.y = Math.PI / 4; r1.scale.set((W + 6) / 1.414, 1, (Dp + 6) / 1.414); r1.position.set(cx, hh + 2.7, cz); ROOF.add(r1);
-      const r2 = new T.Mesh(new T.ConeGeometry(1, 4.0, 4), L(0x38596b)); r2.rotation.y = Math.PI / 4; r2.scale.set((W - 5) / 1.414, 1, (Dp - 10) / 1.414); r2.position.set(cx, hh + 6.6, cz); ROOF.add(r2);
+    { const r1 = new T.Mesh(new T.ConeGeometry(1, 5.4, 4).rotateY(Math.PI / 4).scale((W + 6) / 1.414, 1, (Dp + 6) / 1.414), tile); r1.position.set(cx, hh + 2.7, cz); ROOF.add(r1);
+      const r2 = new T.Mesh(new T.ConeGeometry(1, 4.0, 4).rotateY(Math.PI / 4).scale((W - 5) / 1.414, 1, (Dp - 10) / 1.414), tiled(L(0x38596b))); r2.position.set(cx, hh + 6.6, cz); ROOF.add(r2);
       const e = new T.Mesh(bx(W + 6.2, 0.3, Dp + 6.2), redD); e.position.set(cx, hh - 0.05, cz); ROOF.add(e); const rd = new T.Mesh(bx(0.5, 0.5, Dp - 16), L(0xd9b35a)); rd.position.set(cx, hh + 8.7, cz); ROOF.add(rd); }
     [[cx, z0, W], [cx, z1, W]].forEach(q => { const b = new T.Mesh(bx(q[2] + 1, 0.4, 0.4), red); b.position.set(q[0], hh - 0.5, q[1]); IN.add(b); }); [x0, x1].forEach(x => { const b = new T.Mesh(bx(0.4, 0.4, Dp + 1), red); b.position.set(x, hh - 0.5, cz); IN.add(b); });
     /* the prints: three on the north wall, three on the south, two either side of the west door */
@@ -3069,7 +3077,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const WARMC = new T.Color(0xffb46a), lit = [];
     const mk = (c, k, o) => { const m = L(c, o); m.userData.k = k === undefined ? 0.5 : k; m.userData.c = new T.Color(c); lit.push(m); return m; };
     const add = (geo, mat, x, y, z, p) => { const m = new T.Mesh(geo, mat); m.position.set(x, y, z); (p || G).add(m); return m; };
-    const wood = mk(0x6a472e), woodD = mk(0x3d281a), tile = mk(0x34404c, 0.22), stoneM = mk(0x8d8679, 0.4), red = mk(0xa23c2e, 0.45), leafR = mk(0xb8382c, 0.4), leafO = mk(0xd6612f, 0.4), bamb = mk(0x56803c, 0.3), bambL = mk(0x3f6a34, 0.3);
+    const wood = mk(0x6a472e), woodD = mk(0x3d281a), tile = tiled(mk(0x34404c, 0.22)), stoneM = mk(0x8d8679, 0.4), red = mk(0xa23c2e, 0.45), leafR = mk(0xb8382c, 0.4), leafO = mk(0xd6612f, 0.4), bamb = mk(0x56803c, 0.3), bambL = mk(0x3f6a34, 0.3);
     const paper = new T.MeshBasicMaterial({ color: 0xffe7b4, fog: false }), paperR = new T.MeshBasicMaterial({ color: 0xffb98a, fog: false }), eaveM = new T.MeshBasicMaterial({ color: 0xffd28a, fog: false }), dark = new T.MeshBasicMaterial({ color: 0x1c1410 });
     const HAL = [], POOL = [], GOODS = [], BULB = [], V = new T.Vector3();
     const shoji = (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, '#fff3cf'); gr.addColorStop(1, '#ffd58c'); g.fillStyle = gr; g.fillRect(0, 0, 256, 128); g.strokeStyle = '#4a3022'; g.lineWidth = 3; for (let i = 0; i <= 8; i++) { g.beginPath(); g.moveTo(i * 32, 0); g.lineTo(i * 32, 128); g.stroke(); } for (let j = 0; j <= 4; j++) { g.beginPath(); g.moveTo(0, j * 32); g.lineTo(256, j * 32); g.stroke(); } const t = new T.CanvasTexture(c); t.wrapS = T.RepeatWrapping; return t; })();
@@ -3083,7 +3091,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const world = (g, x, y, z) => { g.updateMatrixWorld(true); return g.localToWorld(new T.Vector3(x, y, z)); };
     const hal = (v, hex) => HAL.push([v.x, v.y, v.z, hex || 0xffb968]);
     const vsign = txt => { const c = document.createElement('canvas'); c.width = 64; c.height = 64 * Math.max(2, txt.length) + 16; const g = c.getContext('2d'); g.fillStyle = '#2c1c12'; g.fillRect(0, 0, c.width, c.height); g.strokeStyle = '#d9b06a'; g.lineWidth = 4; g.strokeRect(4, 4, c.width - 8, c.height - 8); g.fillStyle = '#ffe9b8'; g.font = '700 44px "Jua", "Gowun Dodum", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; for (let i = 0; i < txt.length; i++) g.fillText(txt[i], 32, 40 + i * 64 + (txt.length < 2 ? 32 : 0)); const t = new T.CanvasTexture(c); return { t: t, a: c.height / c.width }; };
-    const hipG = new T.ConeGeometry(0.7071, 1, 4, 1).rotateY(Math.PI / 4), hipRoof = (g, w, d, h, y) => { const rr = add(hipG, tile, 0, y + h / 2, 0, g); rr.scale.set(w, h, d); add(bx(w + 0.2, 0.16, d + 0.2), woodD, 0, y - 0.06, 0, g); add(bx(Math.max(0.6, w * 0.3), 0.24, 0.4), woodD, 0, y + h - 0.06, 0, g); return rr; };
+    const hipRoof = (g, w, d, h, y) => { const rr = add(new T.ConeGeometry(0.7071, 1, 4, 1).rotateY(Math.PI / 4).scale(w, h, d), tile, 0, y + h / 2, 0, g); add(bx(w + 0.2, 0.16, d + 0.2), woodD, 0, y - 0.06, 0, g); add(bx(Math.max(0.6, w * 0.3), 0.24, 0.4), woodD, 0, y + h - 0.06, 0, g); return rr; };
     /* a stall: a wooden deck, a counter of crates, a glowing paper back wall, a dark tiled hip roof with a lit eave, cloth strips, two lanterns and a hanging name board */
     const STALLS = [];
     const stall = (x, z, ry, name, clothHex, goods) => {
@@ -3739,7 +3747,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     {
       /* the village on the plain at the foot of the foothills: seen from the mountain viewpoint, beyond the fence */
       const V = new T.Group(); scene.add(V);
-      const plaster = L(0xf1e6d0), timber = L(0x8a5a34), timberL = L(0xb07a46), roofR = L(0x8f3b2b), roofB = L(0x5e3a26), glass = L(0x7fa9cc), door = L(0x5a3a22), geran = L(0xd9342b), leaf = L(0x4f9a46);
+      const plaster = L(0xf1e6d0), timber = L(0x8a5a34), timberL = L(0xb07a46), roofR = tiled(L(0x8f3b2b)), roofB = tiled(L(0x5e3a26), 1.8, 0.9), glass = L(0x7fa9cc), door = L(0x5a3a22), geran = L(0xd9342b), leaf = L(0x4f9a46);
       function chalet(x, z, ry, w, d, h, roofMat) {
         const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry; V.add(g);
         put(g, new T.Mesh(bx(w, 1.5, d), plaster), 0, 0.75, 0);
@@ -3759,7 +3767,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       { const cx = 85, cz = -82, g = new T.Group(); g.position.set(cx, 0, cz); V.add(g);
         put(g, new T.Mesh(bx(8, 6.4, 14), L(0xf6f0e4)), 0, 3.2, 0);
         const sh = new T.Shape(); sh.moveTo(-4.6, 0); sh.lineTo(4.6, 0); sh.lineTo(0, 3.6); sh.lineTo(-4.6, 0);
-        const rg = new T.ExtrudeGeometry(sh, { depth: 14.6, bevelEnabled: false }); rg.translate(0, 0, -7.3); put(g, new T.Mesh(rg, L(0xa6402c)), 0, 6.4, 0);
+        const rg = new T.ExtrudeGeometry(sh, { depth: 14.6, bevelEnabled: false }); rg.translate(0, 0, -7.3); put(g, new T.Mesh(rg, tiled(L(0xa6402c))), 0, 6.4, 0);
         put(g, new T.Mesh(bx(4.2, 14, 4.2), L(0xf6f0e4)), 0, 7, 8.4);
         put(g, new T.Mesh(new T.ConeGeometry(3.2, 9.5, 8), L(0x4a5f7a)), 0, 18.7, 8.4);
         put(g, new T.Mesh(bx(0.18, 1.8, 0.18), L(0xd9b35a)), 0, 24.4, 8.4); put(g, new T.Mesh(bx(1.0, 0.18, 0.18), L(0xd9b35a)), 0, 24.8, 8.4);
@@ -4232,11 +4240,14 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       /* ---- the garden walk: one paved flagstone path from the museum's east door, along the lawn and down the south road to the garden gate,
               with flower beds on both sides, lanterns, benches, a flowered arch and signposts ---- */
       const fc = document.createElement('canvas'); fc.width = fc.height = 256; const fq = fc.getContext('2d');
-      fq.fillStyle = '#d9ccaa'; fq.fillRect(0, 0, 256, 256);
-      for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) {                                                              /* running-bond flagstones, each a little different */
-        const w = 256 / 3, x0 = c * w + (r % 2 ? w / 2 : 0) - w / 2, sh = 232 + ((r * 5 + c * 11) % 5) * 4; fq.fillStyle = 'rgb(' + sh + ',' + (sh - 10) + ',' + (sh - 38) + ')';
-        [x0, x0 + 256].forEach(xx => fq.fillRect(xx + 3, r * 64 + 3, w - 6, 58));
-      }
+      fq.fillStyle = '#7d7a66'; fq.fillRect(0, 0, 256, 256);                                                                 /* mossy earth between the stones */
+      { let sd = 5; const rr = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+        for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) {                                                            /* running-bond flagstones with rounded, uneven corners, each its own weathered tone */
+          const w = 256 / 3, x0 = c * w + (r % 2 ? w / 2 : 0) - w / 2, sh = 196 + Math.floor(rr() * 40), wm = rr() * 14, j = () => 2 + rr() * 5, y0 = r * 64, q = [j(), j(), j(), j(), j(), j(), j(), j()];
+          [x0, x0 + 256].forEach(xx => { const g2 = fq.createLinearGradient(xx, y0, xx + w, y0 + 64); g2.addColorStop(0, 'rgb(' + (sh + 8) + ',' + Math.round(sh - 2 + wm * 0.2) + ',' + (sh - 30) + ')'); g2.addColorStop(1, 'rgb(' + (sh - 14) + ',' + (sh - 22) + ',' + (sh - 46) + ')'); fq.fillStyle = g2;
+            fq.beginPath(); fq.moveTo(xx + q[0] + 8, y0 + q[1]); fq.lineTo(xx + w - q[2] - 8, y0 + q[3]); fq.quadraticCurveTo(xx + w - q[2], y0 + q[3], xx + w - q[2], y0 + q[3] + 8); fq.lineTo(xx + w - q[4], y0 + 64 - q[5] - 8); fq.quadraticCurveTo(xx + w - q[4], y0 + 64 - q[5], xx + w - q[4] - 8, y0 + 64 - q[5]); fq.lineTo(xx + q[6] + 8, y0 + 64 - q[7]); fq.quadraticCurveTo(xx + q[6], y0 + 64 - q[7], xx + q[6], y0 + 64 - q[7] - 8); fq.lineTo(xx + q[0], y0 + q[1] + 8); fq.quadraticCurveTo(xx + q[0], y0 + q[1], xx + q[0] + 8, y0 + q[1]); fq.fill(); }); }
+        for (let i = 0; i < 900; i++) { fq.fillStyle = rr() < 0.5 ? 'rgba(60,54,40,0.14)' : 'rgba(255,248,226,0.16)'; fq.fillRect(rr() * 256, rr() * 256, 1 + rr() * 2, 1 + rr() * 2); }   /* pitting and flecks */
+        for (let i = 0; i < 26; i++) { fq.fillStyle = 'rgba(86,112,62,0.22)'; fq.beginPath(); fq.arc(rr() * 256, Math.round(rr() * 4) * 64 + (rr() - 0.5) * 8, 3 + rr() * 6, 0, 6.2832); fq.fill(); } }   /* moss creeping out of the joints */
       const ft = new T.CanvasTexture(fc); ft.wrapS = ft.wrapT = T.RepeatWrapping; ft.anisotropy = 4;
       const WALK = 4.4, curbM = new T.MeshLambertMaterial({ color: 0x9c9384 });
       function walkway(x1, z1, x2, z2) {
@@ -4467,7 +4478,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     /* ---- lakeside life: a gazebo with fairy lights on the south shore, a duck with her ducklings and a pair of swans on the water, cattails, more lilies, a fishing spot ---- */
     {
       const GZ = [[LAKE.x, LAKE.z + 19.5], [LAKE.x - 9, LAKE.z + 17.5], [LAKE.x + 9, LAKE.z + 17.5]].find(q => !treePts.some(t => Math.hypot(t.x - q[0], t.z - q[1]) < 5.2)) || [LAKE.x, LAKE.z + 19.5];
-      const gx = GZ[0], gz = GZ[1], white = L(0xf6f2ea), roofG = L(0x4f8f8a), stoneG = L(0xd8cfba), BLB = [], bc = [0xffd27a, 0xff9db8, 0x9fd8ff, 0xfff3c4];
+      const gx = GZ[0], gz = GZ[1], white = L(0xf6f2ea), roofG = tiled(L(0x4f8f8a), 2.6, 2.2), stoneG = L(0xd8cfba), BLB = [], bc = [0xffd27a, 0xff9db8, 0x9fd8ff, 0xfff3c4];
       at(new T.Mesh(cyl(3.5, 3.6, 0.1, 6), stoneG), gx, 0.05, gz);
       for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + Math.PI / 6, x = gx + Math.sin(a) * 3.0, z = gz + Math.cos(a) * 3.0, a2 = a + Math.PI / 3, x2 = gx + Math.sin(a2) * 3.0, z2 = gz + Math.cos(a2) * 3.0;
         at(new T.Mesh(cyl(0.13, 0.15, 3.3, 8), white), x, 1.65, z); colliders.push({ x: x, z: z, r: 0.3 });
