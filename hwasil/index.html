@@ -563,6 +563,19 @@ body.padOpen #hud { visibility: hidden; }
 .artQuiz .qOpt:disabled { color: var(--ink); }
 #dressRows button.locked { opacity: 0.45; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---- the lantern-night skin: warm paper and ink for the sheets, dark lacquer with brass edges and cream lettering for everything that floats over the picture ---- */
+:root { --paper: #f7edd6; --chalk: #efe3c8; --ink: #33261c; --muted: #77664f; --yellow: #eda93f; --line: rgba(51, 38, 28, 0.2); --hudBg: rgba(44, 31, 22, 0.76); --hudInk: #f8ead0; --hudLine: rgba(240, 206, 140, 0.55); }
+.btn, .chip, .seg, .sw, .opt, .roomRow { border-width: 1.5px; }
+.chip, .toast { background: var(--hudBg); color: var(--hudInk); border: 1.5px solid var(--hudLine); box-shadow: 0 4px 14px rgba(20, 10, 4, 0.32); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.chip b { background: var(--yellow); color: #33261c; }
+#moreMenu { background: rgba(44, 31, 22, 0.55); border: 1.5px solid var(--hudLine); border-radius: 16px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+#miniMap { border: 1.5px solid var(--hudLine); box-shadow: 0 4px 14px rgba(20, 10, 4, 0.4); }
+#rankBox { border: 1.5px solid var(--hudLine); background: var(--hudBg); color: var(--hudInk); }
+.btn.primary { background: var(--yellow); }
+#bottomBar { background: rgba(38, 27, 19, 0.82); border-top: 1.5px solid var(--hudLine); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+#joy { background: rgba(44, 31, 22, 0.42) !important; border: 1.5px solid var(--hudLine) !important; }
+#knob { background: rgba(248, 234, 208, 0.92) !important; border: 1.5px solid rgba(51, 38, 28, 0.6) !important; }
 </style>
 </head>
 <body>
@@ -3568,9 +3581,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       x.font = '32px "Gamja Flower", "Noto Sans KR", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
       { const tw = x.measureText(n).width; if (tw > 214) x.font = Math.max(14, Math.floor(32 * 214 / tw)) + 'px "Gamja Flower", "Noto Sans KR", sans-serif'; }
       const w = Math.min(244, x.measureText(n).width + 30);
-      x.fillStyle = '#fffdf7'; rr(x, 128 - w / 2, 8, w, 48, 24); x.fill();
-      x.strokeStyle = '#25211d'; x.lineWidth = 3; x.stroke();
-      x.fillStyle = '#25211d'; x.fillText(n, 128, 33);
+      x.fillStyle = 'rgba(46,33,24,0.86)'; rr(x, 128 - w / 2, 8, w, 48, 24); x.fill();
+      x.strokeStyle = 'rgba(240,206,140,0.75)'; x.lineWidth = 2; x.stroke();
+      x.fillStyle = '#f8ead0'; x.fillText(n, 128, 33);
       tex.needsUpdate = true;
     };
     s.set(name); return s;
@@ -5213,6 +5226,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const sl = o.userData.slot;
       if (sl) { frameTap(sl); return; }
     }
+    doJump();                                               /* nothing to press there: hop */
   }
   cv.addEventListener('pointerdown', e => { tap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() }; });
   cv.addEventListener('pointerup', e => {
@@ -6313,6 +6327,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     old.group.remove(r.shadow); old.group.remove(r.plate.sprite); scene.remove(old.group); disposeAvatar(old);
     nu.group.add(r.shadow); nu.group.add(r.plate.sprite); scene.add(nu.group); r.av = nu; r.look = code;
   }
+  let jmpY = 0, jmpV = 0, myJump = 0;                       /* a hop: tap any empty part of the picture, standing or walking. myJump counts them so friends see each one */
+  function doJump() { if (jmpY > 0 || jmpV > 0 || mySeat >= 0 || myEasel >= 0 || BT.on >= 0 || me.swim > 0.3 || DV.d > 0.05) return; jmpV = 5.4; myJump++; pushPresence(true); }
+  window.__jump = { go: () => doJump(), y: () => jmpY, n: () => myJump };
   let myEmote = { id: '', n: 0 }, myFw = 0;                 /* myFw: how many firework shows I have set off; friends near me see each one start */
   function addRemote(p) {
     const pr = p.presence || {};
@@ -6340,6 +6357,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const lc = lookOf(pr).join(''); if (lc !== r.look) rebuildRemote(r, lc);
       const mt = Number(pr.mt) || 0;                                         /* a new emote counter = play it (but not the old one when I just arrived) */
       if (r.mt === undefined) r.mt = mt; else if (mt !== r.mt) { r.mt = mt; const em = EMOTES.find(q => q.id === pr.m); if (em) startEmote(r.av, em); }
+      { const jp = Number(pr.jp) || 0; if (r.jp === undefined) r.jp = jp; else if (jp !== r.jp) { r.jp = jp; if (!(r.jy > 0)) r.jv = 5.4; } }
       { const fw = Number(pr.fw) || 0; if (r.fw === undefined) r.fw = fw; else if (fw !== r.fw) { r.fw = fw; if (started && Math.hypot(pr.x - pos.x, pr.z - pos.z) < 260 && !indoorAt(pos.x, pos.z, 0)) { FWS.t = 30; FWS.src = { x: pr.x, z: pr.z }; FW.forEach((f, i) => { if (f.t < 0) f.next = i * 0.6; }); toast('🎆 ' + nm + ' 님이 불꽃놀이를 쏘았어요!', 3000); } } }
       r.pt = Math.max(0, Math.min(99999, Number(pr.pt) || 0));
       const rn = Number(pr.rn) || 0;
@@ -6369,8 +6387,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function pushPresence(force) {
     if (!roomNS || !started) return;
     const now = performance.now();
-    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n, rx: myRx.i, rs: myRx.s, rn: myRx.n, pt: playMin(), dv: DV.lvl, bt: BT.on + 1, gr: GEAR.i, fw: myFw };
-    const k = patch.pt + ',' + patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.s + ',' + patch.a + ',' + patch.mt + ',' + patch.rn + ',' + patch.dv + ',' + patch.bt + ',' + patch.gr;
+    const patch = { x: Math.round(pos.x * 20) / 20, z: Math.round(pos.z * 20) / 20, h: Math.round(heading * 20) / 20, w: walkAmp > 0.3 ? 1 : 0, n: myName, c: myLook[4], a: myLook.join(''), e: myEasel, s: mySeat, m: myEmote.id, mt: myEmote.n, rx: myRx.i, rs: myRx.s, rn: myRx.n, pt: playMin(), dv: DV.lvl, bt: BT.on + 1, gr: GEAR.i, fw: myFw, jp: myJump };
+    const k = patch.pt + ',' + patch.x + ',' + patch.z + ',' + patch.h + ',' + patch.w + ',' + patch.n + ',' + patch.e + ',' + patch.s + ',' + patch.a + ',' + patch.mt + ',' + patch.rn + ',' + patch.dv + ',' + patch.bt + ',' + patch.gr + ',' + patch.jp;
     if (!force && (k === lastSent || now - lastSend < 100 + Math.min(200, (inRoomCount - 1) * 12))) return;
     lastSend = now; lastSent = k;
     roomNS.presence(patch).catch(function () {});
@@ -7911,8 +7929,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       else { curSp = 0; walkAmp = lerp(walkAmp, 0, Math.min(1, dt * 10)); }
     }
     me.swim = BT.on >= 0 ? 0 : swimAt(pos.x, pos.z); const myGY = gY(pos.x, pos.z); diveStep(dt);
+    if (jmpV !== 0 || jmpY > 0) { jmpV -= 15 * dt; jmpY += jmpV * dt; if (jmpY <= 0) { jmpY = 0; jmpV = 0; } }
     animateAvatar(me, walkPhase, walkAmp, tNow, myEasel >= 0, mySeat >= 0 ? (benches[mySeat >> 1].low ? 2 : 1) : BT.on >= 0 ? 1 : 0);
-    player.position.set(pos.x, (BT.on >= 0 ? BOATS[BT.on].g.position.y + 0.12 : myGY + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp * (1 - me.swim) + DV.y) + me.lift, pos.z);
+    player.position.set(pos.x, (BT.on >= 0 ? BOATS[BT.on].g.position.y + 0.12 : myGY + Math.abs(Math.sin(walkPhase)) * 0.09 * walkAmp * (1 - me.swim) + DV.y) + me.lift + jmpY, pos.z);
     player.rotation.y = heading + teleSpin; player.rotation.x = 0.11 * walkAmp + DV.tilt;
     if (walkAmp > 0.6 && !player.userData.hidden) { puffT -= dt; if (puffT <= 0) { puffT = me.swim > 0.4 ? 0.3 : 0.17; if (me.swim > 0.4) ripple(pos.x, pos.z); else puff(pos.x - Math.sin(heading) * 0.2, pos.z - Math.cos(heading) * 0.2); } }
     blob.position.set(pos.x, 0.05 + Math.max(0, myGY), pos.z);
@@ -7926,7 +7945,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       r.amp = lerp(r.amp, moving ? 1 : 0, Math.min(1, dt * 10)); if (r.amp > 0.05) r.phase += dt * 10;
       r.av.swim = r.bt ? 0 : swimAt(r.x, r.z);
       animateAvatar(r.av, r.phase, r.amp, tNow, r.e >= 0, r.s >= 0 ? (benches[r.s >> 1].low ? 2 : 1) : r.bt ? 1 : 0);
-      r.av.group.position.set(r.x, gY(r.x, r.z) + Math.abs(Math.sin(r.phase)) * 0.09 * r.amp * (1 - r.av.swim) + r.av.lift, r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp; remoteWater(r, dt);
+      if (r.jv || r.jy > 0) { r.jv = (r.jv || 0) - 15 * dt; r.jy = (r.jy || 0) + r.jv * dt; if (r.jy <= 0) { r.jy = 0; r.jv = 0; } }
+      r.av.group.position.set(r.x, gY(r.x, r.z) + Math.abs(Math.sin(r.phase)) * 0.09 * r.amp * (1 - r.av.swim) + r.av.lift + (r.jy || 0), r.z); r.av.group.rotation.y = r.h; r.av.group.rotation.x = 0.11 * r.amp; remoteWater(r, dt);
       if (r.amp > 0.6) { r.puffT = (r.puffT || 0) - dt; if (r.puffT <= 0) { r.puffT = 0.25; if (r.av.swim > 0.4) ripple(r.x, r.z); else puff(r.x, r.z); } }
       r.plate.sprite.visible = Math.hypot(r.x - pos.x, r.z - pos.z) < 28;
     });

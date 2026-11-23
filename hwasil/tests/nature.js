@@ -4,6 +4,7 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
 (async () => {
   const t = await start(); const p = await t.client('solo', '', { width: 390, height: 800 });
   await t.enter(p, '산악인');
+  { await p.evaluate(() => { const P = window.__hw.pos; P.x = 92; P.z = 20; }); await p.waitForTimeout(500); const bb = await p.locator('#stage canvas').boundingBox(); await p.mouse.click(bb.x + bb.width * 0.5, bb.y + bb.height * 0.22); let top = 0; for (let i = 0; i < 12; i++) { await p.waitForTimeout(120); top = Math.max(top, await p.evaluate(() => window.__jump.y())); } await until(p, () => window.__jump.y() === 0, null, 40); if (!(top > 0.3)) console.log('jump dbg', top, JSON.stringify(await p.evaluate(() => [window.__jump.n(), window.__hw.pos.x, window.__hw.pos.z, window.__hw.area && window.__hw.area(), ['works','rooms','places','suggest','settings','fame','fun','collab','dress','hang','art'].filter(i => !document.getElementById(i).hidden)]))); check(top > 0.3 && await p.evaluate(() => window.__jump.n()) === 1, 'a tap on an empty part of the picture makes the avatar hop, and it lands again'); }
   const S = await p.evaluate(() => window.__nat.summit());
   check(S.h > 5, 'there is a summit with some height: ' + S.h.toFixed(1) + ' at ' + S.x + ',' + S.z);
   /* the walk up: from the valley to the summit in small steps stays walkable and the ground rises */
