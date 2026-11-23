@@ -3939,6 +3939,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       let n = 0; const gs = list.map(g => { g = g.index ? g.toNonIndexed() : g; n += g.attributes.position.count; return g; });
       const pos = new Float32Array(n * 3), col = new Float32Array(n * 3); let o = 0;
       gs.forEach(g => { pos.set(g.attributes.position.array, o * 3); col.set(g.attributes.color.array, o * 3); o += g.attributes.position.count; });
+      for (let f = 0; f < n; f += 3) { const h = Math.sin(f * 12.9898 + pos[f * 3] * 78.233 + pos[f * 3 + 2] * 37.719) * 43758.5453, k = 0.84 + 0.3 * (h - Math.floor(h)); for (let v = 0; v < 9; v++) col[f * 3 + v] = Math.min(1, col[f * 3 + v] * k); }   /* every facet a slightly different shade: reads as clumps of leaves */
       const m = new T.BufferGeometry(); m.setAttribute('position', new T.BufferAttribute(pos, 3)); m.setAttribute('color', new T.BufferAttribute(col, 3)); m.computeVertexNormals(); return m;
     }
     const tintM = amp => sway(L(0xffffff, { vertexColors: true }), amp, 0);
@@ -3946,26 +3947,27 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const PN = pine.length, pTrunk = instMesh(tintY(cyl(0.3, 0.5, 2.6, 6).translate(0, 1.3, 0), 0, 2.6, [0.62, 0.55, 0.5], [1, 0.95, 0.9]), tintM(0.004), PN);
     pTrunk.material.color.setHex(0x7b5a36);
     const pineG = (() => {
-      const tiers = [[2.5, 3.1, 2.3], [2.05, 2.9, 3.6], [1.6, 2.6, 4.8], [1.15, 2.3, 5.9]], list = [];
-      tiers.forEach((t, i) => { const g = wobble(new T.ConeGeometry(t[0], t[1], 7, 1), 0.07); g.rotateY(i * 0.7); g.translate(0, t[2] + t[1] / 2 - 0.9, 0); list.push(tintY(g, t[2] - 0.9, t[2] + t[1] - 0.9, [0.5 + i * 0.05, 0.66, 0.58], [0.95, 1, 0.82])); });
+      const tiers = [[2.6, 2.5, 2.2], [2.25, 2.4, 3.15], [1.9, 2.3, 4.05], [1.55, 2.2, 4.9], [1.2, 2.1, 5.7], [0.8, 2.0, 6.5]], list = [];   /* six ragged skirts */
+      tiers.forEach((t, i) => { const g = wobble(new T.ConeGeometry(t[0], t[1], 9, 2), 0.13); g.rotateY(i * 0.7); g.translate(0, t[2] + t[1] / 2 - 0.9, 0); list.push(tintY(g, t[2] - 0.9, t[2] + t[1] - 0.9, [0.5 + i * 0.05, 0.66, 0.58], [0.95, 1, 0.82])); });
       return mergeFlat(list);
     })();
     const pineCrown = instMesh(pineG, tintM(0.010), PN);
     pine.forEach((q, i) => {
       dm.rotation.set(0, rnd() * 6, 0); dm.scale.set(q.s * (0.92 + rnd() * 0.16), q.s * (0.9 + rnd() * 0.25), q.s * (0.92 + rnd() * 0.16));
       dm.position.set(q.x, 0, q.z); dm.updateMatrix(); pTrunk.setMatrixAt(i, dm.matrix); pineCrown.setMatrixAt(i, dm.matrix);
-      gc.setHex(0x3f9a4a).offsetHSL((rnd() - 0.5) * 0.07, 0, (rnd() - 0.5) * 0.12); pineCrown.setColorAt(i, gc);
+      gc.setHex(0x357a44).offsetHSL((rnd() - 0.5) * 0.07, 0, (rnd() - 0.5) * 0.12); pineCrown.setColorAt(i, gc);
     });
     /* round trees: a cloud of six faceted blobs on a trunk, some pink (cherry) or golden (autumn) */
     const RN = round.length, rTrunk = instMesh(tintY(cyl(0.34, 0.55, 3.2, 7).translate(0, 1.6, 0), 0, 3.2, [0.6, 0.52, 0.48], [1, 0.95, 0.9]), tintM(0.004), RN);
     rTrunk.material.color.setHex(0x7b5a36);
-    const BLOBS = [[0, 4.2, 0, 2.0], [1.4, 4.8, 0.3, 1.5], [-1.3, 4.4, -0.5, 1.45], [0.1, 5.7, 0.2, 1.35], [0.6, 3.6, 1.3, 1.3], [-0.7, 3.5, -1.2, 1.25]];
+    const BLOBS = [[0, 4.3, 0, 1.9], [0.2, 5.5, 0.1, 1.5]];   /* a full, layered crown: a core and eighteen overlapping puffs of leaves round it */
+    for (let k = 0; k < 18; k++) { const a = k * 2.39996, yy = 3.1 + (k % 6) * 0.62 + ((k * 7) % 5) * 0.06, rad = (yy > 5.6 ? 1.0 : yy < 3.6 ? 1.5 : 2.0) + ((k * 3) % 4) * 0.12; BLOBS.push([Math.cos(a) * rad, yy, Math.sin(a) * rad, 0.82 + ((k * 5) % 7) * 0.07]); }
     const crownG = mergeFlat(BLOBS.map((bo, k) => { const g = wobble(new T.IcosahedronGeometry(bo[3], 1), 0.1); g.rotateY(k * 1.3); g.translate(bo[0], bo[1], bo[2]); return tintY(g, 2.4, 7.0, [0.5, 0.64, 0.62], [1, 1, 0.86]); }));
     const crown = instMesh(crownG, tintM(0.009), RN);
     round.forEach((q, i) => {
       const yaw = rnd() * 6.28, pick = rnd();
       dm.rotation.set(0, yaw, 0); dm.scale.set(q.s * (0.92 + rnd() * 0.16), q.s * (0.9 + rnd() * 0.25), q.s * (0.92 + rnd() * 0.16)); dm.position.set(q.x, 0, q.z); dm.updateMatrix(); rTrunk.setMatrixAt(i, dm.matrix); crown.setMatrixAt(i, dm.matrix);
-      gc.setHex(pick < 0.45 ? 0x62b955 : pick < 0.7 ? 0x45a255 : pick < 0.82 ? 0x9bd653 : pick < 0.92 ? 0xf6aec8 : 0xefae44).offsetHSL((rnd() - 0.5) * 0.04, 0, (rnd() - 0.5) * 0.08); crown.setColorAt(i, gc);
+      gc.setHex(pick < 0.36 ? 0x57a252 : pick < 0.6 ? 0x3f8a4c : pick < 0.72 ? 0x86b852 : pick < 0.8 ? 0xf0a8c2 : pick < 0.9 ? 0xc4462f : 0xe39a3a).offsetHSL((rnd() - 0.5) * 0.04, 0, (rnd() - 0.5) * 0.08); crown.setColorAt(i, gc);
     });
 
     {
