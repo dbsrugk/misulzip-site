@@ -1062,9 +1062,14 @@ body.padOpen #hud { visibility: hidden; }
   window.addEventListener('resize', onResize);
   window.addEventListener('orientationchange', onResize);
 
-  const toonGrad = new T.DataTexture(new Uint8Array([120, 195, 255]), 3, 1, T.LuminanceFormat);
+  const toonGrad = new T.DataTexture(new Uint8Array([104, 150, 200, 236, 255]), 5, 1, T.LuminanceFormat);   /* five soft steps of shade: rounder, less cut-out */
   toonGrad.minFilter = toonGrad.magFilter = T.NearestFilter; toonGrad.generateMipmaps = false; toonGrad.needsUpdate = true;
-  const L = (c, o) => new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: toonGrad }, o || {}));
+  /* every painted surface gets a hand-made grain: broad blotches and a fine tooth, fixed to the object so it never swims (off on the low setting) */
+  const GRAIN = QV !== 'lo', grainFn = sh => {
+    sh.vertexShader = 'varying vec3 vGw;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvGw = position;');
+    sh.fragmentShader = 'varying vec3 vGw;\nfloat gh(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }\nfloat gn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(mix(gh(i), gh(i + vec3(1.0, 0.0, 0.0)), f.x), mix(gh(i + vec3(0.0, 1.0, 0.0)), gh(i + vec3(1.0, 1.0, 0.0)), f.x), f.y), mix(mix(gh(i + vec3(0.0, 0.0, 1.0)), gh(i + vec3(1.0, 0.0, 1.0)), f.x), mix(gh(i + vec3(0.0, 1.0, 1.0)), gh(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z); }\n' + sh.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = vec4( diffuse, opacity );\ndiffuseColor.rgb *= 0.86 + 0.18 * gn(vGw * 0.9) + 0.12 * gn(vGw * vec3(6.0, 2.2, 6.0));');
+  };
+  const L = (c, o) => { const m = new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: toonGrad }, o || {})); if (GRAIN) { m.onBeforeCompile = grainFn; m.customProgramCacheKey = () => 'grain'; } return m; };
   /* wind: bends vertices with their height. mode 'local' uses the vertex height (+base), 'inst' the instance's own height */
   const swayT = { value: 0 };
   function sway(mat, amp, base, mode) {
@@ -3157,6 +3162,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (d > 110) return; const t = performance.now() / 1000;
       for (let i = 0; i < SP.length; i++) { const s = SP[i], g = s.g; g.position.y = 0.05 + 0.05 * Math.sin(t * 2.1 + s.ph); if (s.walk) { const u = Math.sin(t * 0.09 + s.ph), v = Math.cos(t * 0.09 + s.ph), ax = i === SP.length - 1; if (ax) g.position.x = s.x + u * s.walk; else g.position.z = s.z + u * s.walk; g.rotation.y = ax ? (v * s.walk > 0 ? Math.PI / 2 : -Math.PI / 2) : (v * s.walk > 0 ? 0 : Math.PI); } else g.rotation.y = s.ry + 0.12 * Math.sin(t * 0.7 + s.ph); g.rotation.z = 0.04 * Math.sin(t * 1.6 + s.ph); }
       if (on) { for (let i = 0; i < NS; i++) { const q = sparkS[i]; sparkP[i * 3] = q[0] + Math.sin(t * 0.3 + q[3]) * 1.6; sparkP[i * 3 + 1] = 0.5 + ((q[1] + t * 0.22) % 5.5); sparkP[i * 3 + 2] = q[2] + Math.cos(t * 0.24 + q[3]) * 1.6; } sparkG.attributes.position.needsUpdate = true; } });
+    /* everywhere else: the first time night falls, every low lamp halo in the world gets a warm pool of light on the ground beneath it */
+    { let built = false, pm = null; atmHooks.push(A => { if (pm) { pm.opacity = 0.55 * A.night; pm.visible = A.night > 0.03; }
+        if (built || A.night < 0.05) return; built = true; const P = [], c = new T.Color(), W = new T.Color(0xffb060);
+        scene.traverse(o => { if (!o.isPoints || !o.material || !o.material.isPointsMaterial || !o.material.sizeAttenuation || o.material.blending !== T.AdditiveBlending || !(o.material.size >= 1.6) || !o.geometry.attributes.position) return; const a = o.geometry.attributes.position, ca = o.geometry.attributes.color; if (a.count > 90) return; o.updateMatrixWorld(true);
+          for (let i = 0; i < a.count; i++) { V.fromBufferAttribute(a, i).applyMatrix4(o.matrixWorld); if (V.x < RM.hx + 2 || V.x > SEA_X - 2 || inMkt(V.x, V.z, 2) || indoorAt(V.x, V.z, 1)) continue; const gy = gY(V.x, V.z); if (gy < -0.05 || V.y - gy > 6.5 || V.y - gy < 0.2) continue; if (ca) c.fromBufferAttribute(ca, i); else c.copy(o.material.color); P.push([V.x, gy, V.z, c.clone().lerp(W, 0.6), Math.min(6, 2.6 + (V.y - gy) * 0.8)]); } });
+        if (!P.length) return; pm = new T.MeshBasicMaterial({ map: soft, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false }); const im = new T.InstancedMesh(new T.CircleGeometry(1, 18).rotateX(-Math.PI / 2), pm, P.length), dm = new T.Object3D();
+        P.forEach((q, i) => { dm.position.set(q[0], q[1] + 0.09 + (i % 7) * 0.004, q[2]); dm.scale.set(q[4], 1, q[4]); dm.updateMatrix(); im.setMatrixAt(i, dm.matrix); im.setColorAt(i, q[3]); }); im.frustumCulled = false; im.userData.noShadow = im.userData.noLos = true; im.renderOrder = 3; scene.add(im); window.__pools = P.length; }); }
     window.__mkt = { stalls: STALLS.length, spirits: SP.length, halos: HAL.length, bulbs: BULB.length };
   })();
   /* ---------- the four plain exhibition rooms get furnished: a floor medallion under the carpet, two benches facing the pictures, urns on plinths, palms in the corners,
