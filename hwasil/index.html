@@ -1082,6 +1082,7 @@ body.padOpen #hud { visibility: hidden; }
     sh.vertexShader = 'varying vec3 vGw;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvGw = position;');
     sh.fragmentShader = 'varying vec3 vGw;\nfloat gh(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }\nfloat gn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(mix(gh(i), gh(i + vec3(1.0, 0.0, 0.0)), f.x), mix(gh(i + vec3(0.0, 1.0, 0.0)), gh(i + vec3(1.0, 1.0, 0.0)), f.x), f.y), mix(mix(gh(i + vec3(0.0, 0.0, 1.0)), gh(i + vec3(1.0, 0.0, 1.0)), f.x), mix(gh(i + vec3(0.0, 1.0, 1.0)), gh(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z); }\n' + sh.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = vec4( diffuse, opacity );\ndiffuseColor.rgb *= 0.86 + 0.18 * gn(vGw * 0.9) + 0.12 * gn(vGw * vec3(6.0, 2.2, 6.0));');
   };
+  const WARM_TINT = new T.Color(0xd8b890), clayFn = sh => { grainFn(sh); sh.fragmentShader = sh.fragmentShader.replace('0.86 + 0.18 * gn(vGw * 0.9) + 0.12 * gn(vGw * vec3(6.0, 2.2, 6.0))', '0.93 + 0.08 * gn(vGw * 5.0) + 0.06 * gn(vGw * 19.0)'); };
   const L = (c, o) => { const m = new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: toonGrad }, o || {})); if (GRAIN) { m.onBeforeCompile = grainFn; m.customProgramCacheKey = () => 'grain'; } return m; };
   /* a blossom seen from any side: n flat diamond petals in a ring, tipped up a little, and an optional heart. One merged geometry, about as many triangles as the old ball */
   const blossomG = (r, n, heart) => { const P = [], put = g => { g = g.index ? g.toNonIndexed() : g; const a = g.attributes.position.array; for (let i = 0; i < a.length; i++) P.push(a[i]); };
@@ -1129,6 +1130,7 @@ body.padOpen #hud { visibility: hidden; }
   const HANOK = { x0: 34.4, x1: 51.4, z0: 250, z1: 324, h: 13.5 };   /* the long hanok picture hall, south of the Yellow House */
   const inHanok = (x, z, m) => x > HANOK.x0 - (m || 0) && x < HANOK.x1 + (m || 0) && z > HANOK.z0 - (m || 0) && z < HANOK.z1 + (m || 0);
   const MKT = { x0: 56, x1: 128, z0: 340, z1: 396, cx: 92, cz: 366 };   /* the lantern night market, south of the flower-road garden: it is always night there */
+  const LAMPS = [];                                        /* every low lamp in the world [x, y, z]: at night the nearest one really lights the figure standing by it */
   const inMkt = (x, z, m) => x > MKT.x0 - (m || 0) && x < MKT.x1 + (m || 0) && z > MKT.z0 - (m || 0) && z < MKT.z1 + (m || 0);
   const mktSolid = (x, z) => (Math.abs(Math.abs(x - MKT.cx) - 13) < 2.7 && [348, 359, 374, 385].some(q => Math.abs(z - q) < 3.8)) || (x > 112.9 && Math.abs(z - MKT.cz) < 7.9) || (Math.hypot(x - 68, z - 381) < 8.4 && !(Math.abs(x - 68) < 1.4 && z < 378.4));
   /* THE BUILDING TABLE: every roofed footprint in one place. Anything from the outdoors (trees, flowers, mushrooms, clouds, leaves) asks indoorAt() before it stands or shows somewhere. A new building = one more row here. */
@@ -3192,9 +3194,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     { let built = false, pm = null; atmHooks.push(A => { if (pm) { pm.opacity = 0.55 * A.night; pm.visible = A.night > 0.03; }
         if (built || A.night < 0.05) return; built = true; const P = [], c = new T.Color(), W = new T.Color(0xffb060);
         scene.traverse(o => { if (!o.isPoints || !o.material || !o.material.isPointsMaterial || !o.material.sizeAttenuation || o.material.blending !== T.AdditiveBlending || !(o.material.size >= 1.6) || !o.geometry.attributes.position) return; const a = o.geometry.attributes.position, ca = o.geometry.attributes.color; if (a.count > 90) return; o.updateMatrixWorld(true);
-          for (let i = 0; i < a.count; i++) { V.fromBufferAttribute(a, i).applyMatrix4(o.matrixWorld); if (V.x < RM.hx + 2 || V.x > SEA_X - 2 || inMkt(V.x, V.z, 2) || indoorAt(V.x, V.z, 1)) continue; const gy = gY(V.x, V.z); if (gy < -0.05 || V.y - gy > 6.5 || V.y - gy < 0.2) continue; if (ca) c.fromBufferAttribute(ca, i); else c.copy(o.material.color); P.push([V.x, gy, V.z, c.clone().lerp(W, 0.6), Math.min(6, 2.6 + (V.y - gy) * 0.8)]); } });
+          for (let i = 0; i < a.count; i++) { V.fromBufferAttribute(a, i).applyMatrix4(o.matrixWorld); if (V.x < RM.hx + 2 || V.x > SEA_X - 2 || inMkt(V.x, V.z, 2) || indoorAt(V.x, V.z, 1)) continue; const gy = gY(V.x, V.z); if (gy < -0.05 || V.y - gy > 6.5 || V.y - gy < 0.2) continue; if (ca) c.fromBufferAttribute(ca, i); else c.copy(o.material.color); P.push([V.x, gy, V.z, c.clone().lerp(W, 0.6), Math.min(6, 2.6 + (V.y - gy) * 0.8)]); LAMPS.push([V.x, V.y, V.z]); } });
         if (!P.length) return; pm = new T.MeshBasicMaterial({ map: soft, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false }); const im = new T.InstancedMesh(new T.CircleGeometry(1, 18).rotateX(-Math.PI / 2), pm, P.length), dm = new T.Object3D();
         P.forEach((q, i) => { dm.position.set(q[0], q[1] + 0.09 + (i % 7) * 0.004, q[2]); dm.scale.set(q[4], 1, q[4]); dm.updateMatrix(); im.setMatrixAt(i, dm.matrix); im.setColorAt(i, q[3]); }); im.frustumCulled = false; im.userData.noShadow = im.userData.noLos = true; im.renderOrder = 3; scene.add(im); window.__pools = P.length; }); }
+    { HAL.forEach(q => { if (q[1] < 5) LAMPS.push([q[0], q[1], q[2]]); });
+      const ll = new T.PointLight(0xffb468, 0, 16, 1.5); ll.position.set(cx, 3, cz); scene.add(ll); let li = -1;
+      atmHooks.push(A => { if (A.night < 0.05 || !LAMPS.length) { ll.intensity = 0; return; } let bd = 1e9, bi = -1; for (let i = 0; i < LAMPS.length; i++) { const q = LAMPS[i], d = (q[0] - pos.x) * (q[0] - pos.x) + (q[2] - pos.z) * (q[2] - pos.z); if (d < bd) { bd = d; bi = i; } }
+        bd = Math.sqrt(bd); const want = bi === li || ll.intensity < 0.04 ? A.night * 1.25 * Math.max(0, Math.min(1, (14 - bd) / 8)) : 0;   /* fade out before hopping to another lamp */
+        if (ll.intensity < 0.04 && bi !== li) { li = bi; const q = LAMPS[bi]; ll.position.set(q[0], Math.min(q[1], gY(q[0], q[2]) + 3.2), q[2]); }
+        ll.intensity += (want - ll.intensity) * 0.12; window.__lamp = [li, +ll.intensity.toFixed(2), LAMPS.length]; }); }
     window.__mkt = { stalls: STALLS.length, spirits: SP.length, halos: HAL.length, bulbs: BULB.length };
   })();
   /* ---------- the four plain exhibition rooms get furnished: a floor medallion under the carpet, two benches facing the pictures, urns on plinths, palms in the corners,
@@ -3292,8 +3300,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function parseLook(s) { if (typeof s !== 'string' || !/^\d{7}(\d\d)?$/.test(s)) return null; const a = s.split('').map(Number); while (a.length < 9) a.push(0); for (let i = 0; i < 9; i++) if (a[i] >= LOOK_MAX[i]) return null; return a; }
   function randomLook() { return LOOK_MAX.map(n => (Math.random() * n) | 0); }
   const toonCache = {};
-  const TN = (c, o) => { const k = c + (o ? JSON.stringify(o) : ''); return toonCache[k] || (toonCache[k] = new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: toonGrad }, o || {}))); };
-  const inkM = new T.MeshBasicMaterial({ color: 0x2a2233, side: T.BackSide });
+  /* figures are painted a shade calmer and warmer than their swatches and carry a fine clay grain, so they sit in the picture instead of on top of it */
+  const tnC = new T.Color(), tnH = { h: 0, s: 0, l: 0 }, TN = (c, o) => { const k = c + (o ? JSON.stringify(o) : ''); if (toonCache[k]) return toonCache[k]; tnC.set(c).getHSL(tnH); tnC.setHSL(tnH.h, tnH.s * 0.8, tnH.l * 0.97).lerp(WARM_TINT, 0.07); const m = toonCache[k] = new T.MeshToonMaterial(Object.assign({ gradientMap: toonGrad }, o || {}, { color: tnC.getHex() })); if (GRAIN) { m.onBeforeCompile = clayFn; m.customProgramCacheKey = () => 'clay'; } return m; };
+  const inkM = new T.MeshBasicMaterial({ color: 0x4a3528, side: T.BackSide });   /* a warm sepia line, not a black one */
   const faceTexCache = {};
   function faceTex(style, blink) {
     const key = style + (blink ? 'b' : 'o');
@@ -3794,7 +3803,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         put(g, new T.Mesh(bx(1.6, 3.2, 0.1), glass), 0, 8.2, 10.52); [-2.7, 2.7].forEach(dx => [-3, 3].forEach(dz => put(g, new T.Mesh(bx(0.1, 2.4, 1.0), glass), dx * 1.5, 3.6, dz + 0.0)));
       }
       /* fences round a meadow and the cows grazing in it */
-      const fenceL = (x0, z0, x1, z1) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 3)); for (let i = 0; i <= n; i++) put(V, new T.Mesh(bx(0.22, 1.3, 0.22), timber), x0 + (x1 - x0) * i / n, 0.65, z0 + (z1 - z0) * i / n); const r = put(V, new T.Mesh(bx(Math.hypot(x1 - x0, z1 - z0), 0.16, 0.14), timberL), (x0 + x1) / 2, 1.0, (z0 + z1) / 2); r.rotation.y = -Math.atan2(z1 - z0, x1 - x0); const m = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / 1.0)); for (let i = 0; i <= m; i++) colliders.push({ x: x0 + (x1 - x0) * i / m, z: z0 + (z1 - z0) * i / m, r: 0.5 }); };   /* the fences are solid now that the meadows outside them are open: the gate is the way in */
+      const fenceL = (x0, z0, x1, z1) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 3)); for (let i = 0; i <= n; i++) put(V, new T.Mesh(bx(0.22, 1.3, 0.22), timber), x0 + (x1 - x0) * i / n, 0.65, z0 + (z1 - z0) * i / n); const r = put(V, new T.Mesh(bx(Math.hypot(x1 - x0, z1 - z0), 0.16, 0.14), timberL), (x0 + x1) / 2, 1.0, (z0 + z1) / 2); r.rotation.y = -Math.atan2(z1 - z0, x1 - x0); const m = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / 1.0)); for (let i = 0; i <= m; i++) colliders.push({ low: 1, x: x0 + (x1 - x0) * i / m, z: z0 + (z1 - z0) * i / m, r: 0.5 }); };   /* the fences are solid now that the meadows outside them are open: the gate is the way in */
       fenceL(66, -68, 89.4, -68); fenceL(94.6, -68, 108, -68); fenceL(66, -68, 62, -100); fenceL(108, -68, 124, -98);                 /* a gate in the front fence: the village is open now */
       [89.4, 94.6].forEach(x => put(V, new T.Mesh(bx(0.4, 3.4, 0.4), timber), x, 1.7, -68)); put(V, new T.Mesh(bx(6.2, 0.36, 0.4), timber), 92, 3.4, -68);
       { const pl = makeNamePlate('알프스 마을'); pl.sprite.scale.set(5.2, 1.3, 1); pl.sprite.position.set(92, 4.4, -68); V.add(pl.sprite); }
@@ -3838,7 +3847,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
         FL.forEach((f, i) => { fo.position.set(f.x, f.y, f.z); fo.rotation.set(0, f.ry, 0); fo.updateMatrix(); flags.setMatrixAt(i, fo.matrix); flags.setColorAt(i, fcol.setHex(f.c)); }); flags.frustumCulled = false; flags.userData.noLos = true; V.add(flags);
         atmHooks.push(A => { flags.material.color.setScalar(1 - 0.55 * A.night); });
         /* log piles and haystacks */
-        [[68.6, -81.6, 0.3], [109.6, -82.4, -0.2]].forEach(q => { const g = new T.Group(); g.position.set(q[0], 0, q[1]); g.rotation.y = q[2]; V.add(g); [[-0.5, 0.24], [0, 0.24], [0.5, 0.24], [-0.25, 0.66], [0.25, 0.66], [0, 1.08]].forEach(c => { put(g, new T.Mesh(cyl(0.24, 0.24, 1.7, 7), timber), c[0], c[1], 0).rotation.x = Math.PI / 2; put(g, new T.Mesh(cyl(0.2, 0.2, 1.72, 7), L(0xd9b98a)), c[0], c[1], 0).rotation.x = Math.PI / 2; }); colliders.push({ x: q[0], z: q[1], r: 1.0 }); });
+        [[68.6, -81.6, 0.3], [109.6, -82.4, -0.2]].forEach(q => { const g = new T.Group(); g.position.set(q[0], 0, q[1]); g.rotation.y = q[2]; V.add(g); [[-0.5, 0.24], [0, 0.24], [0.5, 0.24], [-0.25, 0.66], [0.25, 0.66], [0, 1.08]].forEach(c => { put(g, new T.Mesh(cyl(0.24, 0.24, 1.7, 7), timber), c[0], c[1], 0).rotation.x = Math.PI / 2; put(g, new T.Mesh(cyl(0.2, 0.2, 1.72, 7), L(0xd9b98a)), c[0], c[1], 0).rotation.x = Math.PI / 2; }); colliders.push({ low: 1, x: q[0], z: q[1], r: 1.0 }); });
         [[114, -82], [116.6, -80.4], [78.6, -90.6]].forEach(q => { put(V, new T.Mesh(new T.ConeGeometry(1.35, 2.3, 9), hay), q[0], 1.15, q[1]); put(V, new T.Mesh(cyl(0.06, 0.06, 0.9, 5), timber), q[0], 2.6, q[1]); colliders.push({ x: q[0], z: q[1], r: 1.25 }); });
         window.__vil = { chim: CH.length, lamps: LP.length, flags: FL.length };
       }
@@ -4885,7 +4894,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const nx = ox + mx, nz = oz + mz;
     if (walkable(nx, nz)) { pos.x = nx; pos.z = nz; } else if (walkable(nx, oz)) pos.x = nx; else if (walkable(ox, nz)) pos.z = nz;
     for (let i = 0; i < colliders.length; i++) {
-      const q = colliders[i], dx = pos.x - q.x, dz = pos.z - q.z, d = Math.hypot(dx, dz), min = q.r + 0.55;
+      const q = colliders[i]; if (q.low && jmpY > 0.45) continue;   /* mid-hop, fences, benches and log piles pass underneath */
+      const dx = pos.x - q.x, dz = pos.z - q.z, d = Math.hypot(dx, dz), min = q.r + 0.55;
       if (d < min && d > 1e-4) { pos.x = q.x + dx / d * min; pos.z = q.z + dz / d * min; }
     }
     if (!walkable(pos.x, pos.z)) { pos.x = ox; pos.z = oz; }
@@ -6327,8 +6337,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     old.group.remove(r.shadow); old.group.remove(r.plate.sprite); scene.remove(old.group); disposeAvatar(old);
     nu.group.add(r.shadow); nu.group.add(r.plate.sprite); scene.add(nu.group); r.av = nu; r.look = code;
   }
-  let jmpY = 0, jmpV = 0, myJump = 0;                       /* a hop: tap any empty part of the picture, standing or walking. myJump counts them so friends see each one */
-  function doJump() { if (jmpY > 0 || jmpV > 0 || mySeat >= 0 || myEasel >= 0 || BT.on >= 0 || me.swim > 0.3 || DV.d > 0.05) return; jmpV = 5.4; myJump++; pushPresence(true); }
+  let jmpY = 0, jmpV = 0, myJump = 0, lowDone = false;                       /* a hop: tap any empty part of the picture, standing or walking. myJump counts them so friends see each one */
+  function doJump() { if (!lowDone) { lowDone = true; colliders.forEach(q => { if (benches.some(b => Math.hypot(b.x - q.x, b.z - q.z) < 1.9)) q.low = 1; }); }   /* benches count as low things too */
+    if (jmpY > 0 || jmpV > 0 || mySeat >= 0 || myEasel >= 0 || BT.on >= 0 || me.swim > 0.3 || DV.d > 0.05) return; jmpV = 6.2; myJump++; pushPresence(true); }
   window.__jump = { go: () => doJump(), y: () => jmpY, n: () => myJump };
   let myEmote = { id: '', n: 0 }, myFw = 0;                 /* myFw: how many firework shows I have set off; friends near me see each one start */
   function addRemote(p) {
@@ -6357,7 +6368,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const lc = lookOf(pr).join(''); if (lc !== r.look) rebuildRemote(r, lc);
       const mt = Number(pr.mt) || 0;                                         /* a new emote counter = play it (but not the old one when I just arrived) */
       if (r.mt === undefined) r.mt = mt; else if (mt !== r.mt) { r.mt = mt; const em = EMOTES.find(q => q.id === pr.m); if (em) startEmote(r.av, em); }
-      { const jp = Number(pr.jp) || 0; if (r.jp === undefined) r.jp = jp; else if (jp !== r.jp) { r.jp = jp; if (!(r.jy > 0)) r.jv = 5.4; } }
+      { const jp = Number(pr.jp) || 0; if (r.jp === undefined) r.jp = jp; else if (jp !== r.jp) { r.jp = jp; if (!(r.jy > 0)) r.jv = 6.2; } }
       { const fw = Number(pr.fw) || 0; if (r.fw === undefined) r.fw = fw; else if (fw !== r.fw) { r.fw = fw; if (started && Math.hypot(pr.x - pos.x, pr.z - pos.z) < 260 && !indoorAt(pos.x, pos.z, 0)) { FWS.t = 30; FWS.src = { x: pr.x, z: pr.z }; FW.forEach((f, i) => { if (f.t < 0) f.next = i * 0.6; }); toast('🎆 ' + nm + ' 님이 불꽃놀이를 쏘았어요!', 3000); } } }
       r.pt = Math.max(0, Math.min(99999, Number(pr.pt) || 0));
       const rn = Number(pr.rn) || 0;
