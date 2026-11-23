@@ -3,9 +3,9 @@ const { start, vis, until, check, done } = require('./lib');
 (async () => {
   const t = await start(); const p = await t.client('A', '', { width: 390, height: 800 }); await t.enter(p, '지도보기');
   await p.click('#placesBtn'); await p.waitForTimeout(400);
-  check(await p.locator('#placesList .roomRow').count() === 27, 'all 27 places are listed');
+  check(await p.locator('#placesList .roomRow').count() === 28, 'all 28 places are listed');
   check(await p.locator('#placesTabs .btn').count() === 7, 'seven tabs: all, halls, paintings, outdoors, studio and rest, map, sea and cave');
-  check(await p.locator('#placesList .catTag').count() === 27, 'every place carries its kind tag');
+  check(await p.locator('#placesList .catTag').count() === 28, 'every place carries its kind tag');
   await p.locator('#placesTabs .btn').nth(2).click(); await p.waitForTimeout(600);
   check(await p.locator('#placesList .roomRow.wing').count() === 11 && (await p.locator('#placesList .roomRow.wing canvas').count()) >= 40, 'the paintings tab lists the eleven halls with a strip of their paintings');
   await p.evaluate(() => { window.__hwInstant = true; }); await p.locator('#placesList .roomRow.wing .btn').nth(3).click(); await p.waitForTimeout(1500);
