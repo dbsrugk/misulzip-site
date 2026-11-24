@@ -578,6 +578,10 @@ body.padOpen #hud { visibility: hidden; }
 #rankBox { border: 1.5px solid var(--hudLine); background: var(--hudBg); color: var(--hudInk); }
 .btn.primary { background: var(--yellow); }
 #bottomBar { background: rgba(38, 27, 19, 0.82); border-top: 1.5px solid var(--hudLine); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+#diveKeys { position: absolute; right: 14px; bottom: calc(50% - 40px); display: flex; flex-direction: column; gap: 12px; z-index: 6; pointer-events: auto; }
+#diveKeys[hidden] { display: none; }
+#diveKeys button { width: 62px; height: 62px; border-radius: 50%; font-size: 24px; line-height: 1; color: var(--hudInk); background: var(--hudBg); border: 1.5px solid var(--hudLine); box-shadow: 0 4px 14px rgba(20, 10, 4, 0.35); touch-action: none; -webkit-user-select: none; user-select: none; }
+#diveKeys button.on { background: var(--yellow); color: #33261c; }
 #joy { background: rgba(44, 31, 22, 0.42) !important; border: 1.5px solid var(--hudLine) !important; }
 #knob { background: rgba(248, 234, 208, 0.92) !important; border: 1.5px solid rgba(51, 38, 28, 0.6) !important; }
 </style>
@@ -622,6 +626,7 @@ body.padOpen #hud { visibility: hidden; }
   <button class="sitBtn" id="diveBtn" type="button" hidden>🤿 잠수하기</button>
   <button class="sitBtn" id="upBtn" type="button" hidden>⬆ 물 위로</button>
   <button class="sitBtn" id="boatBtn" type="button" hidden>⛵ 보트 타기</button>
+  <div id="diveKeys" hidden><button type="button" id="diveUp" aria-label="위로 떠오르기">▲</button><button type="button" id="diveDn" aria-label="아래로 가라앉기">▼</button></div>
   <button class="sitBtn" id="swimGearBtn" type="button" hidden>🛟 수영 장비</button>
   <div id="uwTint" hidden></div>
   <div id="photoCount" hidden></div><div id="photoFlash" hidden></div>
@@ -6969,23 +6974,23 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function updateSparkles(dt) { spk.forEach(q => { if (q.t < 0) return; q.t += dt; const k = (q.t - q.d) / 0.9; if (k < 0) return; if (k >= 1) { q.t = -1; q.sp.visible = false; return; } q.sp.visible = true; q.sp.position.set(q.x, q.y + k * 0.5, q.z); const s2 = Math.sin(k * Math.PI) * 1.5 * q.sc; q.sp.scale.set(s2, s2, 1); q.sp.material.rotation = k * 2.5; q.sp.material.opacity = Math.sin(k * Math.PI); }); }
   const sparkTargets = () => { const L = []; if (!sitBtn.hidden && sitTarget) L.push([sitTarget.x, sitTarget.y - 1.5, sitTarget.z]); if (!viewBtn.hidden && viewTarget) L.push([viewTarget.x, viewTarget.y, viewTarget.z]); if (!boatBtn.hidden) { const i = BT.on >= 0 ? BT.on : nearBoat(); if (i >= 0) L.push([BOATS[i].x, 1.4, BOATS[i].z]); } return L; };
   /* diving: three depths, the sea floor stops me, and a trail of bubbles */
-  let diveToast = 0;
+  let diveToast = 0, DVB = 0; const diveKeys = $('#diveKeys'), diveUp = $('#diveUp'), diveDn = $('#diveDn');
+  [[diveUp, 1], [diveDn, -1]].forEach(q => { const el = q[0], on = e => { e.preventDefault(); e.stopPropagation(); DVB = q[1]; el.classList.add('on'); try { el.setPointerCapture(e.pointerId); } catch (er) {} }, off = e => { if (DVB === q[1]) DVB = 0; el.classList.remove('on'); };
+    el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off); el.addEventListener('contextmenu', e => e.preventDefault()); });
   function diveStep(dt) {
-    /* no dive buttons: in the sea, swimming forward while looking down takes me down, looking up brings me up (Q / E on a keyboard) */
+    /* in the sea the stick moves me level, wherever the screen looks; the ▲ ▼ keys on the right (Q / E on a keyboard) take me up and down */
     const sea = swimK(pos.x, pos.z) > 0.6 && BT.on < 0;
     if (DV.lvl !== DV.pl) DV.d = -DIVE_D[DV.lvl];                                    /* set from outside (a boat, the tour, the tests) */
     if (!sea) { DV.d = 0; DV.vy = 0; }
     else if (!teleOn && !goal && !inspect && !pad.open) {
-      const iy = Math.max(-1, Math.min(1, joy.y + ((keys['w'] || keys['arrowup']) ? 1 : 0) - ((keys['s'] || keys['arrowdown']) ? 1 : 0)));
-      camera.getWorldDirection(DV.v || (DV.v = new T.Vector3()));                    /* I swim exactly where the screen points: the camera's own direction, up and down included */
-      const vy = DV.v.y, under = DV.d < -0.5, look = under ? vy : (vy < -0.33 ? vy : 0), kv = (keys['q'] ? 1 : 0) - (keys['e'] ? 1 : 0);
-      DV.vy = lerp(DV.vy || 0, iy * look * 7.5 + kv * 4, Math.min(1, dt * 6)); DV.d = (DV.d || 0) + DV.vy * dt;
-      DV.hk = under ? Math.max(0.3, Math.sqrt(Math.max(0, 1 - vy * vy))) : 1;        /* the steeper I go, the less I move along */
-      if (DV.d > -0.9 && iy * look >= 0 && kv >= 0) DV.d += dt * 1.6;                /* near the top I bob back up to the surface */
+      const kv = (keys['q'] ? 1 : 0) - (keys['e'] ? 1 : 0) + DVB;
+      DV.vy = lerp(DV.vy || 0, kv * 4.6, Math.min(1, dt * 6)); DV.d = (DV.d || 0) + DV.vy * dt; DV.hk = 1;
+      if (DV.d > -0.9 && kv >= 0) DV.d += dt * 1.6;                                  /* just under the top I bob back up to the surface */
     }
+    if (diveKeys.hidden === sea) { diveKeys.hidden = !sea; if (!sea) { DVB = 0; diveUp.classList.remove('on'); diveDn.classList.remove('on'); } }
     DV.d = Math.min(0, Math.max(DV.d || 0, -9.5, seaFloor(pos.x, pos.z) + 1.1));
     DV.lvl = DV.pl = DV.d < -0.9 ? (DV.d < -5.5 ? 2 : 1) : 0;
-    if (sea && !DV.told) { DV.told = 1; toast('🤿 화면이 보는 방향 그대로 헤엄쳐요 · 내려다보며 앞으로 가면 잠수, 올려다보면 떠올라요', 6500); }
+    if (sea && !DV.told) { DV.told = 1; toast('🤿 오른쪽 ▼ 를 누르고 있으면 가라앉고, ▲ 를 누르면 떠올라요', 6500); }
     DV.y += (DV.d - DV.y) * Math.min(1, dt * 4);
     DV.tilt = lerp(DV.tilt || 0, DV.y < -1 ? (walkAmp > 0.2 ? 1.2 - Math.max(-0.6, Math.min(0.6, (DV.vy || 0) * 0.14)) : 0.4) : 0, Math.min(1, dt * 5));   /* nose down when diving, up when rising */
     if (DV.y < -1) {

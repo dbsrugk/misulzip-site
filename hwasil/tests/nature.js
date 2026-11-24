@@ -52,12 +52,12 @@ const shown = (p, sel) => p.evaluate(q => { const e = document.querySelector(q);
   /* diving */
   await p.evaluate(() => { const P = window.__hw.pos; P.x = 168; P.z = 40; });
   check(await until(p, () => !document.getElementById('swimBar').hidden, null, 40), 'the moment I am in the sea a swim bar is at the top (no waiting for the …)');
-  check(await p.evaluate(() => document.getElementById('diveBtn').hidden && document.getElementById('swDive').hidden), 'no dive buttons: diving follows where I look');
-  await p.evaluate(() => { window.__hw.setYaw(-Math.PI / 2); window.__hw.setPitch(1.0); }); await p.keyboard.down('w');
-  check(await until(p, () => window.__nat.dv().y < -1.2, null, 60), 'looking down and swimming forward takes me under');
-  await p.evaluate(() => { window.__hw.setPitch(-0.3); });
-  check(await until(p, () => window.__nat.dv().y > -0.3, null, 80), 'looking up and swimming forward brings me back to the top');
-  await p.keyboard.up('w'); await p.evaluate(() => { const P = window.__hw.pos; P.x = 168; P.z = 40; window.__hw.setPitch(0.3); window.__nat.dive(1); }); await p.waitForTimeout(2800);
+  check(await p.evaluate(() => !document.getElementById('diveKeys').hidden), 'in the sea the up and down keys appear on the right');
+  { const hold = async id => { const b = await p.locator('#' + id).boundingBox(); await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await p.mouse.down(); }; await hold('diveDn');
+  check(await until(p, () => window.__nat.dv().y < -1.2, null, 60), 'holding the down key takes me under'); await p.mouse.up(); await p.waitForTimeout(700); const held = await p.evaluate(() => window.__nat.dv().y); check(held < -1.0, 'letting go keeps me at that depth: ' + held.toFixed(1));
+  await hold('diveUp');
+  check(await until(p, () => window.__nat.dv().y > -0.3, null, 80), 'holding the up key brings me back to the top'); await p.mouse.up(); }
+  await p.evaluate(() => { const P = window.__hw.pos; P.x = 168; P.z = 40; window.__hw.setPitch(0.3); window.__nat.dive(1); }); await p.waitForTimeout(2800);
   await until(p, () => window.__nat.uw() === 1, null, 60);
   const d1 = await p.evaluate(() => ({ y: window.__nat.dv().y, lvl: window.__nat.dv().lvl, uw: window.__nat.uw(), life: window.__nat.life() }));
   check(d1.lvl === 1 && d1.y < -1.8 && d1.uw === 1 && d1.life, 'diving puts me under water with the sea life on: ' + JSON.stringify(d1));
