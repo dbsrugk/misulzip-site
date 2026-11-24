@@ -392,7 +392,11 @@ body.padOpen #hud { visibility: hidden; }
 #placesTabs, #fameTabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
 #placesTabs .btn, #fameTabs .btn { padding: 6px 12px; font-size: 15px; }
 #fameTabs .btn.on, #placesTabs .btn.on { background: var(--ink); color: var(--paper); }
-#placesMap { width: 100%; border: 2px solid var(--ink); border-radius: 12px; background: #f3ecdb; touch-action: pan-y; }
+#placesMap { display: block; margin: 0 auto; max-width: 100%; border: 2px solid var(--ink); border-radius: 12px; background: #f3ecdb; touch-action: none; }
+#placesMap[hidden], #mapZoom[hidden] { display: none; }
+#mapZoom { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 8px 0 2px; flex-wrap: wrap; }
+#mapZoom .btn { min-width: 44px; padding: 8px 12px; }
+#mapZoomV { min-width: 34px; text-align: center; font-weight: 700; color: var(--muted); }
 .catTag { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 12px; border: 1.5px solid currentColor; vertical-align: middle; }
 .catTag.ex { color: #8a4a47; } .catTag.out { color: #3f7a4f; } .catTag.mk { color: #3f6fa8; }
 #evPin:not(:empty) { margin-bottom: 8px; }
@@ -846,6 +850,7 @@ body.padOpen #hud { visibility: hidden; }
     <div id="placesTabs"></div>
     <label id="walkOpt"><input type="checkbox" id="walkChk"> 걸어서 가기 (끄면 ✨ 순간이동)</label>
     <canvas id="placesMap" hidden></canvas>
+    <div id="mapZoom" hidden><button class="btn" id="mapOut" type="button" aria-label="지도 축소">－</button><span id="mapZoomV">×1</span><button class="btn" id="mapIn" type="button" aria-label="지도 확대">＋</button><button class="btn" id="mapAll" type="button">전체 보기</button><button class="btn" id="mapMe" type="button">내 위치</button></div>
     <div id="evPin"></div>
     <div id="placesList"></div>
     <button class="btn" id="suggestOpen" type="button">📮 건의함</button>
@@ -1130,6 +1135,7 @@ body.padOpen #hud { visibility: hidden; }
   const HANOK = { x0: 34.4, x1: 51.4, z0: 250, z1: 324, h: 13.5 };   /* the long hanok picture hall, south of the Yellow House */
   const inHanok = (x, z, m) => x > HANOK.x0 - (m || 0) && x < HANOK.x1 + (m || 0) && z > HANOK.z0 - (m || 0) && z < HANOK.z1 + (m || 0);
   const MKT = { x0: 56, x1: 128, z0: 340, z1: 396, cx: 92, cz: 366 };   /* the lantern night market, south of the flower-road garden: it is always night there */
+  const nightGlass = [], lampDots = [];                    /* window panes that light up at night, and extra lamp glows [x, y, z] gathered from buildings dressed later */
   const LAMPS = [];                                        /* every low lamp in the world [x, y, z]: at night the nearest one really lights the figure standing by it */
   const inMkt = (x, z, m) => x > MKT.x0 - (m || 0) && x < MKT.x1 + (m || 0) && z > MKT.z0 - (m || 0) && z < MKT.z1 + (m || 0);
   const mktSolid = (x, z) => (Math.abs(Math.abs(x - MKT.cx) - 13) < 2.7 && [348, 359, 374, 385].some(q => Math.abs(z - q) < 3.8)) || (x > 112.9 && Math.abs(z - MKT.cz) < 7.9) || (Math.hypot(x - 68, z - 381) < 8.4 && !(Math.abs(x - 68) < 1.4 && z < 378.4));
@@ -2200,6 +2206,14 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     drawSign(); if (document.fonts && document.fonts.load) document.fonts.load('40px "Gamja Flower"', '화실이젤을눌러앉아서그려요').then(drawSign).catch(() => {});
     const sign = new T.Mesh(new T.PlaneGeometry(8, 2), new T.MeshBasicMaterial({ map: st })); sign.position.set(A.x, 5.5, z0 - 0.05); sign.rotation.y = Math.PI; scene.add(sign);   /* faces the path */
     [x0 + 1.5, x1 - 1.5].forEach(x => put(scene, new T.Mesh(bx(0.3, 1.1, 0.3), dark), x, 4.95, z0));
+    /* dressed like a place people work in: a paper lantern on a bracket at each corner post, flower boxes along the tops of the low walls, a rail of tie beams, canvases stacked by the wall and big pots at the entrance */
+    { const paperA = new T.MeshBasicMaterial({ color: 0xffe7b4 }), ironA = L(0x2a2620), soil = L(0x5a4030), bl = [L(0xc8402f), L(0xe8a03a), L(0xf0c8d4), L(0x7a5ab0)], lf = L(0x4f8a46), potA = L(0xa8623e), canv = L(0xf4eedd);
+      [[x0, z0, -1, -1], [x1, z0, 1, -1], [x0, z1, -1, 1], [x1, z1, 1, 1]].forEach(q => { const lx = q[0] + q[2] * 0.7, lz = q[1] + q[3] * 0.7; put(scene, new T.Mesh(bx(0.08, 0.08, 1.0), ironA), q[0] + q[2] * 0.35, 3.9, q[1] + q[3] * 0.35).rotation.y = q[2] * q[3] * Math.PI / 4; put(scene, new T.Mesh(bx(0.03, 0.4, 0.03), ironA), lx, 3.7, lz); const b = put(scene, new T.Mesh(new T.SphereGeometry(0.36, 12, 9), paperA), lx, 3.2, lz); b.scale.y = 1.15; b.userData.noShadow = true; put(scene, new T.Mesh(cyl(0.16, 0.16, 0.08, 8), ironA), lx, 3.62, lz); put(scene, new T.Mesh(cyl(0.14, 0.14, 0.07, 8), ironA), lx, 2.78, lz); lampDots.push(lx, 3.2, lz); });
+      const box = (x, z, along, n) => { for (let i = 0; i < n; i++) { const px = x + (along ? 0 : (i - (n - 1) / 2) * 3.1), pz = z + (along ? (i - (n - 1) / 2) * 3.1 : 0); put(scene, new T.Mesh(bx(along ? 0.5 : 2.4, 0.3, along ? 2.4 : 0.5), soil), px, 1.65, pz); for (let k = 0; k < 5; k++) { const o = (k - 2) * 0.48, m = put(scene, new T.Mesh(new T.IcosahedronGeometry(0.24 + (k % 2) * 0.05, 1), k % 2 ? lf : bl[(i + k) % 4]), px + (along ? 0 : o), 1.95, pz + (along ? o : 0)); m.scale.y = 0.8; } } };
+      box(A.x, z1, false, 6); box(x0, A.z, true, 5); box(x1, (z0 + 18) / 2, true, 2); box(x1, (22 + z1) / 2, true, 1);
+      [[x0, z1], [x1, z1]].forEach(q => put(scene, new T.Mesh(bx(0.22, 0.22, A.d), dark), q[0], 4.3, A.z)); put(scene, new T.Mesh(bx(A.w + 0.8, 0.3, 0.3), dark), A.x, 4.3, z1);
+      [[x0 - 0.9, z0 - 0.6, 0.8], [x1 + 0.9, z0 - 0.6, 0.7]].forEach(q => { put(scene, new T.Mesh(cyl(q[2] * 0.62, q[2] * 0.45, q[2] * 0.85, 9), potA), q[0], q[2] * 0.42, q[1]); const m = put(scene, new T.Mesh(new T.IcosahedronGeometry(q[2] * 0.8, 1), lf), q[0], q[2] * 1.3, q[1]); m.scale.y = 0.85; put(scene, new T.Mesh(new T.IcosahedronGeometry(q[2] * 0.3, 1), bl[1]), q[0] + 0.2, q[2] * 1.75, q[1] - 0.2); });
+      for (let i = 0; i < 4; i++) { const c = put(scene, new T.Mesh(bx(1.3 - i * 0.12, 1.6 - i * 0.14, 0.07), canv), x0 + 0.5 + i * 0.09, 0.85 - i * 0.06, z1 - 3.4); c.rotation.y = Math.PI / 2; c.rotation.z = 0.12; } }
     /* shelves with paint pots along the back wall, a stove in the corner, benches */
     [2.2, 3.4].forEach(y => put(scene, new T.Mesh(bx(A.w - 3, 0.14, 0.9), plank), A.x, y, z1 - 0.7));
     const PALH = [0xd9342b, 0xf08a24, 0xf3c431, 0x3f9b4f, 0x1fa3a3, 0x2c47c8, 0x7a3fb0, 0xec7fb0];
@@ -3190,6 +3204,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (d > 110) return; const t = performance.now() / 1000;
       for (let i = 0; i < SP.length; i++) { const s = SP[i], g = s.g; g.position.y = 0.05 + 0.05 * Math.sin(t * 2.1 + s.ph); if (s.walk) { const u = Math.sin(t * 0.09 + s.ph), v = Math.cos(t * 0.09 + s.ph), ax = i === SP.length - 1; if (ax) g.position.x = s.x + u * s.walk; else g.position.z = s.z + u * s.walk; g.rotation.y = ax ? (v * s.walk > 0 ? Math.PI / 2 : -Math.PI / 2) : (v * s.walk > 0 ? 0 : Math.PI); } else g.rotation.y = s.ry + 0.12 * Math.sin(t * 0.7 + s.ph); g.rotation.z = 0.04 * Math.sin(t * 1.6 + s.ph); }
       if (on) { for (let i = 0; i < NS; i++) { const q = sparkS[i]; sparkP[i * 3] = q[0] + Math.sin(t * 0.3 + q[3]) * 1.6; sparkP[i * 3 + 1] = 0.5 + ((q[1] + t * 0.22) % 5.5); sparkP[i * 3 + 2] = q[2] + Math.cos(t * 0.24 + q[3]) * 1.6; } sparkG.attributes.position.needsUpdate = true; } });
+    { const hg = new T.BufferGeometry(); hg.setAttribute('position', new T.Float32BufferAttribute(lampDots, 3)); const dh = new T.Points(hg, new T.PointsMaterial({ map: soft, color: 0xffb060, size: 4.2, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, opacity: 0 })); dh.frustumCulled = false; dh.userData.noLos = dh.userData.noShadow = true; scene.add(dh);
+      atmHooks.push(A => { dh.material.opacity = 0.85 * A.night; dh.visible = A.night > 0.03; for (let i = 0; i < nightGlass.length; i++) nightGlass[i].emissive.setRGB(1.0, 0.72, 0.36).multiplyScalar(0.85 * A.night); }); }   /* glows for the lamps hung on the atelier and the windmill; their windows come on at night */
     /* everywhere else: the first time night falls, every low lamp halo in the world gets a warm pool of light on the ground beneath it */
     { let built = false, pm = null; atmHooks.push(A => { if (pm) { pm.opacity = 0.55 * A.night; pm.visible = A.night > 0.03; }
         if (built || A.night < 0.05) return; built = true; const P = [], c = new T.Color(), W = new T.Color(0xffb060);
@@ -4563,6 +4579,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
        a flower cart and hay bales; south of it a sunflower patch with a scarecrow, and rows of lavender west of the path */
     const KEEP = [[95, 53, 2.4], [129, 53, 2.4], [101, 57, 2.7], [123, 57, 2.7], [97, 48, 1.3], [97.5, 60.6, 2.2], [127, 61, 1.8], [130.5, 63.5, 1.8], [115.5, 99, 1.4]];
     for (let i = 0; i < 4; i++) KEEP.push([MILL.x + (i - 1.5) * 7, MILL.z - 11.5, 2.3]);
+    const millCap = tiled(L(0xb5452c), 2.4, 2.0), millGlass = L(0x9cc9e8), millShut = L(0x3f6a8a), millLamp = new T.MeshBasicMaterial({ color: 0xffe2a8 }); nightGlass.push(millGlass);
     function mill(x, z, s, spd) {
       const wm = new T.Group(); wm.position.set(x, 0, z); wm.scale.setScalar(s); scene.add(wm);
       put(wm, new T.Mesh(cyl(3.75, 3.95, 1.3, 12), L(0xa9a294)), 0, 0.65, 0);
@@ -4570,10 +4587,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       put(wm, new T.Mesh(cyl(4.15, 4.15, 0.22, 12), woodD2), 0, 4.3, 0);
       for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6 + Math.PI / 12; put(wm, new T.Mesh(bx(0.14, 0.95, 0.14), woodD2), Math.sin(a) * 4, 4.85, Math.cos(a) * 4); }
       put(wm, new T.Mesh(new T.TorusGeometry(4, 0.07, 5, 12), woodD2), 0, 5.32, 0).rotation.x = Math.PI / 2;
-      put(wm, new T.Mesh(new T.ConeGeometry(3.3, 3.6, 12), L(0xb5452c)), 0, 11.8, 0); put(wm, new T.Mesh(new T.SphereGeometry(0.3, 8, 6), L(0xe8c15a)), 0, 13.7, 0);
+      put(wm, new T.Mesh(new T.ConeGeometry(3.3, 3.6, 12), millCap), 0, 11.8, 0); put(wm, new T.Mesh(new T.SphereGeometry(0.3, 8, 6), L(0xe8c15a)), 0, 13.7, 0);
       put(wm, new T.Mesh(bx(1.7, 2.6, 0.5), woodD2), 0, 2.4, -3.5);
-      put(wm, new T.Mesh(bx(1.1, 1.1, 0.3), L(0x9cc9e8)), 0, 6.6, -2.85);
-      [-1, 1].forEach(k => { put(wm, new T.Mesh(bx(0.3, 1.1, 0.9), L(0x9cc9e8)), k * 2.72, 7.6, 0); });
+      put(wm, new T.Mesh(bx(1.1, 1.1, 0.3), millGlass), 0, 6.6, -2.85);
+      put(wm, new T.Mesh(bx(1.4, 0.12, 0.4), woodD2), 0, 7.22, -2.9); put(wm, new T.Mesh(bx(1.4, 0.14, 0.5), woodD2), 0, 5.98, -2.95); put(wm, new T.Mesh(bx(0.08, 1.1, 0.36), woodD2), 0, 6.6, -2.86); put(wm, new T.Mesh(bx(1.1, 0.08, 0.36), woodD2), 0, 6.6, -2.86); [-0.78, 0.78].forEach(sx => put(wm, new T.Mesh(bx(0.42, 1.15, 0.1), millShut), sx, 6.6, -2.98));   /* the window: a frame, crossbars, blue shutters */
+      put(wm, new T.Mesh(bx(2.1, 0.2, 0.6), woodD2), 0, 3.8, -3.5); [-0.95, 0.95].forEach(sx => put(wm, new T.Mesh(bx(0.2, 2.7, 0.6), woodD2), sx, 2.45, -3.5)); put(wm, new T.Mesh(bx(2.6, 0.2, 1.2), L(0x9a948a)), 0, 1.38, -4.1);
+      { put(wm, new T.Mesh(bx(0.08, 0.08, 0.5), woodD2), 1.35, 3.6, -3.75); const lm = put(wm, new T.Mesh(bx(0.34, 0.46, 0.34), millLamp), 1.35, 3.25, -3.95); lm.userData.noShadow = true; wm.updateMatrixWorld(true); const lw = wm.localToWorld(new T.Vector3(1.35, 3.25, -3.95)); lampDots.push(lw.x, lw.y, lw.z); }   /* a framed door on a stone step, a lamp beside it */
+      [-1, 1].forEach(k => { put(wm, new T.Mesh(bx(0.3, 1.1, 0.9), millGlass), k * 2.72, 7.6, 0); put(wm, new T.Mesh(bx(0.36, 0.1, 1.15), woodD2), k * 2.74, 8.2, 0); put(wm, new T.Mesh(bx(0.4, 0.12, 1.2), woodD2), k * 2.8, 7.0, 0); put(wm, new T.Mesh(bx(0.34, 1.1, 0.07), woodD2), k * 2.74, 7.6, 0); });
       const hub = put(wm, new T.Mesh(cyl(0.5, 0.5, 1.2, 8), woodD2), 0, 9.2, -3.0); hub.rotation.x = Math.PI / 2;
       const blades = new T.Group(); blades.position.set(0, 9.2, -3.9); wm.add(blades);
       for (let k = 0; k < 4; k++) {
@@ -7574,11 +7594,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   function drawPlacesMap() {
     const cv = $('#placesMap'), W = Math.max(240, Math.min(420, ($('#placesList').parentNode.clientWidth || 340) - 40));
     const sq = z => z >= -70 ? z : -70 + (z + 70) * 0.1, xs = PLACES.map(q => q.x), zs = PLACES.map(q => sq(q.z)), x0 = Math.min.apply(null, xs) - 14, x1 = Math.max.apply(null, xs) + 14, z0 = Math.min.apply(null, zs) - 24, z1 = Math.max.apply(null, zs) + 14;
-    const k = (W - 16) / (x1 - x0), zk = Math.min(k, 640 / (z1 - z0)), H = Math.round((z1 - z0) * zk + 16), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    /* the whole world always fits the frame at zoom 1 (nothing runs off the bottom); MV zooms and pans it from there */
+    const H = Math.round(Math.max(260, Math.min(W * 1.15, window.innerHeight * 0.5))), k0 = (W - 16) / (x1 - x0), zk0 = Math.min(k0, (H - 16) / (z1 - z0)), k = k0 * MV.s, zk = zk0 * MV.s, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    MV.W = W; MV.H = H; MV.ox = clamp(MV.ox, W - W * MV.s, 0); MV.oy = clamp(MV.oy, H - H * MV.s, 0); if (zk0 < k0 && MV.s === 1) MV.oy = 0; MV.me = [MV.ox + 8 * MV.s + (pos.x - x0) * k, MV.oy + 8 * MV.s + (sq(pos.z) - z0) * zk];
     cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr;
     const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const X = x => 8 + (x - x0) * k;                                               /* north (smaller z) is up */
-    const ZU = z => 8 + (sq(z) - z0) * zk;                                              /* a schematic: north-south is squeezed so the long gallery fits */
+    const X = x => MV.ox + 8 * MV.s + (x - x0) * k;                                /* north (smaller z) is up */
+    const ZU = z => MV.oy + 8 * MV.s + (sq(z) - z0) * zk;                                              /* a schematic: north-south is squeezed so the long gallery fits */
     g.fillStyle = '#f3ecdb'; g.fillRect(0, 0, W, H);
     g.fillStyle = 'rgba(63,122,79,0.14)'; g.fillRect(X(RM.hx), ZU(OUT.z0), X(OUT.x1) - X(RM.hx), ZU(OUT.z1) - ZU(OUT.z0));          /* the outdoors */
     g.fillStyle = 'rgba(138,74,71,0.16)'; g.fillRect(X(-GG.hw), ZU(GGZ), X(GG.hw) - X(-GG.hw), ZU(GGS) - ZU(GGZ));                    /* the grand gallery */
@@ -7606,8 +7628,24 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       { const sd = put0[0], lx = sd > 0 ? px + 9 : px - 9 - tw; placed.push({ x: lx, w: tw, y: py + put0[1] }); g.textAlign = 'left'; g.fillText(pl.name, lx, py + put0[1]); }
       hit.push({ pl: pl, x: px, y: py });
     });
-    const mx = X(clamp(pos.x, x0, x1)), my = clamp(ZU(pos.z), 8, H - 8); g.fillStyle = '#e0453a'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(mx, my, 6, 0, 6.2832); g.fill(); g.stroke();
-    cv.onclick = e => { const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; let b = null, bd = 28; hit.forEach(h => { const d = Math.hypot(h.x - x, h.y - y); if (d < bd) { bd = d; b = h; } }); if (b) goPlace(b.pl); };
+    const mx = X(clamp(pos.x, x0, x1)), my = ZU(pos.z); g.fillStyle = '#e0453a'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(mx, my, 6, 0, 6.2832); g.fill(); g.stroke();
+    MV.hit = hit; $('#mapZoomV').textContent = '×' + (Math.round(MV.s * 10) / 10);
+  }
+  /* the map's own view: pinch or the wheel zooms about the fingers, a drag pans, the buttons zoom about the middle, a short tap on a dot goes there */
+  const MV = { s: 1, ox: 0, oy: 0, W: 300, H: 300, hit: [], me: [0, 0], pt: new Map(), d0: 0, moved: 0 };
+  function mapZoom(s2, px, py) { s2 = clamp(s2, 1, 6); if (px === undefined) { px = MV.W / 2; py = MV.H / 2; } MV.ox = px - (px - MV.ox) * s2 / MV.s; MV.oy = py - (py - MV.oy) * s2 / MV.s; MV.s = s2; drawPlacesMap(); }
+  { const cv = $('#placesMap'), at = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    cv.addEventListener('pointerdown', e => { try { cv.setPointerCapture(e.pointerId); } catch (er) {} MV.pt.set(e.pointerId, at(e)); if (MV.pt.size === 1) MV.moved = 0; if (MV.pt.size === 2) { const a = Array.from(MV.pt.values()); MV.d0 = Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]); MV.moved = 99; } });
+    cv.addEventListener('pointermove', e => { if (!MV.pt.has(e.pointerId)) return; const o = MV.pt.get(e.pointerId), n = at(e);
+      if (MV.pt.size === 1) { MV.moved += Math.abs(n[0] - o[0]) + Math.abs(n[1] - o[1]); MV.pt.set(e.pointerId, n); if (MV.s > 1 && MV.moved > 6) { MV.ox += n[0] - o[0]; MV.oy += n[1] - o[1]; drawPlacesMap(); } }
+      else if (MV.pt.size === 2) { MV.pt.set(e.pointerId, n); const a = Array.from(MV.pt.values()), d = Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]); if (MV.d0 > 10) mapZoom(MV.s * d / MV.d0, (a[0][0] + a[1][0]) / 2, (a[0][1] + a[1][1]) / 2); MV.d0 = d; } });
+    const up = e => { if (!MV.pt.has(e.pointerId)) return; const n = at(e), tap = MV.pt.size === 1 && MV.moved < 8 && e.type === 'pointerup'; MV.pt.delete(e.pointerId);
+      if (tap) { let b = null, bd = 28; MV.hit.forEach(h => { const d = Math.hypot(h.x - n[0], h.y - n[1]); if (d < bd) { bd = d; b = h; } }); if (b) goPlace(b.pl); } };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    cv.addEventListener('wheel', e => { e.preventDefault(); const n = at(e); mapZoom(MV.s * (e.deltaY < 0 ? 1.25 : 0.8), n[0], n[1]); }, { passive: false });
+    $('#mapIn').addEventListener('click', () => mapZoom(MV.s * 1.5)); $('#mapOut').addEventListener('click', () => mapZoom(MV.s / 1.5));
+    $('#mapAll').addEventListener('click', () => { MV.s = 1; MV.ox = MV.oy = 0; drawPlacesMap(); });
+    $('#mapMe').addEventListener('click', () => { if (MV.s < 2.5) { MV.s = 2.5; MV.ox = MV.oy = 0; drawPlacesMap(); } MV.ox += MV.W / 2 - MV.me[0]; MV.oy += MV.H / 2 - MV.me[1]; drawPlacesMap(); });
   }
   /* play time is kept as a running total on this device and added to the person's total in the database every minute */
   let t0Play = 0, gaugeT = 0, lastTickT = 0, playTotal = Number(store('hw-play-sec')) || 0, playPend = Number(store('hw-play-pend')) || 0, playOff = false, playSaveT = 0, playSyncT = 0, rankAll = null, rankAllT = 0, rankMode = 'all';
@@ -7730,7 +7768,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     g.fillStyle = '#e0453a'; g.strokeStyle = '#fff'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(0, -11); g.lineTo(8, 9); g.lineTo(0, 4); g.lineTo(-8, 9); g.closePath(); g.fill(); g.stroke();
     g.restore();
   }
-  miniEl.addEventListener('click', () => { if (!started || pad.open || watch.open) return; placesTab = 'map'; renderPlaces(); $('#places').hidden = false; });
+  miniEl.addEventListener('click', () => { if (!started || pad.open || watch.open) return; placesTab = 'map'; MV.s = 1; MV.ox = MV.oy = 0; renderPlaces(); $('#places').hidden = false; drawPlacesMap(); });
   function renderPlaces() {
     const list = $('#placesList'); list.textContent = ''; const evPin = $('#evPin'); evPin.textContent = '';
     const tabs = $('#placesTabs'); tabs.textContent = '';
@@ -7738,7 +7776,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (placesTab === t[0] ? ' on' : ''); b.textContent = t[1];
       b.addEventListener('click', () => { placesTab = t[0]; renderPlaces(); }); tabs.appendChild(b);
     });
-    $('#placesMap').hidden = placesTab !== 'map'; list.hidden = placesTab === 'map';
+    $('#placesMap').hidden = $('#mapZoom').hidden = placesTab !== 'map'; list.hidden = placesTab === 'map';
     if (placesTab === 'map') drawPlacesMap();
     if (placesTab === 'wings') {
       const WG = window.MUSEUM_WINGS || [], CT = window.MUSEUM_CATALOG || [];
