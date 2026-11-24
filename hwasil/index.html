@@ -1845,8 +1845,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const key = new T.DirectionalLight(0xffefd0, 0.72); scene.add(key); scene.add(key.target);
   if (HI) {
     key.castShadow = true; key.shadow.mapSize.set(1024, 1024);
-    Object.assign(key.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 120 });
-    key.shadow.bias = -0.0007; key.shadow.normalBias = 0.05; key.shadow.radius = 2.5;
+    Object.assign(key.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 130 });
+    key.shadow.bias = -0.0007; key.shadow.normalBias = 0.05; key.shadow.radius = 4;
   }
   function sunFollow(x, z) {                                     /* the shadow box travels with the player, snapped to whole units so it does not shimmer */
     const sx = Math.round(x), sz = Math.round(z);
@@ -1858,8 +1858,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const CYCLE = 1800, WX_SLOT = 720000;
   const STOPS = [
     { t: 0.00, top: 0x7aa0d8, mid: 0xf3c8b0, bot: 0xffd9a8, fog: 0xf0d6c4, hs: 0xffe3d0, hg: 0x9a8f78, hi: 0.5, sc: 0xffc9a0, si: 0.55, dir: [0.85, 0.2, -0.35], glow: 0xffc890, night: 0.1 },        /* sunrise */
-    { t: 0.12, top: 0x7ea3be, mid: 0xcfdcd2, bot: 0xf4e0bc, fog: 0xe4dac4, hs: 0xfff0d8, hg: 0x8c8a62, hi: 0.5, sc: 0xffe0ac, si: 0.8, dir: [-0.5, 0.62, -0.6], glow: 0xffe09e, night: 0 },     /* day */
-    { t: 0.42, top: 0x7ea3be, mid: 0xcfdcd2, bot: 0xf4e0bc, fog: 0xe4dac4, hs: 0xfff0d8, hg: 0x8c8a62, hi: 0.5, sc: 0xffe0ac, si: 0.8, dir: [-0.6, 0.5, -0.45], glow: 0xffe09e, night: 0 },
+    { t: 0.12, top: 0x7ea3be, mid: 0xcfdcd2, bot: 0xf4e0bc, fog: 0xe4dac4, hs: 0xe6eaf2, hg: 0x8c8a62, hi: 0.46, sc: 0xffd49a, si: 0.98, dir: [-0.62, 0.4, -0.6], glow: 0xffd890, night: 0 },     /* day */
+    { t: 0.42, top: 0x7ea3be, mid: 0xcfdcd2, bot: 0xf4e0bc, fog: 0xe4dac4, hs: 0xe6eaf2, hg: 0x8c8a62, hi: 0.46, sc: 0xffd49a, si: 0.98, dir: [-0.72, 0.3, -0.45], glow: 0xffd088, night: 0 },
     { t: 0.55, top: 0x4a5a94, mid: 0xe8926a, bot: 0xffbc74, fog: 0xdcaa8c, hs: 0xffd0b0, hg: 0x8a7060, hi: 0.5, sc: 0xff9a55, si: 0.6, dir: [-0.85, 0.16, -0.3], glow: 0xff9a55, night: 0.15 },       /* sunset */
     { t: 0.65, top: 0x1f2a5a, mid: 0x62528a, bot: 0xd08478, fog: 0x6c5c78, hs: 0xa8a0cc, hg: 0x545070, hi: 0.5, sc: 0x9a9ae0, si: 0.4, dir: [-0.9, 0.06, -0.2], glow: 0xc88aa0, night: 0.55 },       /* dusk */
     { t: 0.78, top: 0x050919, mid: 0x0f1736, bot: 0x252c4c, fog: 0x171d33, hs: 0x7486c0, hg: 0x34395c, hi: 0.54, sc: 0x93a3da, si: 0.4, dir: [0.45, 0.7, 0.5], glow: 0x6f86c8, night: 1 },         /* night */
