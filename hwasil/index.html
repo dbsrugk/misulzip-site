@@ -2673,7 +2673,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   let galCol = null, exhibits = [];
   const FD = { s: 2.6, m: 4.0, l: 6.6 };                 /* longest side of the picture area per frame size */
   const FRAME_T = 0.2;
-  const ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'sea', 'palace', 'studio'];
+  const ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'sea', 'palace', 'gogh2', 'monet2', 'studio'];
   function roomOf(r) { return ROOMS.indexOf(r) >= 0 ? r : 'gallery'; }
   const EMPTYS = [];                                       /* eight gentle pictures for frames nobody has hung anything in yet, so an empty wall is still a pretty one */
   let emptyTex = null, emptyLabelTex = null, farTex = null, farLabelTex = null, evTex = null, evLabelTex = null;
@@ -3332,7 +3332,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       });
     });
     left.forEach(ex => {
-      const sl = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'sea', 'palace'].reduce((f, r) => f || slots.find(q => q.room === r && !q.ev && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !q.ev && !used.has(q)), null);
+      const sl = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'sea', 'palace', 'gogh2', 'monet2'].reduce((f, r) => f || slots.find(q => q.room === r && !q.ev && !used.has(q) && q.size === (ex.size === 's' || ex.size === 'l' ? ex.size : 'm')) || slots.find(q => q.room === r && !q.ev && !used.has(q)), null);
       if (sl) { used.add(sl); assign.set(sl, ex); }
     });
     slots.forEach(sl => {
@@ -5833,7 +5833,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       ['exManual', '직접 고르기', false, () => { closePad(); startHang(w); renderPlaces(); $('#places').hidden = false; }],   /* leave the easel, then pick a frame (the places list helps to walk there) */
       ['exNo', '나중에', false, () => {}]]);
   }
-  const AUTO_ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'sea', 'palace', 'studio'];
+  const AUTO_ROOMS = ['gallery', 'annex', 'westa', 'westb', 'garden', 'orchard', 'cave', 'sea', 'palace', 'gogh2', 'monet2', 'studio'];
   function autoCandidates() {
     const SR = { m: 0, l: 1, s: 2 };
     return slots.filter(q => !q.ex && !q.ev).sort((a, b) =>
@@ -5898,7 +5898,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   $('#padSave').addEventListener('click', save);
 
-  const ROOM_NAME = { museum: '대회랑', gallery: '신진 작가관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', palace: '도토리 궁', cave: '동굴 갤러리', sea: '바닷속 갤러리', gogh: '고흐의 노란 집', monet: '모네의 정원', hokusai: '호쿠사이 파도관', hanok: '한옥 그림관', studio: '화실' };
+  const ROOM_NAME = { museum: '대회랑', gallery: '신진 작가관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', palace: '도토리 궁', gogh2: '고흐의 노란 집', monet2: '모네의 정원', cave: '동굴 갤러리', sea: '바닷속 갤러리', gogh: '고흐의 노란 집', monet: '모네의 정원', hokusai: '호쿠사이 파도관', hanok: '한옥 그림관', studio: '화실' };
   const SIZE_NAME = { s: '작은', m: '보통', l: '큰' };
   async function takeDown(ex) {                           /* only the owner's own frames: the server checks it too */
     if (!galCol) return;
@@ -7196,6 +7196,17 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const im = new T.InstancedMesh(mg2([st, cap]), new T.MeshLambertMaterial({ color: 0xffffff }), list.length), o = new T.Object3D(), c = new T.Color(), HP = [[], [], [], []];
     list.forEach((q, i) => { const k = Math.floor(q[3] * 4) % 4, s = 0.8 + q[3] * 1.4; o.position.set(q[0], q[1] - 0.02, q[2]); o.rotation.set(0, q[3] * 20, 0); o.scale.set(s, s, s); o.updateMatrix(); im.setMatrixAt(i, o.matrix); im.setColorAt(i, c.setHex(col[k]).lerp(new T.Color(0xdddddd), 0.35)); HP[k].push(q[0], q[1] + 0.45 * s, q[2]); });
     im.frustumCulled = false; im.userData.noShadow = true; scene.add(im); NG.mush = im;
+    /* painters' corners at the masters' houses: a few easels looking at the place the master painted, and a row of frames beside them for what visitors paint there.
+       Everything here was built long before, so each spot is tried against what already stands and skipped if it is taken */
+    { const clear = (x, z, r) => walkable(x, z) && gY(x, z) > -0.05 && !colliders.some(q => Math.hypot(q.x - x, q.z - z) < q.r + r) && !slots.some(q => Math.hypot(q.x - x, q.z - z) < r + 1.8) && !easels.some(e => Math.hypot(e.sit.x - x, e.sit.z - z) < r + 2.2) && !benches.some(b => Math.hypot(b.x - x, b.z - z) < r + 1.6);
+      const wd = L(0x6a472e), kit = (label, room, eC, th, fC, ry) => { let ne = 0, nf = 0, first = null;
+        eC.forEach(q => { if (ne < 4 && clear(q[0], q[1], 2.3)) { addEaselAt(q[0], q[1], th); if (!first) first = q; ne++; } });
+        fC.forEach(q => { if (nf < 4 && clear(q[0], q[1], 1.9)) { const y0 = gY(q[0], q[1]), px = Math.cos(ry), pz = -Math.sin(ry); [-1.3, 1.3].forEach(k => { const m = new T.Mesh(bx(0.16, 3.9, 0.16), wd); m.position.set(q[0] + px * k, y0 + 1.95, q[1] + pz * k); scene.add(m); }); const t = new T.Mesh(bx(2.9, 0.16, 0.2), wd); t.position.set(q[0], y0 + 3.85, q[1]); t.rotation.y = ry; scene.add(t); addSlot(room, 'm', q[0], y0 + 2.5, q[1], ry); colliders.push({ x: q[0], z: q[1], r: 1.1 }); nf++; } });
+        if (first) { const pl = makeNamePlate(label); pl.sprite.scale.set(6, 1.6, 1); pl.sprite.position.set(first[0], gY(first[0], first[1]) + 5.2, first[1]); scene.add(pl.sprite); } return [ne, nf]; };
+      const gz = (GOGH.z0 + GOGH.z1) / 2, eG = [], fG = [], eM = [], fM = [];
+      [GOGH.x1 + 6, GOGH.x1 + 9].forEach(x => [-9, -3, 3, 9, -13, 13].forEach(d => eG.push([x, gz + d]))); [GOGH.z1 + 5, GOGH.z1 + 8, GOGH.z0 - 5].forEach(z => [61, 55.5, 50, 44.5, 39].forEach(x => fG.push([x, z])));
+      [MONET.cx + MONET.rx + 4.6, MONET.cx + MONET.rx + 7].forEach(x => [-9, -3, 3, 9, -14, 14].forEach(d => eM.push([x, MONET.cz + d]))); [MONET.cz - MONET.rz - 6, MONET.cz - MONET.rz - 9, MONET.cz + MONET.rz + 6].forEach(z => [38, 43.5, 49, 54.5].forEach(x => fM.push([x, z])));
+      window.__kits = { gogh: kit('고흐 따라 그리기', 'gogh2', eG, 0, fG, 0), monet: kit('모네 따라 그리기', 'monet2', eM, 0, fM, 0) }; }
     { const m4 = new T.Matrix4(), zero = new T.Matrix4().makeScale(0, 0, 0); let cut = 0; FORM.forEach(fm => { if (!fm.isInstancedMesh) return; let ch = false; for (let i = 0; i < fm.count; i++) { fm.getMatrixAt(i, m4); const e = m4.elements; if (inGal(e[12], e[14])) { fm.setMatrixAt(i, zero); ch = true; cut++; } } if (ch) fm.instanceMatrix.needsUpdate = true; }); window.__galCut = cut; }
     /* nothing from the meadow grows through the floor of the Yellow House: every instanced tuft, flower, stone and bush inside its walls is taken away */
     { const m4 = new T.Matrix4(), zero = new T.Matrix4().makeScale(0, 0, 0), v = new T.Vector3(); let cut = 0; scene.traverse(o => { if (!o.isInstancedMesh) return; o.updateMatrixWorld(); let ch = false; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); v.setFromMatrixPosition(m4).applyMatrix4(o.matrixWorld); if (v.y < 6 && (inGogh(v.x, v.z, 0.35) || inHoku(v.x, v.z, 0.6) || inHanok(v.x, v.z, 2.4) || (!o.userData.monet && Math.pow((v.x - MONET.cx) / (MONET.rx + 0.3), 2) + Math.pow((v.z - MONET.cz) / (MONET.rz + 0.3), 2) < 1) || (!o.userData.monet && Math.abs(v.z - MONET.bz) < MONET.bw + 0.4 && v.x > MONET.bx0 - 0.5 && v.x < MONET.bx1 + 0.5))) { o.setMatrixAt(i, zero); ch = true; cut++; } } if (ch) o.instanceMatrix.needsUpdate = true; }); window.__goghCut = cut; }
