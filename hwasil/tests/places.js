@@ -4,7 +4,8 @@ const { start, vis, until, check, done } = require('./lib');
   const t = await start(); const p = await t.client('A', '', { width: 390, height: 800 }); await t.enter(p, '지도보기');
   await p.click('#placesBtn'); await p.waitForTimeout(400);
   check(await p.locator('#placesList .roomRow').count() === 29, 'all 29 places are listed');
-  check(await p.locator('#placesTabs .btn').count() === 7, 'seven tabs: all, halls, paintings, outdoors, studio and rest, map, sea and cave');
+  check(await p.locator('#placesTabs .btn').count() === 9, 'nine tabs: all, halls, paintings, outdoors, studio and rest, map, sea and cave, the eastern quarter, the painters village');
+  { await p.locator('#placesTabs .btn', { hasText: '동양 구역' }).click(); const n = await p.locator('#placesList .roomRow:visible').count(); check(n === 3, 'the eastern quarter lists the palace, the night market and the wave pavilion: ' + n); await p.locator('#placesTabs .btn', { hasText: '전체' }).click(); }
   check(await p.locator('#placesList .catTag').count() === 29, 'every place carries its kind tag');
   await p.locator('#placesTabs .btn').nth(2).click(); await p.waitForTimeout(600);
   check(await p.locator('#placesList .roomRow.wing').count() === 11 && (await p.locator('#placesList .roomRow.wing canvas').count()) >= 40, 'the paintings tab lists the eleven halls with a strip of their paintings');
