@@ -5,6 +5,7 @@ const { start, vis, until, check, done } = require('./lib');
   await p.click('#placesBtn'); await p.waitForTimeout(400);
   check(await p.locator('#placesList .roomRow').count() === 29, 'all 29 places are listed');
   check(await p.locator('#placesTabs .btn').count() === 9, 'nine tabs: all, halls, paintings, outdoors, studio and rest, map, sea and cave, the eastern quarter, the painters village');
+  { const bad = await p.evaluate(() => window.__hw.slots.map(q => q.id).filter(id => !/^[a-z]{3,8}:-?[0-9]{1,3}(\.[0-9])?(,-?[0-9]{1,3}(\.[0-9])?){2}$/.test(id))); check(bad.length === 0, 'every frame id is one the server accepts for hanging: ' + bad.slice(0, 4).join(' ')); }
   { await p.locator('#placesTabs .btn', { hasText: '동양 구역' }).click(); const n = await p.locator('#placesList .roomRow:visible').count(); check(n === 3, 'the eastern quarter lists the palace, the night market and the wave pavilion: ' + n); await p.locator('#placesTabs .btn', { hasText: '전체' }).click(); }
   check(await p.locator('#placesList .catTag').count() === 29, 'every place carries its kind tag');
   await p.locator('#placesTabs .btn').nth(2).click(); await p.waitForTimeout(600);
