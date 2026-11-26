@@ -394,8 +394,10 @@ body.padOpen #hud { visibility: hidden; }
 #fameTabs .btn.on, #placesTabs .btn.on { background: var(--ink); color: var(--paper); }
 #placesMap { display: block; margin: 0 auto; max-width: 100%; border: 2px solid var(--ink); border-radius: 12px; background: #f3ecdb; touch-action: none; }
 #placesMap[hidden], #mapZoom[hidden] { display: none; }
-#mapZoom { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 8px 0 2px; flex-wrap: wrap; }
-#mapZoom .btn { min-width: 44px; padding: 8px 12px; }
+#mapZoom { display: flex; align-items: center; justify-content: flex-start; gap: 6px; margin: 2px 0 8px; flex-wrap: wrap; }
+#mapKey { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+#mapKey i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 3px 0 6px; vertical-align: middle; }
+#mapZoom .btn { min-width: 40px; padding: 6px 10px; }
 #mapZoomV { min-width: 34px; text-align: center; font-weight: 700; color: var(--muted); }
 .catTag { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 12px; border: 1.5px solid currentColor; vertical-align: middle; }
 .catTag.ex { color: #8a4a47; } .catTag.out { color: #3f7a4f; } .catTag.mk { color: #3f6fa8; }
@@ -854,8 +856,8 @@ body.padOpen #hud { visibility: hidden; }
     <div class="sheetHead"><h2>장소 이동</h2><button class="btn" id="placesClose" type="button">닫기</button></div>
     <div id="placesTabs"></div>
     <label id="walkOpt"><input type="checkbox" id="walkChk"> 걸어서 가기 (끄면 ✨ 순간이동)</label>
+    <div id="mapZoom" hidden><button class="btn" id="mapOut" type="button" aria-label="지도 축소">－</button><span id="mapZoomV">×1</span><button class="btn" id="mapIn" type="button" aria-label="지도 확대">＋</button><button class="btn" id="mapAll" type="button">전체</button><button class="btn" id="mapMe" type="button">📍 내 위치</button><span id="mapKey"><i style="background:#8a4a47"></i>전시 <i style="background:#3f7a4f"></i>야외 <i style="background:#3b6fb6"></i>화실·홀</span></div>
     <canvas id="placesMap" hidden></canvas>
-    <div id="mapZoom" hidden><button class="btn" id="mapOut" type="button" aria-label="지도 축소">－</button><span id="mapZoomV">×1</span><button class="btn" id="mapIn" type="button" aria-label="지도 확대">＋</button><button class="btn" id="mapAll" type="button">전체 보기</button><button class="btn" id="mapMe" type="button">내 위치</button></div>
     <div id="evPin"></div>
     <div id="placesList"></div>
     <button class="btn" id="suggestOpen" type="button">📮 건의함</button>
@@ -7655,48 +7657,54 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   const catOf = pl => ['알프스 마을', '눈밭', '동굴 갤러리', '수정 호수', '등대 섬', '산 전망대', '바닷가', '호숫가', '풍차 들판', '야외 전시 정원', '꽃길 정원', '남쪽 꽃들판', '숲속 쉼터', '등불 야시장'].indexOf(pl.name) >= 0 ? 'out' : ['화실', '중앙 홀', '중앙 로툰다', '둥근 홀 (앞)', '둥근 홀 (뒤)'].indexOf(pl.name) >= 0 ? 'mk' : 'ex';
   let placesTab = 'all';
   const EVENT_PLACE = { name: '🎁 이벤트존', note: '내 그림을 걸어보세요 · 별관 서쪽 벽 (@dotori_museum)', x: -4.5, z: GZ1 + 16, h: -Math.PI / 2, pitch: 0.15 };
+  /* the map: a drawn plan of the whole place. Land, water and buildings each have one quiet colour and a thin outline; every place is a white pin with its own little picture.
+     Names never run over each other: the most important ones are written first and the rest appear as you zoom in; a tap on an unnamed pin names it, a tap on a named one goes there */
+  const MAP_ICON = { '화실': '🎨', '중앙 홀': '🏛', '중앙 로툰다': '🏛', '둥근 홀 (앞)': '⚪', '둥근 홀 (뒤)': '⚪', '대회랑': '🖼', '신진 작가관': '✨', '별관 전시관': '🖼', '서쪽 전시관 1': '🖼', '서쪽 전시관 2': '🖼', '조각 전시관': '🗿', '야외 전시 정원': '🌳', '꽃길 정원': '🌷', '풍차 들판': '🌻', '남쪽 꽃들판': '🌼', '숲속 쉼터': '🌲', '호숫가': '🚣', '바닷가': '🏖', '등대 섬': '🗼', '동굴 갤러리': '💎', '수정 호수': '💧', '눈밭': '⛄', '알프스 마을': '🏡', '산 전망대': '⛰', '고흐의 노란 집': '🏠', '모네의 정원': '🌸', '호쿠사이 파도관': '🌊', '등불 야시장': '🏮', '도토리 궁': '🏯' };
+  const MAP_PRI = ['화실', '중앙 홀', '도토리 궁', '대회랑', '알프스 마을', '등불 야시장', '야외 전시 정원', '바닷가', '꽃길 정원', '호숫가', '고흐의 노란 집', '모네의 정원', '호쿠사이 파도관', '등대 섬', '조각 전시관', '풍차 들판', '산 전망대', '동굴 갤러리', '눈밭', '신진 작가관'];
   function drawPlacesMap() {
-    const cv = $('#placesMap'), W = Math.max(240, Math.min(420, ($('#placesList').parentNode.clientWidth || 340) - 40));
-    const sq = z => z >= -70 ? z : -70 + (z + 70) * 0.1, xs = PLACES.map(q => q.x), zs = PLACES.map(q => sq(q.z)), x0 = Math.min.apply(null, xs) - 14, x1 = Math.max.apply(null, xs) + 14, z0 = Math.min.apply(null, zs) - 24, z1 = Math.max.apply(null, zs) + 14;
-    /* the whole world always fits the frame at zoom 1 (nothing runs off the bottom); MV zooms and pans it from there */
-    const H = Math.round(Math.max(260, Math.min(W * 1.15, window.innerHeight * 0.5))), k0 = (W - 16) / (x1 - x0), zk0 = Math.min(k0, (H - 16) / (z1 - z0)), k = k0 * MV.s, zk = zk0 * MV.s, dpr = Math.min(window.devicePixelRatio || 1, 2);
-    MV.W = W; MV.H = H; MV.ox = clamp(MV.ox, W - W * MV.s, 0); MV.oy = clamp(MV.oy, H - H * MV.s, 0); if (zk0 < k0 && MV.s === 1) MV.oy = 0; MV.me = [MV.ox + 8 * MV.s + (pos.x - x0) * k, MV.oy + 8 * MV.s + (sq(pos.z) - z0) * zk];
+    const cv = $('#placesMap'), W = Math.max(240, Math.min(460, ($('#placesList').parentNode.clientWidth || 340) - 40));
+    const sq = z => z >= -70 ? z : -70 + (z + 70) * 0.1, xs = PLACES.map(q => q.x), zs = PLACES.map(q => sq(q.z)), x0 = Math.min(Math.min.apply(null, xs), -GG.hw) - 16, x1 = Math.max.apply(null, xs) + 16, z0 = Math.min.apply(null, zs) - 16, z1 = Math.max(Math.max.apply(null, zs), PALC.z1) + 10;
+    const top = cv.getBoundingClientRect().top, H = Math.round(top > 0 ? clamp(window.innerHeight - top - 26, 240, W * 1.6) : Math.max(260, Math.min(W * 1.2, window.innerHeight * 0.5)));   /* exactly as tall as the screen has room for: the bottom never runs off */
+    const zk0 = (H - 16) / (z1 - z0), k0 = Math.min((W - 16) / (x1 - x0), zk0 * 1.7), pad = (W - (x1 - x0) * k0) / 2, k = k0 * MV.s, zk = zk0 * MV.s, dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    MV.W = W; MV.H = H; MV.ox = clamp(MV.ox, W - W * MV.s, 0); MV.oy = clamp(MV.oy, H - H * MV.s, 0);
     cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr;
     const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const X = x => MV.ox + 8 * MV.s + (x - x0) * k;                                /* north (smaller z) is up */
-    const ZU = z => MV.oy + 8 * MV.s + (sq(z) - z0) * zk;                                              /* a schematic: north-south is squeezed so the long gallery fits */
-    g.fillStyle = '#f3ecdb'; g.fillRect(0, 0, W, H);
-    g.fillStyle = 'rgba(63,122,79,0.14)'; g.fillRect(X(RM.hx), ZU(OUT.z0), X(OUT.x1) - X(RM.hx), ZU(OUT.z1) - ZU(OUT.z0));          /* the outdoors */
-    g.fillStyle = 'rgba(138,74,71,0.16)'; g.fillRect(X(-GG.hw), ZU(GGZ), X(GG.hw) - X(-GG.hw), ZU(GGS) - ZU(GGZ));                    /* the grand gallery */
-    g.fillStyle = 'rgba(37,33,29,0.1)'; g.fillRect(X(-RM.hx), ZU(-RM.hz), X(RM.hx) - X(-RM.hx), ZU(RM.hz) - ZU(-RM.hz));                 /* the central hall */
-    g.strokeStyle = 'rgba(37,33,29,0.35)'; g.lineWidth = 1; g.strokeRect(X(-RM.hx), ZU(-RM.hz), X(RM.hx) - X(-RM.hx), ZU(RM.hz) - ZU(-RM.hz));
-    g.fillStyle = 'rgba(80,150,200,0.28)'; g.fillRect(X(SEA_X), 0, W - X(SEA_X), H);                                                  /* the sea */
-    g.fillStyle = 'rgba(120,190,225,0.6)'; g.beginPath(); g.ellipse(X(LAKE.x), ZU(LAKE.z), LAKE.r * k, LAKE.r * zk, 0, 0, 6.2832); g.fill();   /* the lake */
-    g.fillStyle = 'rgba(236,222,176,0.95)'; g.beginPath(); g.ellipse(X(ISLE.x), ZU(ISLE.z), (ISLE.r + 3) * k, (ISLE.r + 3) * zk, 0, 0, 6.2832); g.fill();   /* the lighthouse isle */
-    { const rc = (x0, z0, x1, z1, c) => { g.fillStyle = c; g.fillRect(X(x0), ZU(z0), X(x1) - X(x0), ZU(z1) - ZU(z0)); };                                    /* the three houses of the masters */
-      rc(GOGH.x0, GOGH.z0, GOGH.x1, GOGH.z1, '#f2c230'); rc(HANOK.x0, HANOK.z0, HANOK.x1, HANOK.z1, '#4a4f56'); rc(HOKU.x0, HOKU.z0, HOKU.x1, HOKU.z1, '#c8402f'); rc(MKT.x0, MKT.z0, MKT.x1, MKT.z1, '#4b3550'); rc(PALC.x0, PALC.z0, PALC.x1, PALC.z1, '#d9cfb8'); g.fillStyle = '#24508f'; g.beginPath(); g.ellipse(X(HOKU.wx - 5), ZU(HOKU.wz + 6), 6 * k, 16 * zk, 0, 0, 6.2832); g.fill();
-      g.fillStyle = '#4f8f8f'; g.beginPath(); g.ellipse(X(MONET.cx), ZU(MONET.cz), MONET.rx * k, MONET.rz * zk, 0, 0, 6.2832); g.fill(); rc(MONET.bx0, MONET.bz - 1.6, MONET.bx1, MONET.bz + 1.6, '#3f8a5a'); }
-    g.fillStyle = 'rgba(120,108,150,0.75)'; g.beginPath(); g.ellipse(X(CAVE.x), ZU(CAVE.z), (CAVE.r + 2) * k, Math.max(7, CAVE.r * CAVE.k * zk), 0, 0, 6.2832); g.fill();   /* the cave */
-    g.font = '11px sans-serif'; g.textBaseline = 'middle';
-    const hit = [], placed = [];
-    PLACES.forEach(pl => {
-      const c = catOf(pl), px = X(pl.x), py = ZU(pl.z); g.fillStyle = PCOL[c]; g.beginPath(); g.arc(px, py, 5, 0, 6.2832); g.fill();
-      g.fillStyle = '#25211d'; const tw = g.measureText(pl.name).width;
-      const tries = [[1, 0], [-1, 0], [1, -11], [-1, -11], [1, 11], [-1, 11], [1, -22], [-1, 22]];            /* label side and shift: take the first spot that does not run over another label or the edge */
-      let put0 = tries[0];
-      for (let ti = 0; ti < tries.length; ti++) {
-        const sd = tries[ti][0], lx = sd > 0 ? px + 9 : px - 9 - tw, ly = py + tries[ti][1];
-        if (lx < 2 || lx + tw > W - 2 || ly < 8 || ly > H - 8) continue;
-        if (!placed.some(r => lx < r.x + r.w + 2 && lx + tw + 2 > r.x && Math.abs(ly - r.y) < 12)) { put0 = tries[ti]; break; }
-      }
-      { const sd = put0[0], lx = sd > 0 ? px + 9 : px - 9 - tw; placed.push({ x: lx, w: tw, y: py + put0[1] }); g.textAlign = 'left'; g.fillText(pl.name, lx, py + put0[1]); }
-      hit.push({ pl: pl, x: px, y: py });
-    });
-    const mx = X(clamp(pos.x, x0, x1)), my = ZU(pos.z); g.fillStyle = '#e0453a'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(mx, my, 6, 0, 6.2832); g.fill(); g.stroke();
+    const X = x => MV.ox + pad * MV.s + (x - x0) * k, ZU = z => MV.oy + 8 * MV.s + (sq(z) - z0) * zk;   /* north is up; the long gallery far to the north is squeezed so it fits */
+    MV.me = [X(pos.x), ZU(pos.z)];
+    const rr2 = (xa, za, xb, zb, r, fill, stroke) => { const ax = X(xa), ay = ZU(za), w = X(xb) - ax, h = ZU(zb) - ay; r = Math.min(r * MV.s, w / 2, h / 2); g.beginPath(); g.moveTo(ax + r, ay); g.arcTo(ax + w, ay, ax + w, ay + h, r); g.arcTo(ax + w, ay + h, ax, ay + h, r); g.arcTo(ax, ay + h, ax, ay, r); g.arcTo(ax, ay, ax + w, ay, r); g.closePath(); if (fill) { g.fillStyle = fill; g.fill(); } if (stroke) { g.strokeStyle = stroke; g.lineWidth = 1.2; g.stroke(); } };
+    const el = (x, z, rx, rz, fill, stroke) => { g.beginPath(); g.ellipse(X(x), ZU(z), Math.max(3, rx * k), Math.max(3, rz * zk), 0, 0, 6.2832); g.fillStyle = fill; g.fill(); if (stroke) { g.strokeStyle = stroke; g.lineWidth = 1.2; g.stroke(); } };
+    g.fillStyle = '#efe5cd'; g.fillRect(0, 0, W, H);                                                                    /* paper */
+    g.fillStyle = '#b9d8e6'; g.fillRect(X(SEA_X), 0, W - X(SEA_X) + 2, H); g.strokeStyle = 'rgba(255,255,255,0.7)'; g.lineWidth = 1; for (let y = 14; y < H; y += 22) { g.beginPath(); for (let x = X(SEA_X) + 8; x < W; x += 16) { g.moveTo(x, y); g.quadraticCurveTo(x + 4, y - 3, x + 8, y); } g.stroke(); }   /* the sea, with little waves */
+    g.fillStyle = '#ead9a8'; g.fillRect(X(SEA_X) - 3 * MV.s, 0, 3 * MV.s, H);                                              /* the beach */
+    rr2(RM.hx, OUT.z0, OUT.x1 + 4, OUT.z1, 10, '#cfe0b4', '#9fb884');                                                    /* the meadows */
+    rr2(44, -92, 148, OUT.z0, 8, '#dfe8d2', '#a9bb98'); rr2(60, -200, 124, -92, 8, '#f3f4f6', '#b9c0c8');                  /* the village plain and the snow above it */
+    rr2(MKT.x0, OUT.z1, MKT.x1, MKT.z1, 8, '#4b3a55', '#2c2233'); rr2(PALC.x0, PALC.z0, PALC.x1, PALC.z1, 6, '#e9dcc0', '#8a6a4a'); rr2(HANOK.x0, HANOK.z0, HANOK.x1, HANOK.z1, 3, '#b0503c', '#6a2c20');   /* the night market, the palace and its hall */
+    g.strokeStyle = 'rgba(190,160,110,0.9)'; g.lineWidth = Math.max(2, 2.2 * MV.s); g.setLineDash([5, 4]); g.beginPath(); g.moveTo(X(92), ZU(OUT.z0)); g.lineTo(X(92), ZU(PALC.z0 + 40)); g.moveTo(X(RM.hx), ZU(20)); g.lineTo(X(92), ZU(20)); g.stroke(); g.setLineDash([]);   /* the south road and the walk from the museum's east door */
+    rr2(-GG.hw, GGZ, GG.hw, GGS, 4, '#dcc7ae', '#8a6a4a'); rr2(-21, GGS, 21, -RM.hz, 8, '#e4d2ba', '#8a6a4a'); rr2(-RM.hx, -RM.hz, RM.hx, RM.hz, 5, '#d9c3a6', '#6a4a30'); rr2(W2X - 15, GZ0 - 2, GX, GZ2, 5, '#e0cdb3', '#8a6a4a');   /* the museum: long gallery, rotunda, central hall, the south wings */
+    el(LAKE.x, LAKE.z, LAKE.r, LAKE.r, '#8ec5e2', '#5a9cc0'); el(ISLE.x, ISLE.z, ISLE.r + 3, ISLE.r + 3, '#ecdcae', '#b9a56a'); el(CAVE.x, CAVE.z, CAVE.r + 2, CAVE.r * CAVE.k, '#a99bc4', '#6f5f8f');
+    el(MONET.cx, MONET.cz, MONET.rx, MONET.rz, '#7fb8b0', '#4f8a84'); rr2(GOGH.x0, GOGH.z0, GOGH.x1, GOGH.z1, 3, '#f0c63a', '#a8851c'); rr2(HOKU.x0, HOKU.z0, HOKU.x1, HOKU.z1, 3, '#d2553f', '#8a2f20'); el(HOKU.wx - 5, HOKU.wz + 6, 6, 16, '#2f5f9f', '#1f3f70');
+    if (MV.s < 2.2) { g.font = '700 ' + Math.round(13 + MV.s * 2) + 'px "Jua", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = 'rgba(70,50,30,0.22)'; [['들  판', 92, 120], ['바  다', 172, 300], ['마  을', 96, -80]].forEach(q => g.fillText(q[0], X(q[1]), ZU(q[2]))); }   /* faint names of the big regions while the view is wide */
+    /* pins and names */
+    const hit = [], boxes = [], order = PLACES.slice().sort((a, b) => { const ia = MAP_PRI.indexOf(a.name), ib = MAP_PRI.indexOf(b.name); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); }), RING = { ex: '#8a4a47', out: '#3f7a4f', mk: '#3b6fb6' }, pins = [];
+    const fs = 12; g.textBaseline = 'middle';
+    order.forEach(pl => { const px = X(pl.x), py = ZU(pl.z), near = pins.some(q => Math.hypot(q[0] - px, q[1] - py) < 17), sel = MV.sel === pl.name, small = near && !sel;
+      pins.push([px, py]); g.beginPath(); g.arc(px, py, small ? 4.5 : 10, 0, 6.2832); g.fillStyle = small ? RING[catOf(pl)] : '#fffdf6'; g.fill(); g.lineWidth = small ? 1.5 : 2.2; g.strokeStyle = small ? '#fffdf6' : RING[catOf(pl)]; g.stroke();
+      if (!small) { g.font = '12px sans-serif'; g.textAlign = 'center'; g.fillStyle = '#33261c'; g.fillText(MAP_ICON[pl.name] || '📍', px, py + 0.5); }
+      hit.push({ pl: pl, x: px, y: py, shown: false }); });
+    const label = (h, force) => { const pl = h.pl; g.font = '700 ' + fs + 'px "Gowun Dodum", sans-serif'; const tw = g.measureText(pl.name).width, tries = [[13, 0], [-13 - tw, 0], [-tw / 2, 17], [-tw / 2, -17], [13, 12], [-13 - tw, 12], [13, -12], [-13 - tw, -12]];
+      for (let i = 0; i < tries.length; i++) { const lx = h.x + tries[i][0], ly = h.y + tries[i][1]; if (lx < 3 || lx + tw > W - 3 || ly < 9 || ly > H - 9) continue;
+        if (!force && (boxes.some(r => lx < r[0] + r[2] + 4 && lx + tw + 4 > r[0] && Math.abs(ly - r[1]) < fs + 2) || hit.some(q => q !== h && q.x > lx - 11 && q.x < lx + tw + 11 && Math.abs(q.y - ly) < 13))) continue;
+        boxes.push([lx, ly, tw]); g.textAlign = 'left'; g.lineJoin = 'round'; g.lineWidth = 3.5; g.strokeStyle = force ? '#fff3c4' : 'rgba(255,253,246,0.94)'; g.strokeText(pl.name, lx, ly); g.fillStyle = '#33261c'; g.fillText(pl.name, lx, ly); h.shown = true; return; } };
+    const selH = hit.filter(h => h.pl.name === MV.sel)[0]; if (selH) label(selH, true);
+    hit.forEach(h => { if (!h.shown) label(h, false); });
+    { const mx = clamp(MV.me[0], 8, W - 8), my = clamp(MV.me[1], 8, H - 8), t = (performance.now() / 900) % 1; g.beginPath(); g.arc(mx, my, 9 + t * 9, 0, 6.2832); g.strokeStyle = 'rgba(224,69,58,' + (0.6 * (1 - t)).toFixed(2) + ')'; g.lineWidth = 2; g.stroke(); g.beginPath(); g.arc(mx, my, 7, 0, 6.2832); g.fillStyle = '#e0453a'; g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 2.5; g.stroke();
+      g.font = '700 11px sans-serif'; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = '#fff'; g.strokeText('나', mx, my - 15); g.fillStyle = '#c0281e'; g.fillText('나', mx, my - 15); }
+    g.font = '700 11px sans-serif'; g.textAlign = 'center'; g.fillStyle = 'rgba(51,38,28,0.7)'; g.fillText('N', 16, 13); g.beginPath(); g.moveTo(16, 20); g.lineTo(12, 30); g.lineTo(20, 30); g.closePath(); g.fill();   /* north */
     MV.hit = hit; $('#mapZoomV').textContent = '×' + (Math.round(MV.s * 10) / 10);
+    if (!MV.raf && !$('#places').hidden && placesTab === 'map') MV.raf = setTimeout(() => { MV.raf = 0; if (!$('#places').hidden && placesTab === 'map' && !MV.pt.size) drawPlacesMap(); }, 450);   /* keeps the "you are here" ring breathing, and follows me if I am walking */
   }
   /* the map's own view: pinch or the wheel zooms about the fingers, a drag pans, the buttons zoom about the middle, a short tap on a dot goes there */
-  const MV = { s: 1, ox: 0, oy: 0, W: 300, H: 300, hit: [], me: [0, 0], pt: new Map(), d0: 0, moved: 0 };
+  const MV = { s: 1, ox: 0, oy: 0, W: 300, H: 300, hit: [], me: [0, 0], pt: new Map(), d0: 0, moved: 0, sel: '', raf: 0 };
   function mapZoom(s2, px, py) { s2 = clamp(s2, 1, 6); if (px === undefined) { px = MV.W / 2; py = MV.H / 2; } MV.ox = px - (px - MV.ox) * s2 / MV.s; MV.oy = py - (py - MV.oy) * s2 / MV.s; MV.s = s2; drawPlacesMap(); }
   { const cv = $('#placesMap'), at = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     cv.addEventListener('pointerdown', e => { try { cv.setPointerCapture(e.pointerId); } catch (er) {} MV.pt.set(e.pointerId, at(e)); if (MV.pt.size === 1) MV.moved = 0; if (MV.pt.size === 2) { const a = Array.from(MV.pt.values()); MV.d0 = Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]); MV.moved = 99; } });
@@ -7704,7 +7712,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       if (MV.pt.size === 1) { MV.moved += Math.abs(n[0] - o[0]) + Math.abs(n[1] - o[1]); MV.pt.set(e.pointerId, n); if (MV.s > 1 && MV.moved > 6) { MV.ox += n[0] - o[0]; MV.oy += n[1] - o[1]; drawPlacesMap(); } }
       else if (MV.pt.size === 2) { MV.pt.set(e.pointerId, n); const a = Array.from(MV.pt.values()), d = Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]); if (MV.d0 > 10) mapZoom(MV.s * d / MV.d0, (a[0][0] + a[1][0]) / 2, (a[0][1] + a[1][1]) / 2); MV.d0 = d; } });
     const up = e => { if (!MV.pt.has(e.pointerId)) return; const n = at(e), tap = MV.pt.size === 1 && MV.moved < 8 && e.type === 'pointerup'; MV.pt.delete(e.pointerId);
-      if (tap) { let b = null, bd = 28; MV.hit.forEach(h => { const d = Math.hypot(h.x - n[0], h.y - n[1]); if (d < bd) { bd = d; b = h; } }); if (b) goPlace(b.pl); } };
+      if (tap) { let b = null, bd = 28; MV.hit.forEach(h => { const d = Math.hypot(h.x - n[0], h.y - n[1]); if (d < bd) { bd = d; b = h; } }); if (b) { if (b.shown || MV.sel === b.pl.name) { MV.sel = ''; goPlace(b.pl); } else { MV.sel = b.pl.name; drawPlacesMap(); } } else if (MV.sel) { MV.sel = ''; drawPlacesMap(); } } };
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
     cv.addEventListener('wheel', e => { e.preventDefault(); const n = at(e); mapZoom(MV.s * (e.deltaY < 0 ? 1.25 : 0.8), n[0], n[1]); }, { passive: false });
     $('#mapIn').addEventListener('click', () => mapZoom(MV.s * 1.5)); $('#mapOut').addEventListener('click', () => mapZoom(MV.s / 1.5));
