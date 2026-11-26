@@ -218,7 +218,7 @@ window.MUSEUM_HOUSES = [
     { id: 'hk_bullfinch', title: '피리새와 수양벚나무', artist: '가쓰시카 호쿠사이', year: '1834년경', place: '시카고 미술관 (미국)', w: 19.1, h: 25.4, img: 'art/hk_bullfinch.jpg',
       blurb: '거꾸로 매달린 작은 새와 늘어진 벚꽃 가지예요. 진한 파란 바탕 덕분에 분홍 꽃이 더 또렷해 보여요.' }
   ] },
-  { id: 'hanok', name: '한옥 그림관', note: '호랑이 민화와 큰 병풍이 걸린 긴 한옥', pieces: [
+  { id: 'hanok', name: '도토리 궁', note: '호랑이 민화와 큰 병풍이 걸린 궁궐 본전', pieces: [
     { id: 'kr_tigerfam', title: '호랑이 가족', artist: '작가 모름 (조선)', year: '19세기 말', place: '클리블랜드 미술관 (미국)', w: 115, h: 215, img: 'art/kr_tigerfam.jpg',
       blurb: '깊은 산속에서 어미 호랑이와 새끼들, 그리고 표범이 아침 해를 맞아요. 소나무는 오래 사는 것을, 호랑이 가족은 집안이 잘되는 것을 뜻해요.' },
     { id: 'kr_tigers', title: '소나무 숲의 호랑이와 표범', artist: '작가 모름 (조선)', year: '18세기', place: '클리블랜드 미술관 (미국)', w: 193, h: 128, img: 'art/kr_tigers.jpg',

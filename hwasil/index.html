@@ -2909,7 +2909,8 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     chair(-3.6, 1.6, 0.9); chair(0.6, -2.7, 0.15);
     { const g = new T.Group(); g.position.set(-3.4, 0, -1.9); F.add(g); put(g, new T.Mesh(bx(1.5, 0.12, 1.1), tableW), 0, 1.5, 0); [[-0.65, -0.45], [0.65, -0.45], [-0.65, 0.45], [0.65, 0.45]].forEach(q => put(g, new T.Mesh(bx(0.1, 1.5, 0.1), tableW), q[0], 0.75, q[1])); put(g, new T.Mesh(bx(1.3, 0.25, 0.06), tableW), 0, 1.25, 0.5);
       put(g, new T.Mesh(cyl(0.2, 0.26, 0.6, 10), L(0x4f7fc0)), -0.3, 1.86, 0); put(g, new T.Mesh(cyl(0.34, 0.24, 0.2, 12), white), 0.3, 1.66, 0.1); put(g, new T.Mesh(cyl(0.07, 0.09, 0.45, 8), L(0x7fb08a)), 0.45, 1.78, -0.3); }
-    colliders.push({ x: cx + 1.5, z: cz, r: 3.2 }, { x: cx + 4.4, z: cz, r: 2.8 }, { x: cx - 1.2, z: cz, r: 2.8 }, { x: cx - 5.6, z: cz + 2.7, r: 1.1 }, { x: cx - 5.3, z: cz - 3.2, r: 1.5 }, { x: cx + 1.5, z: cz - 4.6, r: 1.1 });
+    [-1.6, 0.4, 2.4, 4.0].forEach(dx => colliders.push({ x: cx + dx, z: cz, r: 2.6 }));   /* the bed as a row of small rounds that fit its shape, so walking into it slides along its side */
+    colliders.push({ x: cx - 5.6, z: cz + 2.7, r: 1.1 }, { x: cx - 5.3, z: cz - 3.2, r: 1.5 }, { x: cx + 1.5, z: cz - 4.6, r: 1.1 });
     /* his straw hat and blue smock on pegs by the door, an easel with a canvas just begun */
     { const g = new T.Group(); g.position.set(x1 - 0.25, 0, z0 + seg / 2); g.rotation.y = -Math.PI / 2; IN.add(g); hang(g, 'x', x1, -1); put(g, new T.Mesh(bx(3.2, 0.25, 0.12), tableW), 0, 4.6, 0); [-1.1, 0, 1.1].forEach(x => put(g, new T.Mesh(cyl(0.05, 0.05, 0.4, 6), tableW), x, 4.6, 0.2).rotation.x = Math.PI / 2);
       put(g, new T.Mesh(cyl(0.75, 0.75, 0.06, 14), straw), -1.1, 4.4, 0.42).rotation.x = Math.PI / 2 - 0.2; put(g, new T.Mesh(new T.SphereGeometry(0.36, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), straw), -1.1, 4.42, 0.46).rotation.x = Math.PI / 2 - 0.2;
@@ -4973,6 +4974,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   ];
   function walkable(x, z) { for (let i = 0; i < WALK.length; i++) if (WALK[i][1](x, z)) return true; return false; }
   const walkZone = (x, z) => { for (let i = 0; i < WALK.length; i++) if (WALK[i][1](x, z)) return WALK[i][0]; return ''; };
+  window.__tryMove = (a, b) => tryMove(a, b); window.__cols = () => colliders;
   function tryMove(mx, mz) {
     const ox = pos.x, oz = pos.z;
     const sk = swimAt(ox, oz); if (sk) { mx *= 1 - 0.4 * sk; mz *= 1 - 0.4 * sk; }                                                          /* the water slows me down */
@@ -4982,7 +4984,9 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     for (let i = 0; i < colliders.length; i++) {
       const q = colliders[i]; if (q.low && jmpY > 0.45) continue;   /* mid-hop, fences, benches and log piles pass underneath */
       const dx = pos.x - q.x, dz = pos.z - q.z, d = Math.hypot(dx, dz), min = q.r + 0.55;
-      if (d < min && d > 1e-4) { pos.x = q.x + dx / d * min; pos.z = q.z + dz / d * min; }
+      if (d < min && d > 1e-4) { pos.x = q.x + dx / d * min; pos.z = q.z + dz / d * min;
+        const ml = Math.hypot(mx, mz); if (ml > 1e-4 && (mx * dx + mz * dz) / (ml * d) < -0.92) { const sd = (mx * dz - mz * dx) > 0 ? -1 : 1; pos.x += -dz / d * sd * ml * 0.85; pos.z += dx / d * sd * ml * 0.85; }   /* walking straight into something round: slip round it instead of stopping dead */
+      }
     }
     if (!walkable(pos.x, pos.z)) { pos.x = ox; pos.z = oz; }
   }
@@ -5900,7 +5904,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
   }
   $('#padSave').addEventListener('click', save);
 
-  const ROOM_NAME = { museum: '대회랑', gallery: '신진 작가관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', palace: '도토리 궁', goghv: '고흐의 노란 집', monetv: '모네의 정원', hokuv: '호쿠사이 파도관', cave: '동굴 갤러리', sea: '바닷속 갤러리', gogh: '고흐의 노란 집', monet: '모네의 정원', hokusai: '호쿠사이 파도관', hanok: '한옥 그림관', studio: '화실' };
+  const ROOM_NAME = { museum: '대회랑', gallery: '신진 작가관', annex: '별관', westa: '서쪽 전시관 1', westb: '서쪽 전시관 2', garden: '야외 전시 정원', orchard: '꽃길 정원', palace: '도토리 궁', goghv: '고흐의 노란 집', monetv: '모네의 정원', hokuv: '호쿠사이 파도관', cave: '동굴 갤러리', sea: '바닷속 갤러리', gogh: '고흐의 노란 집', monet: '모네의 정원', hokusai: '호쿠사이 파도관', hanok: '도토리 궁 본전', studio: '화실' };
   const SIZE_NAME = { s: '작은', m: '보통', l: '큰' };
   async function takeDown(ex) {                           /* only the owner's own frames: the server checks it too */
     if (!galCol) return;
