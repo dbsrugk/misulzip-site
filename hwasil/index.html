@@ -1234,7 +1234,7 @@ body.padOpen #hud { visibility: hidden; }
   ground.receiveShadow = true;
   ground.rotation.x = -Math.PI / 2; ground.position.set(SEA_X - 325, -0.05, 0); scene.add(ground);   /* ends at the shore so it never z-fights with the sea */
 
-  const wallMat = L(0xefe8da), baseMat = L(0x8d6b45);
+  const wallMat = L(0xe8dcc4), baseMat = L(0x6f5236);   /* warm plaster, a darker skirting */
   function wall(w, x, z, ry, mat) {
     const g = new T.Group();
     put(g, new T.Mesh(new T.PlaneGeometry(w, RM.h), mat || wallMat), 0, RM.h / 2, 0);
@@ -1974,12 +1974,12 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     const u = sky.material.uniforms; u.top.value.copy(top); u.mid.value.copy(mid); u.bot.value.copy(bot); u.glowCol.value.copy(cur.glow).multiplyScalar(1 - ck * 0.75);
     scene.background.copy(fog); scene.fog.color.copy(fog);
     scene.fog.near = 62 - 40 * Math.min(1, fk + ATM.rain * 0.2); scene.fog.far = 310 - 200 * Math.min(1, fk) - 70 * ATM.rain; if (mq > 0.01) { scene.fog.near -= Math.min(scene.fog.near - 12, 60 * mq); scene.fog.far -= 150 * mq; }
-    { const vg = Math.round(Math.min(1, 0.3 * (1 - indoorK) + ATM.night * 0.3 + mq * 0.4) * 40) / 40; if (vg !== vigLast) { vigLast = vg; stageEl.style.setProperty('--vig', vg); } }   /* a soft dark edge to the picture at night, deeper in the market */
+    { const vg = Math.round(Math.min(1, 0.3 + 0.08 * indoorK + ATM.night * 0.3 + mq * 0.4) * 40) / 40; if (vg !== vigLast) { vigLast = vg; stageEl.style.setProperty('--vig', vg); } }   /* a soft dark edge to the picture at night, deeper in the market */
     SUN.copy(cur.dir);
     key.color.copy(cur.sc); key.intensity = cur.si * (1 - ck * 0.5) * (1 - 0.55 * mq);
     indoorK += ((pos.x < RM.hx - 0.5 ? 1 : 0) - indoorK) * Math.min(1, dt * 3); outK += ((pos.x > RM.hx - 3 && !inGogh(pos.x, pos.z, 0) && !inHoku(pos.x, pos.z, 0) && !inHanok(pos.x, pos.z, 0) ? 1 : 0) - outK) * Math.min(1, dt * 3);
     hemi.color.copy(cur.hs).lerp(WARM, ATM.night * indoorK * 0.95); hemi.groundColor.copy(cur.hg);
-    hemi.intensity = (cur.hi * (1 + ck * 0.08) + ATM.night * 0.38 * indoorK) * (1 - 0.42 * mq); if (mq > 0.01) hemi.color.lerp(MKT_WARM, 0.35 * mq);                 /* at night the halls stay bright enough to look at the pictures */
+    hemi.intensity = (cur.hi * (1 + ck * 0.08) * (1 - 0.22 * indoorK) + ATM.night * 0.38 * indoorK) * (1 - 0.42 * mq);   /* indoors a little dimmer, so the picture lights tell */ if (mq > 0.01) hemi.color.lerp(MKT_WARM, 0.35 * mq);                 /* at night the halls stay bright enough to look at the pictures */
     const nk = ATM.night, sk = nk * nk * (1 - ck * 0.8);
     starsMesh.material.opacity = sk; starsMesh.visible = sk > 0.02;
     moonSprite.material.opacity = clamp((nk - 0.5) * 2, 0, 1) * (1 - ck * 0.75); moonSprite.visible = moonSprite.material.opacity > 0.02;
@@ -7227,6 +7227,15 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       const eH = [], fH = []; [HOKU.z0 - 5, HOKU.z1 + 5, HOKU.z0 - 8, HOKU.z1 + 8].forEach(z => [129, 135, 141, 123].forEach(x => eH.push([x, z]))); [HOKU.x0 - 6, HOKU.x0 - 9].forEach(x => [-15, -9, 9, 15, -21, 21].forEach(d => fH.push([x, (HOKU.z0 + HOKU.z1) / 2 + d])));   /* either side of the lane into the pavilion, never across it */
       /* the long gallery: one easel in every period, set back from the wall it faces, so a painting can be copied where it hangs */
       let nW = 0; for (let k = 0; k < NW; k++) { const sd = k % 2 ? 1 : -1, zc = wingZ(k) - 16, c = [[sd * 8, zc], [sd * 8, zc - 6], [sd * 8, zc + 6], [-sd * 8, zc], [-sd * 8, zc - 6], [-sd * 8, zc + 6], [sd * 6, zc - 11], [-sd * 6, zc + 11]]; for (let i = 0; i < c.length; i++) if (clear(c[i][0], c[i][1], 2.0)) { addEaselAt(c[i][0], c[i][1], c[i][0] < 0 ? 0 : Math.PI); nW++; break; } }
+      /* every masterpiece gets a warm wash of light on the wall round it, as if its lamp were really on: one merged mesh of soft additive planes */
+      { const cv = document.createElement('canvas'); cv.width = 64; cv.height = 128; const cx2 = cv.getContext('2d'), gr = cx2.createRadialGradient(32, 30, 2, 32, 52, 64); gr.addColorStop(0, 'rgba(255,214,150,0.95)'); gr.addColorStop(0.45, 'rgba(255,190,120,0.38)'); gr.addColorStop(1, 'rgba(255,170,100,0)'); cx2.fillStyle = gr; cx2.fillRect(0, 0, 64, 128);
+        const P = [], U = [], Ix = [], m4 = new T.Matrix4(), q = new T.Quaternion(), v3 = new T.Vector3(); let n = 0;
+        slots.forEach(sl => { if (!sl.cat || !(sl.D > 0)) return; const w = sl.D * 1.7, h = sl.D * 2.1, ry = sl.ry || 0, fx = Math.sin(ry), fz = Math.cos(ry), pg = new T.PlaneGeometry(w, h);
+          m4.compose(v3.set(sl.x - fx * 0.05, sl.y + sl.D * 0.18, sl.z - fz * 0.05), q.setFromAxisAngle(new T.Vector3(0, 1, 0), ry), new T.Vector3(1, 1, 1)); pg.applyMatrix4(m4);
+          const a = pg.attributes.position.array, uv = pg.attributes.uv.array, id = pg.index.array; for (let i = 0; i < a.length; i++) P.push(a[i]); for (let i = 0; i < uv.length; i++) U.push(uv[i]); for (let i = 0; i < id.length; i++) Ix.push(id[i] + n * 4); n++; });
+        if (n) { const g2 = new T.BufferGeometry(); g2.setAttribute('position', new T.Float32BufferAttribute(P, 3)); g2.setAttribute('uv', new T.Float32BufferAttribute(U, 2)); g2.setIndex(Ix);
+          const wm = new T.MeshBasicMaterial({ map: new T.CanvasTexture(cv), transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending, fog: false }), wash = new T.Mesh(g2, wm); wash.frustumCulled = false; wash.renderOrder = 2; wash.userData.noShadow = wash.userData.noLos = true; scene.add(wash);
+          atmHooks.push(A => { wm.opacity = 0.22 + 0.33 * indoorK + 0.2 * A.night; }); window.__wash = n; } }
       window.__kits = { gogh: kit('고흐 따라 그리기', 'goghv', eG, 0, fG, 0), monet: kit('모네 따라 그리기', 'monetv', eM, 0, fM, 0), hoku: kit('호쿠사이 따라 그리기', 'hokuv', eH, Math.PI, fH, -Math.PI / 2), wings: nW }; }
     { const m4 = new T.Matrix4(), zero = new T.Matrix4().makeScale(0, 0, 0); let cut = 0; FORM.forEach(fm => { if (!fm.isInstancedMesh) return; let ch = false; for (let i = 0; i < fm.count; i++) { fm.getMatrixAt(i, m4); const e = m4.elements; if (inGal(e[12], e[14])) { fm.setMatrixAt(i, zero); ch = true; cut++; } } if (ch) fm.instanceMatrix.needsUpdate = true; }); window.__galCut = cut; }
     /* nothing from the meadow grows through the floor of the Yellow House: every instanced tuft, flower, stone and bush inside its walls is taken away */
