@@ -1,5 +1,5 @@
 -- 011: 이달의 작품 투표. 한 달에 한 사람이 서로 다른 친구 작품에 최대 3표. 내 작품에는 못 눌러요.
--- Additive only: one new table and three new functions. Needs the owner's approval before running (DRAFT, not applied).
+-- Additive only: one new table and three new functions. Applied 2026-11-27 with the owner's approval.
 create table if not exists hwasil.votes (
   month text not null check (month ~ '^[0-9]{4}-[0-9]{2}$'),
   item  text not null,                      -- a gallery exhibit id: "<owner>_<work id>"

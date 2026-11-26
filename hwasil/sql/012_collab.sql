@@ -1,6 +1,6 @@
 -- 012: 합작 액자. 한 사람이 합작 방을 만들면 4글자 코드가 생기고, 친구 셋까지 자기 그림 하나씩 칸(2x2)을 채워요.
 -- 다 채워지면(또는 만든 사람이 마무리하면) 만든 사람의 화면에서 한 장으로 합쳐 일반 그림처럼 걸 수 있어요.
--- Additive only: one new table and four new functions. Needs the owner's approval before running (DRAFT, not applied).
+-- Additive only: one new table and four new functions. Applied 2026-11-27 with the owner's approval.
 create table if not exists hwasil.collabs (
   cc      text primary key check (cc ~ '^[A-Z0-9]{4}$'),
   owner   text not null,
