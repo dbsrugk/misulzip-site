@@ -689,6 +689,7 @@ body.padOpen #hud { visibility: hidden; }
     <button class="btn" id="padUndo" type="button">되돌리기</button>
     <button class="btn" id="padClear" type="button">전체 지우기</button>
     <div class="refRow" id="refRow">
+      <button class="btn primary" id="refNear" type="button" hidden></button>
       <button class="btn" id="refBtn" type="button">따라 그리기</button>
       <input id="refFile" type="file" accept="image/*" hidden>
       <span class="refCtl" id="refCtl" hidden>
@@ -5543,6 +5544,7 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     $('#padClose').textContent = '닫기'; $('#padClear').textContent = '전체 지우기';
     zm.z = 1; zm.tx = zm.ty = 0; zm.q = 1; zm.ptr.clear(); zm.g = null;
     pad.open = true; padEl.hidden = false; sitBtn.hidden = true; applyView(); refreshPaperSeg();
+    nearCat = opts.easel >= 0 ? masterNear(opts.easel) : null; showNear(); if (nearCat) setTimeout(() => { if (pad.open && !ref.img) setStatus('앞에 걸린 「' + (nearCat.title || '명화') + '」을 따라 그려 볼까요? 위의 🖼 버튼을 눌러 보세요.'); }, 900);
     if (!store('hw-zoomhint')) { store('hw-zoomhint', '1'); setTimeout(() => { if (pad.open) setStatus('두 손가락을 벌리면 종이가 커지고, 끌면 움직여요. 한 손가락은 그리기예요.'); }, 600); }
     setStatus(dbNS ? (pad.easel >= 0 ? (pad.easel + 1) + '번 이젤에서 그리는 중' : '') : '이 화면에서는 저장되지 않아요. 로그인한 화면에서 열어 주세요.', !dbNS);
     requestAnimationFrame(fitPad);
@@ -5615,6 +5617,13 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
     paintRef(); paintRefUi(); setStatus('참고 그림을 깔았어요. 투명도를 맞추고 그 위에 따라 그려 보세요. 내 그림에는 저장되지 않아요.');
   }
   $('#refBtn').addEventListener('click', () => { $('#refFile').value = ''; $('#refFile').click(); });
+  /* at an easel near a masterpiece: one tap lays that painting under the paper to copy from */
+  let nearCat = null;
+  function masterNear(i) { const e = easels[i]; if (!e) return null; const fx = Math.sin(e.heading), fz = Math.cos(e.heading); let best = null, bs = 1e9;
+    slots.forEach(s => { if (!s.cat || !s.cat.img) return; const dx = s.x - e.sit.x, dz = s.z - e.sit.z, d = Math.hypot(dx, dz); if (d > 16) return; const front = (dx * fx + dz * fz) / (d || 1), sc = d - front * 6; if (sc < bs) { bs = sc; best = s.cat; } }); return best; }
+  function showNear() { const b = $('#refNear'); b.hidden = !nearCat || (ref.img && ref.sid === 'cat:' + (nearCat && nearCat.id)); if (nearCat) b.textContent = '🖼 「' + (nearCat.title || '앞의 명화') + '」 따라 그리기'; }
+  $('#refNear').addEventListener('click', () => { const c = nearCat; if (!c) return; setStatus('명화를 불러오는 중이에요…'); catImage(c, im => { try { setRefImage(im, 'cat:' + c.id); ref.op = 0.35; paintRef(); paintRefUi(); showNear(); setStatus('「' + (c.title || '') + '」을 종이 아래에 깔았어요. 투명도를 맞추고 따라 그려 보세요. 내 그림에는 저장되지 않아요.'); } catch (er) { setStatus('명화를 불러오지 못했어요.', true); } }); });
+  window.__near = () => nearCat && nearCat.id;
   $('#refFile').addEventListener('change', () => {
     const f = $('#refFile').files && $('#refFile').files[0]; if (!f) return;
     if (!/^image\//.test(f.type) || f.size > 30 * 1024 * 1024) { setStatus('사진(30MB 이하)만 불러올 수 있어요.', true); return; }
