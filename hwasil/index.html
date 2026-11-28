@@ -3252,11 +3252,23 @@ const benches = [];  /* {x, z, ry}: every bench, two seats each */
       window.__pal = { ok: 1 }; }
     /* stone lanterns round the lake shore and through both gardens, and paper lamps afloat on the lake: by day quiet grey stone, by night a ring of warm lights on the water */
     { const sG = new T.Group(); scene.add(sG); const baseG = bx(0.7, 0.22, 0.7), shaftG = new T.CylinderGeometry(0.13, 0.17, 0.9, 6), boxG = bx(0.46, 0.42, 0.46), capG = new T.ConeGeometry(0.52, 0.34, 4).rotateY(Math.PI / 4), frameG = bx(0.58, 0.08, 0.58); let nSL = 0;
-      const stoneLamp = (x, z) => { if (colliders.some(q => Math.hypot(q.x - x, q.z - z) < q.r + 1.4) || benches.some(b => Math.hypot(b.x - x, b.z - z) < 2.4)) return; const y = gY(x, z); if (y < -0.05 || y > 0.6) return;
+      const snowCap = L(0xf4f6f8), stoneLamp = (x, z, high) => { if (colliders.some(q => Math.hypot(q.x - x, q.z - z) < q.r + 1.4) || benches.some(b => Math.hypot(b.x - x, b.z - z) < 2.4)) return; const y = gY(x, z); if (y < -0.05 || (!high && y > 0.6)) return; if (high) { const c = add(new T.ConeGeometry(0.56, 0.22, 4).rotateY(Math.PI / 4), snowCap, x, y + 2.06, z, sG); c.userData.noShadow = true; }
         add(baseG, stoneM, x, y + 0.11, z, sG); add(shaftG, stoneM, x, y + 0.67, z, sG); add(frameG, stoneM, x, y + 1.14, z, sG); const b = add(boxG, paper, x, y + 1.38, z, sG); b.userData.noShadow = true; add(frameG, stoneM, x, y + 1.62, z, sG); add(capG, stoneM, x, y + 1.83, z, sG); lampDots.push(x, y + 1.38, z); colliders.push({ low: 1, x: x, z: z, r: 0.35 }); nSL++; };
       for (let k = 0; k < 10; k++) { const a = k / 10 * 6.2832 + 0.3; stoneLamp(LAKE.x + Math.sin(a) * (LAKE.r + 3.4), LAKE.z + Math.cos(a) * (LAKE.r + 3.4)); }
       [GARD, GARD2].forEach(Gd => { for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + Math.PI / 8; stoneLamp(Gd.x + Math.sin(a) * 19, Gd.z + Math.cos(a) * 19); } });
-      [408, 420, 432, 442].forEach(z => { stoneLamp(PALC.cx - 6, z); stoneLamp(PALC.cx + 6, z); });   /* down both sides of the royal way */
+      [408, 420, 432, 442].forEach(z => { stoneLamp(PALC.cx - 6, z); stoneLamp(PALC.cx + 6, z); });
+      /* the snowfield: snow-capped stone lanterns up the valley and round the field */
+      for (let z = -100; z >= -124; z -= 8) { stoneLamp(NORTH.x - 5.5, z, true); stoneLamp(NORTH.x + 5.5, z, true); }
+      for (let k = 0; k < 8; k++) { const a = k / 8 * 6.2832 + 0.2; stoneLamp(NORTH.x + Math.sin(a) * 14, NORTH.sz + Math.cos(a) * 14, true); }
+      /* the beach and the cave mouth: tall driftwood posts, each with a ship's lantern on a hook */
+      { const pole = L(0x6b5440), iron = L(0x2a2620), glassL = new T.MeshBasicMaterial({ color: 0xffd99a }), rope = L(0xb8a07a); let nP = 0;
+        const postLamp = (x, z) => { if (colliders.some(q => Math.hypot(q.x - x, q.z - z) < q.r + 1.2)) return false; const y = gY(x, z); if (y < -0.3 || y > 1.5) return false;
+          add(new T.CylinderGeometry(0.12, 0.16, 3.4, 6), pole, x, y + 1.7, z, sG); add(bx(0.9, 0.1, 0.1), pole, x - 0.35, y + 3.25, z, sG); add(new T.TorusGeometry(0.18, 0.03, 5, 10), rope, x, y + 0.9, z, sG).rotation.x = Math.PI / 2;
+          add(bx(0.05, 0.3, 0.05), iron, x - 0.7, y + 3.05, z, sG); const gl = add(bx(0.32, 0.42, 0.32), glassL, x - 0.7, y + 2.7, z, sG); gl.userData.noShadow = true; add(bx(0.4, 0.07, 0.4), iron, x - 0.7, y + 2.95, z, sG); add(bx(0.4, 0.07, 0.4), iron, x - 0.7, y + 2.46, z, sG);
+          lampDots.push(x - 0.7, y + 2.7, z); colliders.push({ low: 1, x: x, z: z, r: 0.3 }); nP++; return true; };
+        for (let z = -30; z <= 316; z += 22) postLamp(SEA_X - 6.5, z);
+        for (let k = 0, n = 0; k < 72 && n < 2; k++) { const a = k / 72 * 6.2832, x = CAVE.x + Math.sin(a) * (CAVE.r + 2.6), z = CAVE.z + Math.cos(a) * (CAVE.r + 2.6) * CAVE.k; if (caveAng(x, z) < CAVE.mouth * 0.95 && caveAng(x, z) > CAVE.mouth * 0.5 && postLamp(x, z)) { n++; k += 4; } }
+        window.__postL = nP; }   /* down both sides of the royal way */
       const flG = new T.ConeGeometry(0.3, 0.34, 6).rotateX(Math.PI), FL = []; for (let k = 0; k < 9; k++) { const a = k * 2.4, r = 2.5 + (k * 37 % 8), m = add(flG, k % 2 ? paperR : paper, LAKE.x + Math.sin(a) * r, 0.22, LAKE.z + Math.cos(a) * r, sG); m.userData.noShadow = true; FL.push(m); lampDots.push(m.position.x, 0.3, m.position.z); }
       atmHooks.push(() => { if (Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) > 90) return; const t = performance.now() / 1000; for (let i = 0; i < FL.length; i++) { FL[i].position.y = 0.22 + 0.04 * Math.sin(t * 1.3 + i * 1.9); FL[i].rotation.y = t * 0.2 + i; } });
       window.__slamp = nSL; }
